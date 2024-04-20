@@ -8,4 +8,7 @@ public class ExLoaderConfig
 {
 	[Description("Logging configuration.")]
 	public LogConfig Logging { get; set; } = new LogConfig();
+
+	[Description("Hook configuration.")]
+	public HookConfig Hooks { get; set; } = new HookConfig();
 }
