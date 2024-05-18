@@ -1,277 +1,160 @@
-using System.Reflection;
-
-using Common.Extensions;
-using Common.IO.Collections;
 using Common.Logging;
 
+using LabExtended.API;
+using LabExtended.Core.Hooking;
 using LabExtended.Core.Logging;
+using LabExtended.Events.Server;
 using LabExtended.Extensions;
-using LabExtended.Plugins;
+using LabExtended.Utilities;
 
 using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
+using PluginAPI.Enums;
 using PluginAPI.Loader;
 
-namespace LabExtended.Core;
-
-public class ExLoader
+namespace LabExtended.Core
 {
-	private static readonly LockedDictionary<Assembly, List<ExPlugin>> _plugins = new LockedDictionary<Assembly, List<ExPlugin>>();
-    
-	public static Version GameVersion { get; } = new Version(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision);
-	public static Version ApiVersion { get; } = new Version(1, 0, 0);
-    
-	public static ExLoader Loader { get; private set; }
+    public class ExLoader
+    {
+        public static Version GameVersion { get; } = new Version(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision);
+        public static Version ApiVersion { get; } = new Version(1, 0, 0);
 
-	public static string Folder
-	{
-		get => Loader.Handler.PluginDirectoryPath;
-	}
+        public static ExLoader Loader { get; private set; }
 
-	public static string Configs
-	{
-		get => $"{Folder}/Configs";
-	}
+        public static string Folder => Loader.Handler.PluginDirectoryPath;
 
-	public static string Plugins
-	{
-		get => $"{Folder}/Plugins";
-	}
+        [PluginConfig]
+        public ExLoaderConfig Config;
+        public PluginHandler Handler;
 
-	[PluginConfig] 
-	public ExLoaderConfig Config;
-	public PluginHandler Handler;
+        public VersionRange? GameCompatibility = new VersionRange(new Version(13, 4, 2));
 
-	public VersionRange? GameCompatibility = null;
+        [PluginEntryPoint("LabExtended", "1.0.0", "An extension to NW's Plugin API.", "marchellc")]
+        [PluginPriority(LoadPriority.Lowest)]
+        public void Load()
+        {
+            try
+            {
+                var time = DateTime.Now;
 
-	[PluginEntryPoint("LabExtended", "1.0.0", "An extension to NW's Plugin API.", "marchellc")]
-	public void Load()
-	{
-		try
-		{
-			var time = DateTime.Now;
-			
-			Handler = PluginHandler.Get(this);
-			Loader = this;
+                Handler = PluginHandler.Get(this);
+                Loader = this;
 
-			Info("Extended Loader", $"Loading version &2{ApiVersion}&r ..");
+                Info("Extended Loader", $"Loading version &2{ApiVersion}&r ..");
 
-			if (GameCompatibility.HasValue && !GameCompatibility.Value.InRange(GameVersion))
-			{
-				Error("Extended Loader", $"Attempted to load for an unsupported game version (&1{GameVersion}&r) - supported: &2{GameCompatibility.Value}&r");
-				return;
-			}
+                if (GameCompatibility.HasValue && !GameCompatibility.Value.InRange(GameVersion))
+                {
+                    Error("Extended Loader", $"Attempted to load for an unsupported game version (&1{GameVersion}&r) - supported: &2{GameCompatibility.Value}&r");
+                    return;
+                }
 
-			if (Config is null)
-			{
-				Error("Extended Loader", "The plugin's config is missing! Seems like you made an error. Delete it and restart the server.");
-				return;
-			}
-			
-			if (Config.Logging.PipeEnabled)
-				LogOutput.AddToAll<ExLogger>();
+                if (Config is null)
+                {
+                    Error("Extended Loader", "The plugin's config is missing! Seems like you made an error. Delete it and restart the server.");
+                    return;
+                }
 
-			if (!Directory.Exists(Folder))
-			{
-				Directory.CreateDirectory(Folder);
-				Warn("Extended Loader", "Created the default plugin directory - the PluginAPI should have done that.");
-			}
+                if (Config.Logging.PipeEnabled && !Config.Logging.DisabledSources.Contains("common"))
+                {
+                    var logger = new ExLogger();
 
-			if (!Directory.Exists(Configs))
-			{
-				Directory.CreateDirectory(Configs);
-				Info("Extended Loader", $"Created the config directory.");
-			}
+                    foreach (var output in LogOutput.Outputs)
+                        output.AddLogger(logger);
 
-			if (!Directory.Exists(Plugins))
-			{
-				Directory.CreateDirectory(Plugins);
-				Info("Extended Loader", $"Created the plugin directory.");
-			}
+                    LogOutput.DefaultLoggers.Add(logger);
 
-			foreach (var file in Directory.GetFiles(Plugins, "*.dll", SearchOption.TopDirectoryOnly))
-			{
-				Debug("Extended Loader", $"Found assembly file: {Path.GetFileName(file)}");
+                    if (Config.Logging.DebugEnabled && !Config.Logging.DisabledSources.Contains("common_debug"))
+                    {
+                        LogOutput.EnableForAll(LogLevel.Debug | LogLevel.Verbose | LogLevel.Trace);
+                        LogUtils.Default = LogUtils.General | LogUtils.Debug;
+                    }
+                }
 
-				if (!AssemblyLoader.TryGetAssembly(file, out var asm))
-					continue;
+                FactoryManager.RegisterPlayerFactory(this, new ExFactory());
 
-				AssemblyLoader.ResolveAssemblyEmbeddedResources(asm);
+                foreach (var plugin in AssemblyLoader.InstalledPlugins)
+                {
+                    var pluginType = plugin._pluginType;
+                    var pluginObj = plugin._plugin;
 
-				var loadedAssemblies = AppDomain.CurrentDomain
-					.GetAssemblies()
-					.Select(x => $"{x.GetName().Name}&r v&6{x.GetName().Version.ToString(3)}");
+                    if (pluginObj != null && pluginObj == this)
+                        continue;
 
-				var missingDependencies = asm
-					.GetReferencedAssemblies()
-					.Select(x => $"{x.Name}&r v&6{x.Version.ToString(3)}")
-					.Where(x => !loadedAssemblies.Contains(x));
+                    Info("Extended Loader", $"Loading plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r ..");
 
-				Type[] types = null;
+                    HookManager.RegisterFrom(pluginType, pluginObj);
+                    HookManager.RegisterCustomDelegates(pluginType.Assembly);
 
-				try
-				{
-					types = asm.GetTypes();
-				}
-				catch (Exception ex)
-				{
-					if (missingDependencies.Count() != 0)
-					{
-						Error("Extended Loader", $"Failed loading plugin &2{Path.GetFileNameWithoutExtension(file)}&r, missing dependencies!\n&2{string.Join("\n", missingDependencies.Select(x => $"&r - &2{x}&r"))}\n\n{ex.ToColoredString()}");
-						continue;
-					}
+                    foreach (var type in pluginType.Assembly.GetTypes())
+                    {
+                        if (type == pluginType)
+                            continue;
 
-					Error("Extended Loader", $"Failed loading plugin &2{Path.GetFileNameWithoutExtension(file)}&r!\n{ex.ToColoredString()}");
-					continue;
-				}
+                        HookManager.RegisterFrom(type, null);
+                    }
 
-				for (int i = 0; i < types.Length; i++)
-				{
-					var type = types[i];
+                    Info("Extended Loader", $"Loaded plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r!");
+                }
 
-					try
-					{
-						if (!type.InheritsType<ExPlugin>())
-							continue;
+                var end = (DateTime.Now - time).TotalMilliseconds;
 
-						var plugin = type.Construct<ExPlugin>();
+                Info("Extended Loader", $"Finished loading in {end} ms!");
 
-						if (plugin is null)
-						{
-							Error("Extended Loader", $"Failed to instantiate type &2{type.FullName}&r!");
-							continue;
-						}
+                HookManager.Execute(new ServerStartedArgs());
+            }
+            catch (Exception ex)
+            {
+                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
+            }
+        }
 
-						if (!_plugins.ContainsKey(asm))
-							_plugins[asm] = new List<ExPlugin>() { plugin };
-						else
-							_plugins[asm].Add(plugin);
+        public static void Info(string source, object message)
+        {
+            if (message is Exception ex)
+                message = ex.ToColoredString();
 
-						Info("Extended Loader", $"Found plugin &2{plugin.Name}&r by &3{plugin.Author}&r! (&2{plugin.Version}&r)");
-					}
-					catch (Exception ex)
-					{
-						Error("Extended Loader", $"Failed loading type &2{type.FullName}&r!\n{ex.ToColoredString()}");
-					}
-				}
+            Log.Info(message.ToString(), source);
+        }
 
-				if (_plugins.Count < 1)
-				{
-					Info("Extended Loader", "No plugins were found.");
-					return;
-				}
+        public static void Warn(string source, object message)
+        {
+            if (message is Exception ex)
+                message = ex.ToColoredString();
 
-				var failed = new List<ExPlugin>();
+            Log.Warning(message.ToString(), source);
+        }
 
-				foreach (var pair in _plugins)
-				{
-					foreach (var plugin in pair.Value)
-					{
-						if (plugin.ApiCompatibility.HasValue && !plugin.ApiCompatibility.Value.InRange(ApiVersion))
-						{
-							failed.Add(plugin);
+        public static void Error(string source, object message)
+        {
+            if (message is Exception ex)
+                message = ex.ToColoredString();
 
-							Warn("Extended Loader", $"Plugin &2{plugin.Name}&r is not compatible with this API version (&2{ApiVersion}&r)! - compatibility: &3{plugin.ApiCompatibility.Value}&r");
-							continue;
-						}
+            Log.Error(message.ToString(), source);
+        }
 
-						if (plugin.GameCompatibility.HasValue && !plugin.GameCompatibility.Value.InRange(GameVersion))
-						{
-							failed.Add(plugin);
+        public static void Debug(string source, object message)
+        {
+            if (!CanDebug(source))
+                return;
 
-							Warn("Extended Loader", $"Plugin &2{plugin.Name}&r is not compatible with this game version (&2{GameVersion}&r)! - compatibility: &3{plugin.GameCompatibility.Value}&r");
-							continue;
-						}
+            if (message is Exception ex)
+                message = ex.ToColoredString();
 
-						Debug("Extended Loader", $"Loading plugin {plugin.Name} ..");
+            Log.Debug(message.ToString(), source);
+        }
 
-						try
-						{
-							plugin.Config = new ExConfig($"{Configs}/{plugin.Name}", pair.Key);
-							plugin.Config.Load();
+        private static bool CanDebug(string source)
+        {
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                if (Loader.Config.Logging.DisabledSources.Contains(source))
+                    return false;
 
-							plugin.Log = new LogOutput() { Name = plugin.Name };
+                if (Loader.Config.Logging.EnabledSources.Contains(source))
+                    return true;
+            }
 
-							if (CanDebug(plugin.Name))
-								plugin.Log.Enabled |= LogUtils.Debug;
-
-							plugin.OnLoaded();
-						}
-						catch (Exception ex)
-						{
-							Error("Extended Loader", $"Failed while loading plugin &2{plugin.Name}&r:\n{ex.ToColoredString()}");
-						}
-					}
-				}
-
-				foreach (var plugin in failed)
-				{
-					foreach (var pair in _plugins)
-					{
-						pair.Value.Remove(plugin);
-					}
-				}
-
-				var end = (DateTime.Now - time).TotalMilliseconds;
-
-				if (failed.Count > 0)
-					Warn("Extended Loader", $"Finished loading with {failed.Count} error(s), took {end} ms.");
-				else
-					Info("Extended Loader", $"Finished loading {_plugins.Sum(p => p.Value.Count)} plugin(s), took {end} ms.");
-			}
-		}
-		catch (Exception ex)
-		{
-			Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
-		}
-	}
-
-	public static void Info(string source, object message)
-	{
-		if (message is Exception ex)
-			message = ex.ToColoredString();
-		
-		Log.Info(message.ToString(), source);
-	}
-
-	public static void Warn(string source, object message)
-	{
-		if (message is Exception ex)
-			message = ex.ToColoredString();
-		
-		Log.Warning(message.ToString(), source);
-	}
-
-	public static void Error(string source, object message)
-	{
-		if (message is Exception ex)
-			message = ex.ToColoredString();
-		
-		Log.Error(message.ToString(), source);
-	}
-
-	public static void Debug(string source, object message)
-	{
-		if (!CanDebug(source))
-			return;
-		
-		if (message is Exception ex)
-			message = ex.ToColoredString();
-		
-		Log.Debug(message.ToString(), source);
-	}
-
-	private static bool CanDebug(string source)
-	{
-		if (!string.IsNullOrWhiteSpace(source))
-		{
-			if (Loader.Config.Logging.DisabledSources.Contains(source))
-				return false;
-
-			if (Loader.Config.Logging.EnabledSources.Contains(source))
-				return true;
-		}
-
-		return Loader.Config.Logging.DebugEnabled;
-	}
+            return Loader.Config.Logging.DebugEnabled;
+        }
+    }
 }

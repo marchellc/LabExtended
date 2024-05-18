@@ -1,18 +1,16 @@
 using System.ComponentModel;
 
-namespace LabExtended.Core.Configs;
-
-public class HookConfig
+namespace LabExtended.Core.Configs
 {
-	[Description("Toggles global event time recording.")]
-	public bool TimeRecording { get; set; } = true;
+    public class HookConfig
+    {
+        [Description("Sets the maximum amount of time (in milliseconds) the API will wait for a coroutine to execute.")]
+        public float CoroutineTimeout { get; set; } = 1000f;
 
-	[Description("Sets a list of events that record time.")]
-	public List<string> CustomRecording { get; set; } = new List<string>();
-	
-	[Description("Sets the amount of milliseconds to wait for an async event to finish (defaults to 1 000 ms).")]
-	public float AsyncTimeout { get; set; } = 1000f;
+        [Description("Whether or not to completely disable all NW API events (doesn't apply to events specified in DisableWhitelist!).")]
+        public bool DisableNwEvents { get; set; } = true;
 
-	[Description("Sets a list of custom async timeouts. Keys need to be formatted as 'Namespace.TypeName' for events and 'Namespace.TypeName.MethodName' for hooks.")]
-	public Dictionary<string, float> CustomTimeouts { get; set; } = new Dictionary<string, float>();
+        [Description("A list of event names to not disable.")]
+        public List<string> DisableWhitelist { get; set; } = new List<string>();
+    }
 }

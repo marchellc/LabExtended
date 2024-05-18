@@ -2,13 +2,14 @@ using System.ComponentModel;
 
 using LabExtended.Core.Configs;
 
-namespace LabExtended.Core;
-
-public class ExLoaderConfig
+namespace LabExtended.Core
 {
-	[Description("Logging configuration.")]
-	public LogConfig Logging { get; set; } = new LogConfig();
+    public class ExLoaderConfig
+    {
+        [Description("Logging configuration.")]
+        public LogConfig Logging { get; set; } = new LogConfig();
 
-	[Description("Hook configuration.")]
-	public HookConfig Hooks { get; set; } = new HookConfig();
+        [Description("Hook configuration.")]
+        public HookConfig Hooks { get; set; } = new HookConfig();
+    }
 }
