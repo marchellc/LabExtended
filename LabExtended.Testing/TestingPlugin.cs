@@ -4,7 +4,7 @@ using LabExtended.Events.Server;
 
 using PluginAPI.Core.Attributes;
 
-using System.Threading.Tasks;
+using System;
 
 namespace LabExtended.Testing
 {
@@ -17,9 +17,7 @@ namespace LabExtended.Testing
         }
 
         [HookEvent(typeof(ServerStartedArgs))]
-        public Task OnServerStarted()
-        {
-            return Task.Run(() => ExLoader.Info("Testing Plugin", "Server task"));
-        }
+        public void OnServerStartedCustom(DateTime startTime, TimeSpan time)
+            => ExLoader.Info("Testing Plugin", $"Server start took {time.TotalMilliseconds} ms");
     }
 }

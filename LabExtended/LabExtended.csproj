@@ -99,6 +99,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Core\Commands\Executors\" />
       <Folder Include="Events\Player\" />
     </ItemGroup>
 

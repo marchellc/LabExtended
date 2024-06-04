@@ -12,6 +12,8 @@ using PluginAPI.Core.Attributes;
 using PluginAPI.Enums;
 using PluginAPI.Loader;
 
+using UnityEngine;
+
 namespace LabExtended.Core
 {
     public class ExLoader
@@ -100,18 +102,21 @@ namespace LabExtended.Core
 
                 Info("Extended Loader", $"Finished loading in {end} ms!");
 
-                HookManager.Execute(new ServerStartedArgs());
+                var serverStartDuration = TimeSpan.FromSeconds(Time.realtimeSinceStartupAsDouble);
+                var serverStartTime = DateTime.Now - serverStartDuration;
+
+                HookManager.Execute(new ServerStartedArgs(serverStartTime, serverStartDuration));
             }
             catch (Exception ex)
             {
-                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
+                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColouredString()}");
             }
         }
 
         public static void Info(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColoredString();
+                message = ex.ToColouredString();
 
             Log.Info(message.ToString(), source);
         }
@@ -119,7 +124,7 @@ namespace LabExtended.Core
         public static void Warn(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColoredString();
+                message = ex.ToColouredString();
 
             Log.Warning(message.ToString(), source);
         }
@@ -127,7 +132,7 @@ namespace LabExtended.Core
         public static void Error(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColoredString();
+                message = ex.ToColouredString();
 
             Log.Error(message.ToString(), source);
         }
@@ -138,7 +143,7 @@ namespace LabExtended.Core
                 return;
 
             if (message is Exception ex)
-                message = ex.ToColoredString();
+                message = ex.ToColouredString();
 
             Log.Debug(message.ToString(), source);
         }

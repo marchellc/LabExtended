@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LabExtended.API.Items
+namespace LabExtended.Core.Commands
 {
-    public class BaseItem
+    public class CommandModule
     {
-
+        public CommandContext Context { get; internal set; }
     }
 }

@@ -10,7 +10,12 @@ using Common.Extensions;
 using MEC;
 
 using NorthwoodLib.Pools;
+
 using Common;
+
+using LabExtended.Extensions;
+
+using PluginAPI.Events;
 
 namespace LabExtended.Core.Hooking
 {
@@ -23,12 +28,117 @@ namespace LabExtended.Core.Hooking
 
         public static HookCoroutineExecutor CoroutineExecutor => HookCoroutineExecutor.Instance;
         public static HookClassicExecutor ClassicExecutor => HookClassicExecutor.Instance;
-        public static HookTaskExecutor TaskExecutor => HookTaskExecutor.Instance;
 
-        public static T ExecuteCancellable<T>(HookEvent hookEvent) where T : ICancellableEvent<T>
-            => ((ICancellableEvent<T>)Execute(hookEvent)).IsCancelled;
+        public static T ExecuteCustomCancellable<T>(HookEvent hookEvent) where T : ICancellableEvent<T>
+            => ((ICancellableEvent<T>)ExecuteCustom(hookEvent)).IsCancelled;
 
-        public static T Execute<T>(T hookEvent) where T : HookEvent
+        public static T ExecuteVanilla<T>(T vanillaEvent) where T : Event
+        {
+            if (vanillaEvent is null)
+                throw new ArgumentNullException(nameof(vanillaEvent));
+
+            try
+            {
+                var hookType = vanillaEvent.GetType();
+
+                if (!_activeHooks.TryGetValue(hookType, out var activeHooks) || activeHooks.Count < 1)
+                    return vanillaEvent;
+
+                var hookStart = DateTime.Now;
+                var hookIndex = 0;
+                var hookEvent = new HookWrapper<T>(vanillaEvent);
+                var hookRuntime = new HookRuntimeInfo(hookEvent, HookUtils.GetBinding(hookEvent, activeHooks));
+                var hookStatus = false;
+
+                void HookCallback(HookResult hookResult)
+                {
+                    try
+                    {
+                        if (hookResult.Type != HookResultType.Success)
+                        {
+                            if (hookResult.Type is HookResultType.TimedOut)
+                                ExLoader.Warn("Hook Manager", $"Hook '{activeHooks[hookIndex].Target.ToName()}' has timed out while executing event '{hookType.Name}'");
+                            else if (hookResult.Type is HookResultType.Error)
+                                ExLoader.Error("Hook Manager", $"Hook '{activeHooks[hookIndex].Target.ToName()}' has caught an error while executing event '{hookType.Name}'{(hookResult.ReturnedValue != null ? $":\n{hookResult.ReturnedValue}" : "")}");
+                            else
+                                ExLoader.Debug("Hook Manager", $"Hook '{activeHooks[hookIndex].Target.ToName()}' has finished executing.");
+                        }
+
+                        if (hookEvent.NextHook != null)
+                        {
+                            hookIndex++;
+                            hookEvent.SyncHooks(activeHooks[hookIndex], (hookIndex + 1).IsValidIndex(activeHooks.Count) ? activeHooks[hookIndex + 1] : null);
+                            hookEvent.CurrentHook.Execute(hookRuntime, HookCallback);
+                        }
+                        else
+                        {
+                            hookStatus = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        hookStatus = true;
+                        ExLoader.Error("Hook Manager", $"Callback caught an exception while executing after index '{hookIndex}':\n{ex}");
+                    }
+                }
+
+                hookEvent.SyncHooks(activeHooks[hookIndex], (hookIndex + 1).IsValidIndex(activeHooks.Count) ? activeHooks[hookIndex + 1] : null);
+                activeHooks[hookIndex].Execute(hookRuntime, HookCallback);
+
+                while (!hookStatus)
+                {
+                    if ((DateTime.Now - hookStart).TotalMilliseconds >= 2000)
+                    {
+                        ExLoader.Warn("Hook Manager", $"Timed out while executing event '{hookType.Name}' (current hook index: {hookIndex})");
+                        break;
+                    }
+                }
+
+                if (hookRuntime.EventObjects != null)
+                    ListPool<HookEventObject>.Shared.Return(hookRuntime.EventObjects);
+
+                hookEvent.SyncHooks(null, null);
+
+                if (_eventDelegates.TryGetValue(hookType, out var hookDelegates))
+                {
+                    ExLoader.Debug("Hook Manager", $"Found {hookDelegates.Count} delegates for event '{hookType.Name}'");
+
+                    var delegateArgs = new object[] { hookEvent };
+
+                    foreach (var hookDelegate in hookDelegates)
+                    {
+                        try
+                        {
+                            ExLoader.Debug("Hook Manager", $"Executing delegate '{hookDelegate.Event.DeclaringType.FullName}::{hookDelegate.Event.Name}'");
+
+                            var delegateValue = hookDelegate.Field.Get<MulticastDelegate>();
+
+                            if (delegateValue is null)
+                                continue;
+
+                            delegateValue.DynamicInvoke(delegateArgs);
+                        }
+                        catch (Exception ex)
+                        {
+                            ExLoader.Error("Hook Manager", $"Caught an error while executing delegate '{hookDelegate.Event.Name}' in {hookDelegate.Event.DeclaringType.FullName}:\n{ex}");
+                        }
+                    }
+
+                    if (delegateArgs[0] != null)
+                        hookEvent.Event = (T)delegateArgs[0];
+                }
+
+                ExLoader.Debug("Hook Manager", $"Finished executing event '{hookType.Name}' in {(DateTime.Now - hookStart).TotalMilliseconds} ms.");
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("Hook Manager", $"Caught an exception while calling event '{vanillaEvent.GetType().FullName}':\n{ex}");
+            }
+
+            return vanillaEvent;
+        }
+
+        public static T ExecuteCustom<T>(T hookEvent) where T : HookEvent
         {
             if (hookEvent is null)
                 throw new ArgumentNullException(nameof(hookEvent));
@@ -147,7 +257,7 @@ namespace LabExtended.Core.Hooking
 
                     var genericArgs = ev.EventHandlerType.GetGenericArguments();
 
-                    if (genericArgs.Length != 1 || !genericArgs[0].InheritsType<HookEvent>())
+                    if (genericArgs.Length != 1 || (!genericArgs[0].InheritsType<HookEvent>() && !genericArgs[0].InheritsType<Event>()))
                         continue;
 
                     var field = type.Field(ev.Name);
@@ -229,12 +339,6 @@ namespace LabExtended.Core.Hooking
                 return true;
             }
 
-            if (method.ReturnType == typeof(Task) || (method.ReturnType.IsGenericType && method.ReturnType.GetGenericTypeDefinition() == typeof(Task<>)))
-            {
-                executor = TaskExecutor;
-                return true;
-            }
-
             executor = null;
             return false;
         }
@@ -308,7 +412,7 @@ namespace LabExtended.Core.Hooking
                 hookEventType = hookEventAttribute.Type;
             else
             {
-                if (parameters.Length == 1 && parameters[0].ParameterType.InheritsType<HookEvent>())
+                if (parameters.Length == 1 && (parameters[0].ParameterType.InheritsType<HookEvent>() || parameters[0].ParameterType.InheritsType<Event>()))
                     hookEventType = parameters[0].ParameterType;
                 else
                 {
