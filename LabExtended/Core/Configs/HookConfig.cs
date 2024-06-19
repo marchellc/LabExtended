@@ -12,5 +12,11 @@ namespace LabExtended.Core.Configs
 
         [Description("A list of event names to not disable.")]
         public List<string> DisableWhitelist { get; set; } = new List<string>();
+
+        [Description("A list of event names to bypass the patch.")]
+        public List<string> BypassWhitelist { get; set; } = new List<string>()
+        {
+            "ConsoleCommand"
+        };
     }
 }

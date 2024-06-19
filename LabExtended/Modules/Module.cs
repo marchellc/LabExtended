@@ -11,6 +11,11 @@
         public virtual ModuleTickSettings? TickSettings { get; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether or not this module is active.
+        /// </summary>
+        public bool IsActive { get; set; }
+
+        /// <summary>
         /// Gets the module's parent.
         /// </summary>
         public ModuleParent Parent { get; internal set; }

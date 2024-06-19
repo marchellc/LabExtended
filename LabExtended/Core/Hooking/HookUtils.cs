@@ -15,12 +15,12 @@ namespace LabExtended.Core.Hooking
                 return null;
 
             var list = ListPool<HookEventObject>.Shared.Rent();
-            var props = hookEvent.GetType().GetAllProperties();
+            var props = ((object)(hookEvent is HookWrapper wrapper ? wrapper.Event : hookEvent)).GetType().GetAllProperties();
 
             foreach (var prop in props)
             {
                 var propName = prop.Name;
-                var propValue = prop.Get(hookEvent);
+                var propValue = prop.Get(hookEvent is HookWrapper evWrapper ? evWrapper.Event : hookEvent);
 
                 list.Add(new HookEventObject(propName, propValue, prop));
             }

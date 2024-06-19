@@ -1,6 +1,8 @@
 ﻿using Common.Extensions;
 
+using LabExtended.API;
 using LabExtended.Core;
+using LabExtended.Extensions;
 
 using MEC;
 
@@ -18,7 +20,12 @@ namespace LabExtended.Modules
         /// <summary>
         /// When overriden, gets a value indicating whether a tick can occur.
         /// </summary>
-        public virtual bool UpdateModules { get; }
+        public virtual bool UpdateModules { get; } = true;
+
+        /// <summary>
+        /// When overriden, gets a value indicating whether or not to keep transient modules.
+        /// </summary>
+        public virtual bool KeepTransientModules { get; } = true;
 
         /// <summary>
         /// Creates a new <see cref="ModuleParent"/> instance.
@@ -29,6 +36,11 @@ namespace LabExtended.Modules
             _modules = new Dictionary<Type, ModuleContainer>();
             _coroutine = Timing.RunCoroutine(UpdateAll());
         }
+
+        /// <summary>
+        /// This method gets executed each frame.
+        /// </summary>
+        public virtual void OnSelfUpdate() { }
 
         /// <summary>
         /// Adds a new/gets the existing module.
@@ -51,8 +63,15 @@ namespace LabExtended.Modules
                 module.Parent = this;
 
                 if (autoStart)
+                {
                     module.Start();
+                    module.IsActive = true;
+                }
 
+                if (this is ExPlayer player && module is TransientModule transientModule)
+                    transientModule.Create(player, false);
+
+                ExLoader.Debug("Modules API", $"Added module &3{typeof(T).FullName}&r");
                 return module;
             }
         }
@@ -86,9 +105,24 @@ namespace LabExtended.Modules
                 if (!_modules.TryGetValue(typeof(T), out var moduleContainer))
                     return false;
 
+                if (moduleContainer.Module is TransientModule transientModule)
+                {
+                    try
+                    {
+                        transientModule.Destroy(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        ExLoader.Error("Module Parent", $"Failed to stop module '{typeof(T).FullName}' due to an exception:\n{ex}");
+                    }
+
+                    return _modules.Remove(typeof(T));
+                }
+
                 try
                 {
                     moduleContainer.Module.Stop();
+                    moduleContainer.Module.IsActive = false;
                     moduleContainer.Module.Parent = null;
                 }
                 catch (Exception ex)
@@ -107,16 +141,33 @@ namespace LabExtended.Modules
         {
             lock (_coroutineLock)
             {
-                foreach (var moduleContainer in _modules.Values)
+                var containers = _modules.Values.ToList();
+
+                foreach (var moduleContainer in containers)
                 {
-                    try
+                    if (moduleContainer.Module is TransientModule transientModule)
                     {
-                        moduleContainer.Module.Stop();
-                        moduleContainer.Module.Parent = null;
+                        try
+                        {
+                            transientModule.Destroy(true, false);
+                        }
+                        catch (Exception ex)
+                        {
+                            ExLoader.Error("Module Parent", $"Failed to stop module &3{moduleContainer.Module.GetType().FullName}&r due to an exception:\n{ex}");
+                        }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        ExLoader.Error("Module Parent", $"Failed to stop module '{moduleContainer.Module.GetType().FullName}' due to an exception:\n{ex}");
+                        try
+                        {
+                            moduleContainer.Module.Stop();
+                            moduleContainer.Module.IsActive = false;
+                            moduleContainer.Module.Parent = null;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExLoader.Error("Module Parent", $"Failed to stop module &3{moduleContainer.Module.GetType().FullName}&r due to an exception:\n{ex}");
+                        }
                     }
                 }
 
@@ -162,12 +213,13 @@ namespace LabExtended.Modules
                 module.Start();
         }
 
-        internal void RemoveInstance(Module module, bool stopModule)
+        internal void RemoveInstance(Module module, bool stopModule, bool removeModule)
         {
             if (!_modules.Any(p => p.Value?.Module != null && p.Value.Module == module))
                 return;
 
-            _modules.Remove(module.GetType());
+            if (removeModule)
+                _modules.Remove(module.GetType());
 
             if (stopModule)
                 module.Stop();
@@ -181,6 +233,15 @@ namespace LabExtended.Modules
             {
                 yield return Timing.WaitForOneFrame;
 
+                try
+                {
+                    OnSelfUpdate();
+                }
+                catch (Exception ex)
+                {
+                    ExLoader.Error("Module Parent", $"Caught an exception while executing self update!\n{ex.ToColoredString()}");
+                }
+
                 if (!UpdateModules)
                     continue;
 
@@ -188,6 +249,12 @@ namespace LabExtended.Modules
                 {
                     foreach (var pair in _modules)
                     {
+                        if (!pair.Value.Module.IsActive)
+                            continue;
+
+                        if (pair.Value.TickStatus is null)
+                            continue;
+
                         if (pair.Value.TickStatus.CanTick())
                         {
                             pair.Value.TickStatus.PreTick();
@@ -198,7 +265,7 @@ namespace LabExtended.Modules
                             }
                             catch (Exception ex)
                             {
-                                ExLoader.Error("Module Parent", $"Caught an exception while ticking module '{pair.Key.FullName}':\n{ex}");
+                                ExLoader.Error("Module Parent", $"Caught an exception while ticking module &3'{pair.Key.FullName}'&r:\n{ex.ToColoredString()}");
                             }
 
                             pair.Value.TickStatus.PostTick();

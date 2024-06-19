@@ -4,12 +4,11 @@ using PluginAPI.Events;
 
 namespace LabExtended.Core.Hooking
 {
-    public class HookWrapper<T> : HookEvent
-        where T : Event
+    public class HookWrapper : HookEvent
     {
-        public T Event { get; internal set; }
+        public IEventArguments Event { get; internal set; }
 
-        public HookWrapper(T vanillaEvent)
+        public HookWrapper(IEventArguments vanillaEvent)
             => Event = vanillaEvent;
     }
 }

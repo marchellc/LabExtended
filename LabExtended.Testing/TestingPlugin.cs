@@ -1,10 +1,11 @@
 ﻿using LabExtended.Core;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Server;
+
+using MEC;
 
 using PluginAPI.Core.Attributes;
+using PluginAPI.Events;
 
-using System;
+using System.Collections.Generic;
 
 namespace LabExtended.Testing
 {
@@ -16,8 +17,12 @@ namespace LabExtended.Testing
             ExLoader.Info("Testing Plugin", "Loaded the testing plugin.");
         }
 
-        [HookEvent(typeof(ServerStartedArgs))]
-        public void OnServerStartedCustom(DateTime startTime, TimeSpan time)
-            => ExLoader.Info("Testing Plugin", $"Server start took {time.TotalMilliseconds} ms");
+        [PluginEvent]
+        public IEnumerator<float> OnWaiting(WaitingForPlayersEvent ev)
+        {
+            ExLoader.Info("Testing Plugin", "2 sec");
+            yield return Timing.WaitForSeconds(2f);
+            ExLoader.Info("Testing Plugin", "waiting");
+        }
     }
 }

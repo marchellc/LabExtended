@@ -1,9 +1,8 @@
 using Common.Logging;
-
-using LabExtended.API;
+using LabExtended.API.Prefabs;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Logging;
-using LabExtended.Events.Server;
+
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
@@ -11,8 +10,6 @@ using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
 using PluginAPI.Enums;
 using PluginAPI.Loader;
-
-using UnityEngine;
 
 namespace LabExtended.Core
 {
@@ -29,7 +26,7 @@ namespace LabExtended.Core
         public ExLoaderConfig Config;
         public PluginHandler Handler;
 
-        public VersionRange? GameCompatibility = new VersionRange(new Version(13, 4, 2));
+        public VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 0));
 
         [PluginEntryPoint("LabExtended", "1.0.0", "An extension to NW's Plugin API.", "marchellc")]
         [PluginPriority(LoadPriority.Lowest)]
@@ -72,7 +69,15 @@ namespace LabExtended.Core
                     }
                 }
 
-                FactoryManager.RegisterPlayerFactory(this, new ExFactory());
+                NetworkUtils.LoadMirror();
+
+                HookManager.Initialize();
+
+                HookManager.RegisterFrom(Handler._pluginType.Assembly);
+                HookManager.RegisterCustomDelegates(Handler._pluginType.Assembly);
+
+                PrefabUtils.Initialize();
+                UpdateEvent.Initialize();
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
                 {
@@ -100,23 +105,18 @@ namespace LabExtended.Core
 
                 var end = (DateTime.Now - time).TotalMilliseconds;
 
-                Info("Extended Loader", $"Finished loading in {end} ms!");
-
-                var serverStartDuration = TimeSpan.FromSeconds(Time.realtimeSinceStartupAsDouble);
-                var serverStartTime = DateTime.Now - serverStartDuration;
-
-                HookManager.Execute(new ServerStartedArgs(serverStartTime, serverStartDuration));
+                Info("Extended Loader", $"Finished loading in &1{end} ms&r!");
             }
             catch (Exception ex)
             {
-                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColouredString()}");
+                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
             }
         }
 
         public static void Info(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColouredString();
+                message = ex.ToColoredString();
 
             Log.Info(message.ToString(), source);
         }
@@ -124,7 +124,7 @@ namespace LabExtended.Core
         public static void Warn(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColouredString();
+                message = ex.ToColoredString();
 
             Log.Warning(message.ToString(), source);
         }
@@ -132,7 +132,7 @@ namespace LabExtended.Core
         public static void Error(string source, object message)
         {
             if (message is Exception ex)
-                message = ex.ToColouredString();
+                message = ex.ToColoredString();
 
             Log.Error(message.ToString(), source);
         }
@@ -143,7 +143,7 @@ namespace LabExtended.Core
                 return;
 
             if (message is Exception ex)
-                message = ex.ToColouredString();
+                message = ex.ToColoredString();
 
             Log.Debug(message.ToString(), source);
         }

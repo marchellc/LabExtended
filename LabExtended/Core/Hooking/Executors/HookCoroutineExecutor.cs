@@ -60,7 +60,7 @@ namespace LabExtended.Core.Hooking.Executors
                 yield break;
             }
 
-            if (hookInfo.SyncOptions != null && hookInfo.SyncOptions.DoNotWait)
+            if (hookRuntimeInfo.Event is HookWrapper || (hookInfo.SyncOptions != null && hookInfo.SyncOptions.DoNotWait))
             {
                 resultCallback(new HookResult(null, HookResultType.Success));
                 return;

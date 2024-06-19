@@ -14,12 +14,16 @@
         public override object[] BindArgs(HookRuntimeInfo hookRuntimeInfo, HookInfo hookInfo)
         {
             if (_used)
-                return new object[] { hookRuntimeInfo.Event };
+            {
+                return new object[] { hookRuntimeInfo.Event is HookWrapper wrapper ? wrapper.Event : hookRuntimeInfo.Event };
+            }
+            else
+            {
+                _used = true;
+                _buffer[0] = hookRuntimeInfo.Event is HookWrapper wrapper ? wrapper.Event : hookRuntimeInfo.Event;
 
-            _used = true;
-            _buffer[0] = hookRuntimeInfo.Event;
-
-            return _buffer;
+                return _buffer;
+            }
         }
 
         public override void UnbindArgs()

@@ -45,8 +45,7 @@ namespace LabExtended.Core.Hooking.Binders
 
                 foreach (var evObject in hookRuntimeInfo.EventObjects)
                 {
-                    if (evObject.PropertyName.ToLower() == paramInfo.Name.ToLower()
-                        && evObject.PropertyValue.GetType() == paramInfo.ParameterType)
+                    if (evObject.PropertyName.ToLower() == paramInfo.Name.ToLower() && evObject.PropertyValue.GetType() == paramInfo.ParameterType)
                     {
                         paramObject = evObject.PropertyValue;
                         break;

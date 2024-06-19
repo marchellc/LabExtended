@@ -14,14 +14,14 @@ namespace LabExtended.Core.Hooking
 
         public HookPriority Priority { get; }
 
-        public HookSyncOptionsValue SyncOptions { get; }
+        public HookSyncOptions SyncOptions { get; }
 
         public object Instance { get; }
 
         public long Errors { get; private set; } = 0;
         public long Total { get; private set; } = 0;
 
-        public HookInfo(HookExecutor executor, HookBinder binder, HookPriority priority, HookSyncOptionsValue syncOptions, MethodInfo targetMethod, object targetInstance = null)
+        public HookInfo(HookExecutor executor, HookBinder binder, HookPriority priority, HookSyncOptions syncOptions, MethodInfo targetMethod, object targetInstance = null)
         {
             if (executor is null)
                 throw new ArgumentNullException(nameof(executor));

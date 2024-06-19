@@ -1,0 +1,45 @@
+﻿using HarmonyLib;
+
+using LabExtended.API;
+
+using Mirror;
+
+using PlayerRoles;
+
+namespace LabExtended.Patches.Functions.SpectatorList
+{
+    [HarmonyPatch(typeof(RoleSyncInfoPack), nameof(RoleSyncInfoPack.WritePlayers))]
+    public static class SpectatorListSyncRoleJoinPatch
+    {
+        public static bool Prefix(RoleSyncInfoPack __instance, NetworkWriter writer)
+        {
+            if (__instance._receiverHub is null)
+                return true;
+
+            var receiver = ExPlayer.Get(__instance._receiverHub);
+
+            if (receiver is null)
+                return true;
+
+            writer.WriteUShort((ushort)ExPlayer.Count);
+
+            foreach (var player in ExPlayer.Players)
+            {
+                var sentRole = player.Role.Type;
+                var fakedRole = player.GetRoleForJoinedPlayer(receiver);
+
+                if (player.Role.Role is IObfuscatedRole obfuscatedRole)
+                    sentRole = obfuscatedRole.GetRoleForUser(receiver.Hub);
+
+                if (fakedRole.HasValue)
+                    sentRole = fakedRole.Value;
+
+                new RoleSyncInfo(player.Hub, sentRole, receiver.Hub).Write(writer);
+
+                player._sentRoles[receiver.NetId] = sentRole;
+            }
+
+            return false;
+        }
+    }
+}

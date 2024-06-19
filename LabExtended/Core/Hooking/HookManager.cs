@@ -2,6 +2,9 @@ using LabExtended.Core.Hooking.Executors;
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Events;
 
+using LabExtended.Extensions;
+using LabExtended.Utilities;
+
 using System.Reflection;
 
 using Common.Utilities;
@@ -13,42 +16,105 @@ using NorthwoodLib.Pools;
 
 using Common;
 
-using LabExtended.Extensions;
-
 using PluginAPI.Events;
+using PluginAPI.Core.Attributes;
+
+using HarmonyLib;
 
 namespace LabExtended.Core.Hooking
 {
     public static class HookManager
     {
+        private static MethodInfo _patchMethod;
+        private static MethodInfo _targetMethod;
+        private static Harmony _harmony;
+
         private static readonly Dictionary<Type, List<HookInfo>> _activeHooks = new Dictionary<Type, List<HookInfo>>();
         private static readonly Dictionary<Type, List<HookDelegate>> _eventDelegates = new Dictionary<Type, List<HookDelegate>>();
+
+        private static readonly Dictionary<Type, Action<object>> _predefinedDelegates = new Dictionary<Type, Action<object>>()
+        {
+            [typeof(RoundEndEvent)] = ev => RoundEvents.InvokeEnded((RoundEndEvent)ev),
+            [typeof(RoundStartEvent)] = ev => RoundEvents.InvokeStarted((RoundStartEvent)ev),
+            [typeof(RoundRestartEvent)] = ev => RoundEvents.InvokeRestarted((RoundRestartEvent)ev),
+            [typeof(WaitingForPlayersEvent)] = ev => RoundEvents.InvokeWaiting((WaitingForPlayersEvent)ev)
+        };
 
         public static HookNoParamBinder NoParamBinder => HookNoParamBinder.Instance;
 
         public static HookCoroutineExecutor CoroutineExecutor => HookCoroutineExecutor.Instance;
         public static HookClassicExecutor ClassicExecutor => HookClassicExecutor.Instance;
 
-        public static T ExecuteCustomCancellable<T>(HookEvent hookEvent) where T : ICancellableEvent<T>
-            => ((ICancellableEvent<T>)ExecuteCustom(hookEvent)).IsCancelled;
-
-        public static T ExecuteVanilla<T>(T vanillaEvent) where T : Event
+        internal static void Initialize()
         {
-            if (vanillaEvent is null)
-                throw new ArgumentNullException(nameof(vanillaEvent));
+            var start = DateTime.Now;
 
             try
             {
+                ExLoader.Info("Hook Manager", $"Initializing the hooking system ..");
+
+                _harmony = new Harmony("com.exloader.hooking");
+                _harmony.PatchAll();
+
+                _patchMethod = typeof(HookManager).GetAllMethods().First(m => m.Name == "EventPrefix");
+                _targetMethod = typeof(EventManager).GetAllMethods().First(m => m.Name == "ExecuteEvent" && m.ContainsGenericParameters);
+
+                foreach (var type in ModuleInitializer.SafeQueryTypes())
+                {
+                    if (!type.InheritsType<IEventCancellation>() || type == typeof(IEventCancellation))
+                        continue;
+
+                    var origMethod = _targetMethod.MakeGenericMethod(type);
+                    var newMethod = _patchMethod.MakeGenericMethod(type);
+
+                    _harmony.Patch(origMethod, new HarmonyMethod(newMethod));
+                }
+
+                var orMethod = _targetMethod.MakeGenericMethod(typeof(bool));
+                var neMethod = _patchMethod.MakeGenericMethod(typeof(bool));
+
+                _harmony.Patch(orMethod, new HarmonyMethod(neMethod));
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("Hook Manager", $"Patching NW API events failed!\n{ex.ToColoredString()}");
+            }
+
+            var end = DateTime.Now - start;
+
+            ExLoader.Info("Hook Manager", $"Finished loading in &1{end.TotalMilliseconds} ms&r!");
+        }
+
+        public static T ExecuteCustomCancellable<T>(HookEvent hookEvent, T cancellation)
+        {
+            var cancellable = (ICancellableEvent<T>)hookEvent;
+            cancellable.IsCancelled = cancellation;
+            hookEvent = ExecuteCustom(hookEvent);
+            return cancellable.IsCancelled;
+        }
+
+        public static T ExecuteVanilla<T>(IEventArguments vanillaEvent, T cancellation) where T : struct
+        {
+            try
+            {
+                if (typeof(T) == typeof(bool))
+                    cancellation = (T)(object)true;
+                else
+                    cancellation = default;
+
                 var hookType = vanillaEvent.GetType();
 
+                if (_predefinedDelegates.TryGetValue(hookType, out var delegateInvoker))
+                    delegateInvoker(vanillaEvent);
+
                 if (!_activeHooks.TryGetValue(hookType, out var activeHooks) || activeHooks.Count < 1)
-                    return vanillaEvent;
+                    return cancellation;
 
                 var hookStart = DateTime.Now;
                 var hookIndex = 0;
-                var hookEvent = new HookWrapper<T>(vanillaEvent);
-                var hookRuntime = new HookRuntimeInfo(hookEvent, HookUtils.GetBinding(hookEvent, activeHooks));
                 var hookStatus = false;
+                var hookEvent = new HookWrapper(vanillaEvent);
+                var hookRuntime = new HookRuntimeInfo(hookEvent, HookUtils.GetBinding(hookEvent, activeHooks));
 
                 void HookCallback(HookResult hookResult)
                 {
@@ -62,6 +128,9 @@ namespace LabExtended.Core.Hooking
                                 ExLoader.Error("Hook Manager", $"Hook '{activeHooks[hookIndex].Target.ToName()}' has caught an error while executing event '{hookType.Name}'{(hookResult.ReturnedValue != null ? $":\n{hookResult.ReturnedValue}" : "")}");
                             else
                                 ExLoader.Debug("Hook Manager", $"Hook '{activeHooks[hookIndex].Target.ToName()}' has finished executing.");
+
+                            if (hookResult.ReturnedValue != null && hookResult.ReturnedValue is T returnedCancellation)
+                                cancellation = returnedCancellation;
                         }
 
                         if (hookEvent.NextHook != null)
@@ -97,13 +166,11 @@ namespace LabExtended.Core.Hooking
                 if (hookRuntime.EventObjects != null)
                     ListPool<HookEventObject>.Shared.Return(hookRuntime.EventObjects);
 
-                hookEvent.SyncHooks(null, null);
-
                 if (_eventDelegates.TryGetValue(hookType, out var hookDelegates))
                 {
                     ExLoader.Debug("Hook Manager", $"Found {hookDelegates.Count} delegates for event '{hookType.Name}'");
 
-                    var delegateArgs = new object[] { hookEvent };
+                    var delegateArgs = new object[] { hookEvent.Event };
 
                     foreach (var hookDelegate in hookDelegates)
                     {
@@ -116,16 +183,16 @@ namespace LabExtended.Core.Hooking
                             if (delegateValue is null)
                                 continue;
 
-                            delegateValue.DynamicInvoke(delegateArgs);
+                            if (delegateValue is Action action)
+                                action();
+                            else
+                                delegateValue.DynamicInvoke(delegateArgs);
                         }
                         catch (Exception ex)
                         {
                             ExLoader.Error("Hook Manager", $"Caught an error while executing delegate '{hookDelegate.Event.Name}' in {hookDelegate.Event.DeclaringType.FullName}:\n{ex}");
                         }
                     }
-
-                    if (delegateArgs[0] != null)
-                        hookEvent.Event = (T)delegateArgs[0];
                 }
 
                 ExLoader.Debug("Hook Manager", $"Finished executing event '{hookType.Name}' in {(DateTime.Now - hookStart).TotalMilliseconds} ms.");
@@ -135,7 +202,7 @@ namespace LabExtended.Core.Hooking
                 ExLoader.Error("Hook Manager", $"Caught an exception while calling event '{vanillaEvent.GetType().FullName}':\n{ex}");
             }
 
-            return vanillaEvent;
+            return cancellation;
         }
 
         public static T ExecuteCustom<T>(T hookEvent) where T : HookEvent
@@ -147,13 +214,16 @@ namespace LabExtended.Core.Hooking
             {
                 var hookType = hookEvent.GetType();
 
+                if (_predefinedDelegates.TryGetValue(hookType, out var delegateInvoker))
+                    delegateInvoker(hookEvent);
+
                 if (!_activeHooks.TryGetValue(hookType, out var activeHooks) || activeHooks.Count < 1)
                     return hookEvent;
 
                 var hookStart = DateTime.Now;
                 var hookIndex = 0;
-                var hookRuntime = new HookRuntimeInfo(hookEvent, HookUtils.GetBinding(hookEvent, activeHooks));
                 var hookStatus = false;
+                var hookRuntime = new HookRuntimeInfo(hookEvent, HookUtils.GetBinding(hookEvent, activeHooks));
 
                 void HookCallback(HookResult hookResult)
                 {
@@ -221,7 +291,10 @@ namespace LabExtended.Core.Hooking
                             if (delegateValue is null)
                                 continue;
 
-                            delegateValue.DynamicInvoke(delegateArgs);
+                            if (delegateValue is Action action)
+                                action();
+                            else
+                                delegateValue.DynamicInvoke(delegateArgs);
                         }
                         catch (Exception ex)
                         {
@@ -249,15 +322,42 @@ namespace LabExtended.Core.Hooking
             {
                 foreach (var ev in type.GetAllEvents())
                 {
+                    if (ev.HasAttribute<HookIgnoreAttribute>())
+                        continue;
+
                     if (!ev.IsMulticast)
                         continue;
 
-                    if (ev.EventHandlerType.GetGenericTypeDefinition() != typeof(Action<>))
+                    if (ev.EventHandlerType == typeof(Action))
+                    {
+                        if (!ev.HasAttribute<HookEventAttribute>(out var hookEventAttribute))
+                            continue;
+
+                        if (hookEventAttribute.Type is null || (!hookEventAttribute.Type.InheritsType<HookEvent>() && !hookEventAttribute.Type.InheritsType<IEventArguments>()))
+                            continue;
+
+                        var evField = type.Field(ev.Name);
+
+                        if (evField is null)
+                            continue;
+
+                        if (!_eventDelegates.TryGetValue(hookEventAttribute.Type, out var evHookDelegates))
+                            _eventDelegates[hookEventAttribute.Type] = evHookDelegates = new List<HookDelegate>();
+
+                        if (evHookDelegates.Any(del => del.Event == ev && del.Field == evField))
+                            continue;
+
+                        evHookDelegates.Add(new HookDelegate(ev, evField));
+                        ExLoader.Debug("Hook Manager", $"Registered custom delegate for event '{hookEventAttribute.Type.Name}': {ev.DeclaringType.FullName}::{ev.Name}");
+                        continue;
+                    }
+
+                    if (!ev.EventHandlerType.IsConstructedGenericType || ev.EventHandlerType.GetGenericTypeDefinition() != typeof(Action<>))
                         continue;
 
                     var genericArgs = ev.EventHandlerType.GetGenericArguments();
 
-                    if (genericArgs.Length != 1 || (!genericArgs[0].InheritsType<HookEvent>() && !genericArgs[0].InheritsType<Event>()))
+                    if (genericArgs.Length != 1 || (!genericArgs[0].InheritsType<HookEvent>() && !genericArgs[0].InheritsType<IEventArguments>()))
                         continue;
 
                     var field = type.Field(ev.Name);
@@ -351,7 +451,7 @@ namespace LabExtended.Core.Hooking
                 return true;
             }
 
-            if (parameters.Length == 1 && parameters[0].ParameterType.InheritsType<HookEvent>())
+            if (parameters.Length == 1 && (parameters[0].ParameterType.InheritsType<HookEvent>() || parameters[0].ParameterType.InheritsType<IEventArguments>()))
             {
                 binder = new HookEventParamBinder();
                 return true;
@@ -396,7 +496,7 @@ namespace LabExtended.Core.Hooking
                     return false;
                 }
 
-                if (method.DeclaringType.HasAttribute<HookIgnoreAttribute>() && !method.HasAttribute<HookEventAttribute>())
+                if (method.DeclaringType.HasAttribute<HookIgnoreAttribute>() && !method.HasAttribute<HookEventAttribute>() && !method.HasAttribute<PluginEvent>())
                 {
                     ExLoader.Debug("Hook Manager", $"Ignoring hook method {method.ToName()} - found a HookIgnoreAttribute on declaring class.");
                     return false;
@@ -404,6 +504,7 @@ namespace LabExtended.Core.Hooking
             }
 
             var parameters = method.Parameters();
+            var pluginEventAttribute = method.GetCustomAttribute<PluginEvent>();
 
             var hookEventAttribute = method.GetCustomAttribute<HookEventAttribute>();
             var hookEventType = default(Type);
@@ -412,8 +513,10 @@ namespace LabExtended.Core.Hooking
                 hookEventType = hookEventAttribute.Type;
             else
             {
-                if (parameters.Length == 1 && (parameters[0].ParameterType.InheritsType<HookEvent>() || parameters[0].ParameterType.InheritsType<Event>()))
+                if (parameters.Length == 1 && (parameters[0].ParameterType.InheritsType<HookEvent>() || parameters[0].ParameterType.InheritsType<IEventArguments>()))
                     hookEventType = parameters[0].ParameterType;
+                else if (pluginEventAttribute != null && EventManager.TypeToEvent.TryGetKey(pluginEventAttribute.EventType, out var pluginEventType))
+                    hookEventType = pluginEventType;
                 else
                 {
                     if (log)
@@ -430,6 +533,9 @@ namespace LabExtended.Core.Hooking
 
                 return false;
             }
+
+            if (hookEventType.InheritsType<IEventArguments>() && !method.HasAttribute<HookEventAttribute>() && !method.HasAttribute<PluginEvent>())
+                return false;
 
             if (!TryGetBinder(hookEventType, parameters, log, out var binder))
             {
@@ -522,6 +628,26 @@ namespace LabExtended.Core.Hooking
 
                 foreach (var ev in events)
                 {
+                    if (ev.HasAttribute<HookIgnoreAttribute>())
+                        continue;
+
+                    if (ev.EventHandlerType == typeof(Action) && ev.HasAttribute<HookEventAttribute>(out var hookEventAttribute))
+                    {
+                        if (hookEventAttribute.Type is null || (!hookEventAttribute.Type.InheritsType<HookEvent>() && !hookEventAttribute.Type.InheritsType<IEventArguments>()))
+                            continue;
+
+                        var evField = type.Field(ev.Name);
+
+                        if (evField is null)
+                            continue;
+
+                        if (hookDelegates.Any(del => del.Event == ev && del.Field == evField))
+                            continue;
+
+                        hookDelegates.Add(new HookDelegate(ev, evField));
+                        continue;
+                    }
+
                     if (!ev.IsMulticast || ev.EventHandlerType != delegateType)
                         continue;
 
@@ -536,6 +662,18 @@ namespace LabExtended.Core.Hooking
                     hookDelegates.Add(new HookDelegate(ev, field));
                 }
             }
+        }
+
+        private static bool EventPrefix<T>(IEventArguments args, ref T __result) where T : struct
+        {
+            if (ExLoader.Loader.Config.Hooks.BypassWhitelist.Contains(args.BaseType.ToString()))
+                return true;
+
+            if (ExLoader.Loader.Config.Hooks.DisableNwEvents && !ExLoader.Loader.Config.Hooks.DisableWhitelist.Contains(args.BaseType.ToString()))
+                return false;
+
+            __result = ExecuteVanilla(args, __result);
+            return false;
         }
     }
 }

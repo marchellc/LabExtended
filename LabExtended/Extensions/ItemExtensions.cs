@@ -1,5 +1,8 @@
 ﻿using InventorySystem;
 using InventorySystem.Items;
+using InventorySystem.Items.Firearms;
+using InventorySystem.Items.Firearms.Attachments;
+using InventorySystem.Items.Jailbird;
 
 namespace LabExtended.Extensions
 {
@@ -23,6 +26,41 @@ namespace LabExtended.Extensions
 
             item.ItemSerial = ItemSerialGenerator.GenerateNext();
             return item;
+        }
+
+        public static void SetupItem(this ItemBase item, ReferenceHub owner)
+        {
+            if (item.Owner != null && item.Owner != owner)
+            {
+                item.OwnerInventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
+                item.Owner = null;
+            }
+
+            item.Owner = owner;
+            item.OnAdded(null);
+
+            if (item is IAcquisitionConfirmationTrigger confirmationTrigger)
+            {
+                confirmationTrigger.AcquisitionAlreadyReceived = true;
+                confirmationTrigger.ServerConfirmAcqusition();
+            }
+
+            if (item is Firearm firearm)
+            {
+                var preferenceCode = uint.MinValue;
+                var flags = firearm.Status.Flags;
+
+                if (!AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var preferences) || !preferences.TryGetValue(item.ItemTypeId, out preferenceCode))
+                    preferenceCode = AttachmentsUtils.GetRandomAttachmentsCode(item.ItemTypeId);
+
+                if (firearm.HasAdvantageFlag(AttachmentDescriptiveAdvantages.Flashlight))
+                    flags |= FirearmStatusFlags.FlashlightEnabled;
+
+                firearm.Status = new FirearmStatus(firearm.AmmoManagerModule.MaxAmmo, flags | FirearmStatusFlags.MagazineInserted, preferenceCode);
+            }
+
+            if (item is JailbirdItem jailbird)
+                jailbird.ServerReset();
         }
     }
 }

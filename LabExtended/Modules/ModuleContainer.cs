@@ -22,7 +22,7 @@
         public ModuleContainer(Module module)
         {
             Module = module;
-            TickStatus = new ModuleTickStatusInfo(module.TickSettings.HasValue ? module.TickSettings.Value : new ModuleTickSettings(ModuleTickType.OnUpdate, null, null, null, null));
+            TickStatus = module.TickSettings.HasValue ? new ModuleTickStatusInfo(module.TickSettings.Value) : null;
         }
     }
 }

@@ -11,15 +11,5 @@ namespace LabExtended.Interfaces
         /// Gets the object's current rotation as a <see cref="Quaternion"/>.
         /// </summary>
         Quaternion Rotation { get; }
-
-        /// <summary>
-        /// Gets the object's current rotation as a <see cref="Vector2"/>.
-        /// </summary>
-        Vector2 RotationV2 { get; }
-
-        /// <summary>
-        /// Gets the object's current rotation as a <see cref="Vector3"/>.
-        /// </summary>
-        Vector3 RotationV3 { get; }
     }
 }

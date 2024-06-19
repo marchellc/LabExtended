@@ -1,6 +1,8 @@
 ﻿using Common.IO.Collections;
+using Common.Utilities;
 
 using LabExtended.API;
+using LabExtended.Core;
 
 namespace LabExtended.Modules
 {
@@ -14,7 +16,17 @@ namespace LabExtended.Modules
         /// <summary>
         /// Gets the player that owns this module.
         /// </summary>
-        public ExPlayer Player { get; private set; }
+        public ExPlayer Player { get; internal set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the owner is offline or not.
+        /// </summary>
+        public bool IsOffline => Player?.GameObject is null;
+
+        /// <summary>
+        /// Gets the module's ID.
+        /// </summary>
+        public string ModuleId { get; } = Generator.Instance.GetString(10);
 
         /// <summary>
         /// When overriden, returns a value indicating whether or not to keep this module instance after the player that owns it leaves.
@@ -23,11 +35,11 @@ namespace LabExtended.Modules
         public virtual bool ShouldKeepModule()
             => false;
 
-        internal void Create(ExPlayer player)
+        internal void Create(ExPlayer player, bool startModule = true)
         {
             Player = player;
 
-            player.AddInstance(this, true);
+            player.AddInstance(this, startModule);
 
             if (!_modules.TryGetValue(player.UserId, out var transientModules))
                 transientModules = _modules[player.UserId] = new List<TransientModule>();
@@ -36,11 +48,11 @@ namespace LabExtended.Modules
                 transientModules.Add(this);
         }
 
-        internal void Destroy()
+        internal void Destroy(bool stopModule = true, bool removeModule = true)
         {
             var id = Player.UserId;
 
-            Player.RemoveInstance(this, true);
+            Player.RemoveInstance(this, stopModule, removeModule);
             Player = null;
 
             if (!_modules.TryGetValue(id, out var moduleList))
