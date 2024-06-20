@@ -4,8 +4,18 @@ using PlayerRoles.PlayableScps.Scp079.Pinging;
 
 namespace LabExtended.Extensions
 {
+    /// <summary>
+    /// Class that holds extensions specific to the SCP-079 role.
+    /// </summary>
     public static class Scp079Extensions
     {
+        /// <summary>
+        /// Converts a <see cref="IPingProcessor"/> instance to it's type.
+        /// </summary>
+        /// <param name="pingProcessor">The instance to convert.</param>
+        /// <returns>The processor's ping type.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="Exception"></exception>
         public static Scp079PingType GetPingType(this IPingProcessor pingProcessor)
         {
             if (pingProcessor is null)

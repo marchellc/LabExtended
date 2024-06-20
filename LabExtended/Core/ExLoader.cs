@@ -1,9 +1,16 @@
 using Common.Logging;
+
+using HarmonyLib;
+
 using LabExtended.API.Prefabs;
+
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Logging;
+using LabExtended.Core.Profiling;
 
+using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
@@ -22,9 +29,13 @@ namespace LabExtended.Core
 
         public static string Folder => Loader.Handler.PluginDirectoryPath;
 
+        private readonly ProfilerMarker _marker = new ProfilerMarker("Startup");
+
         [PluginConfig]
         public ExLoaderConfig Config;
         public PluginHandler Handler;
+
+        public Harmony Harmony;
 
         public VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 0));
 
@@ -32,10 +43,10 @@ namespace LabExtended.Core
         [PluginPriority(LoadPriority.Lowest)]
         public void Load()
         {
+            _marker.MarkStart();
+
             try
             {
-                var time = DateTime.Now;
-
                 Handler = PluginHandler.Get(this);
                 Loader = this;
 
@@ -69,14 +80,14 @@ namespace LabExtended.Core
                     }
                 }
 
+                Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
+                Harmony.PatchAll();
+
                 NetworkUtils.LoadMirror();
 
-                HookManager.Initialize();
+                HookPatch.Enable();
+                HookManager.RegisterAll();
 
-                HookManager.RegisterFrom(Handler._pluginType.Assembly);
-                HookManager.RegisterCustomDelegates(Handler._pluginType.Assembly);
-
-                PrefabUtils.Initialize();
                 UpdateEvent.Initialize();
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
@@ -89,28 +100,29 @@ namespace LabExtended.Core
 
                     Info("Extended Loader", $"Loading plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r ..");
 
-                    HookManager.RegisterFrom(pluginType, pluginObj);
-                    HookManager.RegisterCustomDelegates(pluginType.Assembly);
+                    HookManager.RegisterAll(pluginType, pluginObj);
 
                     foreach (var type in pluginType.Assembly.GetTypes())
                     {
                         if (type == pluginType)
                             continue;
 
-                        HookManager.RegisterFrom(type, null);
+                        HookManager.RegisterAll(type, null);
                     }
 
                     Info("Extended Loader", $"Loaded plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r!");
                 }
 
-                var end = (DateTime.Now - time).TotalMilliseconds;
-
-                Info("Extended Loader", $"Finished loading in &1{end} ms&r!");
+                Info("Extended Loader", $"Finished loading!");
             }
             catch (Exception ex)
             {
                 Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
             }
+
+            _marker.MarkEnd();
+            _marker.LogStats();
+            _marker.Clear();
         }
 
         public static void Info(string source, object message)

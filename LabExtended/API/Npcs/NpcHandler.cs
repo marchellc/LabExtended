@@ -22,6 +22,7 @@ using Footprinting;
 
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+using LabExtended.Core;
 
 namespace LabExtended.API.Npcs
 {
@@ -589,7 +590,7 @@ namespace LabExtended.API.Npcs
         public static void Spawn(string? name = null, RoleTypeId role = RoleTypeId.None, int? customId = null, string? customUserId = null, Vector3? position = null, Action<NpcHandler> callback = null)
         {
             var id = customId.HasValue ? customId.Value : _npcIdGen.Next();
-            var userId = !string.IsNullOrWhiteSpace(customUserId) ? customUserId : "npc@localhost";
+            var userId = !string.IsNullOrWhiteSpace(customUserId) ? customUserId : $"npc_{id}@localhost";
 
             var hubObject = UnityEngine.Object.Instantiate(NetworkManager.singleton.playerPrefab);
             var hubComponent = hubObject.GetComponent<ReferenceHub>();
@@ -625,21 +626,32 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var player = new ExPlayer(hubComponent)
+            var player = new ExPlayer(hubComponent);
+            var npc = new NpcHandler(hubComponent, connection, player);
+
+            if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))
             {
-                IsVisibleInRemoteAdmin = false,
-                IsVisibleInSpectatorList = false,
+                foreach (var module in transientModules)
+                {
+                    var type = module.GetType();
 
-                CanBlockRoundEnd = false,
-                CanRespawn = false,
+                    if (!player._modules.ContainsKey(type))
+                    {
+                        player._modules.Add(type, new ModuleContainer(module));
 
-                CanTriggerScp096 = false,
-                CanBlockScp173 = false
-            };
+                        module.Parent = player;
+                        module.IsActive = true;
+
+                        module.Start();
+                    }
+                    else
+                    {
+                        ExLoader.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to NPC &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
+                    }
+                }
+            }
 
             ExPlayer._players.Add(player);
-
-            var npc = new NpcHandler(hubComponent, connection, player);
 
             _spawnedNpcs.Add(npc);
 

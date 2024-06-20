@@ -1,11 +1,10 @@
 ﻿using LabExtended.API.Voice.Profiles;
 using LabExtended.API.Voice.Processing;
 
-using LabExtended.Utilities;
-
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using VoiceChat.Networking;
@@ -18,19 +17,25 @@ namespace LabExtended.API.Voice
 {
     public static class VoiceSystem
     {
-        internal static bool ShowSpeakingDebug;
+        internal static bool ShowSpeakingDebug; // Used in the debug command.
 
         static VoiceSystem()
             => UpdateEvent.OnUpdate += SpeakingWatcher;
 
+        /// <summary>
+        /// Gets a list of active voice processors.
+        /// </summary>
         public static List<IVoiceProcessor> VoiceProcessors { get; } = new List<IVoiceProcessor>()
         {
             new VoicePitchProcessor()
         };
 
+        /// <summary>
+        /// Gets called when a player sends a packet after all custom processing finishes.
+        /// </summary>
         public static event Action<VoiceMessage, ExPlayer, Dictionary<ExPlayer, VoiceChatChannel>, Action<ExPlayer, VoiceChatChannel>> OnPostProcessing;
 
-        internal static void SetProfile(ExPlayer player, VoiceProfileBase voiceProfileBase)
+        internal static void SetProfile(ExPlayer player, VoiceProfileBase voiceProfileBase) // Implemented in ExPlayer
         {
             if (player._voiceProfile != null)
             {
@@ -50,7 +55,7 @@ namespace LabExtended.API.Voice
             }
         }
 
-        internal static void Receive(ref VoiceMessage message, ExPlayer speaker)
+        internal static void Receive(ref VoiceMessage message, ExPlayer speaker) // Called by the voice patch
         {
             var dict = DictionaryPool<ExPlayer, VoiceChatChannel>.Shared.Rent();
             var copy = DictionaryPool<ExPlayer, VoiceChatChannel>.Shared.Rent();
@@ -90,10 +95,10 @@ namespace LabExtended.API.Voice
             {
                 var processor = VoiceProcessors[i];
 
-                if (!processor.IsGloballyActive && !processor.IsActiveFor(speaker))
+                if (!processor.IsGloballyActive && !processor.IsActive(speaker))
                     continue;
 
-                processor.ProcessData(speaker, ref message.Data, ref message.DataLength);
+                processor.Process(speaker, ref message.Data, ref message.DataLength);
             }
 
             if (OnPostProcessing != null)
@@ -122,7 +127,7 @@ namespace LabExtended.API.Voice
             DictionaryPool<ExPlayer, VoiceChatChannel>.Shared.Return(dict);
         }
 
-        private static void SpeakingWatcher()
+        private static void SpeakingWatcher() // Called by the update event. This seems VERY inefficient ..
         {
             for (int i = 0; i < ExPlayer._players.Count; i++)
             {
@@ -138,7 +143,7 @@ namespace LabExtended.API.Voice
                     player._speakingCapture = ListPool<byte[]>.Shared.Rent();
                     player._voiceProfile?.OnStartedSpeaking();
 
-                    HookManager.ExecuteCustom(new PlayerStartedSpeakingArgs(player));
+                    HookRunner.RunEvent(new PlayerStartedSpeakingArgs(player));
 
                     if (ShowSpeakingDebug)
                         ExLoader.Debug("Voice API", $"Player &3{player.Name}&r (&6{player.UserId}&r) started speaking.");
@@ -154,7 +159,7 @@ namespace LabExtended.API.Voice
                     player._wasSpeakingAt = DateTime.MinValue;
                     player._voiceProfile?.OnStoppedSpeaking(wasSpeakingAt, speakingDuration, capture);
 
-                    HookManager.ExecuteCustom(new PlayerStoppedSpeakingArgs(player, wasSpeakingAt, speakingDuration, capture));
+                    HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(player, wasSpeakingAt, speakingDuration, capture));
 
                     if (ShowSpeakingDebug)
                         ExLoader.Debug("Voice API", $"Player &3{player.Name}&r (&6{player.UserId}&r) stopped speaking.\n" +

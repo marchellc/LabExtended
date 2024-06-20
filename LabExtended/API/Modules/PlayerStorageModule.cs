@@ -9,10 +9,6 @@ namespace LabExtended.API.Modules
     {
         private readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
 
-        /// <inheritdoc/>
-        public override bool ShouldKeepModule()
-            => true;
-
         /// <summary>
         /// Tries to retrieve the <paramref name="value"/> saved under the <paramref name="name"/>.
         /// </summary>

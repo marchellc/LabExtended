@@ -1,13 +1,19 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Events;
+using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerStartedSpeakingArgs : HookEvent
+    /// <summary>
+    /// An event that gets called when a player starts speaking.
+    /// </summary>
+    public class PlayerStartedSpeakingArgs : IHookEvent
     {
+        /// <summary>
+        /// The player who started speaking.
+        /// </summary>
         public ExPlayer Player { get; }
 
-        public PlayerStartedSpeakingArgs(ExPlayer player)
+        internal PlayerStartedSpeakingArgs(ExPlayer player)
             => Player = player;
     }
 }

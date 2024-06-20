@@ -23,7 +23,9 @@ namespace LabExtended.Patches.Functions.Networking
             if (player is null)
                 return true;
 
-            HookManager.ExecuteCustom(new PlayerLeavingArgs(player, disconnectinfo.Reason is DisconnectReason.Timeout, disconnectinfo));
+            player.StopModules();
+
+            HookRunner.RunEvent(new PlayerLeavingArgs(player, disconnectinfo.Reason is DisconnectReason.Timeout, disconnectinfo));
             return true;
         }
     }

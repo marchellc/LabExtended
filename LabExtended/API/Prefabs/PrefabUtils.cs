@@ -7,6 +7,7 @@ using Interactables.Interobjects.DoorUtils;
 
 using LabExtended.Core;
 using LabExtended.Utilities;
+
 using MapGeneration;
 
 using Mirror;
@@ -19,9 +20,6 @@ namespace LabExtended.API.Prefabs
 {
     public static class PrefabUtils
     {
-        internal static void Initialize()
-            => RoundEvents.OnWaitingForPlayers += _ => ReloadPrefabs();
-
         private static readonly LockedDictionary<PrefabType, GameObject> _prefabObjects = new LockedDictionary<PrefabType, GameObject>();
         private static readonly LockedDictionary<PrefabType, DoorVariant> _prefabDoors = new LockedDictionary<PrefabType, DoorVariant>();
         private static readonly LockedDictionary<PrefabType, string> _prefabNames = new LockedDictionary<PrefabType, string>();
@@ -141,7 +139,7 @@ namespace LabExtended.API.Prefabs
 
                 if (!_prefabNames.TryGetKey(prefab.name, out var prefabType))
                 {
-                    ExLoader.Warn("Prefab Utils", $"Encountered an unknown prefab: &1{prefab.name}&r");
+                    ExLoader.Warn("Prefab API", $"Encountered an unknown prefab: &1{prefab.name}&r");
                     continue;
                 }
 
@@ -153,10 +151,10 @@ namespace LabExtended.API.Prefabs
                 if (_prefabObjects.ContainsKey(prefabName))
                     continue;
 
-                ExLoader.Warn("Prefab Utils", $"Prefab &1{prefabName}&r has either been renamed or is missing.");
+                ExLoader.Warn("Prefab API", $"Prefab &1{prefabName}&r has either been renamed or is missing.");
             }
 
-            ExLoader.Info("Prefab Utils", $"Loaded &3{_prefabObjects.Count} / {_prefabNames.Count}&r prefabs!");
+            ExLoader.Info("Prefab API", $"Loaded &3{_prefabObjects.Count} / {_prefabNames.Count}&r prefabs!");
         }
 
         #region Prefab Names

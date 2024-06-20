@@ -1,6 +1,5 @@
 ﻿using Common.Extensions;
 
-using LabExtended.API;
 using LabExtended.Core;
 using LabExtended.Extensions;
 
@@ -13,7 +12,8 @@ namespace LabExtended.Modules
     /// </summary>
     public class ModuleParent
     {
-        private readonly Dictionary<Type, ModuleContainer> _modules;
+        internal readonly Dictionary<Type, ModuleContainer> _modules;
+
         private readonly object _coroutineLock;
         private readonly CoroutineHandle _coroutine;
 
@@ -68,9 +68,6 @@ namespace LabExtended.Modules
                     module.IsActive = true;
                 }
 
-                if (this is ExPlayer player && module is TransientModule transientModule)
-                    transientModule.Create(player, false);
-
                 ExLoader.Debug("Modules API", $"Added module &3{typeof(T).FullName}&r");
                 return module;
             }
@@ -105,24 +102,13 @@ namespace LabExtended.Modules
                 if (!_modules.TryGetValue(typeof(T), out var moduleContainer))
                     return false;
 
-                if (moduleContainer.Module is TransientModule transientModule)
-                {
-                    try
-                    {
-                        transientModule.Destroy(true);
-                    }
-                    catch (Exception ex)
-                    {
-                        ExLoader.Error("Module Parent", $"Failed to stop module '{typeof(T).FullName}' due to an exception:\n{ex}");
-                    }
-
-                    return _modules.Remove(typeof(T));
-                }
-
                 try
                 {
-                    moduleContainer.Module.Stop();
+                    if (moduleContainer.Module is TransientModule transientModule)
+                        transientModule._isForced = true;
+
                     moduleContainer.Module.IsActive = false;
+                    moduleContainer.Module.Stop();
                     moduleContainer.Module.Parent = null;
                 }
                 catch (Exception ex)
@@ -145,29 +131,18 @@ namespace LabExtended.Modules
 
                 foreach (var moduleContainer in containers)
                 {
-                    if (moduleContainer.Module is TransientModule transientModule)
+                    try
                     {
-                        try
-                        {
-                            transientModule.Destroy(true, false);
-                        }
-                        catch (Exception ex)
-                        {
-                            ExLoader.Error("Module Parent", $"Failed to stop module &3{moduleContainer.Module.GetType().FullName}&r due to an exception:\n{ex}");
-                        }
+                        moduleContainer.Module.IsActive = false;
+                        moduleContainer.Module.Stop();
+                        moduleContainer.Module.Parent = null;
+
+                        if (moduleContainer.Module is TransientModule transientModule && transientModule.KeepActive)
+                            transientModule.IsActive = true;
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            moduleContainer.Module.Stop();
-                            moduleContainer.Module.IsActive = false;
-                            moduleContainer.Module.Parent = null;
-                        }
-                        catch (Exception ex)
-                        {
-                            ExLoader.Error("Module Parent", $"Failed to stop module &3{moduleContainer.Module.GetType().FullName}&r due to an exception:\n{ex}");
-                        }
+                        ExLoader.Error("Module Parent", $"Failed to stop module &3{moduleContainer.Module.GetType().FullName}&r due to an exception:\n{ex}");
                     }
                 }
 
@@ -200,32 +175,6 @@ namespace LabExtended.Modules
         /// <returns>All active <see cref="TransientModule"/> instances.</returns>
         public IEnumerable<TransientModule> GetTransient()
             => _modules.Values.Where(p => p.Module != null && p.Module is TransientModule).Select(p => (TransientModule)p.Module);
-
-        internal void AddInstance(Module module, bool startModule)
-        {
-            if (_modules.Any(p => p.Value?.Module != null && p.Value.Module.GetType() == module.GetType()))
-                return;
-
-            _modules[module.GetType()] = new ModuleContainer(module);
-            module.Parent = this;
-
-            if (startModule)
-                module.Start();
-        }
-
-        internal void RemoveInstance(Module module, bool stopModule, bool removeModule)
-        {
-            if (!_modules.Any(p => p.Value?.Module != null && p.Value.Module == module))
-                return;
-
-            if (removeModule)
-                _modules.Remove(module.GetType());
-
-            if (stopModule)
-                module.Stop();
-
-            module.Parent = null;
-        }
 
         private IEnumerator<float> UpdateAll()
         {

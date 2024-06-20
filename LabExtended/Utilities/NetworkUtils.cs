@@ -98,6 +98,9 @@ namespace LabExtended.Utilities
         }
         #endregion
 
+        public static int GetComponentIndex(this NetworkIdentity identity, Type type)
+            => Array.FindIndex(identity.NetworkBehaviours, (x) => x.GetType() == type);
+
         public static void EditNetworkObject(this NetworkIdentity identity, Action<NetworkIdentity> customAction)
         {
             customAction.Invoke(identity);
@@ -113,9 +116,6 @@ namespace LabExtended.Utilities
                 SendSpawnMessage(identity, player.Connection);
             }
         }
-
-        public static int GetComponentIndex(this NetworkIdentity identity, Type type)
-            => Array.FindIndex(identity.NetworkBehaviours, (x) => x.GetType() == type);
 
         public static void MakeCustomSyncWriter(this NetworkIdentity behaviorOwner, Type targetType, Action<NetworkWriter> customSyncObject, Action<NetworkWriter> customSyncVar, NetworkWriter owner, NetworkWriter observer)
         {

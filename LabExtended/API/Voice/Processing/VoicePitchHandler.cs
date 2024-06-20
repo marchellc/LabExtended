@@ -3,6 +3,9 @@ using VoiceChat.Codec.Enums;
 
 namespace LabExtended.API.Voice.Processing
 {
+    /// <summary>
+    /// Class used to help with voice pitching.
+    /// </summary>
     public class VoicePitchHandler
     {
         #region Private Static Memebers
@@ -22,24 +25,42 @@ namespace LabExtended.API.Voice.Processing
         private long gRover, gInit;
         #endregion
 
-        public VoicePitchHandler(ExPlayer owner)
+        internal VoicePitchHandler(ExPlayer owner)
             => Owner = owner;
 
+        /// <summary>
+        /// Gets the player this helper belongs to.
+        /// </summary>
         public ExPlayer Owner { get; }
 
+        /// <summary>
+        /// Gets the <see cref="OpusEncoder"/>.
+        /// </summary>
         public OpusEncoder Encoder { get; } = new OpusEncoder(OpusApplicationType.Voip);
+
+        /// <summary>
+        /// Gets the <see cref="OpusDecoder"/>.
+        /// </summary>
         public OpusDecoder Decoder { get; } = new OpusDecoder();
 
+        /// <summary>
+        /// Modifies the pitch of the input data.
+        /// </summary>
+        /// <param name="pitchShift">The pitch to set.</param>
+        /// <param name="numSampsToProcess">The number of samples.</param>
+        /// <param name="sampleRate">The sampling rate.</param>
+        /// <param name="indata">The input data.</param>
         public void PitchShift(float pitchShift, long numSampsToProcess, float sampleRate, float[] indata)
             => PitchShift(pitchShift, numSampsToProcess, (long)2048, (long)10, sampleRate, indata);
 
-        public void PitchShift(float pitchShift, long numSampsToProcess, long fftFrameSize, long osamp, float sampleRate, float[] indata)
+        private void PitchShift(float pitchShift, long numSampsToProcess, long fftFrameSize, long osamp, float sampleRate, float[] indata)
         {
             double magn, phase, tmp, window, real, imag;
             double freqPerBin, expct;
             long i, k, qpd, index, inFifoLatency, stepSize, fftFrameSize2;
 
             float[] outdata = indata;
+
             /* set up some handy variables */
             fftFrameSize2 = fftFrameSize / 2;
             stepSize = fftFrameSize / osamp;
@@ -192,7 +213,7 @@ namespace LabExtended.API.Voice.Processing
             }
         }
 
-        public static void ShortTimeFourierTransform(float[] fftBuffer, long fftFrameSize, long sign)
+        private static void ShortTimeFourierTransform(float[] fftBuffer, long fftFrameSize, long sign)
         {
             float wr, wi, arg, temp;
             float tr, ti, ur, ui;

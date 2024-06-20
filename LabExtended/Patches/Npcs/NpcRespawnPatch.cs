@@ -12,7 +12,7 @@ namespace LabExtended.Patches.Npcs
     {
         public static bool Prefix(SpectatorRole __instance, ref bool __result)
         {
-            if (__instance.TryGetOwner(out var owner) && (NpcHandler.IsNpc(owner) || !(ExPlayer.Get(owner)?.CanRespawn ?? true)))
+            if (__instance.TryGetOwner(out var owner) && (NpcHandler.IsNpc(owner) || !(ExPlayer.Get(owner)?.Switches.CanRespawn ?? true)))
             {
                 __result = false;
                 return false;

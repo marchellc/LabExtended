@@ -1,18 +1,27 @@
 ﻿namespace LabExtended.API.Voice.Processing
 {
+    /// <summary>
+    /// A processor for voice pitching.
+    /// </summary>
     public class VoicePitchProcessor : IVoiceProcessor
     {
-        public static float GlobalPitch = 1f;
+        /// <summary>
+        /// Gets or sets the global voice pitch.
+        /// </summary>
+        public static float GlobalPitch { get; set; } = 1f;
 
+        /// <inheritdoc/>
         public bool IsGloballyActive => GlobalPitch != 1f;
 
-        public bool IsActiveFor(ExPlayer player)
+        /// <inheritdoc/>
+        public bool IsActive(ExPlayer player)
             => (player.VoicePitch != 1f || GlobalPitch != 1f) && player._voicePitch != null;
 
-        public bool SetActiveFor(ExPlayer player)
-            => false;
+        /// <inheritdoc/>
+        public void SetActive(ExPlayer player, bool active) { }
 
-        public bool ProcessData(ExPlayer speaker, ref byte[] data, ref int dataLength)
+        /// <inheritdoc/>
+        public bool Process(ExPlayer speaker, ref byte[] data, ref int dataLength)
         {
             if ((speaker.VoicePitch == 1f && GlobalPitch == 1f) || speaker._voicePitch is null)
                 return false;

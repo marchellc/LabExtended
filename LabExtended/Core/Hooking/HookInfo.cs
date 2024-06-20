@@ -1,4 +1,11 @@
-﻿using Common.Values;
+﻿using Common.Extensions;
+using Common.Utilities;
+using Common.Utilities.Dynamic;
+
+using LabExtended.Core.Hooking.Enums;
+using LabExtended.Core.Hooking.Interfaces;
+
+using LabExtended.Core.Profiling;
 
 using System.Reflection;
 
@@ -6,55 +13,58 @@ namespace LabExtended.Core.Hooking
 {
     public class HookInfo
     {
-        public StatisticValue<double> Timing { get; }
+        public ProfilerMarker Marker { get; }
 
-        public HookExecutor Executor { get; }
-        public HookBinder Binder { get; }
-        public MethodInfo Target { get; }
+        public bool IsMarkerActive { get; set; } = true;
+
+        public IHookRunner Runner { get; }
+        public IHookBinder Binder { get; }
 
         public HookPriority Priority { get; }
 
-        public HookSyncOptions SyncOptions { get; }
+        public MethodInfo Method { get; }
+        public DynamicMethod Dynamic { get; }
 
         public object Instance { get; }
 
-        public long Errors { get; private set; } = 0;
-        public long Total { get; private set; } = 0;
+        public bool ShouldWait { get; }
 
-        public HookInfo(HookExecutor executor, HookBinder binder, HookPriority priority, HookSyncOptions syncOptions, MethodInfo targetMethod, object targetInstance = null)
+        internal HookInfo(MethodInfo method, object instance, IHookRunner hookRunner, IHookBinder hookBinder, HookPriority hookPriority, bool shouldWait)
         {
-            if (executor is null)
-                throw new ArgumentNullException(nameof(executor));
+            if (method is null)
+                throw new ArgumentNullException(nameof(method));
 
-            if (targetMethod is null)
-                throw new ArgumentNullException(nameof(targetMethod));
+            if (hookRunner is null)
+                throw new ArgumentNullException(nameof(hookRunner));
 
-            Executor = executor;
-            Binder = binder;
-            Target = targetMethod;
-            Instance = targetInstance;
-            Priority = priority;
-            SyncOptions = syncOptions;
+            if (hookBinder is null)
+                throw new ArgumentNullException(nameof(hookBinder));
 
-            Timing = new StatisticValue<double>((min, max) => (min + max) / 2, (value, max) => value > max, (value, min) => value < min);
+            Marker = new ProfilerMarker($"Hook Handler ({method.ToName()})");
+
+            Runner = hookRunner;
+            Binder = hookBinder;
+            Priority = hookPriority;
+
+            Method = method;
+            Instance = instance;
+
+            ShouldWait = shouldWait;
+
+            Dynamic = DynamicMethod.Create(method);
         }
 
-        public void Execute(HookRuntimeInfo hookRuntimeInfo, Action<HookResult> callbackResult)
+        internal void Run(object eventObject, Action<bool, bool, Exception, object> callback)
         {
-            var start = DateTime.Now;
+            if (IsMarkerActive)
+                Marker.MarkStart();
 
-            Executor.Execute(hookRuntimeInfo, this, Binder, hookResult =>
+            Runner.OnEvent(eventObject, this, Binder, (hasFailed, hasTimedOut, exception, result) =>
             {
-                var end = DateTime.Now;
-                var time = end - start;
+                if (IsMarkerActive)
+                    Marker.MarkEnd();
 
-                if (hookResult.Type != HookResultType.Success)
-                    Errors++;
-
-                Total++;
-                Timing.Value = time.TotalMilliseconds;
-
-                callbackResult(hookResult);
+                callback(hasFailed, hasTimedOut, exception, result);
             });
         }
     }

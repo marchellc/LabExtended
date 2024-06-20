@@ -7,6 +7,7 @@ using LabExtended.API.Voice;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Functions
 {
@@ -45,12 +46,14 @@ namespace LabExtended.Patches.Functions
                 foreach (var pair in GhostModePatch.GhostedTo)
                     pair.Value.Remove(player.NetId);
 
+                foreach (var helper in PlayerListHelper._handlers)
+                    helper.Remove(player.NetId);
+
                 ExPlayer._players.Remove(player);
 
                 if (!player.IsNpc)
                     ExLoader.Info("Extended API", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
 
-                player.StopModules();
                 return true;
             }
             catch (Exception ex)

@@ -37,7 +37,7 @@ namespace LabExtended.Patches.Events
 
                 var ev = new Scp079SpawningPingArgs(player, __instance.CastRole, __instance, processor.GetPingType(), position.Position, __instance._cost);
 
-                if (!HookManager.ExecuteCustomCancellable(ev, true))
+                if (!HookRunner.RunCancellable(ev, true))
                     return false;
 
                 __instance._syncIndex = (byte)ev.PingType;
@@ -50,7 +50,7 @@ namespace LabExtended.Patches.Events
                     __instance.AuxManager.CurrentAux -= ev.AuxCost;
 
                 __instance._rateLimiter.RegisterInput();
-                HookManager.ExecuteCustom(new Scp079SpawnedPingArgs(player, __instance.CastRole, __instance, ev.PingType, ev.Position));
+                HookRunner.RunEvent(new Scp079SpawnedPingArgs(player, __instance.CastRole, __instance, ev.PingType, ev.Position));
             }
 
             return false;

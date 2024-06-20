@@ -195,13 +195,13 @@ namespace LabExtended.Commands.Npcs
                         switch (arguments.At(2).ToLower().Trim())
                         {
                             case "remoteadmin":
-                                npc.Player.IsVisibleInRemoteAdmin = status;
+                                npc.Player.Switches.IsVisibleInRemoteAdmin = status;
 
                                 response = $"NPC is now {(status ? "visible in" : "hidden from")} the Remote Admin panel.";
                                 return true;
 
                             case "spectatorlist":
-                                npc.Player.IsVisibleInSpectatorList = status;
+                                npc.Player.Switches.IsVisibleInSpectatorList = status;
 
                                 response = $"NPC is now {(status ? "visible in" : "hidden from")} the Spectator List.";
                                 return true;

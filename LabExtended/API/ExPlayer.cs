@@ -49,6 +49,7 @@ using VoiceChat;
 using CustomPlayerEffects;
 
 using Utils;
+using LabExtended.Events;
 
 namespace LabExtended.API
 {
@@ -199,7 +200,6 @@ namespace LabExtended.API
 
         private NetPeer _peer;
         private ReferenceHub _hub;
-        private PlayerStorageModule _storage;
 
         private RemoteAdminIconType _forcedIcons;
         private VoiceFlags _voiceFlags;
@@ -215,7 +215,11 @@ namespace LabExtended.API
         internal VoicePitchHandler _voicePitch;
         #endregion
 
-        internal LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+
+        internal PlayerStorageModule _storage;
+
+        internal readonly LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+        internal readonly LockedList<ItemPickupBase> _droppedItems;
 
         public ExPlayer(ReferenceHub component) : base()
         {
@@ -224,9 +228,12 @@ namespace LabExtended.API
 
             _hub = component;
             _forcedIcons = RemoteAdminIconType.None;
+
             _sentRoles = new LockedDictionary<uint, RoleTypeId>();
-            _speakingCapture = ListPool<byte[]>.Shared.Rent();
+            _droppedItems = new LockedList<ItemPickupBase>();
             _voicePitch = new VoicePitchHandler(this);
+
+            _speakingCapture = ListPool<byte[]>.Shared.Rent();
 
             ArrayExtensions.TryPeekIndex(LiteNetLib4MirrorServer.Peers, ConnectionId, out _peer); // In case the hub is an NPC.
 
@@ -239,24 +246,9 @@ namespace LabExtended.API
             FakePosition = new FakeValue<Vector3>();
             FakeRole = new FakeValue<RoleTypeId>();
 
-            Role = new Utilities.PlayerRoles(component.roleManager);
-            Stats = new Utilities.PlayerStats(component.playerStats);
-
-            var modules = TransientModule.Get(this);
-
-            if (modules != null && modules.Count > 0)
-            {
-                foreach (var module in modules)
-                {
-                    module.Player = this;
-                    module.Create(this);
-
-                    if (module is PlayerStorageModule storageModule && _storage is null)
-                        _storage = storageModule;
-                }
-            }
-
-            _storage ??= AddModule<PlayerStorageModule>();
+            Role = new API.PlayerRoles(component.roleManager);
+            Stats = new API.PlayerStats(component.playerStats);
+            Switches = new API.PlayerSwitches();
         }
 
         /// <inheritdoc/>
@@ -264,36 +256,6 @@ namespace LabExtended.API
 
         /// <inheritdoc/>
         public override bool UpdateModules => true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player is visible in the Remote Admin player list.
-        /// </summary>
-        public bool IsVisibleInRemoteAdmin { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player is visible in the Spectator List.
-        /// </summary>
-        public bool IsVisibleInSpectatorList { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player should count in the next respawn wave.
-        /// </summary>
-        public bool CanRespawn { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player prevents the round from ending.
-        /// </summary>
-        public bool CanBlockRoundEnd { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player can trigger SCP-096.
-        /// </summary>
-        public bool CanTriggerScp096 { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this player can block SCP-173's movement.
-        /// </summary>
-        public bool CanBlockScp173 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets this player's current voice pitch. <b>This is very CPU intensive and should be used sparely.</b>
@@ -317,8 +279,9 @@ namespace LabExtended.API
 
         public NpcHandler NpcHandler { get; internal set; }
 
-        public Utilities.PlayerRoles Role { get; }
-        public Utilities.PlayerStats Stats { get; }
+        public API.PlayerRoles Role { get; }
+        public API.PlayerStats Stats { get; }
+        public API.PlayerSwitches Switches { get; }
 
         public ReferenceHub Hub => _hub;
         public GameObject GameObject => _hub.gameObject;
@@ -340,7 +303,7 @@ namespace LabExtended.API
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
-        public IEnumerable<ExPlayer> PlayersInLineOfSight => _players.Where(p => p.IsInLineOfSight(this));
+        public IEnumerable<ExPlayer> PlayersInSight => _players.Where(p => p.IsInLineOfSight(this));
 
         public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Where<Firearm>();
 
@@ -436,6 +399,18 @@ namespace LabExtended.API
         {
             get => _hub.characterClassManager.GodMode;
             set => _hub.characterClassManager.GodMode = value;
+        }
+
+        public bool CanMove
+        {
+            get => !IsEffectActive<Ensnared>();
+            set
+            {
+                if (value && !CanMove)
+                    DisableEffect<Ensnared>();
+                else
+                    EnableEffect<Ensnared>(1);
+            }
         }
 
         public int PlayerId
@@ -1005,7 +980,7 @@ namespace LabExtended.API
             if (joinedPlayer.NetId == NetId)
                 return null;
 
-            if (!joinedPlayer.Role.IsAlive && !IsVisibleInSpectatorList)
+            if (!joinedPlayer.Role.IsAlive && !Switches.IsVisibleInSpectatorList)
                 return RoleTypeId.Spectator;
 
             return null;
@@ -1025,7 +1000,7 @@ namespace LabExtended.API
                     if (player.FakeRole.TryGetValue(other, out var fakedRole))
                         curRoleId = fakedRole;
 
-                    if (!other.Role.IsAlive && !player.IsVisibleInSpectatorList)
+                    if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
                         curRoleId = RoleTypeId.Spectator;
 
                     if (player._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == curRoleId)

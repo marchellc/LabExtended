@@ -51,7 +51,8 @@ namespace LabExtended.Patches.Functions
 
             PlayerRoleManager.OnServerRoleSet += __instance.OnServerRoleSet;
             RespawnManager.ServerOnRespawned += __instance.ServerOnRespawned;
-            PlayerStats.OnAnyPlayerDied += __instance.OnAnyPlayerDied;
+
+            PlayerStatsSystem.PlayerStats.OnAnyPlayerDied += __instance.OnAnyPlayerDied;
 
             return false;
         }
@@ -73,7 +74,7 @@ namespace LabExtended.Patches.Functions
 
                 foreach (var player in ExPlayer.Players)
                 {
-                    if (!player.CanBlockRoundEnd)
+                    if (!player.Switches.CanBlockRoundEnd)
                         continue;
 
                     switch (player.Role.Team)

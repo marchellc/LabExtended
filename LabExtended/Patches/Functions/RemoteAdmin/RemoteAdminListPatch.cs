@@ -99,7 +99,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 if (!other.IsNpc && (other.InstanceMode is ClientInstanceMode.DedicatedServer || other.InstanceMode is ClientInstanceMode.Unverified))
                     continue;
 
-                if (!other.IsVisibleInRemoteAdmin)
+                if (!other.Switches.IsVisibleInRemoteAdmin)
                     continue;
 
                 var icons = other.RaIcons;

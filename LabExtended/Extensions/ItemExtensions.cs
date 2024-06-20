@@ -16,7 +16,7 @@ namespace LabExtended.Extensions
         /// </summary>
         /// <typeparam name="T">The type of the item to get.</typeparam>
         /// <param name="itemType">The type of the item to get.</param>
-        /// <returns>The item's instance, if succesfull. Otherwise null.</returns>
+        /// <returns>The item's instance, if succesfull. Otherwise <see langword="null"/>.</returns>
         public static T GetInstance<T>(this ItemType itemType) where T : ItemBase
         {
             if (!InventoryItemLoader.TryGetItem<T>(itemType, out var result))
@@ -28,15 +28,22 @@ namespace LabExtended.Extensions
             return item;
         }
 
-        public static void SetupItem(this ItemBase item, ReferenceHub owner)
+        /// <summary>
+        /// Sets up an item (firearm preferences, jailbird status etc.)
+        /// </summary>
+        /// <param name="item">The item to set up.</param>
+        /// <param name="owner">The item's owner.</param>
+        public static void SetupItem(this ItemBase item, ReferenceHub owner = null)
         {
-            if (item.Owner != null && item.Owner != owner)
+            if (owner != null && item.Owner != null && item.Owner != owner)
             {
                 item.OwnerInventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
                 item.Owner = null;
             }
 
-            item.Owner = owner;
+            if (owner != null)
+                item.Owner = owner;
+
             item.OnAdded(null);
 
             if (item is IAcquisitionConfirmationTrigger confirmationTrigger)
@@ -50,7 +57,8 @@ namespace LabExtended.Extensions
                 var preferenceCode = uint.MinValue;
                 var flags = firearm.Status.Flags;
 
-                if (!AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var preferences) || !preferences.TryGetValue(item.ItemTypeId, out preferenceCode))
+                if (owner is null || !AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var preferences)
+                    || !preferences.TryGetValue(item.ItemTypeId, out preferenceCode))
                     preferenceCode = AttachmentsUtils.GetRandomAttachmentsCode(item.ItemTypeId);
 
                 if (firearm.HasAdvantageFlag(AttachmentDescriptiveAdvantages.Flashlight))

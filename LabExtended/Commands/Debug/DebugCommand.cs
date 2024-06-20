@@ -30,8 +30,6 @@ namespace LabExtended.Commands.Debug
             {
                 response = $"Missing arguments.\ndebug <action> (action arguments)\n" +
                     $"Currently available actions:\n" +
-                    $" - addraobject\n" +
-                    $" - removeraobject <object ID>\n" +
                     $" - toggleplayback\n" +
                     $" - togglespeakdebug\n" +
                     $" - setpitch\n" +
@@ -57,50 +55,6 @@ namespace LabExtended.Commands.Debug
 
             switch (arguments.At(0).Trim().ToLower())
             {
-                case "addraobject":
-                    {
-                        var obj = new DebugRemoteAdminObject();
-
-                        if (RemoteAdminUtils.TryAddObject(obj))
-                        {
-                            response = $"Added a new debug object. (ID: {obj.AssignedId})";
-                            return true;
-                        }
-                        else
-                        {
-                            response = "Failed to add a new debug object.";
-                            return false;
-                        }
-                    }
-
-                case "removeraobject":
-                    {
-                        if (arguments.Count < 2)
-                        {
-                            response = "Missing action arguments.\ndebug removeraobject <object ID/name>";
-                            return false;
-                        }
-
-                        if (!RemoteAdminUtils.TryRemoveObject(arguments.At(1)))
-                        {
-                            if (!int.TryParse(arguments.At(1), out var objectId) || !RemoteAdminUtils.TryRemoveObject(objectId))
-                            {
-                                response = "Failed to remove object.";
-                                return false;
-                            }
-                            else
-                            {
-                                response = "Object removed!";
-                                return true;
-                            }
-                        }
-                        else
-                        {
-                            response = "Object removed!";
-                            return true;
-                        }
-                    }
-
                 case "toggleplayback":
                     {
                         if (player.VoiceFlags.HasFlag(API.Voice.VoiceFlags.CanHearSelf))
