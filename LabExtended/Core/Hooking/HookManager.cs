@@ -249,7 +249,7 @@ namespace LabExtended.Core.Hooking
                 priority = newPriority;
             }
 
-            var hook = new HookInfo(method, typeInstance, hookRunner, hookBinder, priority, hookDescriptorAttribute?.ShouldWait ?? false);
+            var hook = new HookInfo(method, typeInstance, hookRunner, hookBinder, priority);
 
             hooks.Add(hook);
 

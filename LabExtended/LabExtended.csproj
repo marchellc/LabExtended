@@ -110,8 +110,4 @@
       <PackageReference Include="Lib.Harmony" Version="2.3.3" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Patches\Fixes\" />
-    </ItemGroup>
-
 </Project>

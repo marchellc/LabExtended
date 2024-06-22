@@ -2,6 +2,6 @@
 {
     public interface IHookRunner
     {
-        void OnEvent(object eventObject, HookInfo hook, IHookBinder binder, Action<bool, bool, Exception, object> callback);
+        object OnEvent(object eventObject, HookInfo hook, IHookBinder binder);
     }
 }

@@ -13,9 +13,10 @@ namespace LabExtended.Modules
     public class ModuleParent
     {
         internal readonly Dictionary<Type, ModuleContainer> _modules;
+        internal readonly List<Type> _prevModules;
 
-        private readonly object _coroutineLock;
-        private readonly CoroutineHandle _coroutine;
+        private object _coroutineLock;
+        private CoroutineHandle _coroutine;
 
         /// <summary>
         /// When overriden, gets a value indicating whether a tick can occur.
@@ -34,6 +35,7 @@ namespace LabExtended.Modules
         {
             _coroutineLock = new object();
             _modules = new Dictionary<Type, ModuleContainer>();
+            _prevModules = new List<Type>();
             _coroutine = Timing.RunCoroutine(UpdateAll());
         }
 
@@ -68,6 +70,9 @@ namespace LabExtended.Modules
                     module.IsActive = true;
                 }
 
+                if (!_prevModules.Contains(typeof(T)))
+                    _prevModules.Add(typeof(T));
+
                 ExLoader.Debug("Modules API", $"Added module &3{typeof(T).FullName}&r");
                 return module;
             }
@@ -101,6 +106,8 @@ namespace LabExtended.Modules
             {
                 if (!_modules.TryGetValue(typeof(T), out var moduleContainer))
                     return false;
+
+                _prevModules.Remove(typeof(T));
 
                 try
                 {
@@ -159,6 +166,33 @@ namespace LabExtended.Modules
 
             if (Timing.IsRunning(_coroutine))
                 Timing.KillCoroutines(_coroutine);
+        }
+
+        /// <summary>
+        /// Re-adds all modules that were present before using <see cref="StopModules"/>.
+        /// </summary>
+        public void StartModules()
+        {
+            lock (_coroutineLock)
+            {
+                foreach (var moduleType in _prevModules)
+                {
+                    var module = moduleType.Construct<Module>();
+
+                    if (module is null)
+                        continue;
+
+                    module.Parent = this;
+                    module.IsActive = true;
+
+                    module.Start();
+
+                    _modules[moduleType] = new ModuleContainer(module);
+                }
+            }
+
+            if (!Timing.IsRunning(_coroutine))
+                _coroutine = Timing.RunCoroutine(UpdateAll());
         }
 
         /// <summary>

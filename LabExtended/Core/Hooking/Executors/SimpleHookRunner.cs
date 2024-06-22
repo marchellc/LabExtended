@@ -1,34 +1,25 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Hooking.Interfaces;
+﻿using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Core.Hooking.Executors
 {
     public class SimpleHookRunner : IHookRunner
     {
-        public void OnEvent(object eventObject, HookInfo hook, IHookBinder binder, Action<bool, bool, Exception, object> callback)
+        public object OnEvent(object eventObject, HookInfo hook, IHookBinder binder)
         {
             if (!binder.BindArgs(eventObject, out var methodArgs))
-            {
-                ExLoader.Error("Hooking API", $"Binder &3{binder.GetType().Name}&r failed to bind args to method &3{hook.Method.ToName()}&r!");
+                throw new Exception("Argument binder failed to bind method arguments.");
 
-                callback(true, false, null, null);
-                return;
-            }
+            var methodResult = default(object);
 
-            try
-            {
-                if (hook.Method.IsStatic)
-                    callback(false, false, null, hook.Dynamic.InvokeStatic(methodArgs));
-                else
-                    callback(false, false, null, hook.Dynamic.Invoke(hook.Instance, methodArgs));
-            }
-            catch (Exception ex)
-            {
-                callback(true, false, ex, null);
-            }
+            if (hook.Method.IsStatic)
+                methodResult = hook.Dynamic.InvokeStatic(methodArgs);
+            else
+                methodResult = hook.Dynamic.Invoke(methodResult);
 
-            binder.UnbindArgs(methodArgs);
+            if (methodArgs != null)
+                binder.UnbindArgs(methodArgs);
+
+            return methodResult;
         }
     }
 }

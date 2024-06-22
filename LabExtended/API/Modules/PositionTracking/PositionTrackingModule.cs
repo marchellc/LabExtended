@@ -82,6 +82,20 @@ namespace LabExtended.API.Modules.PositionTracking
         }
 
         /// <inheritdoc/>
+        public override void Start()
+        {
+            base.Start();
+            Player = (ExPlayer)Parent;
+        }
+
+        /// <inheritdoc/>
+        public override void Stop()
+        {
+            base.Stop();
+            Player = null;
+        }
+
+        /// <inheritdoc/>
         public override void Tick()
         {
             base.Tick();

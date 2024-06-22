@@ -9,12 +9,9 @@ namespace LabExtended.Attributes
 
         public HookPriority Priority { get; }
 
-        public bool ShouldWait { get; }
-
-        public HookDescriptorAttribute(HookPriority priority = HookPriority.Normal, Type eventOverride = null, bool shouldWait = false)
+        public HookDescriptorAttribute(HookPriority priority = HookPriority.Normal, Type eventOverride = null)
         {
             Priority = priority;
-            ShouldWait = shouldWait;
             EventOverride = eventOverride;
         }
     }

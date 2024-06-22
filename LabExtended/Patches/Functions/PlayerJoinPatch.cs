@@ -7,6 +7,7 @@ using LabExtended.Core;
 using LabExtended.Modules;
 using LabExtended.Extensions;
 using LabExtended.API.Modules;
+using LabExtended.Hints;
 
 namespace LabExtended.Patches.Functions
 {
@@ -45,6 +46,8 @@ namespace LabExtended.Patches.Functions
                         }
                     }
                 }
+
+                player._hints = player.AddModule<HintModule>();
 
                 if (player._modules.TryGetValue(typeof(PlayerStorageModule), out var moduleContainer))
                     player._storage = (PlayerStorageModule)moduleContainer.Module;

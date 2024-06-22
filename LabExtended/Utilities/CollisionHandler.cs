@@ -10,18 +10,18 @@ namespace LabExtended.Utilities
         /// <summary>
         /// Gets called when one of the collision handlers collides with something.
         /// </summary>
-        public static event Action<CollisionHandler, Collision> OnCollision;
+        public static event Action<CollisionHandler, Collision> OnTrigger;
 
-        private Func<Collision, bool> _onCollision;
+        private Func<Collision, bool> _onTrigger;
 
-        private void OnCollisionEnter(Collision collision)
+        private void OnTriggerEnter(Collision collision)
         {
-            OnCollision?.Invoke(this, collision);
+            OnTrigger?.Invoke(this, collision);
 
-            if (_onCollision is null)
+            if (_onTrigger is null)
                 return;
 
-            if (_onCollision(collision))
+            if (_onTrigger(collision))
                 Destroy(this);
         }
 
@@ -29,10 +29,10 @@ namespace LabExtended.Utilities
         /// Adds or gets an existing instance of <see cref="CollisionHandler"/> on a specific component.
         /// </summary>
         /// <param name="gameObject">The <see cref="GameObject"/> to get a <see cref="CollisionHandler"/> from.</param>
-        /// <param name="onCollision">The collision handler.</param>
+        /// <param name="onTrigger">The collision handler.</param>
         /// <returns>The <see cref="CollisionHandler"/> instance if found, otherwise <see langword="null"/>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static CollisionHandler GetOrAdd(GameObject gameObject, Func<Collision, bool> onCollision = null)
+        public static CollisionHandler GetOrAdd(GameObject gameObject, Func<Collision, bool> onTrigger = null)
         {
             if (gameObject is null)
                 throw new ArgumentNullException(nameof(gameObject));
@@ -40,11 +40,11 @@ namespace LabExtended.Utilities
             if (gameObject.TryGetComponent<CollisionHandler>(out var collisionHandler))
                 return collisionHandler;
 
-            if (onCollision is null)
-                throw new ArgumentNullException(nameof(onCollision));
+            if (onTrigger is null)
+                throw new ArgumentNullException(nameof(onTrigger));
 
             collisionHandler = gameObject.AddComponent<CollisionHandler>();
-            collisionHandler._onCollision = onCollision;
+            collisionHandler._onTrigger = onTrigger;
 
             return collisionHandler;
         }

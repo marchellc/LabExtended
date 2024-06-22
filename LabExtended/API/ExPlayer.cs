@@ -25,6 +25,11 @@ using LabExtended.Utilities;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
 
+using LabExtended.Core.Hooking;
+
+using LabExtended.Events;
+using LabExtended.Events.Player;
+
 using LiteNetLib;
 
 using Mirror;
@@ -49,10 +54,15 @@ using VoiceChat;
 using CustomPlayerEffects;
 
 using Utils;
-using LabExtended.Events;
+
+using PluginAPI.Events;
+using LabExtended.Hints;
 
 namespace LabExtended.API
 {
+    /// <summary>
+    /// A wrapper for the <see cref="ReferenceHub"/> class.
+    /// </summary>
     public class ExPlayer : ModuleParent
     {
         internal static readonly List<ExPlayer> _players;
@@ -215,8 +225,8 @@ namespace LabExtended.API
         internal VoicePitchHandler _voicePitch;
         #endregion
 
-
         internal PlayerStorageModule _storage;
+        internal HintModule _hints;
 
         internal readonly LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
         internal readonly LockedList<ItemPickupBase> _droppedItems;
@@ -291,6 +301,7 @@ namespace LabExtended.API
         public NetworkConnectionToClient Connection => _hub.connectionToClient;
 
         public PlayerStorageModule Storage => _storage;
+        public HintModule Hints => _hints;
 
         public ExPlayer SpectatedPlayer => _players.FirstOrDefault(p => p.IsSpectatedBy(this));
         public ExPlayer LookingAtPlayer => _players.FirstOrDefault(p => IsLookingAt(p));
@@ -324,6 +335,8 @@ namespace LabExtended.API
         public int TripTime => _peer?._avgRtt ?? -1;
         public int ConnectionId => _hub.connectionToClient.connectionId;
 
+        public float AspectRatio => _hub.aspectRatioSync.AspectRatio;
+
         public bool IsOnline => _peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
         public bool IsOffline => _peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
 
@@ -334,7 +347,6 @@ namespace LabExtended.API
         public bool IsNpc => NpcHandler != null;
 
         public bool IsDisarmed => _hub.inventory.IsDisarmed();
-
         public bool IsSpeaking => Role.VoiceModule?.ServerIsSending ?? false;
 
         public bool HasCustomName => _hub.nicknameSync.HasCustomName;
@@ -539,7 +551,7 @@ namespace LabExtended.API
                     return;
                 }
 
-                var instance = value.GetInstance<ItemBase>();
+                var instance = value.GetItemInstance<ItemBase>();
 
                 instance.SetupItem(Hub);
                 instance.OnAdded(null);
@@ -760,7 +772,7 @@ namespace LabExtended.API
                 {
                     if (item != ItemType.None)
                     {
-                        var instance = item.GetInstance<ItemBase>();
+                        var instance = item.GetItemInstance<ItemBase>();
 
                         instance.Owner = _hub;
                         instance.OnAdded(null);
@@ -808,6 +820,53 @@ namespace LabExtended.API
 
             item.SetupItem(Hub);
             return item;
+        }
+
+        public T ThrowItem<T>(ItemBase item) where T : ItemPickupBase
+        {
+            if (item is null)
+                throw new ArgumentNullException(nameof(item));
+
+            Hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
+            return ThrowItem<T>(item.ItemTypeId, item.ItemSerial);
+        }
+
+        public T ThrowItem<T>(ItemType itemType, ushort? itemSerial = null) where T : ItemPickupBase
+        {
+            var itemPrefab = itemType.GetItemPrefab<ItemBase>();
+            var pickupInstance = itemType.GetPickupInstance<T>(null, null, null, itemSerial, true);
+
+            if (pickupInstance is null)
+                return null;
+
+            if (!pickupInstance.TryGetComponent<Rigidbody>(out var rigidbody))
+                return pickupInstance;
+
+            if (!EventManager.ExecuteEvent(new PlayerThrowItemEvent(Hub, itemPrefab, rigidbody)))
+                return pickupInstance;
+
+            var velocity = Velocity;
+            var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
+
+            velocity = velocity / 3f + Camera.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, rigidbody.mass)) + 0.3f);
+
+            velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
+            velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
+            velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
+
+            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, rigidbody, Camera.position, velocity, angular);
+
+            if (!HookRunner.RunCancellable(throwingEv, true))
+                return pickupInstance;
+
+            rigidbody.position = throwingEv.Position;
+            rigidbody.velocity = throwingEv.Velocity;
+            rigidbody.angularVelocity = throwingEv.AngularVelocity;
+
+            if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
+                rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
+
+            return pickupInstance;
         }
         #endregion
 
@@ -986,7 +1045,7 @@ namespace LabExtended.API
             return null;
         }
 
-        private static void UpdateSentRoles()
+        internal static void UpdateSentRoles()
         {
             foreach (var player in _players)
             {

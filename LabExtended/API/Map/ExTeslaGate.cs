@@ -3,7 +3,10 @@
 using Hazards;
 
 using LabExtended.Core;
+using LabExtended.Core.Hooking;
 using LabExtended.Core.Profiling;
+using LabExtended.Events.Map;
+using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Interfaces;
 using LabExtended.Utilities;
@@ -30,7 +33,7 @@ namespace LabExtended.API.Map
         IMapObject,
         IDamageObject
     {
-        static ExTeslaGate() => Timing.RunCoroutine(UpdateGates());
+        static ExTeslaGate() => Timing.RunCoroutine(TickGates());
 
         internal static readonly LockedDictionary<TeslaGate, ExTeslaGate> _wrappers = new LockedDictionary<TeslaGate, ExTeslaGate>();
         internal static readonly ProfilerMarker _marker = new ProfilerMarker("Tesla Gate Update");
@@ -270,9 +273,75 @@ namespace LabExtended.API.Map
             NetworkServer.Destroy(GameObject);
         }
 
-        internal void InternalUpdate() { }
+        internal void InternalTick()
+        {
+            if (IsDisabled || GameObject is null || !Base.isActiveAndEnabled)
+                return;
 
-        private static IEnumerator<float> UpdateGates()
+            if (Base.InactiveTime > 0f)
+            {
+                Base.NetworkInactiveTime = Mathf.Max(0f, Base.InactiveTime - Time.fixedDeltaTime);
+                return;
+            }
+
+            var shouldIdle = false;
+            var shouldTrigger = false;
+
+            foreach (var player in ExPlayer._players)
+            {
+                if (!player.Switches.CanTriggerTesla)
+                    continue;
+
+                if (!player.Role.IsAlive)
+                    continue;
+
+                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team))
+                    continue;
+
+                if (!shouldIdle)
+                    shouldIdle = Base.IsInIdleRange(player.Hub);
+
+                if (!shouldTrigger && Base.PlayerInRange(player.Hub) && !Base.InProgress)
+                {
+                    if (!HookRunner.RunCancellable(new PlayerTriggeringTeslaGateArgs(player, this), true))
+                        continue;
+
+                    shouldTrigger = true;
+                }
+            }
+
+            if (shouldTrigger)
+            {
+                if (!Base.InProgress)
+                {
+                    var triggerEv = new TeslaGateTriggeringArgs(this, Base.next079burst);
+
+                    if (HookRunner.RunCancellable(triggerEv, true))
+                    {
+                        Base.next079burst = triggerEv.IsInstant;
+                        Base.RpcPlayAnimation();
+
+                        Timing.RunCoroutine(Base.ServerSideWaitForAnimation());
+                    }
+                }
+            }
+
+            if (shouldIdle != Base.isIdling)
+            {
+                if (shouldIdle)
+                {
+                    Base.RpcDoIdle();
+                    HookRunner.RunEvent(new TeslaGateStartedIdlingArgs(this));
+                }
+                else
+                {
+                    Base.RpcDoneIdling();
+                    HookRunner.RunEvent(new TeslaGateStoppedIdlingArgs(this));
+                }
+            }
+        }
+
+        private static IEnumerator<float> TickGates()
         {
             while (true)
             {
@@ -281,27 +350,24 @@ namespace LabExtended.API.Map
                 else
                     yield return Timing.WaitForOneFrame;
 
-                _marker.MarkStart(_wrappers.Count.ToString());
-
                 if (!_pauseUpdate)
                 {
+                    _marker.MarkStart(_wrappers.Count.ToString());
+
                     foreach (var pair in _wrappers)
                     {
                         try
                         {
-                            if (pair.Value.IsDisabled || pair.Value.GameObject is null)
-                                continue;
-
-                            pair.Value.InternalUpdate();
+                            pair.Value.InternalTick();
                         }
                         catch (Exception ex)
                         {
                             ExLoader.Error("Extended API", $"Failed to update tesla gates!\n{ex.ToColoredString()}");
                         }
                     }
-                }
 
-                _marker.MarkEnd();
+                    _marker.MarkEnd();
+                }
             }
         }
     }

@@ -4,6 +4,9 @@ using LabExtended.Core.Configs;
 
 namespace LabExtended.Core
 {
+    /// <summary>
+    /// Represents the loader's config.
+    /// </summary>
     public class ExLoaderConfig
     {
         [Description("Logging configuration.")]

@@ -2,7 +2,7 @@ using Common.Logging;
 
 namespace LabExtended.Core.Logging
 {
-    public class ExLogger : ILogger
+    internal class ExLogger : ILogger
     {
         private LogMessage _last;
 

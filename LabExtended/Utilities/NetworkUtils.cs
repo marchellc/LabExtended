@@ -10,6 +10,9 @@ using System.Reflection.Emit;
 
 namespace LabExtended.Utilities
 {
+    /// <summary>
+    /// A class for mirror extensions.
+    /// </summary>
     public static class NetworkUtils
     {
         internal static readonly LockedDictionary<Type, MethodInfo> _writerExtensions = new LockedDictionary<Type, MethodInfo>();

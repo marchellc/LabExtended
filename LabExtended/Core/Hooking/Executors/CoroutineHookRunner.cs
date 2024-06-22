@@ -6,88 +6,30 @@ namespace LabExtended.Core.Hooking.Executors
 {
     public class CoroutineHookRunner : IHookRunner
     {
-        public void OnEvent(object eventObject, HookInfo hook, IHookBinder binder, Action<bool, bool, Exception, object> callback)
+        public object OnEvent(object eventObject, HookInfo hook, IHookBinder binder)
         {
             if (!binder.BindArgs(eventObject, out var methodArgs))
-            {
-                ExLoader.Warn("Hooking API", $"Binder &3{binder.GetType().FullName}&r failed to bind args!");
+                throw new Exception($"Argument binder failed to bind method arguments.");
 
-                callback(true, false, null, null);
-                return;
-            }
+            var methodResult = default(object);
 
-            try
-            {
-                var result = default(object);
+            if (hook.Method.IsStatic)
+                methodResult = hook.Dynamic.InvokeStatic(methodArgs);
+            else
+                methodResult = hook.Dynamic.Invoke(hook.Instance, methodArgs);
 
-                if (hook.Method.IsStatic)
-                    result = hook.Dynamic.InvokeStatic(methodArgs);
-                else
-                    result = hook.Dynamic.Invoke(hook.Instance, methodArgs);
+            if (methodResult is null)
+                throw new Exception("Method returned a null value.");
 
-                if (result is null)
-                {
-                    callback(false, false, null, null);
-                    return;
-                }
+            if (methodResult is not IEnumerator<float> mecCoroutine)
+                throw new Exception($"Method returned an unknown value: {methodResult.GetType().FullName}");
 
-                if (result is CoroutineHandle coroutineHandle)
-                {
-                    if (Timing.IsAliveAndPaused(coroutineHandle))
-                        Timing.ResumeCoroutines(coroutineHandle);
+            Timing.RunCoroutine(mecCoroutine);
 
-                    if (hook.ShouldWait)
-                    {
-                        var maxWait = DateTime.Now.AddSeconds(1.5);
+            if (methodArgs != null)
+                binder.UnbindArgs(methodArgs);
 
-                        while (Timing.IsRunning(coroutineHandle))
-                        {
-                            if (DateTime.Now >= maxWait)
-                            {
-                                callback(true, true, null, null);
-                                return;
-                            }
-                        }
-
-                        callback(false, false, null, null);
-                        return;
-                    }
-                    else
-                    {
-                        callback(false, false, null, null);
-                        return;
-                    }
-                }
-
-                if (result is IEnumerator<float> coroutine)
-                {
-                    var maxWait = DateTime.Now.AddSeconds(1.5);
-                    var handle = Timing.RunCoroutine(coroutine);
-
-                    if (hook.ShouldWait)
-                    {
-                        while (Timing.IsRunning(handle))
-                        {
-                            if (DateTime.Now >= maxWait)
-                            {
-                                callback(true, true, null, null);
-                                return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        callback(false, false, null, null);
-                        return;
-                    }
-                }
-
-                callback(false, false, null, null);
-            }
-            catch (Exception ex)
-            {
-                callback(true, false, ex, null);
-            }
+            return null;
         }
     }
 }

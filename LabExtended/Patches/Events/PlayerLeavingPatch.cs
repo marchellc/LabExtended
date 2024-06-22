@@ -8,10 +8,10 @@ using LiteNetLib;
 
 using Mirror.LiteNetLib4Mirror;
 
-namespace LabExtended.Patches.Functions.Networking
+namespace LabExtended.Patches.Events
 {
     [HarmonyPatch(typeof(LiteNetLib4MirrorServer), nameof(LiteNetLib4MirrorServer.OnPeerDisconnected))]
-    public static class LeavingPatch
+    public static class PlayerLeavingPatch
     {
         public static bool Prefix(NetPeer peer, DisconnectInfo disconnectinfo)
         {

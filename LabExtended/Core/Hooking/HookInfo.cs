@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-using Common.Utilities;
-using Common.Utilities.Dynamic;
+﻿using Common.Utilities.Dynamic;
 
 using LabExtended.Core.Hooking.Enums;
 using LabExtended.Core.Hooking.Interfaces;
@@ -27,9 +25,7 @@ namespace LabExtended.Core.Hooking
 
         public object Instance { get; }
 
-        public bool ShouldWait { get; }
-
-        internal HookInfo(MethodInfo method, object instance, IHookRunner hookRunner, IHookBinder hookBinder, HookPriority hookPriority, bool shouldWait)
+        internal HookInfo(MethodInfo method, object instance, IHookRunner hookRunner, IHookBinder hookBinder, HookPriority hookPriority)
         {
             if (method is null)
                 throw new ArgumentNullException(nameof(method));
@@ -40,7 +36,7 @@ namespace LabExtended.Core.Hooking
             if (hookBinder is null)
                 throw new ArgumentNullException(nameof(hookBinder));
 
-            Marker = new ProfilerMarker($"Hook Handler ({method.ToName()})");
+            Marker = new ProfilerMarker($"Hook Handler ({method.DeclaringType.FullName}::{method.Name})");
 
             Runner = hookRunner;
             Binder = hookBinder;
@@ -49,23 +45,20 @@ namespace LabExtended.Core.Hooking
             Method = method;
             Instance = instance;
 
-            ShouldWait = shouldWait;
-
             Dynamic = DynamicMethod.Create(method);
         }
 
-        internal void Run(object eventObject, Action<bool, bool, Exception, object> callback)
+        internal object Run(object eventObject)
         {
             if (IsMarkerActive)
                 Marker.MarkStart();
 
-            Runner.OnEvent(eventObject, this, Binder, (hasFailed, hasTimedOut, exception, result) =>
-            {
-                if (IsMarkerActive)
-                    Marker.MarkEnd();
+            var result = Runner.OnEvent(eventObject, this, Binder);
 
-                callback(hasFailed, hasTimedOut, exception, result);
-            });
+            if (IsMarkerActive)
+                Marker.MarkEnd();
+
+            return result;
         }
     }
 }

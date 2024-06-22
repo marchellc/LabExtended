@@ -12,6 +12,7 @@ namespace LabExtended.Events
     public static class UpdateEvent
     {
         private static readonly ProfilerMarker _marker = new ProfilerMarker("Update Event");
+        private static CoroutineHandle _coroutine;
 
         /// <summary>
         /// Gets called every frame.
@@ -19,7 +20,10 @@ namespace LabExtended.Events
         public static event Action OnUpdate;
 
         internal static void Initialize()
-            => Timing.RunCoroutine(Runner());
+            => _coroutine = Timing.RunCoroutine(Runner());
+
+        internal static void KillEvent()
+            => Timing.KillCoroutines(_coroutine);
 
         private static IEnumerator<float> Runner()
         {
