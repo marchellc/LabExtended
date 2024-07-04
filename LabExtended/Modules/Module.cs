@@ -1,4 +1,6 @@
-﻿namespace LabExtended.Modules
+﻿using LabExtended.Ticking;
+
+namespace LabExtended.Modules
 {
     /// <summary>
     /// A class that represents a custom module.
@@ -8,7 +10,7 @@
         /// <summary>
         /// When overriden, retrieves this module's tick settings.
         /// </summary>
-        public virtual ModuleTickSettings? TickSettings { get; }
+        public virtual TickOptions TickSettings { get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this module is active.

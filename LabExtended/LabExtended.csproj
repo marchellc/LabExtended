@@ -108,6 +108,7 @@
 
     <ItemGroup>
       <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+      <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
     </ItemGroup>
 
 </Project>

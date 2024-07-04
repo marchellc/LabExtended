@@ -2,7 +2,7 @@
 
 using LabExtended.API;
 using LabExtended.Core.Commands;
-using LabExtended.Utilities;
+using LabExtended.Utilities.Debug;
 
 namespace LabExtended.Commands.Debug.Hints
 {

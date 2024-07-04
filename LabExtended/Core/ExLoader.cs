@@ -6,10 +6,10 @@ using LabExtended.Core.Hooking;
 using LabExtended.Core.Logging;
 using LabExtended.Core.Profiling;
 
-using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Modules;
 using LabExtended.Patches.Functions;
+using LabExtended.Ticking;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
@@ -135,7 +135,7 @@ namespace LabExtended.Core
                 HookPatch.Enable();
                 HookManager.RegisterAll();
 
-                UpdateEvent.Initialize();
+                TickManager.StartUpdate();
 
                 StartModules();
 
@@ -187,7 +187,7 @@ namespace LabExtended.Core
 
             StopModules();
 
-            UpdateEvent.KillEvent();
+            TickManager.KillUpdate();
 
             HookManager._activeDelegates.Clear();
             HookManager._activeHooks.Clear();
@@ -255,6 +255,9 @@ namespace LabExtended.Core
 
         private static bool CanDebug(string source)
         {
+            if (Loader is null || Loader.Config is null)
+                return true;
+
             if (!string.IsNullOrWhiteSpace(source))
             {
                 if (Loader.Config.Logging.DisabledSources.Contains(source))

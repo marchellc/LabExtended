@@ -40,8 +40,8 @@ namespace LabExtended.Core.Commands.Parsing
             Type = numericType;
             Parser = Parsers[numericType];
 
-            MaxValue = numericType.Field("MaxValue")?.Get() ?? 0;
-            MinValue = numericType.Field("MinValue")?.Get() ?? 0;
+            MaxValue = numericType.Field("MaxValue")?.GetValue(null) ?? 0;
+            MinValue = numericType.Field("MinValue")?.GetValue(null) ?? 0;
         }
 
         public bool TryParse(string value, out string failureMessage, out object result)

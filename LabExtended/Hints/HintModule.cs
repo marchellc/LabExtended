@@ -4,9 +4,10 @@ using Common.Pooling.Pools;
 
 using LabExtended.API;
 
+using LabExtended.Hints.Elements;
 using LabExtended.Hints.Interfaces;
-using LabExtended.Hints.Enums;
 
+using LabExtended.Ticking;
 using LabExtended.Modules;
 
 using Hints;
@@ -21,6 +22,8 @@ namespace LabExtended.Hints
 
         private static readonly TextHint _emptyHint = new TextHint(string.Empty, new HintParameter[] { new StringHintParameter(string.Empty) });
 
+        private static readonly LockedDictionary<Type, Func<ExPlayer, bool>> _globalElements = new LockedDictionary<Type, Func<ExPlayer, bool>>();
+
         private readonly LockedList<IHintElement> _activeElements = new LockedList<IHintElement>();
         private readonly Queue<HintMessage> _temporaryQueue = new Queue<HintMessage>();
 
@@ -33,7 +36,7 @@ namespace LabExtended.Hints
 
         public ExPlayer Player { get; internal set; }
 
-        public override ModuleTickSettings? TickSettings { get; } = new ModuleTickSettings(600f);
+        public override TickOptions TickSettings { get; } = TickOptions.GetStatic(550f);
 
         public override void Start()
         {
@@ -47,6 +50,23 @@ namespace LabExtended.Hints
 
             _temporaryElement = AddElement<TemporaryElement>();
             _temporaryElement.IsActive = false;
+
+            foreach (var globalType in _globalElements)
+            {
+                if (globalType.Value != null && !globalType.Value.Call(Player))
+                    continue;
+
+                if (_activeElements.Any(element => element.GetType() == globalType.Key))
+                    continue;
+
+                var activeElement = globalType.Key.Construct<IHintElement>();
+
+                activeElement.IsActive = true;
+                activeElement.Player = Player;
+                activeElement.OnEnabled();
+
+                _activeElements.Add(activeElement);
+            }
         }
 
         public override void Stop()
@@ -96,6 +116,25 @@ namespace LabExtended.Hints
             return activeElement;
         }
 
+        public T AddElement<T>(T element) where T : IHintElement
+        {
+            if (TryGetElement<T>(out var activeElement))
+                return activeElement;
+
+            if (element.IsActive)
+            {
+                element.IsActive = false;
+                element.OnDisabled();
+            }
+
+            element.IsActive = true;
+            element.Player = Player;
+            element.OnEnabled();
+
+            _activeElements.Add(element);
+            return element;
+        }
+
         public bool RemoveElement<T>() where T : IHintElement
         {
             if (!TryGetElement<T>(out var element))
@@ -103,9 +142,20 @@ namespace LabExtended.Hints
 
             element.IsActive = false;
             element.OnDisabled();
-            element.Player = null;
 
-            _activeElements.Remove(element);
+            element.Player = null;
+            return _activeElements.Remove(element);
+        }
+
+        public bool RemoveElement<T>(T element) where T : IHintElement
+        {
+            if (!_activeElements.Remove(element))
+                return false;
+
+            element.IsActive = false;
+            element.OnDisabled();
+
+            element.Player = null;
             return true;
         }
 
@@ -131,6 +181,11 @@ namespace LabExtended.Hints
         {
             base.Tick();
 
+            _temporaryElement.CheckDuration();
+
+            if (!_temporaryElement.IsActive && _temporaryQueue.TryDequeue(out var nextMessage))
+                _temporaryElement.SetHint(nextMessage);
+
             if (_activeElements.Count(element => element.IsActive) < 1)
             {
                 if (!_clearedAfterEmpty)
@@ -148,25 +203,33 @@ namespace LabExtended.Hints
                 return;
 
             if (ShowDebug)
-                ServerConsole.AddLog($"\n{builtElements}", ConsoleColor.Red);
+                ServerConsole.AddLog($"<noparse>\n{builtElements}</noparse>", ConsoleColor.Red);
 
             _textParameter.Value = builtElements;
             _textHint.Text = builtElements;
+
             _clearedAfterEmpty = false;
 
             Player.Connection.Send(new global::Hints.HintMessage(_textHint));
         }
+
+        public static bool AddGlobalElement<T>(Func<ExPlayer, bool> validator = null) where T : IHintElement
+        {
+            if (_globalElements.ContainsKey(typeof(T)))
+                return false;
+
+            _globalElements[typeof(T)] = validator;
+            return true;
+        }
+
+        public static bool RemoveGlobalElement<T>() where T : IHintElement
+            => _globalElements.Remove(typeof(T));
 
         internal string InternalBuildString()
         {
             var builder = StringBuilderPool.Shared.Rent();
 
             builder.Append("\n<line-height=1285%>\n<line-height=0>\n");
-
-            _temporaryElement.CheckDuration();
-
-            if (_temporaryElement._messages.Count < 1 && _temporaryQueue.TryDequeue(out var nextMessage))
-                _temporaryElement.SetHint(nextMessage);
 
             foreach (var element in _activeElements)
             {
@@ -175,30 +238,55 @@ namespace LabExtended.Hints
 
                 builder.Append($"<voffset={element.VerticalOffset}em>");
 
+                string preTag = null;
+                string postTag = null;
+
                 switch (element.Alignment)
                 {
                     case HintAlign.FullLeft:
-                        builder.Append($"<align=left><pos=-{_fullLeftPosition}%>");
-                        element.WriteContent(builder);
-                        builder.Append($"</pos></align>");
+                        preTag = $"<align=left><pos=-{_fullLeftPosition}%>";
+                        postTag = $"</pos></align>";
                         break;
 
                     case HintAlign.Left:
-                        builder.Append($"<align=left>");
-                        element.WriteContent(builder);
-                        builder.Append($"</align>");
+                        preTag = $"<align=left>";
+                        postTag = $"</align>";
                         break;
 
                     case HintAlign.Right:
-                        builder.Append($"<align=right>");
-                        element.WriteContent(builder);
-                        builder.Append($"</align>");
-                        break;
-
-                    default:
-                        element.WriteContent(builder);
+                        preTag = $"<align=right>";
+                        postTag = $"</align>";
                         break;
                 }
+
+                if (preTag != null)
+                    builder.Append(preTag);
+
+                element.Builder.Clear();
+                element.Write();
+
+                if (element.Builder.Length > 0)
+                {
+                    var writtenString = element.Builder.ToString();
+                    var writtenLines = writtenString.SplitLines();
+
+                    for (int i = 0; i < writtenLines.Length; i++)
+                    {
+                        if (string.IsNullOrWhiteSpace(writtenLines[i]))
+                            continue;
+
+                        if (i == 0)
+                        {
+                            builder.Append($"\n{writtenLines[i].Remove("\n")}\n");
+                            continue;
+                        }
+
+                        builder.Append($"\n<voffset={element.VerticalOffset - (i + 0.5)}em>{writtenLines[i].Remove("\n")}</voffset>\n");
+                    }
+                }
+
+                if (postTag != null)
+                    builder.Append(postTag);
 
                 builder.Append("\n");
             }

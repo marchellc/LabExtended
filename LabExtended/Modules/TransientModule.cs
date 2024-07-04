@@ -4,8 +4,8 @@ using Common.Utilities;
 
 using LabExtended.API;
 using LabExtended.Core;
-using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Ticking;
 
 namespace LabExtended.Modules
 {
@@ -15,7 +15,7 @@ namespace LabExtended.Modules
     public class TransientModule : Module
     {
         static TransientModule()
-            => UpdateEvent.OnUpdate += UpdateModules;
+            => TickManager.SubscribeTick(UpdateModules, TickOptions.NoneSeparateProfiled, "Transient Modules Tick");
 
         /// <summary>
         /// The reason for a module's removal.

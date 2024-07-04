@@ -2,15 +2,34 @@
 using LabExtended.Core.Commands.Parsing;
 using LabExtended.Core.Profiling;
 
+using LabExtended.Commands.Formatting;
+
 using LabExtended.API;
 
 using Common.Pooling.Pools;
+
+using UnityEngine;
 
 namespace LabExtended.Core.Commands
 {
     public static class CommandUtils
     {
         private static readonly ProfilerMarker _marker = new ProfilerMarker("Commands (Parsing)");
+
+        static CommandUtils()
+        {
+            var types = typeof(ServerConsole).Assembly.GetTypes().ToList();
+
+            types.AddRange(typeof(CommandUtils).Assembly.GetTypes());
+
+            foreach (var type in types)
+            {
+                if (!type.IsEnum || FormattingEnumCommand.EnumTypes.Any(t => t.Name == type.Name))
+                    continue;
+
+                FormattingEnumCommand.EnumTypes.Add(type);
+            }
+        }
 
         internal enum StringPart
         {
@@ -42,6 +61,11 @@ namespace LabExtended.Core.Commands
 
             [typeof(TimeSpan)] = new TimeSpanParser(),
             [typeof(DateTime)] = new DateTimeParser(),
+
+            [typeof(Color)] = new ColorParser(),
+            [typeof(Vector2)] = new Vector2Parser(),
+            [typeof(Vector3)] = new Vector3Parser(),
+            [typeof(Quaternion)] = new QuaternionParser(),
 
             [typeof(ExPlayer)] = new PlayerParser(),
             [typeof(PlayerList)] = new PlayerListParser()
@@ -90,7 +114,7 @@ namespace LabExtended.Core.Commands
                 else
                     curChar = '\0';
 
-                if (curArg != null && (curArg.IsRemainder || (curArg.Type == typeof(string) && (argList.Count + 1) >= command.Arguments.Length)) && i != endIndex)
+                if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)) && i != endIndex)
                 {
                     curBuilder.Append(curChar);
                     continue;
@@ -110,7 +134,7 @@ namespace LabExtended.Core.Commands
                     }
                 }
 
-                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || (curArg.Type == typeof(string) && (argList.Count + 1) >= command.Arguments.Length))))
+                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length))))
                 {
                     isEscaping = true;
                     continue;
@@ -138,7 +162,7 @@ namespace LabExtended.Core.Commands
                         if (curArg is null)
                             curArg = command.Arguments.Length > argList.Count ? command.Arguments[argList.Count] : null;
 
-                        if (curArg != null && (curArg.IsRemainder || (curArg.Type == typeof(string) && (argList.Count + 1) >= command.Arguments.Length)))
+                        if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)))
                         {
                             curBuilder.Append(curChar);
                             continue;
@@ -210,7 +234,7 @@ namespace LabExtended.Core.Commands
                 }
             }
 
-            if (curArg != null && (curArg.IsRemainder || (curArg.Type == typeof(string) && (argList.Count + 1) >= command.Arguments.Length)))
+            if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)))
             {
                 if (!curArg.Parser.TryParse(curBuilder.ToString(), out var failureMessage, out var remainderResult))
                 {

@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Hints.Enums;
 
 using System.Text;
 
@@ -15,9 +14,11 @@ namespace LabExtended.Hints.Interfaces
 
         float VerticalOffset { get; set; }
 
+        StringBuilder Builder { get; }
+
         void OnEnabled();
         void OnDisabled();
 
-        void WriteContent(StringBuilder builder);
+        void Write();
     }
 }

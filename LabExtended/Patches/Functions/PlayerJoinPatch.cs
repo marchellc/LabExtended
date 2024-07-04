@@ -8,12 +8,15 @@ using LabExtended.Modules;
 using LabExtended.Extensions;
 using LabExtended.API.Modules;
 using LabExtended.Hints;
+using Common.Extensions;
 
 namespace LabExtended.Patches.Functions
 {
     [HarmonyPatch(typeof(PlayerAuthenticationManager), nameof(PlayerAuthenticationManager.FinalizeAuthentication))]
     public static class PlayerJoinPatch
     {
+        public static event Action<ExPlayer> OnJoined;
+
         public static void Postfix(PlayerAuthenticationManager __instance)
         {
             try
@@ -31,7 +34,7 @@ namespace LabExtended.Patches.Functions
 
                         if (!player._modules.ContainsKey(type))
                         {
-                            player._modules.Add(type, new ModuleContainer(module));
+                            player._modules.Add(type, new Tuple<Module, Ticking.TickOptions>(module, module.TickSettings ?? Ticking.TickOptions.None));
 
                             module.Parent = player;
                             module.IsActive = true;
@@ -50,12 +53,14 @@ namespace LabExtended.Patches.Functions
                 player._hints = player.AddModule<HintModule>();
 
                 if (player._modules.TryGetValue(typeof(PlayerStorageModule), out var moduleContainer))
-                    player._storage = (PlayerStorageModule)moduleContainer.Module;
+                    player._storage = (PlayerStorageModule)moduleContainer.Item1;
                 else
                     player._storage = player.AddModule<PlayerStorageModule>();
 
                 ExPlayer._players.Add(player);
                 ExLoader.Info("Extended API", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address}&r!");
+
+                OnJoined.Call(player);
             }
             catch (Exception ex)
             {

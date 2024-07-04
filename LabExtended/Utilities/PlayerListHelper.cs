@@ -55,8 +55,8 @@ namespace LabExtended.Utilities
                 if (!predicate(player))
                     continue;
 
-                _netIdList.Add(player.NetId);
-                count++;
+                if (_netIdList.Add(player.NetId))
+                    count++;
             }
 
             return count;
@@ -89,8 +89,8 @@ namespace LabExtended.Utilities
                 if (!predicate(player))
                     continue;
 
-                _netIdList.Remove(player.NetId);
-                count++;
+                if (_netIdList.Remove(player.NetId))
+                    count++;
             }
 
             return count;

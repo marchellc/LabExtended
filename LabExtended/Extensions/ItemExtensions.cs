@@ -1,4 +1,6 @@
-﻿using InventorySystem;
+﻿using Common.Extensions;
+
+using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
@@ -16,6 +18,14 @@ namespace LabExtended.Extensions
     /// </summary>
     public static class ItemExtensions
     {
+        public static byte GetInventorySlot(this ItemBase item)
+        {
+            if (item.Owner is null)
+                throw new InvalidOperationException($"The targeted item must be owned by a player.");
+
+            return (byte)(item.OwnerInventory.UserInventory.Items.FindKeyIndex(item.ItemSerial) + 1);
+        }
+
         /// <summary>
         /// Gets an item prefab.
         /// </summary>
@@ -31,14 +41,18 @@ namespace LabExtended.Extensions
         /// <typeparam name="T">The type of the item to get.</typeparam>
         /// <param name="itemType">The type of the item to get.</param>
         /// <returns>The item's instance, if succesfull. Otherwise <see langword="null"/>.</returns>
-        public static T GetItemInstance<T>(this ItemType itemType) where T : ItemBase
+        public static T GetItemInstance<T>(this ItemType itemType, ushort? serial = null) where T : ItemBase
         {
             if (!InventoryItemLoader.TryGetItem<T>(itemType, out var result))
                 return null;
 
             var item = UnityEngine.Object.Instantiate(result);
 
-            item.ItemSerial = ItemSerialGenerator.GenerateNext();
+            if (serial.HasValue)
+                item.ItemSerial = serial.Value;
+            else
+                item.ItemSerial = ItemSerialGenerator.GenerateNext();
+
             return item;
         }
 
@@ -80,6 +94,22 @@ namespace LabExtended.Extensions
                 NetworkServer.Spawn(pickup.gameObject);
 
             return (T)pickup;
+        }
+
+        /// <summary>
+        /// Gets the pickup's <see cref="Rigidbody"/> component.
+        /// </summary>
+        /// <param name="itemPickupBase">The pickup to get a <see cref="Rigidbody"/> from.</param>
+        /// <returns>The <see cref="Rigidbody"/> component instance if found, otherwise <see langword="null"/>.</returns>
+        public static Rigidbody GetRigidbody(this ItemPickupBase itemPickupBase)
+        {
+            if (itemPickupBase is null)
+                return null;
+
+            if (itemPickupBase.PhysicsModule != null && itemPickupBase.PhysicsModule is PickupStandardPhysics standardPhysics)
+                return standardPhysics.Rb;
+
+            return itemPickupBase.GetComponent<Rigidbody>();
         }
 
         /// <summary>
@@ -161,23 +191,33 @@ namespace LabExtended.Extensions
         /// </summary>
         /// <param name="item">The item to set up.</param>
         /// <param name="owner">The item's owner.</param>
-        public static void SetupItem(this ItemBase item, ReferenceHub owner = null)
+        public static void SetupItem(this ItemBase item, ReferenceHub owner = null, bool setFirearmPreferences = true, bool checkOwners = true, bool checkAcquisition = true)
         {
-            if (owner != null && item.Owner != null && item.Owner != owner)
+            if (checkOwners)
             {
-                item.OwnerInventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-                item.Owner = null;
+                if (owner != null && item.Owner != null && item.Owner != owner)
+                {
+                    item.OwnerInventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
+                    item.Owner = null;
+                }
+
+                if (owner != null)
+                {
+                    item.Owner = owner;
+                    item.OwnerInventory.UserInventory.Items[item.ItemSerial] = item;
+                    item.OwnerInventory.ServerSendItems();
+                }
             }
 
-            if (owner != null)
-                item.Owner = owner;
-
-            item.OnAdded(null);
-
-            if (item is IAcquisitionConfirmationTrigger confirmationTrigger)
+            if (checkAcquisition)
             {
-                confirmationTrigger.AcquisitionAlreadyReceived = true;
-                confirmationTrigger.ServerConfirmAcqusition();
+                item.OnAdded(null);
+
+                if (item is IAcquisitionConfirmationTrigger confirmationTrigger)
+                {
+                    confirmationTrigger.AcquisitionAlreadyReceived = true;
+                    confirmationTrigger.ServerConfirmAcqusition();
+                }
             }
 
             if (item is Firearm firearm)
@@ -185,7 +225,7 @@ namespace LabExtended.Extensions
                 var preferenceCode = uint.MinValue;
                 var flags = firearm.Status.Flags;
 
-                if (owner is null || !AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var preferences)
+                if (!setFirearmPreferences || owner is null || !AttachmentsServerHandler.PlayerPreferences.TryGetValue(owner, out var preferences)
                     || !preferences.TryGetValue(item.ItemTypeId, out preferenceCode))
                     preferenceCode = AttachmentsUtils.GetRandomAttachmentsCode(item.ItemTypeId);
 

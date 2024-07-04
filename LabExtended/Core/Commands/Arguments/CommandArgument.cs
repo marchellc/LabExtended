@@ -60,6 +60,14 @@ namespace LabExtended.Core.Commands.Arguments
                 return;
             }
 
+            var underlyingNullable = Nullable.GetUnderlyingType(Type);
+
+            if (underlyingNullable != null)
+            {
+                IsOptional = true;
+                Type = underlyingNullable;
+            }
+
             if (Type.GetTypeInfo().IsGenericType)
             {
                 var definition = Type.GetGenericTypeDefinition();

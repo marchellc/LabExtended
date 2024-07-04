@@ -91,10 +91,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 var other = ExPlayer.Get(otherHub);
 
                 if (other is null)
-                {
-                    ExLoader.Debug("Remote Admin API", $"Failed to get Ex Player");
                     continue;
-                }
 
                 if (!other.IsNpc && (other.InstanceMode is ClientInstanceMode.DedicatedServer || other.InstanceMode is ClientInstanceMode.Unverified))
                     continue;

@@ -4,16 +4,16 @@ using Hazards;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Profiling;
+
 using LabExtended.Events.Map;
 using LabExtended.Events.Player;
+
 using LabExtended.Extensions;
 using LabExtended.Interfaces;
+using LabExtended.Ticking;
 using LabExtended.Utilities;
 
 using MapGeneration;
-
-using MEC;
 
 using Mirror;
 
@@ -33,12 +33,10 @@ namespace LabExtended.API.Map
         IMapObject,
         IDamageObject
     {
-        static ExTeslaGate() => Timing.RunCoroutine(TickGates());
+        static ExTeslaGate()
+            => TickManager.SubscribeTick(TickGates, TickOptions.NoneSeparateProfiled, "Tesla Gate Update");
 
         internal static readonly LockedDictionary<TeslaGate, ExTeslaGate> _wrappers = new LockedDictionary<TeslaGate, ExTeslaGate>();
-        internal static readonly ProfilerMarker _marker = new ProfilerMarker("Tesla Gate Update");
-
-        internal static bool _pauseUpdate;
 
         internal ExTeslaGate(TeslaGate baseValue) : base(baseValue) { }
 
@@ -260,7 +258,7 @@ namespace LabExtended.API.Map
         /// </summary>
         public void ForceTrigger()
         {
-            Timing.RunCoroutine(Base.ServerSideWaitForAnimation());
+            MEC.Timing.RunCoroutine(Base.ServerSideWaitForAnimation());
             Base.RpcPlayAnimation();
         }
 
@@ -321,7 +319,7 @@ namespace LabExtended.API.Map
                         Base.next079burst = triggerEv.IsInstant;
                         Base.RpcPlayAnimation();
 
-                        Timing.RunCoroutine(Base.ServerSideWaitForAnimation());
+                        MEC.Timing.RunCoroutine(Base.ServerSideWaitForAnimation());
                     }
                 }
             }
@@ -341,32 +339,17 @@ namespace LabExtended.API.Map
             }
         }
 
-        private static IEnumerator<float> TickGates()
+        private static void TickGates()
         {
-            while (true)
+            foreach (var pair in _wrappers)
             {
-                if (TickRate > 0)
-                    yield return Timing.WaitForSeconds(TickRate * 1000f);
-                else
-                    yield return Timing.WaitForOneFrame;
-
-                if (!_pauseUpdate)
+                try
                 {
-                    _marker.MarkStart(_wrappers.Count.ToString());
-
-                    foreach (var pair in _wrappers)
-                    {
-                        try
-                        {
-                            pair.Value.InternalTick();
-                        }
-                        catch (Exception ex)
-                        {
-                            ExLoader.Error("Extended API", $"Failed to update tesla gates!\n{ex.ToColoredString()}");
-                        }
-                    }
-
-                    _marker.MarkEnd();
+                    pair.Value.InternalTick();
+                }
+                catch (Exception ex)
+                {
+                    ExLoader.Error("Extended API", $"Failed to update tesla gates!\n{ex.ToColoredString()}");
                 }
             }
         }

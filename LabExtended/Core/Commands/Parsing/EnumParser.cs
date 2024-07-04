@@ -1,4 +1,8 @@
-﻿using LabExtended.Core.Commands.Interfaces;
+﻿using Common.Extensions;
+
+using LabExtended.Commands.Formatting;
+using LabExtended.Core.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Core.Commands.Parsing
 {
@@ -14,37 +18,32 @@ namespace LabExtended.Core.Commands.Parsing
         {
             EnumType = enumType;
             UnderlyingType = Enum.GetUnderlyingType(enumType);
+
+            if (!FormattingEnumCommand.EnumTypes.Contains(enumType))
+                FormattingEnumCommand.EnumTypes.Add(enumType);
         }
 
         public bool TryParse(string value, out string failureMessage, out object result)
         {
-            ExLoader.Debug("Enum Parser", $"value={value}");
+            result = null;
+            failureMessage = null;
 
             if (string.IsNullOrWhiteSpace(value))
             {
-                result = null;
                 failureMessage = $"String cannot be empty or white-spaced.";
                 return false;
             }
 
-            if (int.TryParse(value, out var numeric))
+            if (value.TrySplit(',', true, null, out var parts) && parts.Length > 1 && !EnumType.IsBitwiseEnum())
             {
-                ExLoader.Debug("Enum Parser", $"Parsed numeric: {numeric}");
-
-                if (Enum.IsDefined(EnumType, numeric))
-                {
-                    ExLoader.Debug("Enum Parser", $"Numeric is defined");
-
-                    result = Convert.ChangeType(numeric, EnumType);
-                    failureMessage = null;
-
-                    return true;
-                }
+                failureMessage = "This enum does not support bitwise operations (only a singular value can be specified).";
+                return false;
             }
 
             try
             {
                 result = Enum.Parse(EnumType, value, true);
+                return true;
             }
             catch (Exception ex)
             {
@@ -53,11 +52,6 @@ namespace LabExtended.Core.Commands.Parsing
 
                 return false;
             }
-
-            ExLoader.Debug("Enum Parser", $"Parsed result: {result}");
-
-            failureMessage = null;
-            return true;
         }
     }
 }

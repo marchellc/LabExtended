@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Map;
 using LabExtended.API.Npcs;
 using LabExtended.API.Npcs.Navigation;
 using LabExtended.API.Prefabs;
@@ -8,8 +7,9 @@ using LabExtended.API.Round;
 
 using LabExtended.Core;
 using LabExtended.Core.Profiling;
-
+using LabExtended.CustomItems;
 using LabExtended.Patches.Functions;
+using LabExtended.Ticking;
 
 using PluginAPI.Events;
 
@@ -50,9 +50,12 @@ namespace LabExtended.Utilities
         private static void InternalHandleRestarting(RoundRestartEvent _)
         {
             NpcHandler.DestroyNpcs();
+
             RemoteAdminUtils.ClearObjects();
+
             ExRound.State = RoundState.Restarting;
-            ExTeslaGate._pauseUpdate = true;
+
+            TickManager.PauseTick("Tesla Gate Update");
         }
 
         private static void InternalHandleWaiting(WaitingForPlayersEvent _)
@@ -78,6 +81,9 @@ namespace LabExtended.Utilities
         {
             ExRound.StartedAt = DateTime.Now;
             ExRound.State = RoundState.InProgress;
+
+            if (TickManager.IsPaused("Tesla Gate Update"))
+                TickManager.ResumeTick("Tesla Gate Update");
         }
 
         internal static void InvokeWaiting(WaitingForPlayersEvent ev)

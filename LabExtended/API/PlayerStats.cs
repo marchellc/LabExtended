@@ -19,6 +19,7 @@ namespace LabExtended.API
             Vigor = Get<VigorStat>();
             Health = Get<HealthStat>();
             Stamina = Get<StaminaStat>();
+            AdminFlags = Get<AdminFlagsStat>();
             HumeShield = Get<HumeShieldStat>();
 
             _maxHealthOverride = new StatusValue<float>(() => Health.CurValue);
@@ -32,6 +33,7 @@ namespace LabExtended.API
         public VigorStat Vigor { get; }
         public HealthStat Health { get; }
         public StaminaStat Stamina { get; }
+        public AdminFlagsStat AdminFlags { get; }
         public HumeShieldStat HumeShield { get; }
 
         public float MinAhp => Ahp.MinValue;

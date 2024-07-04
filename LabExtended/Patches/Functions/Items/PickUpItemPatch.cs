@@ -9,6 +9,9 @@ using LabExtended.Extensions;
 using LabExtended.Events;
 
 using PluginAPI.Events;
+using LabExtended.CustomItems;
+using InventorySystem.Items;
+using LabExtended.CustomItems.Enums;
 
 namespace LabExtended.Patches.Functions.Items
 {
@@ -39,7 +42,15 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, __instance.TargetPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, true);
 
-            if (!HookRunner.RunCancellable(pickingUpEv, true))
+            pickingUpEv.Cancellation = true;
+
+            if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
+            {
+                customItem.IsSelected = false;
+                customItem.OnPickingUp(pickingUpEv);
+            }
+
+            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.Cancellation))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -51,11 +62,40 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
-            __instance.CheckCategoryLimitHint();
+            ItemBase item = null;
 
-            if (pickingUpEv.DestroyPickup)
-                __instance.TargetPickup.DestroySelf();
+            if (customItem != null)
+            {
+                if (customItem.Info.InventoryType != ItemType.None)
+                    item = __instance.Hub.inventory.ServerAddItem(customItem.Info.InventoryType, customItem.Serial, __instance.TargetPickup);
+            }
+            else
+            {
+                item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
+            }
+
+            if (item != null)
+            {
+                __instance.CheckCategoryLimitHint();
+
+                if (customItem != null)
+                {
+                    customItem.Pickup = null;
+                    customItem.Item = item;
+
+                    customItem.OnPickedUp(pickingUpEv);
+
+                    if ((customItem.Info.ItemFlags & CustomItemFlags.SelectOnPickup) == CustomItemFlags.SelectOnPickup)
+                        customItem.Select();
+                }
+
+                if (pickingUpEv.DestroyPickup)
+                    __instance.TargetPickup.DestroySelf();
+            }
+            else
+            {
+                __instance.TargetPickup.UnlockPickup();
+            }
 
             return false;
         }

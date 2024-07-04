@@ -18,6 +18,7 @@ namespace LabExtended.Commands.Formatting
         {
             RegisterCommand(new FormattingPlayerListCommand());
             RegisterCommand(new FormattingDurationCommand());
+            RegisterCommand(new FormattingEnumCommand());
         }
 
         protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)

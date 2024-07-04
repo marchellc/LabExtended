@@ -4,7 +4,9 @@ using LabExtended.API.Voice.Processing;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 
-using LabExtended.Events;
+using LabExtended.Extensions;
+using LabExtended.Ticking;
+
 using LabExtended.Events.Player;
 
 using VoiceChat.Networking;
@@ -12,7 +14,6 @@ using VoiceChat;
 
 using Common.Pooling.Pools;
 using Common.Extensions;
-using LabExtended.Extensions;
 
 namespace LabExtended.API.Voice
 {
@@ -21,7 +22,7 @@ namespace LabExtended.API.Voice
         internal static bool ShowSpeakingDebug; // Used in the debug command.
 
         static VoiceSystem()
-            => UpdateEvent.OnUpdate += SpeakingWatcher;
+            => TickManager.SubscribeTick(SpeakingWatcher, TickOptions.NoneSeparateProfiled);
 
         /// <summary>
         /// Gets a list of active voice processors.
@@ -35,6 +36,9 @@ namespace LabExtended.API.Voice
         /// Gets called when a player sends a packet after all custom processing finishes.
         /// </summary>
         public static event Action<VoiceMessage, ExPlayer, Dictionary<ExPlayer, VoiceChatChannel>, Action<ExPlayer, VoiceChatChannel>> OnPostProcessing;
+
+        public static event Action<ExPlayer> OnStartedSpeaking;
+        public static event Action<ExPlayer> OnStoppedSpeaking;
 
         internal static void SetProfile(ExPlayer player, VoiceProfileBase voiceProfileBase) // Implemented in ExPlayer
         {
@@ -181,6 +185,8 @@ namespace LabExtended.API.Voice
                             player._speakingCapture = ListPool<byte[]>.Shared.Rent();
                             player._voiceProfile?.OnStartedSpeaking();
 
+                            OnStartedSpeaking.Call(player);
+
                             HookRunner.RunEvent(new PlayerStartedSpeakingArgs(player));
 
                             if (ShowSpeakingDebug)
@@ -196,6 +202,8 @@ namespace LabExtended.API.Voice
                             player._wasSpeaking = false;
                             player._wasSpeakingAt = DateTime.MinValue;
                             player._voiceProfile?.OnStoppedSpeaking(wasSpeakingAt, speakingDuration, capture);
+
+                            OnStoppedSpeaking.Call(player);
 
                             HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(player, wasSpeakingAt, speakingDuration, capture));
 

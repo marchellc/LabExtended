@@ -22,6 +22,7 @@ using Footprinting;
 
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+
 using LabExtended.Core;
 
 namespace LabExtended.API.Npcs
@@ -637,7 +638,7 @@ namespace LabExtended.API.Npcs
 
                     if (!player._modules.ContainsKey(type))
                     {
-                        player._modules.Add(type, new ModuleContainer(module));
+                        player._modules.Add(type, new Tuple<Module, Ticking.TickOptions>(module, module.TickSettings ?? Ticking.TickOptions.None));
 
                         module.Parent = player;
                         module.IsActive = true;
@@ -651,7 +652,7 @@ namespace LabExtended.API.Npcs
                 }
             }
 
-            ExPlayer._players.Add(player);
+            ExPlayer._npcPlayers.Add(player);
 
             _spawnedNpcs.Add(npc);
 

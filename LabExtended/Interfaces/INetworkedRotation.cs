@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-
 using UnityEngine;
 
 namespace LabExtended.Interfaces

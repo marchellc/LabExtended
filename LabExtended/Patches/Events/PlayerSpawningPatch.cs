@@ -3,7 +3,9 @@
 using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
+using LabExtended.CustomItems;
 using LabExtended.Events.Player;
 
 using PlayerRoles;
@@ -21,42 +23,56 @@ namespace LabExtended.Patches.Events
 
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags)
         {
-            var player = ExPlayer.Get(__instance.Hub);
-
-            if (player is null)
-                return true;
-
-            EventManager.ExecuteEvent(new PlayerChangeRoleEvent(__instance.Hub, __instance.CurrentRole, newRole, reason));
-
-            var spawningEv = new PlayerSpawningArgs(player, __instance.CurrentRole, newRole, reason, spawnFlags);
-
-            if ((player.Switches.CanChangeRoles && HookRunner.RunCancellable(spawningEv, true))
-                || (!__instance._anySet || (newRole is RoleTypeId.None && reason is RoleChangeReason.Destroyed))
-                || __instance.isLocalPlayer)
+            try
             {
-                if (!player.Stats.KeepMaxHealthOnRoleChange)
-                    player.Stats._maxHealthOverride.Reset();
+                var player = ExPlayer.Get(__instance.Hub);
 
-                if (!player.FakePosition.KeepOnRoleChange || (!player.FakePosition.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
-                    player.FakePosition.ClearValues();
+                if (player is null)
+                    return true;
 
-                if (!player.FakeRole.KeepOnRoleChange || (!player.FakeRole.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
-                    player.FakeRole.ClearValues();
+                EventManager.ExecuteEvent(new PlayerChangeRoleEvent(__instance.Hub, __instance.CurrentRole, newRole, reason));
 
-                newRole = spawningEv.NewRole;
-                reason = spawningEv.ChangeReason;
-                spawnFlags = spawningEv.SpawnFlags;
+                var spawningEv = new PlayerSpawningArgs(player, __instance.CurrentRole, newRole, reason, spawnFlags);
+                var customItems = CustomItem.GetItems<CustomItem>(player);
 
-                try
+                spawningEv.Cancellation = true;
+
+                foreach (var item in customItems)
+                    item.OnOwnerSpawning(spawningEv);
+
+                if ((player.Switches.CanChangeRoles && HookRunner.RunCancellable(spawningEv, true))
+                    || (!__instance._anySet || (newRole is RoleTypeId.None && reason is RoleChangeReason.Destroyed))
+                    || __instance.isLocalPlayer)
                 {
-                    _event.Raise(null, __instance.Hub, newRole, reason);
+                    if (!player.Stats.KeepMaxHealthOnRoleChange)
+                        player.Stats._maxHealthOverride.Reset();
+
+                    if (!player.FakePosition.KeepOnRoleChange || (!player.FakePosition.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
+                        player.FakePosition.ClearValues();
+
+                    if (!player.FakeRole.KeepOnRoleChange || (!player.FakeRole.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
+                        player.FakeRole.ClearValues();
+
+                    newRole = spawningEv.NewRole;
+                    reason = spawningEv.ChangeReason;
+                    spawnFlags = spawningEv.SpawnFlags;
+
+                    try
+                    {
+                        _event.Raise(null, __instance.Hub, newRole, reason);
+                    }
+                    catch { }
+
+                    __instance.InitializeNewRole(newRole, reason, spawnFlags);
                 }
-                catch { }
 
-                __instance.InitializeNewRole(newRole, reason, spawnFlags);
+                return false;
             }
-
-            return false;
+            catch (Exception ex)
+            {
+                ExLoader.Error("PlayerSpawningPatch", ex);
+                return true;
+            }
         }
     }
 }

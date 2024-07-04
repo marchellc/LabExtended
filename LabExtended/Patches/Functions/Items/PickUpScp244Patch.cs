@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using InventorySystem;
+using InventorySystem.Items;
 using InventorySystem.Items.Usables.Scp244;
 using InventorySystem.Searching;
 
@@ -8,6 +9,8 @@ using LabExtended.API;
 using LabExtended.Core.Hooking;
 using LabExtended.Extensions;
 using LabExtended.Events;
+using LabExtended.CustomItems;
+using LabExtended.CustomItems.Enums;
 
 namespace LabExtended.Patches.Functions.Items
 {
@@ -35,7 +38,15 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, scp244DeployablePickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
 
-            if (!HookRunner.RunCancellable(pickingUpEv, true))
+            pickingUpEv.Cancellation = true;
+
+            if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
+            {
+                customItem.IsSelected = false;
+                customItem.OnPickingUp(pickingUpEv);
+            }
+
+            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.Cancellation))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -47,15 +58,44 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
-            __instance.CheckCategoryLimitHint();
+            ItemBase item = null;
 
-            scp244DeployablePickup.State = Scp244State.PickedUp;
-
-            if (pickingUpEv.DestroyPickup)
+            if (customItem != null)
             {
-                scp244DeployablePickup.State = Scp244State.Destroyed;
-                scp244DeployablePickup.DestroySelf();
+                if (customItem.Info.InventoryType != ItemType.None)
+                    item = __instance.Hub.inventory.ServerAddItem(customItem.Info.InventoryType, customItem.Serial, __instance.TargetPickup);
+            }
+            else
+            {
+                item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
+            }
+
+            if (item != null)
+            {
+                scp244DeployablePickup.State = Scp244State.PickedUp;
+
+                __instance.CheckCategoryLimitHint();
+
+                if (customItem != null)
+                {
+                    customItem.Pickup = null;
+                    customItem.Item = item;
+
+                    customItem.OnPickedUp(pickingUpEv);
+
+                    if ((customItem.Info.ItemFlags & CustomItemFlags.SelectOnPickup) == CustomItemFlags.SelectOnPickup)
+                        customItem.Select();
+                }
+
+                if (pickingUpEv.DestroyPickup)
+                {
+                    scp244DeployablePickup.State = Scp244State.Destroyed;
+                    scp244DeployablePickup.DestroySelf();
+                }
+            }
+            else
+            {
+                __instance.TargetPickup.UnlockPickup();
             }
 
             return false;

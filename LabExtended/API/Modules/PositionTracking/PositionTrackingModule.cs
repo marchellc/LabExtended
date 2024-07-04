@@ -3,6 +3,7 @@
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Modules;
+using LabExtended.Ticking;
 
 using UnityEngine;
 
@@ -17,7 +18,7 @@ namespace LabExtended.API.Modules.PositionTracking
         private readonly LockedList<PositionTrackingEntry> _removeNextTick = new LockedList<PositionTrackingEntry>(); // Used to avoid collection exceptions.
 
         /// <inheritdoc/>
-        public override ModuleTickSettings? TickSettings { get; } = new ModuleTickSettings(ModuleTickType.OnUpdate, null, null, null, null);
+        public override TickOptions TickSettings { get; } = TickOptions.None;
 
         /// <summary>
         /// Gets a list of all active entries.

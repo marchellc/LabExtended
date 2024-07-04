@@ -30,7 +30,7 @@ namespace LabExtended.Core.Hooking
         {
             var type = eventObject.GetType();
 
-            _marker.MarkStart(type.FullName);
+            _marker.MarkStart(type.Name);
 
             try
             {

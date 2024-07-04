@@ -23,11 +23,13 @@ using LabExtended.API.Voice.Processing;
 using LabExtended.Modules;
 using LabExtended.Utilities;
 using LabExtended.Extensions;
+using LabExtended.Hints;
+using LabExtended.Utilities.Values;
+using LabExtended.Ticking;
 using LabExtended.Patches.Functions;
 
 using LabExtended.Core.Hooking;
 
-using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using LiteNetLib;
@@ -56,7 +58,10 @@ using CustomPlayerEffects;
 using Utils;
 
 using PluginAPI.Events;
-using LabExtended.Hints;
+using PluginAPI.Core;
+using LabExtended.Core;
+using InventorySystem.Items.Keycards;
+using Interactables.Interobjects.DoorUtils;
 
 namespace LabExtended.API
 {
@@ -65,30 +70,42 @@ namespace LabExtended.API
     /// </summary>
     public class ExPlayer : ModuleParent
     {
+        static ExPlayer()
+        {
+            _players = new List<ExPlayer>();
+            _npcPlayers = new List<ExPlayer>();
+
+            _hostPlayer = null;
+            _localPlayer = null;
+
+            TickManager.SubscribeTick(UpdateSentRoles, TickOptions.NoneSeparateProfiled);
+        }
+
         internal static readonly List<ExPlayer> _players;
+        internal static readonly List<ExPlayer> _npcPlayers;
 
         internal static ExPlayer _localPlayer;
         internal static ExPlayer _hostPlayer;
 
         /// <summary>
-        /// Gets a list of all players on the server (including NPCs).
+        /// Gets a list of all players on the server.
         /// </summary>
-        public static IEnumerable<ExPlayer> Players => _players;
+        public static IReadOnlyList<ExPlayer> Players => _players;
 
         /// <summary>
-        /// Gets a list of all players on the server (exluding NPCs).
+        /// Gets a list of all NPC players on the server.
         /// </summary>
-        public static IEnumerable<ExPlayer> RealPlayers => _players;
+        public static IReadOnlyList<ExPlayer> NpcPlayers => _npcPlayers;
 
         /// <summary>
-        /// Gets a count of all players on the server (including NPCs).
+        /// Gets a count of all players on the server.
         /// </summary>
         public static int Count => _players.Count;
 
         /// <summary>
-        /// Gets a count of all players on the server (exluding NPCs).
+        /// Gets a count of all NPCs on the server.
         /// </summary>
-        public static int RealCount => _players.Count(p => !p.IsNpc);
+        public static int NpcCount => _npcPlayers.Count;
 
         /// <summary>
         /// Gets the host player.
@@ -130,75 +147,133 @@ namespace LabExtended.API
             }
         }
 
-        static ExPlayer()
-        {
-            _players = new List<ExPlayer>();
-
-            _hostPlayer = null;
-            _localPlayer = null;
-
-            UpdateEvent.OnUpdate += UpdateSentRoles;
-        }
-
-        public static ExPlayer Get(GameObject gameObject)
-        {
-            if (gameObject is null)
-                return null;
-
-            if (!ReferenceHub.TryGetHub(gameObject, out var hub) && !gameObject.TryGetComponent<ReferenceHub>(out hub))
-                return null;
-
-            if (ReferenceHub.HostHub != null && hub == ReferenceHub.HostHub)
-                return Host;
-
-            if (ReferenceHub.LocalHub != null && hub == ReferenceHub.LocalHub)
-                return Local;
-
-            return _players.FirstOrDefault(p => p.Hub != null && p.Hub == hub);
-        }
-
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ReferenceHub"/>.
+        /// </summary>
+        /// <param name="hub">The <see cref="ReferenceHub"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(ReferenceHub hub)
-        {
-            if (hub is null)
-                return null;
+            => _players.FirstOrDefault(p => p._hub != null && p._hub == hub);
 
-            if (ReferenceHub.HostHub != null && hub == ReferenceHub.HostHub)
-                return Host;
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="PluginAPI.Core.Player"/>.
+        /// </summary>
+        /// <param name="player">The <see cref="PluginAPI.Core.Player"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(Player player)
+            => Get(player.ReferenceHub);
 
-            if (ReferenceHub.LocalHub != null && hub == ReferenceHub.LocalHub)
-                return Local;
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="GameObject"/>.
+        /// </summary>
+        /// <param name="gameObject">The <see cref="UnityEngine.GameObject"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(GameObject gameObject)
+            => _players.FirstOrDefault(p => p.GameObject != null && p.GameObject == gameObject);
 
-            return _players.FirstOrDefault(p => p.Hub != null && p.Hub == hub);
-        }
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="Collider"/>.
+        /// </summary>
+        /// <param name="collider">The <see cref="Collider"/> instance to a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(Collider collider)
+            => Get(collider.transform.root.gameObject);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="NetworkConnection"/>.
+        /// </summary>
+        /// <param name="connection">The <see cref="NetworkConnection"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(NetworkConnection connection)
-        {
-            if (connection is null)
-                return null;
+            => _players.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
 
-            return _players.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
-        }
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="NetworkIdentity"/>.
+        /// </summary>
+        /// <param name="identity">The <see cref="NetworkIdentity"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(NetworkIdentity identity)
+            => Get(identity.netId);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="NetPeer"/>.
+        /// </summary>
+        /// <param name="peer">The <see cref="NetPeer"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(NetPeer peer)
             => _players.FirstOrDefault(p => p.Peer != null && p.Peer == peer);
 
-        public static ExPlayer Get(uint networkId)
-            => _players.FirstOrDefault(p => p.NetId == networkId);
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ItemBase"/>.
+        /// </summary>
+        /// <param name="item">The <see cref="ItemBase"/> instance to get a player of..</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(ItemBase item)
+            => Get(item.Owner);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ItemPickupBase"/>.
+        /// </summary>
+        /// <param name="itemPickup">The <see cref="ItemPickupBase"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(ItemPickupBase itemPickup)
+            => Get(itemPickup.PreviousOwner);
+
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="GameObject"/>.
+        /// </summary>
+        /// <param name="footprint">The <see cref="Footprinting.Footprint"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(Footprint footprint)
+            => Get(footprint.Hub);
+
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance by a player ID.
+        /// </summary>
+        /// <param name="playerId">The player ID to find.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(int playerId)
             => _players.FirstOrDefault(p => p.PlayerId == playerId);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance by a network ID.
+        /// </summary>
+        /// <param name="networkId">The network ID to find.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(uint networkId)
+            => _players.FirstOrDefault(p => p.NetId == networkId);
+
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance by a connection ID.
+        /// </summary>
+        /// <param name="connectionId">The connection ID to find.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByConnectionId(int connectionId)
             => _players.FirstOrDefault(p => p.ConnectionId == connectionId);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance by a user ID.
+        /// </summary>
+        /// <param name="userId">The user ID to find.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByUserId(string userId)
-            => _players.FirstOrDefault(p => p.UserId == userId);
+            => _players.FirstOrDefault(p => p.UserId == userId || p.ClearUserId == userId);
 
+        /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance by a user ID, player ID, network ID, IP or name.
+        /// </summary>
+        /// <param name="nameOrId">The network ID to find.</param>
+        /// <param name="minNameScore">Name match precision.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(string nameOrId, double minNameScore = 0.85)
         {
             foreach (var player in _players)
             {
-                if (player.UserId == nameOrId || player.PlayerId.ToString() == nameOrId)
+                if (player.IsNpc || player.IsServer)
+                    continue;
+
+                if (player.UserId == nameOrId || player.ClearUserId == nameOrId || player.PlayerId.ToString() == nameOrId
+                    || player.ConnectionId.ToString() == nameOrId || player.NetId.ToString() == nameOrId)
                     return player;
 
                 if (player.Name.GetSimilarity(nameOrId) >= minNameScore)
@@ -207,6 +282,147 @@ namespace LabExtended.API
 
             return null;
         }
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="ReferenceHub"/>.
+        /// </summary>
+        /// <param name="player">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(ReferenceHub player, out ExPlayer handler)
+            => (handler = Get(player)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="PluginAPI.Core.Player"/>.
+        /// </summary>
+        /// <param name="player">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(Player player, out ExPlayer handler)
+            => (handler = Get(player)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="GameObject"/>.
+        /// </summary>
+        /// <param name="player">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(GameObject player, out ExPlayer handler)
+            => (handler = Get(player)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkIdentity"/>.
+        /// </summary>
+        /// <param name="identity">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(NetworkIdentity identity, out ExPlayer handler)
+            => (handler = Get(identity)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkConnection"/>.
+        /// </summary>
+        /// <param name="conn">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(NetworkConnection conn, out ExPlayer handler)
+            => (handler = Get(conn)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="Collider"/>.
+        /// </summary>
+        /// <param name="collider">The instance to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(Collider collider, out ExPlayer handler)
+            => (handler = Get(collider)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a player ID.
+        /// </summary>
+        /// <param name="playerId">The player ID to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(int playerId, out ExPlayer handler)
+            => (handler = Get(playerId)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a connection ID.
+        /// </summary>
+        /// <param name="connectionId">The connection ID to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGetByConnectionId(int connectionId, out ExPlayer handler)
+            => (handler = GetByConnectionId(connectionId)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a network ID.
+        /// </summary>
+        /// <param name="networkId">The network ID to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(uint networkId, out ExPlayer handler)
+            => (handler = Get(networkId)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="NpcHandler"/> instance by a user ID.
+        /// </summary>
+        /// <param name="userId">The network ID to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGetByUserId(string userId, out ExPlayer handler)
+            => (handler = GetByUserId(userId)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="NpcHandler"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
+        /// </summary>
+        /// <param name="value">The value to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="minScore">Name match precision.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(string value, double minScore, out ExPlayer handler)
+            => (handler = Get(value, minScore)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="NpcHandler"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
+        /// </summary>
+        /// <param name="value">The value to find.</param>
+        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(string value, out ExPlayer handler)
+            => (handler = Get(value)) != null;
+
+        /// <summary>
+        /// Gets a list of all players that match the predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate.</param>
+        /// <returns>A list of all matching players.</returns>
+        public static IEnumerable<ExPlayer> Get(Func<ExPlayer, bool> predicate)
+            => _players.Where(predicate);
+
+        /// <summary>
+        /// Gets a list of all players. in the specified <paramref name="team"/>.
+        /// </summary>
+        /// <param name="team">The team.</param>
+        /// <returns>A list of all matching players.</returns>
+        public static IEnumerable<ExPlayer> Get(Team team)
+            => Get(n => n.Role.Team == team);
+
+        /// <summary>
+        /// Gets a list of all players in the specified <paramref name="faction"/>.
+        /// </summary>
+        /// <param name="faction">The faction.</param>
+        /// <returns>A list of all matching players.</returns>
+        public static IEnumerable<ExPlayer> Get(Faction faction)
+            => Get(n => n.Role.Faction == faction);
+
+        /// <summary>
+        /// Gets a list of all players. with the specified <paramref name="role"/>.
+        /// </summary>
+        /// <param name="role">The role.</param>
+        /// <returns>A list of all matching players.</returns>
+        public static IEnumerable<ExPlayer> Get(RoleTypeId role)
+            => Get(n => n.Role.Type == role);
 
         private NetPeer _peer;
         private ReferenceHub _hub;
@@ -313,10 +529,13 @@ namespace LabExtended.API
 
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 
+        public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem ? keycardItem.Permissions : KeycardPermissions.None;
+
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
         public IEnumerable<ExPlayer> PlayersInSight => _players.Where(p => p.IsInLineOfSight(this));
 
         public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Where<Firearm>();
+        public IEnumerable<KeycardItem> Keycards => _hub.inventory.UserInventory.Items.Where<KeycardItem>();
 
         public IEnumerable<StatusEffectBase> InactiveEffects => _hub.playerEffectsController.AllEffects.Where(e => !e.IsEnabled);
         public IEnumerable<StatusEffectBase> ActiveEffects => _hub.playerEffectsController.AllEffects.Where(e => e.IsEnabled);
@@ -358,6 +577,34 @@ namespace LabExtended.API
         public bool DoNotTrack => _hub.authManager.DoNotTrack;
 
         public string Address => _hub.connectionToClient.address;
+
+        public string ClearUserId
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(UserId))
+                    throw new Exception("Empty user ID.");
+
+                if (!UserId.TrySplit('@', true, 2, out var idParts))
+                    return UserId;
+
+                return idParts[0];
+            }
+        }
+
+        public string UserIdType
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(UserId))
+                    throw new Exception("Empty user ID.");
+
+                if (!UserId.TrySplit('@', true, 2, out var idParts))
+                    throw new Exception($"Invalid user ID.");
+
+                return idParts[1];
+            }
+        }
 
         public bool IsInvisible
         {
@@ -498,6 +745,27 @@ namespace LabExtended.API
             }
         }
 
+        public KeycardPermissions AllKeycardPermissions
+        {
+            get
+            {
+                var perms = KeycardPermissions.None;
+
+                foreach (var keycard in Keycards)
+                {
+                    var cardPerms = keycard.Permissions.GetFlags();
+
+                    foreach (var cardPerm in cardPerms)
+                    {
+                        if (!perms.HasFlagFast(cardPerm))
+                            perms |= cardPerm;
+                    }
+                }
+
+                return perms;
+            }
+        }
+
         public IEnumerable<ItemBase> Items
         {
             get => _hub.inventory.UserInventory.Items.Values;
@@ -554,7 +822,6 @@ namespace LabExtended.API
                 var instance = value.GetItemInstance<ItemBase>();
 
                 instance.SetupItem(Hub);
-                instance.OnAdded(null);
 
                 CurrentItemIdentifier = new ItemIdentifier(instance.ItemTypeId, instance.ItemSerial);
             }
@@ -796,7 +1063,7 @@ namespace LabExtended.API
             if (item is null)
                 return null;
 
-            item.SetupItem(Hub);
+            item.SetupItem(Hub, true, false, false);
             return item;
         }
 
@@ -818,7 +1085,7 @@ namespace LabExtended.API
             if (item is null)
                 return false;
 
-            item.SetupItem(Hub);
+            item.SetupItem(Hub, true, false, false);
             return item;
         }
 
@@ -1067,6 +1334,29 @@ namespace LabExtended.API
 
                     player._sentRoles[other.NetId] = curRoleId;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
+                }
+            }
+
+            foreach (var npc in _npcPlayers)
+            {
+                var curRoleId = npc.Role.Type;
+
+                if (npc.Role.Role is IObfuscatedRole obfuscatedRole)
+                    curRoleId = obfuscatedRole.GetRoleForUser(npc.Hub);
+
+                foreach (var other in _players)
+                {
+                    if (npc.FakeRole.TryGetValue(other, out var fakedRole))
+                        curRoleId = fakedRole;
+
+                    if (!other.Role.IsAlive && !npc.Switches.IsVisibleInSpectatorList)
+                        curRoleId = RoleTypeId.Spectator;
+
+                    if (npc._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == curRoleId)
+                        continue;
+
+                    npc._sentRoles[other.NetId] = curRoleId;
+                    other.Connection.Send(new RoleSyncInfo(npc.Hub, curRoleId, other.Hub));
                 }
             }
         }

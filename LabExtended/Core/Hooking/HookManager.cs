@@ -5,6 +5,9 @@ using Common.Utilities;
 using LabExtended.Attributes;
 using LabExtended.Events;
 using LabExtended.Utilities;
+using LabExtended.CustomItems;
+using LabExtended.Events.Player;
+using LabExtended.API.Input;
 
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Hooking.Enums;
@@ -45,13 +48,25 @@ namespace LabExtended.Core.Hooking
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeWaiting((WaitingForPlayersEvent)ev)
+                ev => RoundEvents.InvokeWaiting((WaitingForPlayersEvent)ev),
+                ev => InputHandler.OnWaiting((WaitingForPlayersEvent)ev),
+                ev => CustomItem.InternalHandleWaiting((WaitingForPlayersEvent)ev),
             },
 
             // Internal Events
             [typeof(MapGeneratedEvent)] = new List<Action<object>>()
             {
                 ev => InternalEvents.OnMapGenerated((MapGeneratedEvent)ev),
+            },
+
+            [typeof(PlayerDyingEvent)] = new List<Action<object>>()
+            {
+                ev => CustomItem.InternalHandleDying((PlayerDyingEvent)ev),
+            },
+
+            [typeof(PlayerTogglingNoClipArgs)] = new List<Action<object>>()
+            {
+                ev => InputHandler.OnTogglingNoClip((PlayerTogglingNoClipArgs)ev),
             },
         };
 
