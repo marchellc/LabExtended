@@ -7,7 +7,6 @@ using Mirror;
 using LabExtended.API;
 using LabExtended.Events.Player;
 using LabExtended.Core.Hooking;
-using LabExtended.CustomItems;
 
 using UnityEngine;
 
@@ -19,7 +18,9 @@ using CustomPlayerEffects;
 using System.Reflection;
 
 using Common.Extensions;
+
 using LabExtended.Core;
+using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Events
@@ -49,7 +50,7 @@ namespace LabExtended.Patches.Events
                 if (reason is RoleChangeReason.Destroyed && targetId is RoleTypeId.None)
                     return false;
 
-                var newRole = __instance.GetRoleBase(targetId);
+                var newRole = targetId.GetInstance();
 
                 newRole.transform.parent = __instance.transform;
 

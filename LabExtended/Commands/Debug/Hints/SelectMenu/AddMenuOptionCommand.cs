@@ -1,6 +1,7 @@
 ﻿using LabExtended.API;
+using LabExtended.API.Hints.Elements.SelectMenu;
+
 using LabExtended.Core.Commands;
-using LabExtended.Hints.Elements.SelectMenu;
 
 namespace LabExtended.Commands.Debug.Hints.SelectMenu
 {

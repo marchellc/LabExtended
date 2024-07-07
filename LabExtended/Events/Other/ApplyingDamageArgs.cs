@@ -10,8 +10,14 @@ namespace LabExtended.Events.Other
     /// </summary>
     public class ApplyingDamageArgs : HookBooleanCancellableEventBase
     {
+        /// <summary>
+        /// The damage being applied.
+        /// </summary>
         public DamageInfo Info { get; }
 
+        /// <summary>
+        /// The damage target.
+        /// </summary>
         public ExPlayer Target { get; set; }
 
         internal ApplyingDamageArgs(DamageInfo damageInfo, ExPlayer target)

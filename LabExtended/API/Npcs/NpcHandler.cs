@@ -1,5 +1,4 @@
-﻿using LabExtended.Modules;
-using LabExtended.API.Npcs.Navigation;
+﻿using LabExtended.API.Npcs.Navigation;
 
 using MEC;
 
@@ -24,6 +23,7 @@ using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.Core;
+using LabExtended.API.Modules;
 
 namespace LabExtended.API.Npcs
 {
@@ -638,12 +638,12 @@ namespace LabExtended.API.Npcs
 
                     if (!player._modules.ContainsKey(type))
                     {
-                        player._modules.Add(type, new Tuple<Module, Ticking.TickOptions>(module, module.TickSettings ?? Ticking.TickOptions.None));
+                        player._modules[type] = module;
 
                         module.Parent = player;
-                        module.IsActive = true;
+                        module.StartModule();
 
-                        module.Start();
+                        player.OnModuleAdded(module);
                     }
                     else
                     {

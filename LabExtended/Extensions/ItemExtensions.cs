@@ -7,7 +7,11 @@ using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Jailbird;
 using InventorySystem.Items.Pickups;
 
+using LabExtended.API;
+
 using Mirror;
+
+using System.Collections.Frozen;
 
 using UnityEngine;
 
@@ -18,12 +22,69 @@ namespace LabExtended.Extensions
     /// </summary>
     public static class ItemExtensions
     {
+        public static FrozenDictionary<ItemType, ItemBase> Prefabs { get; private set; }
+
+        public static bool PrefabsLoaded => Prefabs != null && Prefabs.Count > 0;
+
+        public static void ReloadPrefabs()
+        {
+            var dict = new Dictionary<ItemType, ItemBase>();
+            var prefabs = Resources.LoadAll<ItemBase>("Defined Items");
+
+            Array.Sort(prefabs, (x, y) => ((int)x.ItemTypeId).CompareTo((int)y.ItemTypeId));
+
+            for (int i = 0; i < prefabs.Length; i++)
+            {
+                var prefab = prefabs[i];
+
+                if (prefab is null || prefab.ItemTypeId is ItemType.None)
+                    continue;
+
+                dict[prefab.ItemTypeId] = prefab;
+                prefab.OnTemplateReloaded(false);
+
+                if (prefab.PickupDropModel != null && !NetworkClient.prefabs.ContainsValue(prefab.PickupDropModel.gameObject))
+                    NetworkClient.RegisterPrefab(prefab.PickupDropModel.gameObject);
+            }
+
+            Prefabs = dict.ToFrozenDictionary();
+        }
+
         public static byte GetInventorySlot(this ItemBase item)
         {
             if (item.Owner is null)
                 throw new InvalidOperationException($"The targeted item must be owned by a player.");
 
             return (byte)(item.OwnerInventory.UserInventory.Items.FindKeyIndex(item.ItemSerial) + 1);
+        }
+
+        public static bool TryGetItemPrefab<T>(this ItemType type, out T prefab) where T : ItemBase
+        {
+            if (!PrefabsLoaded)
+                ReloadPrefabs();
+
+            if (!Prefabs.TryGetValue(type, out var item))
+            {
+                prefab = null;
+                return false;
+            }
+
+            if (item is not T castPrefab)
+            {
+                prefab = null;
+                return false;
+            }
+
+            prefab = castPrefab;
+            return true;
+        }
+
+        public static bool TryGetItemPrefab(this ItemType type, out ItemBase prefab)
+        {
+            if (!PrefabsLoaded)
+                ReloadPrefabs();
+
+            return Prefabs.TryGetValue(type, out prefab);
         }
 
         /// <summary>
@@ -33,7 +94,7 @@ namespace LabExtended.Extensions
         /// <param name="itemType">The type of the item to get.</param>
         /// <returns>The <see cref="ItemBase"/> prefab instance if found, otherwise <see langword="null"/>.</returns>
         public static T GetItemPrefab<T>(this ItemType itemType) where T : ItemBase
-            => InventoryItemLoader.TryGetItem<T>(itemType, out var item) ? item : null;
+            => TryGetItemPrefab<T>(itemType, out var prefab) ? prefab : null;
 
         /// <summary>
         /// Gets an instance of an item.
@@ -43,7 +104,7 @@ namespace LabExtended.Extensions
         /// <returns>The item's instance, if succesfull. Otherwise <see langword="null"/>.</returns>
         public static T GetItemInstance<T>(this ItemType itemType, ushort? serial = null) where T : ItemBase
         {
-            if (!InventoryItemLoader.TryGetItem<T>(itemType, out var result))
+            if (!TryGetItemPrefab<T>(itemType, out var result))
                 return null;
 
             var item = UnityEngine.Object.Instantiate(result);
@@ -69,7 +130,7 @@ namespace LabExtended.Extensions
         /// <returns>The pickup instance, if found. Otherwise <see langword="null"/>.</returns>
         public static T GetPickupInstance<T>(this ItemType itemType, Vector3? position = null, Vector3? scale = null, Quaternion? rotation = null, ushort? serial = null, bool spawnPickup = false) where T : ItemPickupBase
         {
-            if (!InventoryItemLoader.TryGetItem<ItemBase>(itemType, out var itemBase))
+            if (!TryGetItemPrefab(itemType, out var itemBase))
                 return null;
 
             if (itemBase.PickupDropModel is null)
@@ -205,7 +266,7 @@ namespace LabExtended.Extensions
                 {
                     item.Owner = owner;
                     item.OwnerInventory.UserInventory.Items[item.ItemSerial] = item;
-                    item.OwnerInventory.ServerSendItems();
+                    item.OwnerInventory.SendItemsNextFrame = true;
                 }
             }
 
@@ -238,5 +299,33 @@ namespace LabExtended.Extensions
             if (item is JailbirdItem jailbird)
                 jailbird.ServerReset();
         }
+
+        public static IEnumerable<ExPlayer> GetPlayers(ItemType item)
+            => ExPlayer.Players.Where(p => p.HasItem(item));
+
+        public static void ForEach(ItemType item, Action<ExPlayer> action)
+        {
+            foreach (var player in ExPlayer.Players)
+            {
+                if (!player.HasItem(item))
+                    continue;
+
+                action(player);
+            }
+        }
+
+        public static void ForEach<T>(this ItemType type, Action<ExPlayer, T> action) where T : ItemBase
+        {
+            foreach (var player in ExPlayer.Players)
+            {
+                foreach (var item in player.GetItems<T>(type))
+                {
+                    action(player, item);
+                }
+            }
+        }
+
+        public static bool IsAmmo(this ItemType type)
+            => type.TryGetItemPrefab(out var prefab) && prefab.Category is ItemCategory.Ammo;
     }
 }

@@ -9,6 +9,7 @@ using InventorySystem.Items;
 using InventorySystem.Items.Armor;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
+using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
@@ -34,7 +35,7 @@ namespace LabExtended.Patches.Events
                     return true;
 
                 var hasEscaped = newRole.ServerSpawnReason is RoleChangeReason.Escaped;
-                var keepItems = InventoryItemProvider.KeepItemsAfterEscaping;
+                var dropItems = InventoryItemProvider.KeepItemsAfterEscaping;
 
                 var itemsToAdd = ListPool<ItemType>.Shared.Rent();
                 var ammoToAdd = DictionaryPool<ItemType, ushort>.Shared.Rent();
@@ -47,7 +48,7 @@ namespace LabExtended.Patches.Events
                     ammoToAdd.AddRange(startingInv.Ammo);
                 }
 
-                var grantingArgs = new PlayerGrantingInventoryArgs(player, true, !keepItems || !hasEscaped, hasEscaped, keepItems, itemsToAdd, ammoToAdd);
+                var grantingArgs = new PlayerGrantingInventoryArgs(player, true, !dropItems || !hasEscaped, hasEscaped, dropItems, itemsToAdd, ammoToAdd);
 
                 if (!HookRunner.RunCancellable(grantingArgs, true))
                 {
@@ -56,7 +57,7 @@ namespace LabExtended.Patches.Events
                     return false;
                 }
 
-                if (grantingArgs.KeepPreviousItems)
+                if (grantingArgs.DropPreviousItems)
                 {
                     if (ply.inventory.TryGetBodyArmor(out var bodyArmor))
                         bodyArmor.DontRemoveExcessOnDrop = true;
@@ -89,17 +90,20 @@ namespace LabExtended.Patches.Events
 
                         addedItems.Add(item);
 
-                        if (item is Firearm)
+                        if (item is Firearm firearm)
+                        {
                             AttachmentsServerHandler.SetupProvidedWeapon(ply, item);
+
+                            if (!firearm.Status.Flags.HasFlagFast(FirearmStatusFlags.MagazineInserted))
+                                firearm.Status = new FirearmStatus(firearm.AmmoManagerModule.MaxAmmo, firearm.Status.Flags | FirearmStatusFlags.MagazineInserted, firearm.Status.Attachments);
+                        }
                     }
 
                     foreach (var ammoType in ammoToAdd)
                         ply.inventory.ServerAddAmmo(ammoType.Key, ammoType.Value);
                 }
 
-                var grantedArgs = new PlayerGrantedInventoryArgs(player, hasEscaped, addedItems, previousItems, ammoToAdd);
-
-                HookRunner.RunEvent(grantedArgs);
+                HookRunner.RunEvent(new PlayerGrantedInventoryArgs(player, hasEscaped, addedItems, previousItems, ammoToAdd));
 
                 if (previousItems.Count < 1)
                 {

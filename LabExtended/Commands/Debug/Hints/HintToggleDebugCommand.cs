@@ -1,6 +1,6 @@
 ﻿using LabExtended.API;
+using LabExtended.API.Hints;
 using LabExtended.Core.Commands;
-using LabExtended.Hints;
 
 namespace LabExtended.Commands.Debug.Hints
 {

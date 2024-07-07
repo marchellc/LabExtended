@@ -4,13 +4,13 @@ using InventorySystem.Items.Usables.Scp330;
 using InventorySystem.Searching;
 
 using LabExtended.API;
-using LabExtended.CustomItems;
 using LabExtended.Core.Hooking;
 using LabExtended.Extensions;
 using LabExtended.Events;
 
 using PluginAPI.Events;
-using LabExtended.CustomItems.Enums;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Enums;
 
 namespace LabExtended.Patches.Functions.Items
 {

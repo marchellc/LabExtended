@@ -1,6 +1,8 @@
-﻿using LabExtended.Core;
-using LabExtended.CustomItems;
-using LabExtended.CustomItems.Enums;
+﻿using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Enums;
+using LabExtended.API.CustomItems.Info;
+using LabExtended.Core;
+
 using LabExtended.Events;
 using LabExtended.Events.Player;
 
@@ -19,7 +21,7 @@ namespace LabExtended.Utilities.Debug
             if (IsRegistered)
                 return;
 
-            IsRegistered = RegisterItem<DebugCustomItem>(
+            IsRegistered = RegisterItem(
                 new CustomItemInfo(typeof(DebugCustomItem), "debug_ci", "Debug Item", "A custom item for debugging purposes", ItemType.Adrenaline, CustomItemFlags.SelectOnPickup,
                 new CustomItemPickupInfo(Vector3.one * 5f, ItemType.Medkit)));
 

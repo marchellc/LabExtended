@@ -1,6 +1,6 @@
 ﻿using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Core.Commands;
-using LabExtended.CustomItems;
 using LabExtended.Utilities.Debug;
 
 namespace LabExtended.Commands.Debug.CustomItems

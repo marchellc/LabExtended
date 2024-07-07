@@ -59,7 +59,8 @@ namespace LabExtended.Patches.Functions
                     if (!EventManager.ExecuteEvent(new Scp173NewObserverEvent(__instance.Owner, target)))
                         return __result = false;
 
-                    return __result = true;
+                    __result = true;
+                    return false;
                 }
             }
 

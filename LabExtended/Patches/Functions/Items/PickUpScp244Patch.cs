@@ -9,8 +9,8 @@ using LabExtended.API;
 using LabExtended.Core.Hooking;
 using LabExtended.Extensions;
 using LabExtended.Events;
-using LabExtended.CustomItems;
-using LabExtended.CustomItems.Enums;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Enums;
 
 namespace LabExtended.Patches.Functions.Items
 {

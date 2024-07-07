@@ -241,13 +241,6 @@ namespace LabExtended.Core.Commands
             return str;
         }
 
-        /* Method example
-        public object OnCalled(ExPlayer sender)
-        {
-
-        }
-        */
-
         private MethodInfo TryFindMethod()
         {
             var type = GetType();

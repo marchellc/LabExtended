@@ -25,8 +25,8 @@ namespace LabExtended.API.Input
             PlayerJoinPatch.OnJoined += OnPlayerJoined;
             PlayerLeavePatch.OnLeaving += OnPlayerLeft;
 
-            VoiceSystem.OnStartedSpeaking += OnSpeaking;
-            VoiceSystem.OnStoppedSpeaking += OnSpeaking;
+            VoiceModule.OnStartedSpeaking += OnSpeaking;
+            VoiceModule.OnStoppedSpeaking += (player, start, time, capture) => OnSpeaking(player);
         }
 
         internal static readonly LockedDictionary<Type, InputListenerInfo> _listeners = new LockedDictionary<Type, InputListenerInfo>();
@@ -103,7 +103,7 @@ namespace LabExtended.API.Input
         public static bool TryGetListener<T>(out T instance) where T : IInputListener
             => ((_listeners.TryGetValue(typeof(T), out var listener) ? instance = (T)listener.Listener : instance = default)) != null;
 
-        internal static void OnWaiting(WaitingForPlayersEvent ev)
+        internal static void OnWaiting()
             => _states.Clear();
 
         internal static void OnPlayerJoined(ExPlayer player)

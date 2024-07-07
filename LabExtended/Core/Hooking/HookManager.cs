@@ -5,9 +5,10 @@ using Common.Utilities;
 using LabExtended.Attributes;
 using LabExtended.Events;
 using LabExtended.Utilities;
-using LabExtended.CustomItems;
 using LabExtended.Events.Player;
+
 using LabExtended.API.Input;
+using LabExtended.API.CustomItems;
 
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Hooking.Enums;
@@ -30,33 +31,35 @@ namespace LabExtended.Core.Hooking
     {
         public static LockedDictionary<Type, List<Action<object>>> PredefinedDelegates { get; } = new LockedDictionary<Type, List<Action<object>>>()
         {
-            // Public Round Events
             [typeof(RoundStartEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeStarted((RoundStartEvent)ev),
+                _ => InternalEvents.InternalHandleRoundStart(),
+                _ => RoundEvents.InvokeStarted(),
             },
 
             [typeof(RoundEndEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeEnded((RoundEndEvent)ev),
+                _ => InternalEvents.InternalHandleRoundEnd(),
+                _ => RoundEvents.InvokeEnded()
             },
 
             [typeof(RoundRestartEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeRestarted((RoundRestartEvent)ev),
+                _ => InternalEvents.InternalHandleRoundRestart(),
+                _ => RoundEvents.InvokeRestarted()
             },
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeWaiting((WaitingForPlayersEvent)ev),
-                ev => InputHandler.OnWaiting((WaitingForPlayersEvent)ev),
-                ev => CustomItem.InternalHandleWaiting((WaitingForPlayersEvent)ev),
+                _ => InternalEvents.InternalHandleRoundWaiting(),
+                _ => CustomItem.InternalHandleWaiting(),
+                _ => RoundEvents.InvokeWaiting(),
+                _ => InputHandler.OnWaiting()
             },
 
-            // Internal Events
             [typeof(MapGeneratedEvent)] = new List<Action<object>>()
             {
-                ev => InternalEvents.OnMapGenerated((MapGeneratedEvent)ev),
+                _ => InternalEvents.InternalHandleMapGenerated()
             },
 
             [typeof(PlayerDyingEvent)] = new List<Action<object>>()

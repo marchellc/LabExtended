@@ -1,7 +1,7 @@
 ﻿using Common.IO.Collections;
 
 using Hazards;
-
+using LabExtended.API.Interfaces;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 
@@ -9,7 +9,6 @@ using LabExtended.Events.Map;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-using LabExtended.Interfaces;
 using LabExtended.Ticking;
 using LabExtended.Utilities;
 
@@ -34,7 +33,7 @@ namespace LabExtended.API.Map
         IDamageObject
     {
         static ExTeslaGate()
-            => TickManager.SubscribeTick(TickGates, TickOptions.NoneSeparateProfiled, "Tesla Gate Update");
+            => TickManager.SubscribeTick(TickGates, TickOptions.NoneProfiled, "Tesla Gate Update");
 
         internal static readonly LockedDictionary<TeslaGate, ExTeslaGate> _wrappers = new LockedDictionary<TeslaGate, ExTeslaGate>();
 

@@ -1,4 +1,5 @@
-﻿using Common.IO.Collections;
+﻿using Common.Extensions;
+using Common.IO.Collections;
 
 using LabExtended.API;
 
@@ -42,6 +43,12 @@ namespace LabExtended.Utilities
 
         public bool Add(NetworkIdentity identity)
             => identity != null && _netIdList.Add(identity.netId);
+
+        public void AddAll()
+            => _netIdList.AddRange(ExPlayer.Players.Select(p => p.NetId));
+
+        public void AddRange(IEnumerable<ExPlayer> players)
+            => _netIdList.AddRange(players.Select(p => p.NetId));
 
         public int AddWhere(Func<ExPlayer, bool> predicate)
         {

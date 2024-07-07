@@ -1,8 +1,14 @@
 ﻿using CentralAuth;
-
+using CommandSystem;
 using Common.Extensions;
 using Common.IO.Collections;
-using Common.Pooling.Pools;
+
+using CustomPlayerEffects;
+
+using Decals;
+using Footprinting;
+
+using Interactables.Interobjects.DoorUtils;
 
 using InventorySystem;
 using InventorySystem.Disarming;
@@ -10,29 +16,25 @@ using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Firearms.BasicMessages;
+using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.API.Npcs;
+using LabExtended.API.Enums;
+using LabExtended.API.Hints;
 using LabExtended.API.Modules;
-using LabExtended.API.RemoteAdmin;
-
+using LabExtended.API.Npcs;
 using LabExtended.API.Voice;
-using LabExtended.API.Voice.Profiles;
-using LabExtended.API.Voice.Processing;
-
-using LabExtended.Modules;
-using LabExtended.Utilities;
-using LabExtended.Extensions;
-using LabExtended.Hints;
-using LabExtended.Utilities.Values;
-using LabExtended.Ticking;
-using LabExtended.Patches.Functions;
-
 using LabExtended.Core.Hooking;
-
 using LabExtended.Events.Player;
+using LabExtended.Extensions;
+using LabExtended.Patches.Functions;
+using LabExtended.Ticking;
+using LabExtended.Utilities;
+using LabExtended.Utilities.Values;
 
 using LiteNetLib;
+
+using MapGeneration;
 
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
@@ -41,48 +43,42 @@ using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps;
 using PlayerRoles.Spectating;
+
 using PlayerStatsSystem;
 
-using Footprinting;
+using PluginAPI.Core;
+using PluginAPI.Events;
 
 using RelativePositioning;
-
+using RemoteAdmin;
 using UnityEngine;
-
-using Decals;
-
-using VoiceChat;
-
-using CustomPlayerEffects;
 
 using Utils;
 
-using PluginAPI.Events;
-using PluginAPI.Core;
-using LabExtended.Core;
-using InventorySystem.Items.Keycards;
-using Interactables.Interobjects.DoorUtils;
+using VoiceChat;
 
 namespace LabExtended.API
 {
     /// <summary>
     /// A wrapper for the <see cref="ReferenceHub"/> class.
     /// </summary>
-    public class ExPlayer : ModuleParent
+    public class ExPlayer : Module
     {
         static ExPlayer()
         {
             _players = new List<ExPlayer>();
             _npcPlayers = new List<ExPlayer>();
+            _allPlayers = new List<ExPlayer>();
 
             _hostPlayer = null;
             _localPlayer = null;
 
-            TickManager.SubscribeTick(UpdateSentRoles, TickOptions.NoneSeparateProfiled);
+            TickManager.SubscribeTick(UpdateSentRoles, TickOptions.None, "Player Role Sync");
         }
 
         internal static readonly List<ExPlayer> _players;
         internal static readonly List<ExPlayer> _npcPlayers;
+        internal static readonly List<ExPlayer> _allPlayers;
 
         internal static ExPlayer _localPlayer;
         internal static ExPlayer _hostPlayer;
@@ -228,6 +224,14 @@ namespace LabExtended.API
             => Get(footprint.Hub);
 
         /// <summary>
+        /// Gets an <see cref="ExPlayer"/> instance from a <see cref="ICommandSender"/>.
+        /// </summary>
+        /// <param name="sender">The <see cref="ICommandSender"/> instance to get a player of.</param>
+        /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
+        public static ExPlayer Get(ICommandSender sender)
+            => sender is PlayerCommandSender playerSender ? Get(playerSender.ReferenceHub) : Host;
+
+        /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a player ID.
         /// </summary>
         /// <param name="playerId">The player ID to find.</param>
@@ -286,38 +290,38 @@ namespace LabExtended.API
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="ReferenceHub"/>.
         /// </summary>
-        /// <param name="player">The instance to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="hub">The instance to find.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(ReferenceHub player, out ExPlayer handler)
-            => (handler = Get(player)) != null;
+        public static bool TryGet(ReferenceHub hub, out ExPlayer player)
+            => (player = Get(hub)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="PluginAPI.Core.Player"/>.
         /// </summary>
-        /// <param name="player">The instance to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="apiPlayer">The instance to find.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(Player player, out ExPlayer handler)
-            => (handler = Get(player)) != null;
+        public static bool TryGet(Player apiPlayer, out ExPlayer player)
+            => (player = Get(apiPlayer)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="GameObject"/>.
         /// </summary>
         /// <param name="player">The instance to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(GameObject player, out ExPlayer handler)
-            => (handler = Get(player)) != null;
+        public static bool TryGet(GameObject obj, out ExPlayer player)
+            => (player = Get(obj)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkIdentity"/>.
         /// </summary>
         /// <param name="identity">The instance to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(NetworkIdentity identity, out ExPlayer handler)
-            => (handler = Get(identity)) != null;
+        public static bool TryGet(NetworkIdentity identity, out ExPlayer player)
+            => (player = Get(identity)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkConnection"/>.
@@ -325,72 +329,81 @@ namespace LabExtended.API
         /// <param name="conn">The instance to find.</param>
         /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(NetworkConnection conn, out ExPlayer handler)
-            => (handler = Get(conn)) != null;
+        public static bool TryGet(NetworkConnection conn, out ExPlayer player)
+            => (player = Get(conn)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="Collider"/>.
         /// </summary>
         /// <param name="collider">The instance to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(Collider collider, out ExPlayer handler)
-            => (handler = Get(collider)) != null;
+        public static bool TryGet(Collider collider, out ExPlayer player)
+            => (player = Get(collider)) != null;
+
+        /// <summary>
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="ICommandSender"/>.
+        /// </summary>
+        /// <param name="sender">The instance to find.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
+        public static bool TryGet(ICommandSender sender, out ExPlayer player)
+            => (player = Get(sender)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a player ID.
         /// </summary>
         /// <param name="playerId">The player ID to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(int playerId, out ExPlayer handler)
-            => (handler = Get(playerId)) != null;
+        public static bool TryGet(int playerId, out ExPlayer player)
+            => (player = Get(playerId)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a connection ID.
         /// </summary>
         /// <param name="connectionId">The connection ID to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGetByConnectionId(int connectionId, out ExPlayer handler)
-            => (handler = GetByConnectionId(connectionId)) != null;
+        public static bool TryGetByConnectionId(int connectionId, out ExPlayer player)
+            => (player = GetByConnectionId(connectionId)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="ExPlayer"/> instance by a network ID.
         /// </summary>
         /// <param name="networkId">The network ID to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(uint networkId, out ExPlayer handler)
-            => (handler = Get(networkId)) != null;
+        public static bool TryGet(uint networkId, out ExPlayer player)
+            => (player = Get(networkId)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="NpcHandler"/> instance by a user ID.
         /// </summary>
         /// <param name="userId">The network ID to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGetByUserId(string userId, out ExPlayer handler)
-            => (handler = GetByUserId(userId)) != null;
+        public static bool TryGetByUserId(string userId, out ExPlayer player)
+            => (player = GetByUserId(userId)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="NpcHandler"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
         /// </summary>
         /// <param name="value">The value to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <param name="minScore">Name match precision.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(string value, double minScore, out ExPlayer handler)
-            => (handler = Get(value, minScore)) != null;
+        public static bool TryGet(string value, double minScore, out ExPlayer player)
+            => (player = Get(value, minScore)) != null;
 
         /// <summary>
         /// Tries to get an <see cref="NpcHandler"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
         /// </summary>
         /// <param name="value">The value to find.</param>
-        /// <param name="handler">The instance if found, otherwise <see langword="null"/>.</param>
+        /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-        public static bool TryGet(string value, out ExPlayer handler)
-            => (handler = Get(value)) != null;
+        public static bool TryGet(string value, out ExPlayer player)
+            => (player = Get(value)) != null;
 
         /// <summary>
         /// Gets a list of all players that match the predicate.
@@ -428,20 +441,9 @@ namespace LabExtended.API
         private ReferenceHub _hub;
 
         private RemoteAdminIconType _forcedIcons;
-        private VoiceFlags _voiceFlags;
-
-        #region Internal VC stuff
-        internal bool _wasSpeaking;
-
-        internal DateTime _wasSpeakingAt;
-
-        internal List<byte[]> _speakingCapture;
-
-        internal VoiceProfileBase _voiceProfile;
-        internal VoicePitchHandler _voicePitch;
-        #endregion
 
         internal PlayerStorageModule _storage;
+        internal VoiceModule _voice;
         internal HintModule _hints;
 
         internal readonly LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
@@ -457,9 +459,6 @@ namespace LabExtended.API
 
             _sentRoles = new LockedDictionary<uint, RoleTypeId>();
             _droppedItems = new LockedList<ItemPickupBase>();
-            _voicePitch = new VoicePitchHandler(this);
-
-            _speakingCapture = ListPool<byte[]>.Shared.Rent();
 
             ArrayExtensions.TryPeekIndex(LiteNetLib4MirrorServer.Peers, ConnectionId, out _peer); // In case the hub is an NPC.
 
@@ -467,7 +466,6 @@ namespace LabExtended.API
             MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(_hub), value => VoiceChatMutes.SetFlags(_hub, value));
 
             ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => _forcedIcons, value => _forcedIcons = value);
-            VoiceFlags = new EnumValue<VoiceFlags>(() => _voiceFlags, value => _voiceFlags = value);
 
             FakePosition = new FakeValue<Vector3>();
             FakeRole = new FakeValue<RoleTypeId>();
@@ -476,12 +474,6 @@ namespace LabExtended.API
             Stats = new API.PlayerStats(component.playerStats);
             Switches = new API.PlayerSwitches();
         }
-
-        /// <inheritdoc/>
-        public override bool KeepTransientModules => true;
-
-        /// <inheritdoc/>
-        public override bool UpdateModules => true;
 
         /// <summary>
         /// Gets or sets this player's current voice pitch. <b>This is very CPU intensive and should be used sparely.</b>
@@ -498,7 +490,6 @@ namespace LabExtended.API
         /// </summary>
         public EnumValue<PlayerInfoArea> InfoArea { get; }
         public EnumValue<VcMuteFlags> MuteFlags { get; }
-        public EnumValue<VoiceFlags> VoiceFlags { get; }
 
         public FakeValue<Vector3> FakePosition { get; }
         public FakeValue<RoleTypeId> FakeRole { get; }
@@ -517,6 +508,7 @@ namespace LabExtended.API
         public NetworkConnectionToClient Connection => _hub.connectionToClient;
 
         public PlayerStorageModule Storage => _storage;
+        public VoiceModule Voice => _voice;
         public HintModule Hints => _hints;
 
         public ExPlayer SpectatedPlayer => _players.FirstOrDefault(p => p.IsSpectatedBy(this));
@@ -526,6 +518,8 @@ namespace LabExtended.API
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
 
         public ExPlayer Disarmer => Get(DisarmedPlayers.Entries.FirstOrDefault(d => d.DisarmedPlayer == NetId).Disarmer);
+
+        public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
 
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 
@@ -540,6 +534,9 @@ namespace LabExtended.API
         public IEnumerable<StatusEffectBase> InactiveEffects => _hub.playerEffectsController.AllEffects.Where(e => !e.IsEnabled);
         public IEnumerable<StatusEffectBase> ActiveEffects => _hub.playerEffectsController.AllEffects.Where(e => e.IsEnabled);
         public IEnumerable<StatusEffectBase> AllEffects => _hub.playerEffectsController.AllEffects;
+
+        public IEnumerable<VoiceModifier> VoiceModifiers => _voice.Modifiers;
+        public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
 
         public Transform Transform => _hub.transform;
         public Transform Camera => _hub.PlayerCameraReference;
@@ -833,18 +830,16 @@ namespace LabExtended.API
             set => _hub.inventory.NetworkCurItem = value;
         }
 
-        public VoiceProfileBase VoiceProfile
-        {
-            get => _voiceProfile;
-            set => VoiceSystem.SetProfile(this, value);
-        }
-
         public Dictionary<ItemType, ushort> Ammo
         {
             get => _hub.inventory.UserInventory.ReserveAmmo;
             set
             {
-                _hub.inventory.UserInventory.ReserveAmmo = value;
+                if (value is null)
+                    _hub.inventory.UserInventory.ReserveAmmo.Clear();
+                else
+                    _hub.inventory.UserInventory.ReserveAmmo = value;
+
                 _hub.inventory.ServerSendAmmo();
             }
         }
@@ -859,10 +854,10 @@ namespace LabExtended.API
             => Hub.playerStats.DealDamage(!string.IsNullOrWhiteSpace(reason) ? new CustomReasonDamageHandler(reason, damageAmount) : new UniversalDamageHandler(damageAmount, DeathTranslations.Bleeding));
 
         public void Kill(string reason = null)
-            => Hub.playerStats.KillPlayer(!string.IsNullOrWhiteSpace(reason) ? new CustomReasonDamageHandler(reason, -1f) : new WarheadDamageHandler());
+            => Hub.playerStats.DealDamage(!string.IsNullOrWhiteSpace(reason) ? new CustomReasonDamageHandler(reason, -1f) : new WarheadDamageHandler());
 
         public void Disintegrate(ExPlayer attacker = null)
-            => Hub.playerStats.KillPlayer(new DisruptorDamageHandler(attacker?.Footprint ?? Footprint, -1f));
+            => Hub.playerStats.DealDamage(new DisruptorDamageHandler(attacker?.Footprint ?? Footprint, -1f));
 
         public void Explode(ExPlayer attacker = null)
             => ExplosionUtils.ServerExplode(Position, attacker?.Footprint ?? Footprint);
@@ -1023,6 +1018,15 @@ namespace LabExtended.API
         #endregion
 
         #region Inventory Methods
+        public IEnumerable<ItemBase> GetItems(params ItemType[] types)
+            => Items.Where(item => types.Contains(item.ItemTypeId));
+
+        public List<T> GetItems<T>() where T : ItemBase
+            => Items.Where<T>();
+
+        public List<T> GetItems<T>(ItemType type) where T : ItemBase
+            => Items.Where<T>(false, item => item.ItemTypeId == type);
+
         public bool HasItem(ItemType type)
             => Items.Any(it => it.ItemTypeId == type);
 
@@ -1031,47 +1035,32 @@ namespace LabExtended.API
 
         public void ClearInventory(IEnumerable<ItemType> newInventory = null)
         {
-            _hub.inventory.UserInventory.Items.Clear();
+            while (_hub.inventory.UserInventory.Items.Count > 0)
+                _hub.inventory.ServerRemoveItem(_hub.inventory.UserInventory.Items.ElementAt(0).Key, null);
 
             if (newInventory != null)
             {
                 foreach (var item in newInventory)
                 {
                     if (item != ItemType.None)
-                    {
-                        var instance = item.GetItemInstance<ItemBase>();
-
-                        instance.Owner = _hub;
-                        instance.OnAdded(null);
-                        instance.SetupItem(Hub);
-
-                        _hub.inventory.UserInventory.Items[instance.ItemSerial] = instance;
-                    }
+                        AddItem(item);
                 }
             }
 
-            _hub.inventory.ServerSendItems();
+            _hub.inventory.SendItemsNextFrame = true;
         }
 
         public void DropInventory()
             => _hub.inventory.ServerDropEverything();
 
         public ItemBase AddItem(ItemType type)
-        {
-            var item = _hub.inventory.ServerAddItem(type);
-
-            if (item is null)
-                return null;
-
-            item.SetupItem(Hub, true, false, false);
-            return item;
-        }
+           => Hub.inventory.ServerAddItem(type);
 
         public bool AddOrSpawnItem(ItemType type)
         {
-            if (_hub.inventory.UserInventory.Items.Count >= 8)
+            if (_hub.inventory.UserInventory.Items.Count > 7)
             {
-                if (InventoryItemLoader.TryGetItem<ItemBase>(type, out var itemPrefab))
+                if (type.TryGetItemPrefab(out var itemPrefab))
                 {
                     _hub.inventory.ServerCreatePickup(itemPrefab, new PickupSyncInfo(type, itemPrefab.Weight));
                     return false;
@@ -1080,13 +1069,7 @@ namespace LabExtended.API
                 return false;
             }
 
-            var item = _hub.inventory.ServerAddItem(type);
-
-            if (item is null)
-                return false;
-
-            item.SetupItem(Hub, true, false, false);
-            return item;
+            return _hub.inventory.ServerAddItem(type);
         }
 
         public T ThrowItem<T>(ItemBase item) where T : ItemPickupBase
@@ -1102,36 +1085,34 @@ namespace LabExtended.API
         {
             var itemPrefab = itemType.GetItemPrefab<ItemBase>();
             var pickupInstance = itemType.GetPickupInstance<T>(null, null, null, itemSerial, true);
+            var pickupRigidbody = pickupInstance?.GetRigidbody();
 
-            if (pickupInstance is null)
+            if (pickupRigidbody is null)
                 return null;
 
-            if (!pickupInstance.TryGetComponent<Rigidbody>(out var rigidbody))
-                return pickupInstance;
-
-            if (!EventManager.ExecuteEvent(new PlayerThrowItemEvent(Hub, itemPrefab, rigidbody)))
+            if (!EventManager.ExecuteEvent(new PlayerThrowItemEvent(Hub, itemPrefab, pickupRigidbody)))
                 return pickupInstance;
 
             var velocity = Velocity;
             var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 
-            velocity = velocity / 3f + Camera.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, rigidbody.mass)) + 0.3f);
+            velocity = velocity / 3f + Camera.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
 
             velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
             velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
             velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
 
-            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, rigidbody, Camera.position, velocity, angular);
+            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, pickupRigidbody, Camera.position, velocity, angular);
 
             if (!HookRunner.RunCancellable(throwingEv, true))
                 return pickupInstance;
 
-            rigidbody.position = throwingEv.Position;
-            rigidbody.velocity = throwingEv.Velocity;
-            rigidbody.angularVelocity = throwingEv.AngularVelocity;
+            pickupRigidbody.position = throwingEv.Position;
+            pickupRigidbody.velocity = throwingEv.Velocity;
+            pickupRigidbody.angularVelocity = throwingEv.AngularVelocity;
 
-            if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
-                rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
+            if (pickupRigidbody.angularVelocity.magnitude > pickupRigidbody.maxAngularVelocity)
+                pickupRigidbody.maxAngularVelocity = pickupRigidbody.angularVelocity.magnitude;
 
             return pickupInstance;
         }
@@ -1270,22 +1251,10 @@ namespace LabExtended.API
             if (items != null)
             {
                 foreach (var item in items)
-                {
-                    if (item != null)
-                    {
-                        if (item.Owner != null)
-                            item.OnRemoved(null);
-
-                        item.Owner = Hub;
-                        item.OnAdded(null);
-                        item.SetupItem(Hub);
-
-                        _hub.inventory.UserInventory.Items[item.ItemSerial] = item;
-                    }
-                }
+                    item?.SetupItem(Hub, false);
             }
 
-            _hub.inventory.ServerSendItems();
+            _hub.inventory.SendItemsNextFrame = true;
         }
 
         private void SetScale(Vector3 scale)
@@ -1314,7 +1283,7 @@ namespace LabExtended.API
 
         internal static void UpdateSentRoles()
         {
-            foreach (var player in _players)
+            foreach (var player in _allPlayers)
             {
                 var curRoleId = player.Role.Type;
 
@@ -1334,29 +1303,6 @@ namespace LabExtended.API
 
                     player._sentRoles[other.NetId] = curRoleId;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
-                }
-            }
-
-            foreach (var npc in _npcPlayers)
-            {
-                var curRoleId = npc.Role.Type;
-
-                if (npc.Role.Role is IObfuscatedRole obfuscatedRole)
-                    curRoleId = obfuscatedRole.GetRoleForUser(npc.Hub);
-
-                foreach (var other in _players)
-                {
-                    if (npc.FakeRole.TryGetValue(other, out var fakedRole))
-                        curRoleId = fakedRole;
-
-                    if (!other.Role.IsAlive && !npc.Switches.IsVisibleInSpectatorList)
-                        curRoleId = RoleTypeId.Spectator;
-
-                    if (npc._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == curRoleId)
-                        continue;
-
-                    npc._sentRoles[other.NetId] = curRoleId;
-                    other.Connection.Send(new RoleSyncInfo(npc.Hub, curRoleId, other.Hub));
                 }
             }
         }

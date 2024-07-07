@@ -5,6 +5,7 @@ using Common.Pooling.Pools;
 using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.API.Enums;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.Core;
 

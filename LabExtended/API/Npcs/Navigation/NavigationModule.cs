@@ -1,7 +1,7 @@
 ﻿using Interactables;
 
+using LabExtended.API.Modules;
 using LabExtended.Core;
-using LabExtended.Modules;
 using LabExtended.Ticking;
 
 using Mirror;
@@ -29,7 +29,7 @@ namespace LabExtended.API.Npcs.Navigation
         public NpcHandler Npc { get; internal set; }
 
         /// <inheritdoc/>
-        public override TickOptions TickSettings { get; } = TickOptions.GetStatic(50f);
+        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(50f);
 
         /// <summary>
         /// Whether or not to allow the NPC to interact.
@@ -47,16 +47,16 @@ namespace LabExtended.API.Npcs.Navigation
         public ExPlayer PlayerTarget { get; set; }
 
         /// <inheritdoc/>
-        public override void Start()
+        public override void OnStarted()
         {
-            base.Start();
+            base.OnStarted();
             NavigationMesh.Prepare();
         }
 
         /// <inheritdoc/>
-        public override void Tick()
+        public override void OnTick()
         {
-            base.Tick();
+            base.OnTick();
 
             if (NavAgent is null)
                 return;
@@ -116,9 +116,9 @@ namespace LabExtended.API.Npcs.Navigation
         }
 
         /// <inheritdoc/>
-        public override void Stop()
+        public override void OnStopped()
         {
-            base.Stop();
+            base.OnStopped();
 
             if (NavAgent != null)
             {

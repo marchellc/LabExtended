@@ -10,10 +10,10 @@ using LabExtended.Extensions;
 using LabExtended.Events;
 
 using PluginAPI.Events;
-using LabExtended.CustomItems;
 using PluginAPI.Core.Items;
 using InventorySystem.Items;
-using LabExtended.CustomItems.Enums;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Enums;
 
 namespace LabExtended.Patches.Functions.Items
 {

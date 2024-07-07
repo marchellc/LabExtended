@@ -1,14 +1,13 @@
 using Common.Logging;
 
 using HarmonyLib;
-
+using LabExtended.API.Modules;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Logging;
-using LabExtended.Core.Profiling;
 
 using LabExtended.Extensions;
-using LabExtended.Modules;
 using LabExtended.Patches.Functions;
+using LabExtended.Patches.Optimize;
 using LabExtended.Ticking;
 using LabExtended.Utilities;
 
@@ -22,7 +21,7 @@ namespace LabExtended.Core
     /// <summary>
     /// The main class, used as a loader. Can also be used for modules.
     /// </summary>
-    public class ExLoader : ModuleParent
+    public class ExLoader : Module
     {
         /// <summary>
         /// Gets the server's version.
@@ -48,8 +47,6 @@ namespace LabExtended.Core
         /// Gets the loader's plugin folder.
         /// </summary>
         public static string Folder => Loader.Handler.PluginDirectoryPath;
-
-        private readonly ProfilerMarker _marker = new ProfilerMarker("Startup");
 
         /// <summary>
         /// Creates a new <see cref="ExLoader"/> instance. This is included only to implement the base constructor of <see cref="ModuleParent"/>.
@@ -84,8 +81,6 @@ namespace LabExtended.Core
         [PluginPriority(LoadPriority.Lowest)]
         public void Load()
         {
-            _marker.MarkStart();
-
             try
             {
                 Handler = PluginHandler.Get(this);
@@ -135,9 +130,13 @@ namespace LabExtended.Core
                 HookPatch.Enable();
                 HookManager.RegisterAll();
 
-                TickManager.StartUpdate();
+                FrozenItemsPatch.Enable();
+                FrozenRolesPatch.Enable();
 
-                StartModules();
+                TickManager.Init();
+
+                StartModule();
+                AddCachedModules();
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
                 {
@@ -168,10 +167,6 @@ namespace LabExtended.Core
             {
                 Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
             }
-
-            _marker.MarkEnd();
-            _marker.LogStats();
-            _marker.Clear();
         }
 
         /// <summary>
@@ -185,9 +180,9 @@ namespace LabExtended.Core
             Harmony.UnpatchAll();
             Harmony = null;
 
-            StopModules();
+            StopModule();
 
-            TickManager.KillUpdate();
+            TickManager.Kill();
 
             HookManager._activeDelegates.Clear();
             HookManager._activeHooks.Clear();

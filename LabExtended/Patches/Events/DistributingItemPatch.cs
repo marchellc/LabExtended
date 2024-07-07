@@ -1,13 +1,14 @@
 ﻿using Common.Pooling.Pools;
 
+using HarmonyLib;
+
 using Interactables.Interobjects.DoorUtils;
 
-using InventorySystem;
-using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Map;
+using LabExtended.Extensions;
 
 using MapGeneration.Distributors;
 
@@ -17,6 +18,7 @@ using UnityEngine;
 
 namespace LabExtended.Patches.Events
 {
+    [HarmonyPatch(typeof(ItemDistributor), nameof(ItemDistributor.PlaceSpawnables))]
     public static class DistributingItemPatch
     {
         public static bool Prefix(ItemDistributor __instance)
@@ -101,7 +103,7 @@ namespace LabExtended.Patches.Events
 
         private static void CreatePickup(ItemDistributor distributor, ItemSpawnpoint spawnpoint, ItemType type, Transform transform, Vector3? customPos, string doorName)
         {
-            if (!InventoryItemLoader.TryGetItem<ItemBase>(type, out var prefab))
+            if (!type.TryGetItemPrefab(out var prefab))
                 return;
 
             var position = Vector3.zero;

@@ -3,9 +3,10 @@
 using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.CustomItems;
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using PlayerRoles;
@@ -56,6 +57,8 @@ namespace LabExtended.Patches.Events
                     newRole = spawningEv.NewRole;
                     reason = spawningEv.ChangeReason;
                     spawnFlags = spawningEv.SpawnFlags;
+
+                    InternalEvents.InternalHandleRoleChange(spawningEv);
 
                     try
                     {

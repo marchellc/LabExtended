@@ -31,7 +31,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// Whether or not to drop previous items.
         /// </summary>
-        public bool KeepPreviousItems { get; set; }
+        public bool DropPreviousItems { get; set; }
 
         /// <summary>
         /// A list of items to add.
@@ -43,7 +43,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public Dictionary<ItemType, ushort> Ammo { get; }
 
-        internal PlayerGrantingInventoryArgs(ExPlayer player, bool shouldGrantInventory, bool shouldResetInventory, bool hasEscaped, bool keepPreviousItems, List<ItemType> items, Dictionary<ItemType, ushort> ammo)
+        internal PlayerGrantingInventoryArgs(ExPlayer player, bool shouldGrantInventory, bool shouldResetInventory, bool hasEscaped, bool dropPreviousItems, List<ItemType> items, Dictionary<ItemType, ushort> ammo)
         {
             Player = player;
 
@@ -52,7 +52,7 @@ namespace LabExtended.Events.Player
 
             HasEscaped = hasEscaped;
 
-            KeepPreviousItems = keepPreviousItems;
+            DropPreviousItems = dropPreviousItems;
 
             Items = items;
             Ammo = ammo;

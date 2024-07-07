@@ -1,4 +1,4 @@
-﻿using LabExtended.Hints;
+﻿using LabExtended.API.Hints;
 
 namespace LabExtended.Utilities.Debug
 {
@@ -21,7 +21,7 @@ namespace LabExtended.Utilities.Debug
         public override void Write()
         {
             if (!string.IsNullOrWhiteSpace(ContentToAdd))
-                Builder.Append(ContentToAdd);
+                Writer.Write(ContentToAdd);
         }
     }
 }

@@ -5,8 +5,8 @@ using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Core.Hooking;
-using LabExtended.CustomItems;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
@@ -76,6 +76,8 @@ namespace LabExtended.Patches.Events
 
             if (pickup is null)
                 return false;
+
+            player._droppedItems.Add(pickup);
 
             if (player.Switches.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody)
                 && EventManager.ExecuteEvent(new PlayerThrowItemEvent(__instance._hub, item, rigidbody)))

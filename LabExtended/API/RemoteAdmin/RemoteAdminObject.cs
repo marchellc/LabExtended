@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using LabExtended.API.Enums;
 
 namespace LabExtended.API.RemoteAdmin
 {

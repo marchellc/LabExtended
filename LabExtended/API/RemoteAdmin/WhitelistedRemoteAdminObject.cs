@@ -1,4 +1,5 @@
 ﻿using Common.Extensions;
+using LabExtended.API.Enums;
 
 namespace LabExtended.API.RemoteAdmin
 {

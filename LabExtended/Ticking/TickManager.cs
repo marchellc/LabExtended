@@ -6,10 +6,9 @@ using Common.Utilities.Generation;
 
 using LabExtended.Core;
 using LabExtended.Core.Profiling;
-
 using LabExtended.Extensions;
 
-using MEC;
+using UnityEngine;
 
 namespace LabExtended.Ticking
 {
@@ -17,25 +16,36 @@ namespace LabExtended.Ticking
     {
         internal static readonly LockedDictionary<string, TickHandler> _activeTicks = new LockedDictionary<string, TickHandler>();
 
+        internal static TickComponent _component;
+        internal static GameObject _object;
+
         private static readonly ProfilerMarker _globalTick = new ProfilerMarker("Tick Event");
         private static readonly UniqueStringGenerator _idGenerator = new UniqueStringGenerator(new MemoryCache<string>(), 20, false);
 
-        internal static CoroutineHandle _globalHandle;
-
         public static event Action OnTick;
 
-        internal static void StartUpdate()
-            => _globalHandle = Timing.RunCoroutine(OnUpdate());
-
-        internal static void KillUpdate()
+        internal static void Init()
         {
-            _activeTicks.Clear();
-            _idGenerator.FreeAll();
-            _globalTick.Clear();
+            _object ??= new GameObject("Tick Manager Component Object");
+            _component ??= _object.AddComponent<TickComponent>();
 
-            Timing.KillCoroutines(_globalHandle);
+            UnityEngine.Object.DontDestroyOnLoad(_object);
+            UnityEngine.Object.DontDestroyOnLoad(_component);
+        }
 
-            _globalHandle = default;
+        internal static void Kill()
+        {
+            if (_component != null)
+            {
+                UnityEngine.Object.Destroy(_component);
+                _component = null;
+            }
+
+            if (_object != null)
+            {
+                UnityEngine.Object.Destroy(_object);
+                _object = null;
+            }
         }
 
         public static bool TryGetHandler(string handlerId, out TickHandler handler)
@@ -51,10 +61,10 @@ namespace LabExtended.Ticking
             => TryGetHandler(handlerId, out var tick) && tick.IsPaused;
 
         public static bool IsRunning(Action action)
-            => TryGetHandler(action, out var tick) && !tick.IsPaused && Timing.IsRunning(tick.Coroutine);
+            => TryGetHandler(action, out var tick) && !tick.IsPaused;
 
         public static bool IsRunning(string handlerId)
-            => TryGetHandler(handlerId, out var tick) && !tick.IsPaused && Timing.IsRunning(tick.Coroutine);
+            => TryGetHandler(handlerId, out var tick) && !tick.IsPaused;
 
         public static bool PauseTick(Action action)
         {
@@ -155,12 +165,7 @@ namespace LabExtended.Ticking
 
             var handler = new TickHandler(customId, action, options);
 
-            options._marker = new ProfilerMarker($"Tick [{customId}]: {action.Method.DeclaringType?.Name + "." ?? ""}{action.Method.Name}");
-
-            if (options.IsSeparate)
-                handler.Coroutine = Timing.RunCoroutine(OnCustomUpdate(handler));
-            else
-                handler.Coroutine = _globalHandle;
+            handler._marker = new ProfilerMarker($"Tick [{customId}]: {action.Method.DeclaringType?.Name + "." ?? ""}{action.Method.Name}");
 
             _activeTicks[customId] = handler;
 
@@ -176,9 +181,6 @@ namespace LabExtended.Ticking
                 return false;
             }
 
-            if (activeTick.Value.Options.IsSeparate && Timing.IsRunning(activeTick.Value.Coroutine))
-                Timing.KillCoroutines(activeTick.Value.Coroutine);
-
             _idGenerator.Free(activeTick.Key);
             return _activeTicks.Remove(activeTick.Key);
         }
@@ -188,101 +190,53 @@ namespace LabExtended.Ticking
             if (!_activeTicks.TryGetValue(handlerId, out var tickHandler))
                 return false;
 
-            if (tickHandler.Options.IsSeparate && Timing.IsRunning(tickHandler.Coroutine))
-                Timing.KillCoroutines(tickHandler.Coroutine);
-
             _idGenerator.Free(handlerId);
             return _activeTicks.Remove(handlerId);
         }
 
-        #region Update Coroutines
-        internal static IEnumerator<float> OnCustomUpdate(TickHandler tickHandler)
+        internal static void CallUpdate()
         {
-            ExLoader.Debug("Ticking API", $"Started OnCustomUpdate() for &3{tickHandler.Method.Method.ToName()}&r");
-
-            while (true)
+            try
             {
-                yield return Timing.WaitForOneFrame;
-
-                try
+                if (OnTick != null)
                 {
-                    if (!tickHandler.Options.CanTick)
-                        continue;
-
-                    tickHandler.Options.RegisterTickStart();
-
                     try
                     {
-                        tickHandler.Method();
+                        _globalTick.MarkStart();
+
+                        OnTick();
+
+                        _globalTick.MarkEnd();
                     }
                     catch (Exception ex)
                     {
-                        ExLoader.Error("Tick Manager", $"Tick &3{tickHandler.Id}&r (&6{tickHandler.Method.Method.ToName()}&r) caught an error:\n{ex.ToColoredString()}");
+                        ExLoader.Error("Tick Manager", $"Failed to execute the global tick event:\n{ex.ToColoredString()}");
+                    }
+                }
+
+                foreach (var pair in _activeTicks)
+                {
+                    if (!pair.Value.CanTick)
+                        continue;
+
+                    pair.Value.RegisterTickStart();
+
+                    try
+                    {
+                        pair.Value.Method();
+                    }
+                    catch (Exception ex)
+                    {
+                        ExLoader.Error("Tick Manager", $"Failed to invoke tick &3{pair.Key}&r (&6{pair.Value.Method.Method.ToName()}&r):\n{ex.ToColoredString()}");
                     }
 
-                    tickHandler.Options.RegisterTickEnd();
-                }
-                catch (Exception ex)
-                {
-                    ExLoader.Error("Ticking API", $"Custom tick loop for &3{tickHandler.Method.Method.ToName()}&r caught an error:\n{ex.ToColoredString()}");
+                    pair.Value.RegisterTickEnd();
                 }
             }
-        }
-
-        private static IEnumerator<float> OnUpdate()
-        {
-            ExLoader.Debug("Ticking API", $"OnUpdate() started");
-
-            while (true)
+            catch (Exception ex)
             {
-                yield return Timing.WaitForOneFrame;
-
-                try
-                {
-                    if (OnTick != null)
-                    {
-                        try
-                        {
-                            _globalTick.MarkStart();
-
-                            OnTick();
-
-                            _globalTick.MarkEnd();
-                        }
-                        catch (Exception ex)
-                        {
-                            ExLoader.Error("Tick Manager", $"Failed to execute the global tick event:\n{ex.ToColoredString()}");
-                        }
-                    }
-
-                    foreach (var pair in _activeTicks)
-                    {
-                        if (pair.Value.Options.IsSeparate)
-                            continue;
-
-                        if (!pair.Value.Options.CanTick)
-                            continue;
-
-                        pair.Value.Options.RegisterTickStart();
-
-                        try
-                        {
-                            pair.Value.Method();
-                        }
-                        catch (Exception ex)
-                        {
-                            ExLoader.Error("Tick Manager", $"Failed to invoke tick &3{pair.Key}&r (&6{pair.Value.Method.Method.ToName()}&r):\n{ex.ToColoredString()}");
-                        }
-
-                        pair.Value.Options.RegisterTickEnd();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ExLoader.Error("Tick Manager", $"The tick loop caught an exception:\n{ex.ToColoredString()}");
-                }
+                ExLoader.Error("Tick Manager", $"The tick loop caught an exception:\n{ex.ToColoredString()}");
             }
         }
-        #endregion
     }
 }

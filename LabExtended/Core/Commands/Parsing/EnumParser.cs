@@ -9,7 +9,7 @@ namespace LabExtended.Core.Commands.Parsing
     public class EnumParser : ICommandParser
     {
         public string Name => $"A fixed set of selectable values ({EnumType.Name})";
-        public string Description => $"A fixed set of selectable values ({EnumType.Name}) (you can specify the value's name or numeric ID, use 'formatting {EnumType.Name}' to see a list of valid values).";
+        public string Description => $"A fixed set of selectable values ({EnumType.Name}) (you can specify the value's name or numeric ID, use 'formatting enum {EnumType.Name}' to see a list of valid values).";
 
         public Type EnumType { get; }
         public Type UnderlyingType { get; }

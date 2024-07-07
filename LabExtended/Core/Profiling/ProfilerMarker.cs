@@ -142,7 +142,7 @@ namespace LabExtended.Core.Profiling
         /// <param name="isDebug">Whether or not to use the DEBUG tag instead of INFO.</param>
         public void LogStats(bool isDebug = false)
         {
-            if (!WasEverInvoked || _frames.Count < 1)
+            if (!WasEverInvoked)
                 return;
 
             var longestFrame = _frames.OrderBy(f => f.Duration).Last();
@@ -187,7 +187,7 @@ namespace LabExtended.Core.Profiling
 
             foreach (var marker in _allMarkers)
             {
-                if (!marker.WasEverInvoked || marker._frames.Count < 2)
+                if (!marker.WasEverInvoked)
                     continue;
 
                 var longest = marker.LongestFrame;
