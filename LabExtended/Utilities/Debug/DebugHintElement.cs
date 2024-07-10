@@ -18,10 +18,7 @@ namespace LabExtended.Utilities.Debug
             ContentToAdd = null;
         }
 
-        public override void Write()
-        {
-            if (!string.IsNullOrWhiteSpace(ContentToAdd))
-                Writer.Write(ContentToAdd);
-        }
+        public override string GetContent()
+            => ContentToAdd;
     }
 }

@@ -1,5 +1,5 @@
-﻿using Common.IO.Collections;
-using LabExtended.API;
+﻿using LabExtended.API;
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.Utilities.Values
 {

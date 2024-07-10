@@ -1,11 +1,10 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
 using Common.Pooling.Pools;
 
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
-
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.CustomItems.Enums;
 using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
@@ -32,8 +31,10 @@ namespace LabExtended.API.CustomItems
         private static readonly LockedDictionary<ushort, CustomItem> _items = new LockedDictionary<ushort, CustomItem>();
 
         public static IReadOnlyList<ICustomItemInfo> RegisteredItems => _registeredTypes;
+        public static IReadOnlyDictionary<ushort, CustomItem> ActiveItems => _items;
 
         public static int RegisteredCount => _registeredTypes.Count;
+        public static int ActiveCount => _items.Count;
 
         public ushort Serial { get; internal set; }
 

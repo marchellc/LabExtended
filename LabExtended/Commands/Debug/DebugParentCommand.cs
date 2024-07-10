@@ -1,8 +1,11 @@
 ﻿using CommandSystem;
 
 using LabExtended.Commands.Debug.CustomItems;
+
 using LabExtended.Commands.Debug.Hints;
+using LabExtended.Commands.Debug.Hints.Image;
 using LabExtended.Commands.Debug.Hints.SelectMenu;
+
 using LabExtended.Commands.Debug.Toys;
 
 namespace LabExtended.Commands.Debug
@@ -20,6 +23,8 @@ namespace LabExtended.Commands.Debug
             RegisterCommand(new HintSetDebugContentCommand());
             RegisterCommand(new HintShowTemporaryCommand());
             RegisterCommand(new HintToggleDebugCommand());
+            RegisterCommand(new HintShowImageCommand());
+            RegisterCommand(new HintShowGifCommand());
 
             RegisterCommand(new AddMenuOptionCommand());
             RegisterCommand(new RemoveMenuOptionCommand());

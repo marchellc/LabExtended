@@ -1,7 +1,7 @@
 ﻿using Common.Caching;
 using Common.Extensions;
-using Common.IO.Collections;
 using Common.Utilities.Generation;
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.API.RemoteAdmin
 {
@@ -11,7 +11,7 @@ namespace LabExtended.API.RemoteAdmin
     public static class RemoteAdminUtils
     {
         private static readonly UniqueInt32Generator _idGenerator = new UniqueInt32Generator(new MemoryCache<int>(), 5000, 8000);
-        private static readonly LockedList<RemoteAdminObject> _raObjects = new LockedList<RemoteAdminObject>();
+        private static readonly LockedHashSet<RemoteAdminObject> _raObjects = new LockedHashSet<RemoteAdminObject>();
 
         /// <summary>
         /// Gets a list of all fake player list objects.
@@ -78,17 +78,17 @@ namespace LabExtended.API.RemoteAdmin
             => _raObjects.TryGetFirst(obj => obj is T && !string.IsNullOrWhiteSpace(obj.CustomId) && obj.CustomId == customId, out var raObject) ? (T)raObject : default;
 
         public static bool TryRemoveObject(int assignedId)
-            => _raObjects.List.RemoveAll(obj => obj.AssignedId == assignedId) > 0;
+            => _raObjects.RemoveWhere(obj => obj.AssignedId == assignedId) > 0;
 
         public static bool TryRemoveObject(string customId)
-            => _raObjects.List.RemoveAll(obj => !string.IsNullOrWhiteSpace(obj.CustomId) && obj.CustomId == customId) > 0;
+            => _raObjects.RemoveWhere(obj => !string.IsNullOrWhiteSpace(obj.CustomId) && obj.CustomId == customId) > 0;
 
         public static T[] GetAllObjects<T>() where T : RemoteAdminObject
             => _raObjects.Where(raObj => raObj is T).CastArray<T>();
 
         public static bool ClearObjects<T>() where T : RemoteAdminObject
         {
-            if (_raObjects.List.RemoveAll(raObject => raObject is T) > 0)
+            if (_raObjects.RemoveWhere(raObject => raObject is T) > 0)
             {
                 _idGenerator.FreeAll(id => !_raObjects.Any(raObject => raObject.AssignedId == id));
                 return true;
@@ -99,7 +99,7 @@ namespace LabExtended.API.RemoteAdmin
 
         internal static void ClearObjects()
         {
-            _raObjects.List.RemoveAll(raObject => !raObject.IsActive || !raObject.KeepOnRoundRestart);
+            _raObjects.RemoveWhere(raObject => !raObject.IsActive || !raObject.KeepOnRoundRestart);
             _idGenerator.FreeAll(id => !_raObjects.Any(raObject => raObject.AssignedId == id));
         }
 

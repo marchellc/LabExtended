@@ -1,9 +1,8 @@
 ﻿using CommandSystem;
-
 using Common.Extensions;
-using Common.Results;
 
 using LabExtended.API;
+
 using LabExtended.Core.Commands.Arguments;
 using LabExtended.Core.Commands.Attributes;
 using LabExtended.Core.Commands.Interfaces;
@@ -135,20 +134,6 @@ namespace LabExtended.Core.Commands
                 {
                     response = responseStr;
                     return true;
-                }
-
-                if (returnedValue is IResult result)
-                {
-                    if (!result.IsSuccess)
-                    {
-                        response = result.ReadErrorMessage();
-                        return false;
-                    }
-                    else
-                    {
-                        response = result.TryReadValue<string>(out responseStr) ? responseStr : "Command did not return a response.";
-                        return true;
-                    }
                 }
 
                 if (returnedValue is IEnumerable<string> lines)

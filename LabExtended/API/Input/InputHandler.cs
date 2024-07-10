@@ -1,5 +1,4 @@
-﻿using Common.IO.Collections;
-using Common.Extensions;
+﻿using Common.Extensions;
 
 using LabExtended.API.Voice;
 using LabExtended.API.Input.Interfaces;
@@ -15,6 +14,7 @@ using LabExtended.Patches.Functions;
 using UnityEngine;
 
 using PluginAPI.Events;
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.API.Input
 {
@@ -32,7 +32,7 @@ namespace LabExtended.API.Input
         internal static readonly LockedDictionary<Type, InputListenerInfo> _listeners = new LockedDictionary<Type, InputListenerInfo>();
         internal static readonly LockedDictionary<uint, KeybindState> _states = new LockedDictionary<uint, KeybindState>();
 
-        internal static readonly LockedList<KeyCode> _watchedKeys = new LockedList<KeyCode>();
+        internal static readonly LockedHashSet<KeyCode> _watchedKeys = new LockedHashSet<KeyCode>();
 
         public static IEnumerable<KeyCode> WatchedKeys => _watchedKeys;
         public static IEnumerable<InputListenerInfo> Listeners => _listeners.Values;

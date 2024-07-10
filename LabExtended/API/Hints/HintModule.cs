@@ -1,6 +1,4 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
-using Common.Pooling.Pools;
 
 using LabExtended.API.Modules;
 using LabExtended.API.Hints.Elements;
@@ -12,6 +10,7 @@ using LabExtended.Ticking;
 using Hints;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.API.Hints
 {
@@ -23,42 +22,34 @@ namespace LabExtended.API.Hints
 
         private static readonly LockedDictionary<Type, Func<ExPlayer, bool>> _globalElements = new LockedDictionary<Type, Func<ExPlayer, bool>>();
 
-        private readonly LockedList<HintElement> _activeElements = new LockedList<HintElement>();
+        private readonly LockedHashSet<HintElement> _activeElements = new LockedHashSet<HintElement>();
         private readonly Queue<HintMessage> _temporaryQueue = new Queue<HintMessage>();
 
         private TemporaryElement _temporaryElement;
-        private StringHintParameter _textParameter;
         private TextHint _textHint;
+
+        private StringHintParameter _textParameter;
 
         private bool _clearedAfterEmpty;
 
-        private float _prevAspectRatio;
-        private float _curAspectRatio;
+        private float _aspectRatio;
 
-        private int _prevFullLeft;
-        private int _curFullLeft;
-
+        private int _leftOffset;
         private int _idClock = 0;
 
-        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(550f);
+        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(500f);
 
         public override void OnStarted()
         {
             base.OnStarted();
-
-            _prevFullLeft = 0;
-            _curFullLeft = 0;
-
-            _prevAspectRatio = -1f;
-            _curAspectRatio = -1f;
-
-            RefreshAspectRatio(true);
 
             _textParameter = new StringHintParameter(string.Empty);
             _textHint = new TextHint(string.Empty, new HintParameter[] { _textParameter }, null, 10f);
 
             _temporaryElement = AddElement<TemporaryElement>();
             _temporaryElement.IsActive = false;
+
+            InternalRefreshAspectRatio(true);
 
             foreach (var globalType in _globalElements)
             {
@@ -75,8 +66,6 @@ namespace LabExtended.API.Hints
 
                 activeElement.OnEnabled();
 
-                activeElement._writer = new HintWriter(activeElement.VerticalOffset);
-
                 _activeElements.Add(activeElement);
             }
         }
@@ -88,12 +77,6 @@ namespace LabExtended.API.Hints
             ClearElements();
 
             _temporaryQueue.Clear();
-
-            _prevFullLeft = 0;
-            _curFullLeft = 0;
-
-            _prevAspectRatio = -1f;
-            _curAspectRatio = -1f;
 
             _textHint = null;
             _textParameter = null;
@@ -129,8 +112,6 @@ namespace LabExtended.API.Hints
 
             activeElement.OnEnabled();
 
-            activeElement._writer = new HintWriter(activeElement.VerticalOffset);
-
             _activeElements.Add(activeElement);
             return activeElement;
         }
@@ -151,8 +132,6 @@ namespace LabExtended.API.Hints
             element.Player = CastParent;
 
             element.OnEnabled();
-
-            element._writer = new HintWriter(element.VerticalOffset);
 
             _activeElements.Add(element);
             return element;
@@ -181,6 +160,18 @@ namespace LabExtended.API.Hints
             element.Player = null;
             return true;
         }
+
+        public static bool AddGlobalElement<T>(Func<ExPlayer, bool> validator = null) where T : HintElement
+        {
+            if (_globalElements.ContainsKey(typeof(T)))
+                return false;
+
+            _globalElements[typeof(T)] = validator;
+            return true;
+        }
+
+        public static bool RemoveGlobalElement<T>() where T : HintElement
+            => _globalElements.Remove(typeof(T));
 
         public T GetElement<T>() where T : HintElement
             => _activeElements.TryGetFirst<T>(out var element) ? element : throw new Exception($"Element of type {typeof(T).FullName} was not found.");
@@ -220,7 +211,7 @@ namespace LabExtended.API.Hints
                 return;
             }
 
-            RefreshAspectRatio(false);
+            InternalRefreshAspectRatio(false);
 
             var builtElements = InternalBuildString();
 
@@ -230,6 +221,12 @@ namespace LabExtended.API.Hints
             if (ShowDebug)
                 File.WriteAllText($"{ExLoader.Folder}/hint_debug.txt", builtElements);
 
+            if (builtElements.Length >= ushort.MaxValue)
+            {
+                ExLoader.Warn("Hint API", $"The completed hint is too big! (current: {builtElements.Length}, max size: {ushort.MaxValue - 1})");
+                return;
+            }
+
             _textParameter.Value = builtElements;
             _textHint.Text = builtElements;
 
@@ -238,89 +235,82 @@ namespace LabExtended.API.Hints
             CastParent.Connection.Send(new global::Hints.HintMessage(_textHint));
         }
 
-        public static bool AddGlobalElement<T>(Func<ExPlayer, bool> validator = null) where T : HintElement
-        {
-            if (_globalElements.ContainsKey(typeof(T)))
-                return false;
-
-            _globalElements[typeof(T)] = validator;
-            return true;
-        }
-
-        public static bool RemoveGlobalElement<T>() where T : HintElement
-            => _globalElements.Remove(typeof(T));
-
         internal string InternalBuildString()
         {
-            var builder = StringBuilderPool.Shared.Rent();
-
-            builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
+            var result = "~\n<line-height=1285%>\n<line-height=0>\n";
 
             foreach (var element in _activeElements)
             {
+                element.UpdateElement();
+
                 if (!element.IsActive)
                     continue;
 
-                if (element._prevAlign != element.Alignment)
-                    element._prevAlign = element.Alignment;
+                var data = element.GetContent();
 
-                if (element._prevOffset != element.VerticalOffset)
+                if (data is not null && data.Length > 0)
                 {
-                    element._writer._vOffset = element.VerticalOffset;
-                    element._prevOffset = element.VerticalOffset;
-                }
-
-                if (element.ClearWriter)
-                    element._writer.Clear();
-
-                element.Write();
-
-                if (element._writer.Size > 0)
-                {
-                    foreach (var message in element._writer._messages)
+                    if (element.IsRawDisplay)
                     {
-                        if (string.IsNullOrWhiteSpace(message.Content))
-                            continue;
+                        result += data;
+                    }
+                    else
+                    {
+                        if (element.SkipPreviousLine || element._prev is null || element._prev != data)
+                        {
+                            element._messages.Clear();
+                            element._prev = data;
 
-                        if (ShowDebug)
-                            ExLoader.Debug("Hint API - InternalBuildString()", $"[FOREACH] Appending message: Content={message.Content} (VerticalOffset={message.VerticalOffset}, Size={message.Size}, Id={message.Id})");
+                            data = data.Replace("\r\n", "\n").Replace("\\n", "\n").Replace("<br>", "\n").TrimEnd();
 
-                        builder.Append($"<voffset={message.VerticalOffset}em>");
+                            HintUtils.TrimStartNewLines(ref data, out var count);
 
-                        if (element.Alignment is HintAlign.FullLeft)
-                            builder.Append($"<align=left><pos=-{_curFullLeft}%>{message.Content}</pos></align>");
-                        else if (element.Alignment is HintAlign.Left)
-                            builder.Append($"<align=left>{message.Content}</align>");
-                        else if (element.Alignment is HintAlign.Right)
-                            builder.Append($"<align=right>{message.Content}</align>");
-                        else
-                            builder.Append(message.Content);
+                            var offset = element.VerticalOffset;
+
+                            if (offset == 0f)
+                                offset = -count;
+
+                            HintUtils.GetMessages(offset, element.MaxCharactersPerLine, data, element._messages);
+                        }
+
+                        foreach (var message in element._messages)
+                        {
+                            if (string.IsNullOrWhiteSpace(message.Content))
+                                continue;
+
+                            result += $"<voffset={message.VerticalOffset}em>";
+
+                            if (element.Alignment is HintAlign.FullLeft)
+                                result += $"<align=left><pos=-{_leftOffset}%>{message.Content}</pos></align>";
+                            else if (element.Alignment is HintAlign.Left)
+                                result += $"<align=left>{message.Content}</align>";
+                            else if (element.Alignment is HintAlign.Right)
+                                result += $"<align=right>{message.Content}</align>";
+                            else
+                                result += message.Content;
+                        }
                     }
 
-                    builder.Append("\n");
+                    result += "\n";
                 }
             }
 
-            builder.Append("<voffset=0><line-height=2100%>\n~");
-            return StringBuilderPool.Shared.ToStringReturn(builder);
+            return result + "<voffset=0><line-height=2100%>\n~";
         }
 
-        private void RefreshAspectRatio(bool isInitial)
+        private void InternalRefreshAspectRatio(bool isInitial)
         {
             if (isInitial)
             {
-                _curAspectRatio = _prevAspectRatio = CastParent.AspectRatio;
-                _curFullLeft = _prevFullLeft = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
+                _aspectRatio = CastParent.AspectRatio;
+                _leftOffset = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
             }
             else
             {
-                if (_curAspectRatio != CastParent.AspectRatio)
+                if (_aspectRatio != CastParent.AspectRatio)
                 {
-                    _prevAspectRatio = _curAspectRatio;
-                    _curAspectRatio = CastParent.AspectRatio;
-
-                    _prevFullLeft = _curFullLeft;
-                    _curFullLeft = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
+                    _aspectRatio = CastParent.AspectRatio;
+                    _leftOffset = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
                 }
             }
         }

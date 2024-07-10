@@ -11,12 +11,7 @@ namespace LabExtended.Core.Hooking.Executors
             if (!binder.BindArgs(eventObject, out var methodArgs))
                 throw new Exception($"Argument binder failed to bind method arguments.");
 
-            var methodResult = default(object);
-
-            if (hook.Method.IsStatic)
-                methodResult = hook.Dynamic.InvokeStatic(methodArgs);
-            else
-                methodResult = hook.Dynamic.Invoke(hook.Instance, methodArgs);
+            var methodResult = hook.Method.Invoke(hook.Instance, methodArgs);
 
             if (methodResult is null)
                 throw new Exception("Method returned a null value.");

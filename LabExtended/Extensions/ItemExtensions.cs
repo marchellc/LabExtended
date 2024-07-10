@@ -28,26 +28,9 @@ namespace LabExtended.Extensions
 
         public static void ReloadPrefabs()
         {
-            var dict = new Dictionary<ItemType, ItemBase>();
-            var prefabs = Resources.LoadAll<ItemBase>("Defined Items");
+            InventoryItemLoader.ForceReload();
 
-            Array.Sort(prefabs, (x, y) => ((int)x.ItemTypeId).CompareTo((int)y.ItemTypeId));
-
-            for (int i = 0; i < prefabs.Length; i++)
-            {
-                var prefab = prefabs[i];
-
-                if (prefab is null || prefab.ItemTypeId is ItemType.None)
-                    continue;
-
-                dict[prefab.ItemTypeId] = prefab;
-                prefab.OnTemplateReloaded(false);
-
-                if (prefab.PickupDropModel != null && !NetworkClient.prefabs.ContainsValue(prefab.PickupDropModel.gameObject))
-                    NetworkClient.RegisterPrefab(prefab.PickupDropModel.gameObject);
-            }
-
-            Prefabs = dict.ToFrozenDictionary();
+            Prefabs = InventoryItemLoader.AvailableItems.ToFrozenDictionary();
         }
 
         public static byte GetInventorySlot(this ItemBase item)

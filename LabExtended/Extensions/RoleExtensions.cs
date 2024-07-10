@@ -11,8 +11,6 @@ using PlayerRoles.FirstPersonControl.Thirdperson;
 
 using System.Collections.Frozen;
 
-using UnityEngine;
-
 namespace LabExtended.Extensions
 {
     public static class RoleExtensions
@@ -22,28 +20,12 @@ namespace LabExtended.Extensions
 
         static RoleExtensions()
         {
-            var dict = new Dictionary<RoleTypeId, PlayerRoleBase>();
-            var names = new Dictionary<RoleTypeId, string>();
+            PlayerRoleLoader.LoadRoles();
 
-            var array = Resources.LoadAll<PlayerRoleBase>("Defined Roles");
-
-            Array.Sort(array, (x, y) => ((int)x.RoleTypeId).CompareTo((int)y.RoleTypeId));
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                var prefab = array[i];
-
-                dict[prefab.RoleTypeId] = prefab;
-                names[prefab.RoleTypeId] = string.IsNullOrEmpty(prefab.RoleName) ? prefab.RoleTypeId.ToString().SpaceByUpperCase() : prefab.RoleName;
-
-                PoolManager.Singleton.TryAddPool(prefab);
-
-                if (prefab is IFpcRole fpcRole && fpcRole.FpcModule.CharacterModelTemplate.TryGetComponent<CharacterModel>(out var characterModel))
-                    PoolManager.Singleton.TryAddPool(characterModel);
-            }
-
-            Prefabs = dict.ToFrozenDictionary();
-            Names = names.ToFrozenDictionary();
+            Prefabs = PlayerRoleLoader.AllRoles.ToFrozenDictionary();
+            Names = PlayerRoleLoader.AllRoles.ToFrozenDictionary(
+                keyPair => keyPair.Key,
+                valuePair => valuePair.Value.RoleName ?? valuePair.Value.RoleTypeId.ToString().SpaceByUpperCase());
         }
 
         public static bool TryGetPrefab(this RoleTypeId roleType, out PlayerRoleBase prefab)

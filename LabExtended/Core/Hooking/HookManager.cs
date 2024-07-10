@@ -1,5 +1,4 @@
 using Common.Extensions;
-using Common.IO.Collections;
 using Common.Utilities;
 
 using LabExtended.Attributes;
@@ -24,6 +23,8 @@ using PluginAPI.Events;
 using System.Reflection;
 
 using PluginAPI.Core.Attributes;
+
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.Core.Hooking
 {

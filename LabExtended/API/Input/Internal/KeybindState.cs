@@ -1,4 +1,4 @@
-﻿using Common.IO.Collections;
+﻿using LabExtended.API.Collections.Locked;
 
 using UnityEngine;
 
@@ -7,6 +7,7 @@ namespace LabExtended.API.Input.Internal
     public class KeybindState
     {
         public ExPlayer Player { get; set; }
-        public LockedList<KeyCode> SyncedBinds { get; } = new LockedList<KeyCode>();
+
+        public LockedHashSet<KeyCode> SyncedBinds { get; } = new LockedHashSet<KeyCode>();
     }
 }

@@ -1,14 +1,15 @@
-﻿using Common.IO.Collections;
-using Common.Pooling.Pools;
+﻿using Common.Pooling.Pools;
+
+using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.Core.Profiling
 {
     /// <summary>
     /// Used to profile method timings.
     /// </summary>
-    public class ProfilerMarker
+    public class ProfilerMarker : IDisposable
     {
-        internal static readonly LockedList<ProfilerMarker> _allMarkers = new LockedList<ProfilerMarker>();
+        internal static readonly LockedHashSet<ProfilerMarker> _allMarkers = new LockedHashSet<ProfilerMarker>();
 
         /// <summary>
         /// Gets all created markers.
@@ -22,9 +23,9 @@ namespace LabExtended.Core.Profiling
 
         private bool _isInvoking;
 
-        private readonly int _samples;
-        private readonly string _name;
-        private readonly List<ProfilerFrame> _frames;
+        private int _samples;
+        private string _name;
+        private List<ProfilerFrame> _frames;
 
         /// <summary>
         /// Creates a new profiler.
@@ -170,6 +171,25 @@ namespace LabExtended.Core.Profiling
         /// </summary>
         public void Clear()
             => _frames.Clear();
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            _allMarkers.Remove(this);
+
+            _invEnd = DateTime.MinValue;
+            _invStart = DateTime.MinValue;
+
+            _isInvoking = false;
+
+            _samples = 0;
+
+            _frames.Clear();
+            _frames = null;
+
+            _invComm = null;
+            _name = null;
+        }
 
         /// <inheritdoc/>
         public override string ToString()

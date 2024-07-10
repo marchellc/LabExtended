@@ -1,27 +1,28 @@
 ﻿namespace LabExtended.API.Hints
 {
-    public class HintElement
+    public abstract class HintElement
     {
-        internal HintWriter _writer;
+        internal readonly SortedSet<HintData> _messages = new SortedSet<HintData>(new HintSorter());
+        internal string _prev = null;
 
-        internal float _prevOffset;
-        internal HintAlign _prevAlign;
+        public virtual bool IsActive { get; set; }
+        public virtual bool IsRawDisplay { get; set; }
 
-        public bool IsActive { get; internal set; }
         public int Id { get; internal set; }
 
         public ExPlayer Player { get; internal set; }
 
-        public virtual HintWriter Writer => _writer;
-
-        public virtual bool ClearWriter { get; }
-
         public virtual float VerticalOffset { get; set; } = 0f;
+        public virtual int MaxCharactersPerLine { get; set; } = 60;
+        public virtual bool SkipPreviousLine { get; set; }
+
         public virtual HintAlign Alignment { get; set; } = HintAlign.Center;
 
         public virtual void OnDisabled() { }
         public virtual void OnEnabled() { }
 
-        public virtual void Write() { }
+        public virtual void UpdateElement() { }
+
+        public abstract string GetContent();
     }
 }

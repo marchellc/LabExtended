@@ -1,6 +1,6 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
 
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.Modules;
 using LabExtended.API.Voice.Modifiers.Pitch;
 
@@ -19,7 +19,7 @@ namespace LabExtended.API.Voice
         public static event Action<ExPlayer> OnStartedSpeaking;
         public static event Action<ExPlayer, DateTime, TimeSpan, IReadOnlyList<byte[]>> OnStoppedSpeaking;
 
-        private static readonly LockedList<VoiceModifier> _globalModifiers = new LockedList<VoiceModifier>();
+        private static readonly LockedHashSet<VoiceModifier> _globalModifiers = new LockedHashSet<VoiceModifier>();
 
         public static float GlobalVoicePitch { get; set; } = 1f;
 

@@ -1,5 +1,4 @@
-﻿using Common.IO.Collections;
-
+﻿using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Ticking;
@@ -13,8 +12,8 @@ namespace LabExtended.API.Modules.PositionTracking
     /// </summary>
     public class PositionTrackingModule : GenericModule<ExPlayer>
     {
-        private readonly LockedList<PositionTrackingEntry> _positionTrackers = new LockedList<PositionTrackingEntry>(); // Entry cache.
-        private readonly LockedList<PositionTrackingEntry> _removeNextTick = new LockedList<PositionTrackingEntry>(); // Used to avoid collection exceptions.
+        private readonly LockedHashSet<PositionTrackingEntry> _positionTrackers = new LockedHashSet<PositionTrackingEntry>(); // Entry cache.
+        private readonly LockedHashSet<PositionTrackingEntry> _removeNextTick = new LockedHashSet<PositionTrackingEntry>(); // Used to avoid collection exceptions.
 
         /// <inheritdoc/>
         public override TickOptions TickOptions { get; } = TickOptions.None;

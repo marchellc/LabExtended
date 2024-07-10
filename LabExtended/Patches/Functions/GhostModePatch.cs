@@ -1,9 +1,9 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
 
 using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.API.Collections.Locked;
 
 using Mirror;
 
@@ -18,7 +18,7 @@ namespace LabExtended.Patches.Functions
     [HarmonyPatch(typeof(FpcServerPositionDistributor), nameof(FpcServerPositionDistributor.WriteAll))]
     public static class GhostModePatch
     {
-        public static LockedList<uint> GhostedPlayers { get; } = new LockedList<uint>();
+        public static LockedHashSet<uint> GhostedPlayers { get; } = new LockedHashSet<uint>();
         public static LockedDictionary<uint, LockedList<uint>> GhostedTo { get; } = new LockedDictionary<uint, LockedList<uint>>();
 
         public static bool IsInvisible(uint receiverId, uint otherId)
@@ -58,7 +58,6 @@ namespace LabExtended.Patches.Functions
                     isInvisible = true;
 
                 var syncData = GetNewSyncData(player, other, fpcRole.FpcModule, isInvisible);
-                //var syncData = FpcServerPositionDistributor.GetNewSyncData(receiver, other.Hub, fpcRole.FpcModule, isInvisible);
 
                 if (!isInvisible)
                 {

@@ -1,7 +1,6 @@
 ﻿using CentralAuth;
 using CommandSystem;
 using Common.Extensions;
-using Common.IO.Collections;
 
 using CustomPlayerEffects;
 
@@ -18,7 +17,7 @@ using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
-
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
@@ -447,7 +446,7 @@ namespace LabExtended.API
         internal HintModule _hints;
 
         internal readonly LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
-        internal readonly LockedList<ItemPickupBase> _droppedItems;
+        internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
 
         public ExPlayer(ReferenceHub component) : base()
         {
@@ -458,7 +457,7 @@ namespace LabExtended.API
             _forcedIcons = RemoteAdminIconType.None;
 
             _sentRoles = new LockedDictionary<uint, RoleTypeId>();
-            _droppedItems = new LockedList<ItemPickupBase>();
+            _droppedItems = new LockedHashSet<ItemPickupBase>();
 
             ArrayExtensions.TryPeekIndex(LiteNetLib4MirrorServer.Peers, ConnectionId, out _peer); // In case the hub is an NPC.
 
@@ -877,7 +876,7 @@ namespace LabExtended.API
             if (!HasRemoteAdminAccess)
                 return;
 
-            _hub.encryptedChannelManager.TrySendMessageToClient(content.ToString(), EncryptedChannelManager.EncryptedChannel.RemoteAdmin);
+            _hub.queryProcessor.SendToClient(content.ToString(), true, true, string.Empty);
         }
         #endregion
 

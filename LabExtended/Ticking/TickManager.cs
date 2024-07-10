@@ -1,9 +1,9 @@
 ﻿using Common.Caching;
 using Common.Extensions;
-using Common.IO.Collections;
 using Common.Utilities;
 using Common.Utilities.Generation;
 
+using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
 using LabExtended.Core.Profiling;
 using LabExtended.Extensions;

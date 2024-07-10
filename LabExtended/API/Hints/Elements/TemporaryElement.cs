@@ -5,11 +5,13 @@ namespace LabExtended.API.Hints.Elements
     internal class TemporaryElement : HintElement
     {
         internal DateTime _showUntil;
-
-        public override bool ClearWriter => false;
+        internal string _content;
 
         public override float VerticalOffset { get; set; } = -5f;
         public override HintAlign Alignment { get; set; } = HintAlign.Center;
+
+        public override string GetContent()
+            => _content;
 
         internal void SetHint(HintMessage hintMessage)
         {
@@ -17,21 +19,22 @@ namespace LabExtended.API.Hints.Elements
                 return;
 
             _showUntil = DateTime.Now.AddSeconds(hintMessage.Duration);
+            _content = hintMessage.Content;
 
-            Writer.Write(hintMessage.Content);
             IsActive = true;
         }
 
         internal void Reset()
         {
             IsActive = false;
-            Writer.Clear();
+
             _showUntil = DateTime.MinValue;
+            _content = null;
         }
 
         internal void CheckDuration()
         {
-            if (Writer.Size < 1)
+            if (_content is null || _content.Length < 1)
                 return;
 
             if (DateTime.Now >= _showUntil)

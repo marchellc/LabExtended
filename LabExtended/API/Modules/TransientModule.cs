@@ -1,7 +1,7 @@
-﻿using Common.IO.Collections;
-using Common.Pooling.Pools;
+﻿using Common.Pooling.Pools;
 using Common.Utilities;
 
+using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Ticking;

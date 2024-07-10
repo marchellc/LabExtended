@@ -1,16 +1,21 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
 
 using HarmonyLib;
 
 using Interactables.Interobjects.DoorUtils;
+using InventorySystem;
 
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
+
 using LabExtended.Core;
 using LabExtended.Extensions;
+
 using MapGeneration;
 
 using Mirror;
+
+using PlayerRoles;
 
 using PluginAPI.Core;
 
@@ -121,9 +126,6 @@ namespace LabExtended.API
         /// </summary>
         public static void ReloadPrefabs()
         {
-            if (!ItemExtensions.PrefabsLoaded)
-                ItemExtensions.ReloadPrefabs();
-
             if (_prefabNames.Count == 0)
                 SetPrefabNames();
 

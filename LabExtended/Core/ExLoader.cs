@@ -7,7 +7,6 @@ using LabExtended.Core.Logging;
 
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
-using LabExtended.Patches.Optimize;
 using LabExtended.Ticking;
 using LabExtended.Utilities;
 
@@ -129,9 +128,6 @@ namespace LabExtended.Core
 
                 HookPatch.Enable();
                 HookManager.RegisterAll();
-
-                FrozenItemsPatch.Enable();
-                FrozenRolesPatch.Enable();
 
                 TickManager.Init();
 

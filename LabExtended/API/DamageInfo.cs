@@ -1,5 +1,4 @@
-﻿using Common.IO.Collections;
-
+﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.Extensions;
 

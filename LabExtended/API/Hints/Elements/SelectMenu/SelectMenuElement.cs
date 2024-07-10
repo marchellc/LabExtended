@@ -15,14 +15,12 @@ using UnityEngine;
 
 namespace LabExtended.API.Hints.Elements.SelectMenu
 {
-    public class SelectMenuElement : HintElement
+    public class SelectMenuElement : BufferedElement
     {
         private static bool _keybindsRegistered;
 
         private readonly List<SelectMenuOption> _options;
         private readonly List<SelectMenuOption> _selected;
-
-        private StringBuilder _builder;
 
         public SelectMenuElement(HintAlign align, float verticalOffset = 0f)
         {
@@ -51,19 +49,6 @@ namespace LabExtended.API.Hints.Elements.SelectMenu
         public IReadOnlyList<SelectMenuOption> AddedOptions => _options;
 
         public bool CanSelect => MaxSelections < 1 || _selected.Count < MaxSelections;
-
-        public override void OnEnabled()
-        {
-            base.OnEnabled();
-            _builder = StringBuilderPool.Shared.Rent();
-        }
-
-        public override void OnDisabled()
-        {
-            base.OnDisabled();
-            StringBuilderPool.Shared.Return(_builder);
-            _builder = null;
-        }
 
         public SelectMenuElement CreateOption(SelectMenuOption selectMenuOption, byte? customPosition = null)
         {
@@ -238,13 +223,14 @@ namespace LabExtended.API.Hints.Elements.SelectMenu
             CurrentOption ??= orderedOptions.FirstOrDefault();
         }
 
-        public override void Write()
+        public override void UpdateElement()
         {
-            if (_options.Count < 1)
-                return;
+            base.UpdateElement();
+            IsActive = _options.Count > 0;
+        }
 
-            _builder.Clear();
-
+        public override void WriteContent()
+        {
             for (int i = 0; i < _options.Count; i++)
             {
                 var option = _options[i];
@@ -254,13 +240,8 @@ namespace LabExtended.API.Hints.Elements.SelectMenu
                 if (!option.IsEnabled)
                     continue;
 
-                _builder.AppendLine($"<b>{(CanSelect && CurrentOption != null && CurrentOption == option ? "<color=#00ffec>→</color> " : "")}<color=#d4ff33>[{option.Position}]</color> | <color={(!IsSelected(option) ? "#ff0000" : "#4dff00")}>{option.Label}</color></b>");
+                AppendLine($"<b>{(CanSelect && CurrentOption != null && CurrentOption == option ? "<color=#00ffec>→</color> " : "")}<color=#d4ff33>[{option.Position}]</color> | <color={(!IsSelected(option) ? "#ff0000" : "#4dff00")}>{option.Label}</color></b>");
             }
-
-            if (_builder.Length < 1)
-                return;
-
-            Writer.Write(_builder.ToString());
         }
 
         private byte GetNextPosition()

@@ -1,7 +1,7 @@
 ﻿using Common.Extensions;
-using Common.IO.Collections;
 
 using LabExtended.API;
+using LabExtended.API.Collections.Locked;
 
 using Mirror;
 
@@ -12,9 +12,9 @@ namespace LabExtended.Utilities
     /// <summary>
     /// A class that helps with managing a list of players.
     /// </summary>
-    public class PlayerListHelper
+    public class PlayerListHelper : IDisposable
     {
-        internal static readonly LockedList<PlayerListHelper> _handlers = new LockedList<PlayerListHelper>(); // A list of all handlers, used for player leave.
+        internal static readonly LockedHashSet<PlayerListHelper> _handlers = new LockedHashSet<PlayerListHelper>(); // A list of all handlers, used for player leave.
 
         internal PlayerListHelper()
         {
@@ -22,7 +22,7 @@ namespace LabExtended.Utilities
             _handlers.Add(this);
         }
 
-        internal readonly HashSet<uint> _netIdList;
+        internal HashSet<uint> _netIdList;
 
         /// <summary>
         /// Adds a specific network ID.
@@ -120,5 +120,13 @@ namespace LabExtended.Utilities
 
         public void Clear()
             => _netIdList.Clear();
+
+        public void Dispose()
+        {
+            _netIdList.Clear();
+            _netIdList = null;
+
+            _handlers.Remove(this);
+        }
     }
 }

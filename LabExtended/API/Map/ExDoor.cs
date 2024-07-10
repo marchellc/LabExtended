@@ -1,7 +1,6 @@
-﻿using Common.IO.Collections;
+﻿using Interactables.Interobjects.DoorUtils;
 
-using Interactables.Interobjects.DoorUtils;
-
+using LabExtended.API.Collections.Locked;
 using LabExtended.Utilities;
 
 namespace LabExtended.API.Map

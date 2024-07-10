@@ -8,8 +8,6 @@ namespace LabExtended.API.Hints
 {
     public static class HintUtils
     {
-        public const int MaxLineLength = 60;
-
         public static readonly Regex SizeTagRegex = new Regex("(?<=<size=)([^>]*)(?=>)", RegexOptions.Compiled);
         public static readonly Regex NewLineRegex = new Regex("\\n|(<[^>]*>)+|\\s*[^<\\s\\r\\n]+[^\\S\\r\\n]*|\\s*", RegexOptions.Compiled);
 
@@ -49,7 +47,7 @@ namespace LabExtended.API.Hints
                 size = (int)(result * 35f);
                 return true;
             }
-            else if (char.IsDigit(tag[tag.GetLastIndex()]) && int.TryParse(tag, out size))
+            else if (char.IsDigit(tag[tag.Length - 1]) && int.TryParse(tag, out size))
                 return true;
             else if (tag.EndsWith("px") && int.TryParse(tag.Substring(0, tag.Length - 2), out size))
                 return true;
@@ -71,7 +69,7 @@ namespace LabExtended.API.Hints
             return false;
         }
 
-        internal static void GetMessages(float vOffset, string content, SortedSet<HintData> messages)
+        internal static void GetMessages(float vOffset, int charsPerLine, string content, SortedSet<HintData> messages)
         {
             var matches = NewLineRegex.Matches(content);
             var line = "";
@@ -125,7 +123,7 @@ namespace LabExtended.API.Hints
                     line += text;
                     continue;
                 }
-                else if (num + text.Length <= MaxLineLength)
+                else if ((num + text.Length <= charsPerLine) && charsPerLine > 0)
                 {
                     line += text;
                     num += text.Length;
@@ -151,34 +149,37 @@ namespace LabExtended.API.Hints
                     if (HintModule.ShowDebug)
                         ExLoader.Debug("Hint API - GetMessages()", $"[ELSE] Added data line={line} size={size} vOffset={vOffset} id={clock}");
 
-                    while (text.Length > MaxLineLength)
+                    if (charsPerLine > 0)
                     {
-                        var line2 = text.Substring(0, MaxLineLength);
-
-                        managedSize = ManageSize(ref line2, ref size, out tagEnded);
-
-                        if (anyAdded)
-                            vOffset -= size;
-
-                        messages.Add(new HintData(line2, size, vOffset, clock++));
-
-                        if (!anyAdded)
+                        while (text.Length > charsPerLine)
                         {
-                            vOffset -= size;
-                            anyAdded = true;
+                            var line2 = text.Substring(0, charsPerLine);
+
+                            managedSize = ManageSize(ref line2, ref size, out tagEnded);
+
+                            if (anyAdded)
+                                vOffset -= size;
+
+                            messages.Add(new HintData(line2, size, vOffset, clock++));
+
+                            if (!anyAdded)
+                            {
+                                vOffset -= size;
+                                anyAdded = true;
+                            }
+
+                            if (HintModule.ShowDebug)
+                                ExLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={size} vOffset={vOffset} id={clock}");
+
+                            text = text.Substring(charsPerLine);
                         }
 
-                        if (HintModule.ShowDebug)
-                            ExLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={size} vOffset={vOffset} id={clock}");
+                        line = text;
+                        num = text.Length;
 
-                        text = text.Substring(MaxLineLength);
+                        if (!tagEnded && managedSize)
+                            line = $"<size={size}>{line}";
                     }
-
-                    line = text;
-                    num = text.Length;
-
-                    if (!tagEnded && managedSize)
-                        line = $"<size={size}>{line}";
                 }
             }
 

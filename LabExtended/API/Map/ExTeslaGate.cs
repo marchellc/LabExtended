@@ -1,6 +1,5 @@
-﻿using Common.IO.Collections;
-
-using Hazards;
+﻿using Hazards;
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.Interfaces;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
