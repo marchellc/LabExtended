@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Map;
 using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player

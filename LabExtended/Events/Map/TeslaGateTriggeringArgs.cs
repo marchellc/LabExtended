@@ -1,4 +1,4 @@
-﻿using LabExtended.API.Map;
+﻿using LabExtended.API;
 using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Map

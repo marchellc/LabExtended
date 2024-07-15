@@ -2,12 +2,16 @@ using Common.Extensions;
 using Common.Utilities;
 
 using LabExtended.Attributes;
-using LabExtended.Events;
 using LabExtended.Utilities;
+
+using LabExtended.Events;
 using LabExtended.Events.Player;
+using LabExtended.Events.Other;
 
 using LabExtended.API.Input;
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Firearms;
 
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Hooking.Enums;
@@ -19,12 +23,9 @@ using LabExtended.Core.Events;
 using MEC;
 
 using PluginAPI.Events;
-
-using System.Reflection;
-
 using PluginAPI.Core.Attributes;
 
-using LabExtended.API.Collections.Locked;
+using System.Reflection;
 
 namespace LabExtended.Core.Hooking
 {
@@ -71,6 +72,16 @@ namespace LabExtended.Core.Hooking
             [typeof(PlayerTogglingNoClipArgs)] = new List<Action<object>>()
             {
                 ev => InputHandler.OnTogglingNoClip((PlayerTogglingNoClipArgs)ev),
+            },
+
+            [typeof(ProcessingFirearmRequestArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnProcessingRequest((ProcessingFirearmRequestArgs)ev),
+            },
+
+            [typeof(ProcessedFirearmRequestArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnProcessedRequested((ProcessedFirearmRequestArgs)ev),
             },
         };
 
@@ -226,6 +237,9 @@ namespace LabExtended.Core.Hooking
         private static void RegisterInternal(MethodInfo method, object typeInstance, bool log, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute, PluginEvent pluginEvent)
         {
             if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
+                return;
+
+            if (!method.IsStatic && !method.DeclaringType.IsValidInstance(typeInstance, false))
                 return;
 
             if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance) && h.Method == method)))

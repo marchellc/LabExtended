@@ -1,4 +1,4 @@
-﻿using LabExtended.API.Input.Enums;
+﻿using LabExtended.API.Enums;
 
 namespace LabExtended.API.Input.Interfaces
 {

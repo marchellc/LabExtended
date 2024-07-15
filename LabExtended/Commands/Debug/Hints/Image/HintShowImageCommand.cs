@@ -1,4 +1,5 @@
 ﻿using LabExtended.API;
+using LabExtended.API.Enums;
 using LabExtended.API.Hints.Elements.Image;
 
 using LabExtended.Core.Commands;
@@ -24,7 +25,7 @@ namespace LabExtended.Commands.Debug.Hints.Image
                     sender.RemoteAdminMessage($"Error: {op.Error}");
 
                 if (!sender.Hints.TryGetElement<ImageElement>(out var imageElement))
-                    imageElement = sender.Hints.AddElement(new ImageElement(0f, API.Hints.HintAlign.Center));
+                    imageElement = sender.Hints.AddElement(new ImageElement(0f, HintAlign.Center));
 
                 ImageUtils.ResizeImage(ref bitmap, width, height);
                 imageElement.SetImage(bitmap, TimeSpan.FromSeconds(duration), true);

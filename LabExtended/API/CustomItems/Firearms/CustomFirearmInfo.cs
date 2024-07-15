@@ -7,6 +7,8 @@ namespace LabExtended.API.CustomItems.Firearms
     {
         public ItemType AmmoType { get; set; } = ItemType.None;
 
+        public CustomFirearmFlags FirearmFlags { get; set; } = CustomFirearmFlags.None;
+
         public byte MaxAmmo { get; set; } = 0;
         public byte StartAmmo { get; set; } = 0;
 

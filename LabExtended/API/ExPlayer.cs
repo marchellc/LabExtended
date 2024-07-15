@@ -22,6 +22,7 @@ using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.API.Npcs;
+using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -441,6 +442,7 @@ namespace LabExtended.API
 
         private RemoteAdminIconType _forcedIcons;
 
+        internal RemoteAdminModule _raModule;
         internal PlayerStorageModule _storage;
         internal VoiceModule _voice;
         internal HintModule _hints;
@@ -506,6 +508,7 @@ namespace LabExtended.API
         public NetworkIdentity Identity => _hub.netIdentity;
         public NetworkConnectionToClient Connection => _hub.connectionToClient;
 
+        public RemoteAdminModule RemoteAdmin => _raModule;
         public PlayerStorageModule Storage => _storage;
         public VoiceModule Voice => _voice;
         public HintModule Hints => _hints;
@@ -515,8 +518,6 @@ namespace LabExtended.API
 
         public ExPlayer ClosestPlayer => _players.Where(p => p.NetId != NetId).OrderBy(DistanceTo).FirstOrDefault();
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
-
-        public ExPlayer Disarmer => Get(DisarmedPlayers.Entries.FirstOrDefault(d => d.DisarmedPlayer == NetId).Disarmer);
 
         public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
 
@@ -560,14 +561,16 @@ namespace LabExtended.API
         public bool IsUnverified => InstanceMode is ClientInstanceMode.Unverified;
 
         public bool IsNpc => NpcHandler != null;
-
-        public bool IsDisarmed => _hub.inventory.IsDisarmed();
         public bool IsSpeaking => Role.VoiceModule?.ServerIsSending ?? false;
+
+        public bool IsNorthwoodStaff => _hub.authManager.NorthwoodStaff;
+        public bool IsNorthwoodModerator => _hub.authManager.RemoteAdminGlobalAccess;
 
         public bool HasCustomName => _hub.nicknameSync.HasCustomName;
         public bool HasAnyItems => _hub.inventory.UserInventory.Items.Count > 0;
         public bool HasAnyAmmo => _hub.inventory.UserInventory.ReserveAmmo.Any(p => p.Value > 0);
         public bool HasRemoteAdminAccess => _hub.serverRoles.RemoteAdmin;
+        public bool HasRemoteAdminOpened => _raModule.IsRemoteAdminOpen;
         public bool HasAdminChatAccess => _hub.serverRoles.AdminChatPerms;
 
         public bool DoNotTrack => _hub.authManager.DoNotTrack;
@@ -599,6 +602,18 @@ namespace LabExtended.API
                     throw new Exception($"Invalid user ID.");
 
                 return idParts[1];
+            }
+        }
+
+        public bool IsDisarmed
+        {
+            get => _hub.inventory.IsDisarmed();
+            set
+            {
+                if (value)
+                    _hub.inventory.SetDisarmedStatus(Host.Hub.inventory);
+                else
+                    _hub.inventory.SetDisarmedStatus(null);
             }
         }
 
@@ -663,7 +678,7 @@ namespace LabExtended.API
             {
                 if (value && !CanMove)
                     DisableEffect<Ensnared>();
-                else
+                else if (!value && CanMove)
                     EnableEffect<Ensnared>(1);
             }
         }
@@ -843,6 +858,18 @@ namespace LabExtended.API
             }
         }
 
+        public ExPlayer Disarmer
+        {
+            get => Get(DisarmedPlayers.Entries.FirstOrDefault(e => e.DisarmedPlayer == NetId).Disarmer);
+            set => Hub.inventory.SetDisarmedStatus(value?.Hub.inventory ?? null);
+        }
+
+        public void OpenRemoteAdmin()
+            => Hub.serverRoles.TargetSetRemoteAdmin(true);
+
+        public void CloseRemoteAdmin()
+            => Hub.serverRoles.TargetSetRemoteAdmin(false);
+
         public bool IsSpectatedBy(ExPlayer player)
             => Hub.IsSpectatedBy(player.Hub);
 
@@ -862,21 +889,32 @@ namespace LabExtended.API
             => ExplosionUtils.ServerExplode(Position, attacker?.Footprint ?? Footprint);
 
         #region Messaging Methods
-        public void Hint(object content, ushort duration)
-            => ProxyMethods.ShowHint(this, content.ToString(), duration);
+        public void ClearBroadcasts()
+            => global::Broadcast.Singleton?.TargetClearElements(Connection);
 
-        public void Broadcast(object content, ushort duration, bool clearPrevious = true)
-            => ProxyMethods.ShowBroadcast(this, content.ToString(), duration, clearPrevious);
+        public void Hint(object content, ushort duration, bool isPriority = false)
+            => Hints.Show(content.ToString(), duration, isPriority);
+
+        public void Broadcast(object content, ushort duration, bool clearPrevious = true, global::Broadcast.BroadcastFlags broadcastFlags = global::Broadcast.BroadcastFlags.Normal)
+        {
+            if (clearPrevious)
+                global::Broadcast.Singleton?.TargetClearElements(Connection);
+
+            global::Broadcast.Singleton?.TargetAddElement(Connection, content.ToString(), duration, broadcastFlags);
+        }
 
         public void ConsoleMessage(object content, string color = "red")
-            => _hub.encryptedChannelManager.TrySendMessageToClient(content.ToString(), EncryptedChannelManager.EncryptedChannel.GameConsole);
+            => _hub.gameConsoleTransmission.SendToClient(content.ToString(), color);
 
-        public void RemoteAdminMessage(object content)
+        public void RemoteAdminInfo(object content)
+            => RemoteAdminMessage($"$1 {content}", true, false);
+
+        public void RemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
         {
             if (!HasRemoteAdminAccess)
                 return;
 
-            _hub.queryProcessor.SendToClient(content.ToString(), true, true, string.Empty);
+            _hub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
         }
         #endregion
 
@@ -960,12 +998,12 @@ namespace LabExtended.API
         #endregion
 
         #region Vision Methods
-        public bool IsInLineOfSight(ExPlayer player, bool countSpectating = true)
+        public bool IsInLineOfSight(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
         {
             if (countSpectating && player.IsSpectatedBy(this))
                 return true;
 
-            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, 0.12f, 60f);
+            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, radius, distance);
 
             if (vision.IsInLineOfSight || vision.IsLooking)
                 return true;
@@ -973,12 +1011,12 @@ namespace LabExtended.API
             return false;
         }
 
-        public bool IsLookingAt(ExPlayer player, bool countSpectating = true)
+        public bool IsLookingAt(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
         {
             if (countSpectating && player.IsSpectatedBy(this))
                 return true;
 
-            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, 0.12f, 60f);
+            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, radius, distance);
 
             if (vision.IsLooking)
                 return true;
@@ -1017,6 +1055,9 @@ namespace LabExtended.API
         #endregion
 
         #region Inventory Methods
+        public ItemBase AddItem(ItemType type)
+           => Hub.inventory.ServerAddItem(type);
+
         public IEnumerable<ItemBase> GetItems(params ItemType[] types)
             => Items.Where(item => types.Contains(item.ItemTypeId));
 
@@ -1028,6 +1069,9 @@ namespace LabExtended.API
 
         public bool HasItem(ItemType type)
             => Items.Any(it => it.ItemTypeId == type);
+
+        public bool HasKeycardPermission(KeycardPermissions keycardPermissions)
+            => Keycards.Any(card => card.Permissions.HasFlagFast(keycardPermissions));
 
         public int CountItems(ItemType type)
             => Items.Count(it => it.ItemTypeId == type);
@@ -1051,9 +1095,6 @@ namespace LabExtended.API
 
         public void DropInventory()
             => _hub.inventory.ServerDropEverything();
-
-        public ItemBase AddItem(ItemType type)
-           => Hub.inventory.ServerAddItem(type);
 
         public bool AddOrSpawnItem(ItemType type)
         {
@@ -1245,7 +1286,7 @@ namespace LabExtended.API
         #region Private Methods
         private void SetItemList(IEnumerable<ItemBase> items)
         {
-            _hub.inventory.UserInventory.Items.Clear();
+            ClearInventory();
 
             if (items != null)
             {

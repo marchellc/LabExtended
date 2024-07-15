@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-
+using LabExtended.API.Enums;
 using LabExtended.API.Hints.Elements.Image;
 using LabExtended.API.Hints.Elements.Video;
 
@@ -27,7 +27,7 @@ namespace LabExtended.Commands.Debug.Hints.Image
                         sender.RemoteAdminMessage($"Error: {op.Error}");
 
                     if (!sender.Hints.TryGetElement<VideoElement>(out var videoElement))
-                        videoElement = sender.Hints.AddElement(new VideoElement(0f, API.Hints.HintAlign.Center));
+                        videoElement = sender.Hints.AddElement(new VideoElement(0f, HintAlign.Center));
 
                     sender.RemoteAdminMessage("Downloaded");
 

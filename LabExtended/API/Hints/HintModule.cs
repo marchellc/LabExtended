@@ -1,16 +1,17 @@
 ﻿using Common.Extensions;
 
-using LabExtended.API.Modules;
-using LabExtended.API.Hints.Elements;
-
-using LabExtended.Core;
-
-using LabExtended.Ticking;
-
 using Hints;
 
-using HintMessage = LabExtended.API.Messages.HintMessage;
 using LabExtended.API.Collections.Locked;
+using LabExtended.API.Enums;
+using LabExtended.API.Hints.Elements;
+using LabExtended.API.Modules;
+
+using LabExtended.Core;
+using LabExtended.Ticking;
+using LabExtended.Utilities;
+
+using HintMessage = LabExtended.API.Messages.HintMessage;
 
 namespace LabExtended.API.Hints
 {
@@ -99,7 +100,7 @@ namespace LabExtended.API.Hints
             _temporaryQueue.Enqueue(new HintMessage(content, duration));
         }
 
-        public T AddElement<T>() where T : HintElement
+        public T AddElement<T>(string customId = null) where T : HintElement
         {
             if (TryGetElement<T>(out var activeElement))
                 return activeElement;
@@ -110,17 +111,17 @@ namespace LabExtended.API.Hints
             activeElement.Id = _idClock++;
             activeElement.Player = CastParent;
 
+            if (!string.IsNullOrWhiteSpace(customId))
+                activeElement.CustomId = customId;
+
             activeElement.OnEnabled();
 
             _activeElements.Add(activeElement);
             return activeElement;
         }
 
-        public T AddElement<T>(T element) where T : HintElement
+        public T AddElement<T>(T element, string customId = null) where T : HintElement
         {
-            if (TryGetElement<T>(out var activeElement))
-                return activeElement;
-
             if (element.IsActive)
             {
                 element.IsActive = false;
@@ -131,6 +132,9 @@ namespace LabExtended.API.Hints
             element.Id = _idClock++;
             element.Player = CastParent;
 
+            if (!string.IsNullOrWhiteSpace(customId))
+                element.CustomId = customId;
+
             element.OnEnabled();
 
             _activeElements.Add(element);
@@ -140,6 +144,18 @@ namespace LabExtended.API.Hints
         public bool RemoveElement<T>() where T : HintElement
         {
             if (!TryGetElement<T>(out var element))
+                return false;
+
+            element.IsActive = false;
+            element.OnDisabled();
+
+            element.Player = null;
+            return _activeElements.Remove(element);
+        }
+
+        public bool RemoveElement<T>(string customId) where T : HintElement
+        {
+            if (!TryGetElement<T>(customId, out var element))
                 return false;
 
             element.IsActive = false;
@@ -176,8 +192,14 @@ namespace LabExtended.API.Hints
         public T GetElement<T>() where T : HintElement
             => _activeElements.TryGetFirst<T>(out var element) ? element : throw new Exception($"Element of type {typeof(T).FullName} was not found.");
 
-        public bool TryGetElement<T>(out T element)
+        public T GetElement<T>(string customId) where T : HintElement
+            => _activeElements.TryGetFirst<T>(item => item.CompareId(customId), out var element) ? element : throw new Exception($"Element of ID {customId} was not found.");
+
+        public bool TryGetElement<T>(out T element) where T : HintElement
             => _activeElements.TryGetFirst(out element);
+
+        public bool TryGetElement<T>(string customId, out T element) where T : HintElement
+            => _activeElements.TryGetFirst(item => item.CompareId(customId), out element);
 
         public void ClearElements()
         {
@@ -256,7 +278,7 @@ namespace LabExtended.API.Hints
                     }
                     else
                     {
-                        if (element.SkipPreviousLine || element._prev is null || element._prev != data)
+                        if (element._prev is null || element._prev != data)
                         {
                             element._messages.Clear();
                             element._prev = data;

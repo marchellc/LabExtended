@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Hints;
+using LabExtended.API.Enums;
 using LabExtended.API.Hints.Elements.SelectMenu;
 using LabExtended.Core.Commands;
 

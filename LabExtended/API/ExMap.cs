@@ -1,7 +1,5 @@
 ﻿using InventorySystem.Items.Pickups;
 
-using LabExtended.API.Map;
-
 using LabExtended.Core;
 using LabExtended.Core.Profiling;
 using LabExtended.Extensions;

@@ -14,11 +14,10 @@ using LabExtended.Core.Profiling;
 
 using LabExtended.Patches.Functions;
 
-using LabExtended.Utilities;
-
 using LabExtended.Events.Player;
 
 using Common.Pooling.Pools;
+using LabExtended.API.Collections;
 
 namespace LabExtended.Events
 {
@@ -61,7 +60,7 @@ namespace LabExtended.Events
             ExRound.State = RoundState.WaitingForPlayers;
 
             NavigationMesh.Reset();
-            PrefabUtils.ReloadPrefabs();
+            Prefabs.ReloadPrefabs();
 
             ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
 
@@ -75,7 +74,6 @@ namespace LabExtended.Events
         internal static void InternalHandleRoundRestart()
         {
             NpcHandler.DestroyNpcs();
-            RemoteAdminUtils.ClearObjects();
 
             TickManager.PauseTick("Tesla Gate Update");
 
@@ -119,6 +117,7 @@ namespace LabExtended.Events
 
             player._hints = player.AddModule<HintModule>();
             player._voice = player.AddModule<VoiceModule>();
+            player._raModule = player.AddModule<RemoteAdminModule>();
 
             if (player._modules.TryGetValue(typeof(PlayerStorageModule), out var storageModule))
                 player._storage = (PlayerStorageModule)storageModule;
@@ -148,12 +147,10 @@ namespace LabExtended.Events
             GhostModePatch.GhostedPlayers.Remove(player.NetId);
             GhostModePatch.GhostedTo.Remove(player.NetId);
 
-            RemoteAdminUtils.ClearWhitelisted(player.NetId);
-
             foreach (var pair in GhostModePatch.GhostedTo)
                 pair.Value.Remove(player.NetId);
 
-            foreach (var helper in PlayerListHelper._handlers)
+            foreach (var helper in PlayerCollection._handlers)
                 helper.Remove(player.NetId);
 
             ExPlayer._allPlayers.Remove(player);

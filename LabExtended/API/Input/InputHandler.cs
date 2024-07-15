@@ -3,8 +3,6 @@
 using LabExtended.API.Voice;
 using LabExtended.API.Input.Interfaces;
 using LabExtended.API.Input.Inputs;
-using LabExtended.API.Input.Internal;
-using LabExtended.API.Input.Enums;
 
 using LabExtended.Events.Player;
 using LabExtended.Core;
@@ -13,8 +11,9 @@ using LabExtended.Patches.Functions;
 
 using UnityEngine;
 
-using PluginAPI.Events;
 using LabExtended.API.Collections.Locked;
+using LabExtended.API.Internal;
+using LabExtended.API.Enums;
 
 namespace LabExtended.API.Input
 {

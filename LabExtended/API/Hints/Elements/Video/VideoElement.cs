@@ -1,12 +1,12 @@
 ﻿using Common.Extensions;
 
+using LabExtended.API.Enums;
 using LabExtended.API.Hints.Elements.Image;
 using LabExtended.Utilities.Async;
 
 using MEC;
 
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Drawing;
 
 namespace LabExtended.API.Hints.Elements.Video
@@ -29,7 +29,6 @@ namespace LabExtended.API.Hints.Elements.Video
         public override int MaxCharactersPerLine { get; set; } = -1;
 
         public override bool IsRawDisplay { get; set; } = true;
-        public override bool SkipPreviousLine { get; set; } = true;
 
         public VideoElement(float verticalOffset, HintAlign alignment)
         {
@@ -71,7 +70,7 @@ namespace LabExtended.API.Hints.Elements.Video
             if (frames is null)
                 throw new ArgumentNullException(nameof(frames));
 
-            InternalConvertFrames(frames, list => Play(list, frameRate, forcePlay));
+            ConvertFrames(frames, list => Play(list, frameRate, forcePlay));
         }
 
         public void Play(IEnumerable<VideoFrame> convertedFrames, float frameRate, bool forcePlay = false)
@@ -153,10 +152,10 @@ namespace LabExtended.API.Hints.Elements.Video
         public override string GetContent()
             => _curFrame?.Text ?? null;
 
-        internal void InternalConvertFrames(Bitmap[] frames, Action<List<VideoFrame>> callback)
+        public static void ConvertFrames(Bitmap[] frames, Action<List<VideoFrame>> callback)
             => Timing.RunCoroutine(InternalConvertFramesCoroutine(frames, callback));
 
-        private IEnumerator<float> InternalConvertFramesCoroutine(Bitmap[] frames, Action<List<VideoFrame>> callback)
+        private static IEnumerator<float> InternalConvertFramesCoroutine(Bitmap[] frames, Action<List<VideoFrame>> callback)
         {
             var addOp = AsyncRunner.RunThreadAsync(() =>
             {

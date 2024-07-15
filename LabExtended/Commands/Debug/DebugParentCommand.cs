@@ -5,7 +5,7 @@ using LabExtended.Commands.Debug.CustomItems;
 using LabExtended.Commands.Debug.Hints;
 using LabExtended.Commands.Debug.Hints.Image;
 using LabExtended.Commands.Debug.Hints.SelectMenu;
-
+using LabExtended.Commands.Debug.RemoteAdmin;
 using LabExtended.Commands.Debug.Toys;
 
 namespace LabExtended.Commands.Debug
@@ -18,6 +18,9 @@ namespace LabExtended.Commands.Debug
         public override void OnInitialized()
         {
             base.OnInitialized();
+
+            RegisterCommand(new AddDebugObjectCommand());
+            RegisterCommand(new SendObjectHelpCommand());
 
             RegisterCommand(new HintDisableDebugHintCommand());
             RegisterCommand(new HintSetDebugContentCommand());

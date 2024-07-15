@@ -1,9 +1,11 @@
-﻿using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Enums;
+﻿using LabExtended.API.CustomItems.Enums;
+using LabExtended.API.CustomItems.Firearms;
 using LabExtended.API.CustomItems.Info;
+
 using LabExtended.Core;
 
 using LabExtended.Events;
+using LabExtended.Events.Other;
 using LabExtended.Events.Player;
 
 using PluginAPI.Events;
@@ -12,7 +14,7 @@ using UnityEngine;
 
 namespace LabExtended.Utilities.Debug
 {
-    public class DebugCustomItem : CustomItem
+    public class DebugCustomItem : CustomFirearm
     {
         internal static bool IsRegistered;
 
@@ -22,8 +24,16 @@ namespace LabExtended.Utilities.Debug
                 return;
 
             IsRegistered = RegisterItem(
-                new CustomItemInfo(typeof(DebugCustomItem), "debug_ci", "Debug Item", "A custom item for debugging purposes", ItemType.Adrenaline, CustomItemFlags.SelectOnPickup,
-                new CustomItemPickupInfo(Vector3.one * 5f, ItemType.Medkit)));
+                new CustomFirearmInfo(typeof(DebugCustomItem), "debug_ci", "Debug Item", "A custom item for debugging purposes", ItemType.GunCOM18, CustomItemFlags.SelectOnPickup,
+                new CustomItemPickupInfo(Vector3.one * 5f, ItemType.GunCom45))
+
+                {
+                    AmmoType = ItemType.Ammo12gauge,
+                    FirearmFlags = CustomFirearmFlags.None,
+                    MaxAmmo = 60,
+                    StartAmmo = 40
+                }
+                );
 
             if (IsRegistered)
                 ExLoader.Info("Debug Custom Item", "Registered debug item");
@@ -85,6 +95,92 @@ namespace LabExtended.Utilities.Debug
         public override void OnThrown(PlayerThrowingItemArgs args)
             => ExLoader.Info("Debug Custom Item", $"OnThrown");
 
+        public override void OnDryFired()
+            => ExLoader.Info("Debug Custom Item", "OnDryFired");
+
+        public override bool OnDryFiring()
+        {
+            ExLoader.Info("Debug Custom Item", "OnDryFiring");
+            return true;
+        }
+
+        public override void OnInspected()
+            => ExLoader.Info("Debug Custom Item", "OnInspected");
+
+        public override bool OnInspecting()
+        {
+            ExLoader.Info("Debug Custom Item", "OnInspecting");
+            return true;
+        }
+
+        public override void OnReloaded(int addedAmmo)
+            => ExLoader.Info("Debug Custom Item", $"OnReloaded addedAmmo={addedAmmo}");
+
+        public override bool OnReloading(ref int ammoToReload)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnReloading ammoToReload={ammoToReload}");
+            return true;
+        }
+
+        public override void OnRequestProcessed(ProcessedFirearmRequestArgs args)
+            => ExLoader.Info("Debug Custom Item", $"Processed request {args.Message.Request}");
+
+        public override void OnRequestReceived(ProcessingFirearmRequestArgs args)
+            => ExLoader.Info("Debug Custom Item", $"Received request {args.Message.Request}");
+
+        public override void OnStoppedReload()
+            => ExLoader.Info("Debug Custom Item", "OnStoppedReload");
+
+        public override bool OnStoppingReload()
+        {
+            ExLoader.Info("Debug Custom Item", "OnStoppingReload");
+            return true;
+        }
+
+        public override void OnToggledFlashlight(bool isEnabled)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnToggledFlashlight isEnabled={isEnabled}");
+        }
+
+        public override bool OnTogglingFlashlight(bool isEnabled)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnTogglingFlashlight isEnabled={isEnabled}");
+            return true;
+        }
+
+        public override void OnUnloaded()
+        {
+            ExLoader.Info("Debug Custom Item", "OnUnloaded");
+        }
+
+        public override bool OnUnloading()
+        {
+            ExLoader.Info("Debug Custom Item", "OnUnloading");
+            return true;
+        }
+
+        public override void OnZoomedIn()
+        {
+            ExLoader.Info("Debug Custom Item", "OnZoomedIn");
+        }
+
+        public override void OnZoomedOut()
+        {
+            ExLoader.Info("Debug Custom Item", "OnZoomedOut");
+        }
+
+        public override bool OnZoomingIn()
+        {
+            ExLoader.Info("Debug Custom Item", "OnZoomingIn");
+            return true;
+        }
+
+        public override bool OnZoomingOut()
+        {
+            ExLoader.Info("Debug Custom Item", "OnZoomingOut");
+            return true;
+        }
+
         public void PrintState()
             => ExLoader.Info("Debug Custom Item",
                 $"Debug Item State:\n" +
@@ -92,6 +188,7 @@ namespace LabExtended.Utilities.Debug
                 $"Item - {Item != null}\n" +
                 $"Pickup - {Pickup != null}\n" +
                 $"Serial - {Serial}\n" +
-                $"IsSelected - {IsSelected}");
+                $"IsSelected - {IsSelected}\n" +
+                $"CurrentAmmo - {CurrentAmmo}");
     }
 }

@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Hints;
+using LabExtended.API.Enums;
 using LabExtended.Core.Commands;
 using LabExtended.Utilities.Debug;
 

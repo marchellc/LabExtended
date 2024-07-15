@@ -4,10 +4,13 @@ using Common.Pooling.Pools;
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+
 using LabExtended.API.Collections.Locked;
+
 using LabExtended.API.CustomItems.Enums;
 using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
+
 using LabExtended.Core;
 
 using LabExtended.Events;
@@ -257,11 +260,23 @@ namespace LabExtended.API.CustomItems
         public static bool TryGetRegistered(string nameOrId, out CustomItemInfo customItemInfo)
             => _registeredTypes.TryGetFirst(info => info.Id == nameOrId || info.Name.GetSimilarity(nameOrId) >= 0.85, out customItemInfo);
 
+        public static bool TryGetItem(ushort serial, out CustomItem customItem)
+            => _items.TryGetValue(serial, out customItem);
+
+        public static bool TryGetItem<T>(ushort serial, out T customItem) where T : CustomItem
+            => (_items.TryGetValue(serial, out var instance) && instance is T ? customItem = (T)instance : customItem = null) != null;
+
         public static bool TryGetItem(ItemBase item, out CustomItem customItem)
             => _items.TryGetValue(item.ItemSerial, out customItem);
 
+        public static bool TryGetItem<T>(ItemBase item, out T customItem) where T : CustomItem
+            => (_items.TryGetValue(item.ItemSerial, out var instance) && instance is T ? customItem = (T)instance : customItem = null) != null;
+
         public static bool TryGetItem(ItemPickupBase pickup, out CustomItem customItem)
             => _items.TryGetValue(pickup.Info.Serial, out customItem);
+
+        public static bool TryGetItem<T>(ItemPickupBase pickup, out T customItem) where T : CustomItem
+            => (_items.TryGetValue(pickup.Info.Serial, out var item) && item is T ? customItem = (T)item : customItem = null) != null;
 
         public static TItem GetItem<TItem>(ExPlayer player) where TItem : CustomItem
         {

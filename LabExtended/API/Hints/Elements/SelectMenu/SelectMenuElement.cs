@@ -1,10 +1,9 @@
 ﻿using Common.Extensions;
 using Common.Pooling.Pools;
-
+using LabExtended.API.Enums;
 using LabExtended.API.Hints.Elements.SelectMenu.Listeners.Keybind;
 
 using LabExtended.API.Input;
-using LabExtended.API.Input.Enums;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.SelectMenu;

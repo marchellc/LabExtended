@@ -1,4 +1,5 @@
-﻿using LabExtended.API.Messages;
+﻿using LabExtended.API.Enums;
+using LabExtended.API.Messages;
 
 namespace LabExtended.API.Hints.Elements
 {

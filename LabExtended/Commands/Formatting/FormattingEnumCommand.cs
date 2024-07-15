@@ -16,7 +16,7 @@ namespace LabExtended.Commands.Formatting
 
         public object OnCalled(ExPlayer sender, string enumName)
         {
-            if (!EnumTypes.TryGetFirst(t => t.Name.ToLower().GetSimilarity(enumName.ToLower()) >= 0.8, out var foundEnum))
+            if (!EnumTypes.TryGetFirst(t => t.Name.ToLower() == enumName.ToLower(), out var foundEnum))
                 return $"Unknown enum type: {enumName}";
 
             var values = Enum.GetValues(foundEnum);

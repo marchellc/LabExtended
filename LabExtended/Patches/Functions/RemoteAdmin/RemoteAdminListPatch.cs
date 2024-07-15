@@ -6,10 +6,7 @@ using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
-using LabExtended.API.RemoteAdmin;
 using LabExtended.Core;
-
-using PluginAPI.Core;
 
 using RemoteAdmin;
 using RemoteAdmin.Communication;
@@ -24,19 +21,10 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
         public static bool Prefix(RaPlayerList __instance, CommandSender sender, string data)
         {
-            if (!Player.TryGet(sender, out var apiPlayer))
-            {
-                ExLoader.Debug("Remote Admin API", $"Failed to fetch NW API player");
+            if (!ExPlayer.TryGet(sender, out var player))
                 return true;
-            }
 
-            var player = ExPlayer.Get(apiPlayer.ReferenceHub);
-
-            if (player is null)
-            {
-                ExLoader.Debug("Remote Admin API", $"Failed to fetch Ex Player");
-                return true;
-            }
+            player.RemoteAdmin.InternalRegisterRequest();
 
             var array = data.Split(' ');
 
@@ -63,29 +51,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             var sorting = (RaPlayerList.PlayerSorting)sortingType;
             var builder = StringBuilderPool.Shared.RentLines("\n");
 
-            foreach (var customObject in RemoteAdminUtils.AdditionalObjects)
-            {
-                if (!customObject.IsOnTop)
-                    continue;
-
-                customObject.OnUpdate();
-
-                if (!customObject.IsActive)
-                    continue;
-
-                if (!customObject.IsVisible(player))
-                    continue;
-
-                if ((customObject.ListIconType & RemoteAdminIconType.MutedIcon) != 0)
-                    builder.Append(MutedIconPrefix);
-
-                if ((customObject.ListIconType & RemoteAdminIconType.OverwatchIcon) != 0)
-                    builder.Append(OverwatchIconPrefix);
-
-                builder.Append($"({customObject.AssignedId}) ");
-                builder.Append(customObject.ListName.Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
-                builder.AppendLine();
-            }
+            player.RemoteAdmin.InternalPrependObjects(builder);
 
             foreach (var otherHub in array[2] == "1" ? __instance.SortPlayersDescending(sorting) : __instance.SortPlayers(sorting))
             {
@@ -104,11 +70,14 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 builder.Append(RaPlayerList.GetPrefix(otherHub, hasHiddenBadges, hasGlobalHiddenBadges));
 
-                if ((icons & RemoteAdminIconType.MutedIcon) != 0)
-                    builder.Append(MutedIconPrefix);
+                if (icons != RemoteAdminIconType.None)
+                {
+                    if ((icons & RemoteAdminIconType.MutedIcon) != 0)
+                        builder.Append(MutedIconPrefix);
 
-                if ((icons & RemoteAdminIconType.OverwatchIcon) != 0)
-                    builder.Append(OverwatchIconPrefix);
+                    if ((icons & RemoteAdminIconType.OverwatchIcon) != 0)
+                        builder.Append(OverwatchIconPrefix);
+                }
 
                 builder.Append("<color={RA_ClassColor}>(");
                 builder.Append(other.PlayerId);
@@ -117,29 +86,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 builder.AppendLine();
             }
 
-            foreach (var customObject in RemoteAdminUtils.AdditionalObjects)
-            {
-                if (customObject.IsOnTop)
-                    continue;
-
-                customObject.OnUpdate();
-
-                if (!customObject.IsActive)
-                    continue;
-
-                if (!customObject.IsVisible(player))
-                    continue;
-
-                if ((customObject.ListIconType & RemoteAdminIconType.MutedIcon) != 0)
-                    builder.Append(MutedIconPrefix);
-
-                if ((customObject.ListIconType & RemoteAdminIconType.OverwatchIcon) != 0)
-                    builder.Append(OverwatchIconPrefix);
-
-                builder.Append($"({customObject.AssignedId}) ");
-                builder.Append(customObject.ListName.Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
-                builder.AppendLine();
-            }
+            player.RemoteAdmin.InternalAppendObjects(builder);
 
             sender.RaReply($"${__instance.DataId} {StringBuilderPool.Shared.ToStringReturn(builder)}", true, num != 1, string.Empty);
             return false;

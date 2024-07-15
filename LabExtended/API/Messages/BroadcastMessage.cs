@@ -1,4 +1,6 @@
-﻿namespace LabExtended.API.Messages
+﻿using LabExtended.API.Interfaces;
+
+namespace LabExtended.API.Messages
 {
     public struct BroadcastMessage : IMessage
     {
