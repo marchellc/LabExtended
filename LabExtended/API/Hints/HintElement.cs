@@ -4,7 +4,7 @@ namespace LabExtended.API.Hints
 {
     public abstract class HintElement
     {
-        internal readonly SortedSet<HintData> _messages = new SortedSet<HintData>(new HintSorter());
+        internal readonly List<HintData> _messages = new List<HintData>();
         internal string _prev = null;
 
         public virtual bool IsActive { get; set; }

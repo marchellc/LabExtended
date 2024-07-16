@@ -310,10 +310,10 @@ namespace LabExtended.API.Hints
                                 result += $"<align=right>{message.Content}</align>";
                             else
                                 result += message.Content;
+
+                            result += "\n";
                         }
                     }
-
-                    result += "\n";
                 }
             }
 
