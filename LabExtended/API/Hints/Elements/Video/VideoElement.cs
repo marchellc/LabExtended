@@ -1,9 +1,8 @@
 ﻿using Common.Extensions;
 
 using LabExtended.API.Enums;
-using LabExtended.API.Hints.Elements.Image;
 using LabExtended.Utilities.Async;
-
+using LabExtended.Utilities.Image;
 using MEC;
 
 using System.Collections.Concurrent;

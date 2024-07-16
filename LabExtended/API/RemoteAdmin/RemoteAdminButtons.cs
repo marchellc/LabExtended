@@ -37,7 +37,7 @@ namespace LabExtended.API.RemoteAdmin
         public static void InvokeButton(RemoteAdminButtonType buttonType, ExPlayer player, IEnumerable<int> selectedObjects)
             => GetButton(buttonType)?.OnPressed(player, selectedObjects);
 
-        public static bool BindButton(RemoteAdminButtonType buttonType, IRemoteAdminObject remoteAdminObject, string name = null)
+        public static bool BindButton(RemoteAdminButtonType buttonType, IRemoteAdminObject remoteAdminObject)
         {
             if (remoteAdminObject is null)
                 throw new ArgumentNullException(nameof(remoteAdminObject));
@@ -45,7 +45,7 @@ namespace LabExtended.API.RemoteAdmin
             if (!TryGetButton(buttonType, out var button))
                 return false;
 
-            return button.BindObject(remoteAdminObject, name);
+            return button.BindObject(remoteAdminObject);
         }
 
         public static bool UnbindButton(RemoteAdminButtonType buttonType, IRemoteAdminObject remoteAdminObject)

@@ -26,6 +26,28 @@ namespace LabExtended.Utilities.Async
             return AsyncRunner.RunThreadAsync(SendAsync());
         }
 
+        public static AsyncOperation<string> GetStringAsync(string requestUrl, HttpClient client = null)
+        {
+            if (requestUrl is null)
+                throw new ArgumentNullException(nameof(requestUrl));
+
+            async Task<string> SendAsync()
+            {
+                var disposeClient = client is null;
+
+                client ??= new HttpClient();
+
+                var response = await client.GetStringAsync(requestUrl);
+
+                if (disposeClient)
+                    client.Dispose();
+
+                return response;
+            }
+
+            return AsyncRunner.RunThreadAsync(SendAsync());
+        }
+
         public static AsyncOperation<byte[]> GetByteArrayAsync(string requestUrl, HttpClient client = null)
         {
             if (string.IsNullOrWhiteSpace(requestUrl))

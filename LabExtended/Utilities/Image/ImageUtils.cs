@@ -3,7 +3,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace LabExtended.API.Hints.Elements.Image
+namespace LabExtended.Utilities.Image
 {
     public static class ImageUtils
     {
@@ -85,6 +85,30 @@ namespace LabExtended.API.Hints.Elements.Image
             }
 
             return buffer + "</color>";
+        }
+
+        public static UnityEngine.Color?[,] ToPrimitiveColors(this Bitmap bitmap, UnityEngine.Color?[,] previousFrame = null)
+        {
+            var frame = new UnityEngine.Color?[bitmap.Height, bitmap.Width];
+
+            for (int i = 0; i < bitmap.Height; i++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    var pixel = bitmap.GetPixel(x, i);
+                    var color = new UnityEngine.Color(pixel.R / 255f, pixel.G / 255f, pixel.B / 255f, pixel == Color.Transparent ? 0f : 1f);
+
+                    if (previousFrame != null && previousFrame[x, i] == color)
+                    {
+                        frame[i, x] = null;
+                        continue;
+                    }
+
+                    frame[i, x] = color;
+                }
+            }
+
+            return frame;
         }
 
         public static string GetHex(this Color color)

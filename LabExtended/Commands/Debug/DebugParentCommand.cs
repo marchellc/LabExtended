@@ -5,8 +5,10 @@ using LabExtended.Commands.Debug.CustomItems;
 using LabExtended.Commands.Debug.Hints;
 using LabExtended.Commands.Debug.Hints.Image;
 using LabExtended.Commands.Debug.Hints.SelectMenu;
+using LabExtended.Commands.Debug.RaImages;
 using LabExtended.Commands.Debug.RemoteAdmin;
 using LabExtended.Commands.Debug.Toys;
+using LabExtended.Commands.Debug.Video;
 
 namespace LabExtended.Commands.Debug
 {
@@ -40,6 +42,12 @@ namespace LabExtended.Commands.Debug
             RegisterCommand(new PrintDebugItemCommand());
             RegisterCommand(new SpawnDebugItemCommand());
             RegisterCommand(new SelectDebugItemCommand());
+
+            RegisterCommand(new PlayRaGifCommand());
+            RegisterCommand(new ShowRaImageCommand());
+
+            RegisterCommand(new ExportGifDataCommand());
+            RegisterCommand(new ExportImageDataCommand());
         }
     }
 }

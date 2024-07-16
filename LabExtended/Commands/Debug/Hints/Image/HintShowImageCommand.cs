@@ -4,7 +4,7 @@ using LabExtended.API.Hints.Elements.Image;
 
 using LabExtended.Core.Commands;
 using LabExtended.Utilities.Async;
-
+using LabExtended.Utilities.Image;
 using System.Drawing;
 using System.Net.Http;
 

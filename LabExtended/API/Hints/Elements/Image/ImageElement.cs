@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using LabExtended.API.Enums;
+using LabExtended.Utilities.Image;
 
 namespace LabExtended.API.Hints.Elements.Image
 {

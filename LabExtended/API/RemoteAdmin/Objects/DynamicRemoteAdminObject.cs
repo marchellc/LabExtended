@@ -6,14 +6,16 @@ namespace LabExtended.API.RemoteAdmin.Objects
 {
     public class DynamicRemoteAdminObject : IRemoteAdminObject
     {
-        public DynamicRemoteAdminObject(Func<ExPlayer, string> name, Func<ExPlayer, IEnumerable<ExPlayer>, RemoteAdminButtonType, string> response, Func<ExPlayer, bool> visibility = null)
+        public DynamicRemoteAdminObject(Func<ExPlayer, string> name, Func<ExPlayer, RemoteAdminButtonType, string> button, Func<ExPlayer, IEnumerable<ExPlayer>, RemoteAdminButtonType, string> response, Func<ExPlayer, bool> visibility = null)
         {
             Name = name;
+            Button = button;
             Response = response;
             Visibility = visibility;
         }
 
         public Func<ExPlayer, string> Name { get; set; }
+        public Func<ExPlayer, RemoteAdminButtonType, string> Button { get; set; }
         public Func<ExPlayer, IEnumerable<ExPlayer>, RemoteAdminButtonType, string> Response { get; set; }
 
         public Func<ExPlayer, bool> Visibility { get; set; }
@@ -29,6 +31,9 @@ namespace LabExtended.API.RemoteAdmin.Objects
 
         public string GetName(ExPlayer player)
             => Name(player);
+
+        public virtual string GetButton(ExPlayer player, RemoteAdminButtonType buttonType)
+            => Button(player, buttonType);
 
         public string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button)
             => Response(player, selectedPlayers, button);

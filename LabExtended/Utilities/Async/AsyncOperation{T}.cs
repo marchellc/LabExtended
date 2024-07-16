@@ -16,7 +16,20 @@ namespace LabExtended.Utilities.Async
 
         public bool IsDone => _done;
         public Exception Error => _error;
-        public T Result => _result.Value;
+
+        public T Result
+        {
+            get
+            {
+                if (_error != null)
+                    throw _error;
+
+                if (!_done)
+                    throw new InvalidOperationException($"This operation has not finished yet.");
+
+                return _result.Value;
+            }
+        }
 
         public void Await(Action<T> callback)
         {

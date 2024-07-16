@@ -9,16 +9,18 @@ namespace LabExtended.Utilities.Debug
     {
         public DebugRemoteAdminObject(string name, string response, RemoteAdminObjectFlags flags = RemoteAdminObjectFlags.ShowToNorthwoodStaff, RemoteAdminIconType icons = RemoteAdminIconType.None) : base(name, response, flags, icons)
         {
-
+            Buttons[RemoteAdminButtonType.RequestAuth] = "Request AUTH";
+            Buttons[RemoteAdminButtonType.RequestIp] = "Request IP";
+            Buttons[RemoteAdminButtonType.Request] = "Request";
         }
 
         public override void OnEnabled()
         {
             base.OnEnabled();
 
-            RemoteAdminButtons.BindButton(RemoteAdminButtonType.RequestAuth, this, Name + " 1");
-            RemoteAdminButtons.BindButton(RemoteAdminButtonType.Request, this, Name + " 2");
-            RemoteAdminButtons.BindButton(RemoteAdminButtonType.RequestIp, this, Name + " 3");
+            RemoteAdminButtons.BindButton(RemoteAdminButtonType.RequestAuth, this);
+            RemoteAdminButtons.BindButton(RemoteAdminButtonType.Request, this);
+            RemoteAdminButtons.BindButton(RemoteAdminButtonType.RequestIp, this);
         }
 
         public override void OnDisabled()

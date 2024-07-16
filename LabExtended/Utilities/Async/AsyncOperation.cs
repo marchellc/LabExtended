@@ -12,6 +12,7 @@ namespace LabExtended.Utilities.Async
         private volatile Exception _error;
 
         public bool IsDone => _done;
+
         public Exception Error => _error;
 
         public void Await(Action callback)

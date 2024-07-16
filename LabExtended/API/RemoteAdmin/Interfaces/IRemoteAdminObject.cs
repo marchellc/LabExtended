@@ -19,6 +19,7 @@ namespace LabExtended.API.RemoteAdmin.Interfaces
         void OnDisabled();
 
         string GetName(ExPlayer player);
+        string GetButton(ExPlayer player, RemoteAdminButtonType buttonType);
         string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button);
 
         bool GetVisiblity(ExPlayer player);

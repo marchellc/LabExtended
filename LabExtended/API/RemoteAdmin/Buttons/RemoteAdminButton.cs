@@ -12,7 +12,7 @@ namespace LabExtended.API.RemoteAdmin.Buttons
 {
     public class RemoteAdminButton : IRemoteAdminButton
     {
-        private readonly LockedHashSet<RemoteAdminButtonBind> _binds = new LockedHashSet<RemoteAdminButtonBind>();
+        private readonly LockedHashSet<IRemoteAdminObject> _binds = new LockedHashSet<IRemoteAdminObject>();
         private readonly RemoteAdminButtonType _type;
 
         public RemoteAdminButton(RemoteAdminButtonType type)
@@ -24,14 +24,14 @@ namespace LabExtended.API.RemoteAdmin.Buttons
             {
                 var bind = _binds[i];
                 var size = 1;
-                var line = bind.Name;
+                var line = bind.GetButton(player, _type);
 
-                if (string.IsNullOrWhiteSpace(bind.Name))
+                if (string.IsNullOrWhiteSpace(line))
                     continue;
 
                 HintUtils.TrimStartNewLines(ref line, out _);
 
-                if (!HintUtils.TryGetSizeTag(bind.Name, ref size, out var closed))
+                if (!HintUtils.TryGetSizeTag(line, ref size, out var closed))
                     size = 1;
                 else
                 {
@@ -39,10 +39,10 @@ namespace LabExtended.API.RemoteAdmin.Buttons
                         line += "</size>";
                 }
 
-                if (!appendedNames.Contains(bind.Object))
+                if (!appendedNames.Contains(bind))
                 {
-                    builder.Append($"<voffset=-{324 - ((i == 0 ? size : size + i) * 30)}><br><pos=78%>{bind.Object.GetName(player)}</pos></voffset>");
-                    appendedNames.Add(bind.Object);
+                    builder.Append($"<voffset=-{324 - ((i == 0 ? size : size + i) * 30)}><br><pos=78%>{bind.GetName(player)}</pos></voffset>");
+                    appendedNames.Add(bind);
                 }
 
                 if (pos != 0)
@@ -69,15 +69,12 @@ namespace LabExtended.API.RemoteAdmin.Buttons
             return false;
         }
 
-        public bool BindObject(IRemoteAdminObject remoteAdminObject, string name = null)
+        public bool BindObject(IRemoteAdminObject remoteAdminObject)
         {
             if (remoteAdminObject is null)
                 throw new ArgumentNullException(nameof(remoteAdminObject));
 
-            if (_binds.Any(bind => bind.Object == remoteAdminObject))
-                return false;
-
-            return _binds.Add(new RemoteAdminButtonBind(remoteAdminObject, name));
+            return _binds.Add(remoteAdminObject);
         }
 
         public bool UnbindObject(IRemoteAdminObject remoteAdminObject)
@@ -85,7 +82,7 @@ namespace LabExtended.API.RemoteAdmin.Buttons
             if (remoteAdminObject is null)
                 throw new ArgumentNullException(nameof(remoteAdminObject));
 
-            return _binds.RemoveWhere(bind => bind.Object == remoteAdminObject) > 0;
+            return _binds.Remove(remoteAdminObject);
         }
     }
 }

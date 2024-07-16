@@ -21,6 +21,9 @@ namespace LabExtended.API.RemoteAdmin.Objects
         public virtual string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button)
             => string.Empty;
 
+        public virtual string GetButton(ExPlayer player, RemoteAdminButtonType buttonType)
+            => string.Empty;
+
         public virtual bool GetVisiblity(ExPlayer player)
             => true;
 

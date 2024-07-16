@@ -4,7 +4,7 @@ namespace LabExtended.API.RemoteAdmin.Interfaces
 {
     public interface IRemoteAdminButton
     {
-        bool BindObject(IRemoteAdminObject remoteAdminObject, string name = null);
+        bool BindObject(IRemoteAdminObject remoteAdminObject);
         bool UnbindObject(IRemoteAdminObject remoteAdminObject);
 
         bool OnPressed(ExPlayer player, IEnumerable<int> selectedObjects);

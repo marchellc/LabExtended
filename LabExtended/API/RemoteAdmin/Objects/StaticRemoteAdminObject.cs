@@ -1,4 +1,5 @@
-﻿using LabExtended.API.Enums;
+﻿using LabExtended.API.Collections.Locked;
+using LabExtended.API.Enums;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
@@ -18,6 +19,8 @@ namespace LabExtended.API.RemoteAdmin.Objects
         public string Name { get; set; }
         public string Response { get; set; }
 
+        public LockedDictionary<RemoteAdminButtonType, string> Buttons { get; } = new LockedDictionary<RemoteAdminButtonType, string>();
+
         public RemoteAdminObjectFlags Flags { get; set; } = RemoteAdminObjectFlags.ShowToNorthwoodStaff;
         public RemoteAdminIconType Icons { get; set; } = RemoteAdminIconType.None;
 
@@ -29,6 +32,9 @@ namespace LabExtended.API.RemoteAdmin.Objects
 
         public string GetName(ExPlayer player)
             => Name;
+
+        public string GetButton(ExPlayer player, RemoteAdminButtonType buttonType)
+            => Buttons.TryGetValue(buttonType, out var button) ? button : null;
 
         public string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button)
             => Response;

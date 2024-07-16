@@ -1,11 +1,10 @@
 ﻿using LabExtended.API;
 using LabExtended.API.Enums;
-using LabExtended.API.Hints.Elements.Image;
 using LabExtended.API.Hints.Elements.Video;
 
 using LabExtended.Core.Commands;
 using LabExtended.Utilities.Async;
-
+using LabExtended.Utilities.Image;
 using System.Net.Http;
 
 namespace LabExtended.Commands.Debug.Hints.Image
