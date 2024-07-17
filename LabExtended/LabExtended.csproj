@@ -32,9 +32,6 @@
       <Reference Include="CommandSystem.Core">
         <HintPath>$(SL_REFERENCES)\CommandSystem.Core.dll</HintPath>
       </Reference>
-      <Reference Include="Common">
-        <HintPath>$(LAB_EX_REFERENCES)\Common.dll</HintPath>
-      </Reference>
       <Reference Include="Mirror">
         <HintPath>$(SL_REFERENCES)\Mirror-publicized.dll</HintPath>
       </Reference>
