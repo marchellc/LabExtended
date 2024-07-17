@@ -1,12 +1,10 @@
-﻿using Common.Extensions;
-
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Modules;
 using LabExtended.API.Voice.Modifiers.Pitch;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
-
+using LabExtended.Extensions;
 using LabExtended.Ticking;
 
 using VoiceChat;
@@ -43,13 +41,13 @@ namespace LabExtended.API.Voice
             => _modifiers.Any(m => m.IsEnabled && m is T);
 
         public bool HasModifier<T>(out T modifier) where T : VoiceModifier
-            => (_modifiers.TryGetFirst(m => m.IsEnabled && m is T, out var voiceModifier) ? modifier = (T)voiceModifier : modifier = null) != null;
+            => (_modifiers.TryGetFirst<VoiceModifier>(m => m.IsEnabled && m is T, out var voiceModifier) ? modifier = (T)voiceModifier : modifier = null) != null;
 
         public bool HasProfile<T>() where T : VoiceProfile
             => _profiles.Any(p => p.IsEnabled && p is T);
 
         public bool HasProfile<T>(out T profile) where T : VoiceProfile
-            => (_profiles.TryGetFirst(p => p.IsEnabled && p is T, out var voiceProfile) ? profile = (T)voiceProfile : profile = null) != null;
+            => (_profiles.TryGetFirst<VoiceProfile>(p => p.IsEnabled && p is T, out var voiceProfile) ? profile = (T)voiceProfile : profile = null) != null;
 
         public T AddProfile<T>() where T : VoiceProfile
         {

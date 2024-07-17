@@ -15,9 +15,8 @@ using LabExtended.Core.Profiling;
 using LabExtended.Patches.Functions;
 
 using LabExtended.Events.Player;
-
-using Common.Pooling.Pools;
 using LabExtended.API.Collections;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Events
 {

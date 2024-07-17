@@ -1,7 +1,6 @@
 ﻿using CommandSystem;
-
-using Common.Extensions;
-
+using LabExtended.Extensions;
+using LabExtended.Utilities;
 using PluginAPI.Core;
 using PluginAPI.Loader;
 
@@ -67,8 +66,8 @@ namespace LabExtended.Commands.Plugins
                         continue;
                     }
 
-                    plugin._onUnload.Call(plugin._plugin);
-                    plugin._entryPoint.Call(plugin._plugin);
+                    plugin._onUnload.InvokeMethod(plugin._plugin);
+                    plugin._entryPoint.InvokeMethod(plugin._plugin);
 
                     status += " | Plugin reloaded.";
                     reloaded++;

@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using LabExtended.Commands.Formatting;
+﻿using LabExtended.Commands.Formatting;
 using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Extensions;
 

@@ -1,7 +1,5 @@
-﻿using Common.Extensions;
-using Common.Values;
-
-using LabExtended.Core;
+﻿using LabExtended.Core;
+using LabExtended.Utilities.Values;
 
 using MEC;
 
@@ -9,7 +7,7 @@ namespace LabExtended.Utilities.Async
 {
     public class AsyncOperation<T>
     {
-        private volatile ReferenceValue<T> _result = new ReferenceValue<T>(default);
+        private volatile VolatileValue<T> _result = new VolatileValue<T>();
 
         private volatile bool _done;
         private volatile Exception _error;

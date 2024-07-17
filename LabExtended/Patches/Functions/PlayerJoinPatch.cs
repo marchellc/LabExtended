@@ -7,8 +7,6 @@ using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
 
-using Common.Extensions;
-
 namespace LabExtended.Patches.Functions
 {
     [HarmonyPatch(typeof(PlayerAuthenticationManager), nameof(PlayerAuthenticationManager.FinalizeAuthentication))]
@@ -27,7 +25,7 @@ namespace LabExtended.Patches.Functions
 
                 InternalEvents.InternalHandlePlayerJoin(new ExPlayer(__instance._hub));
 
-                OnJoined.Call(player);
+                OnJoined.InvokeSafe(player);
             }
             catch (Exception ex)
             {

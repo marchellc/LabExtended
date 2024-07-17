@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using Interactables.Interobjects.DoorUtils;
 
@@ -8,7 +6,7 @@ using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 
 using LabExtended.Core;
-
+using LabExtended.Extensions;
 using MapGeneration;
 
 using Mirror;

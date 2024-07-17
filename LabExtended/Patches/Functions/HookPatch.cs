@@ -1,10 +1,8 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-
+using LabExtended.Extensions;
 using PluginAPI.Events;
 
 using System.Reflection;
@@ -46,8 +44,8 @@ namespace LabExtended.Patches.Functions
         {
             try
             {
-                _pluginApiExecuteMethod ??= typeof(EventManager).GetAllMethods().FirstOrDefault(m => m.Name == "ExecuteEvent" && m.ContainsGenericParameters);
-                _replacementExecuteMethod ??= typeof(HookPatch).GetAllMethods().FirstOrDefault(m => m.Name == "RunEvent");
+                _pluginApiExecuteMethod ??= typeof(EventManager).FindMethod(m => m.Name == "ExecuteEvent" && m.ContainsGenericParameters);
+                _replacementExecuteMethod ??= typeof(HookPatch).FindMethod(m => m.Name == "RunEvent");
 
                 foreach (var type in CancellationTypes)
                 {

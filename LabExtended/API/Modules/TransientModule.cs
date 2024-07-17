@@ -1,10 +1,10 @@
-﻿using Common.Pooling.Pools;
-using Common.Utilities;
-
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
+using LabExtended.API.Pooling;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Ticking;
+using LabExtended.Utilities;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.API.Modules
 {
@@ -156,7 +156,7 @@ namespace LabExtended.API.Modules
 
             _tickTimer = DateTime.Now;
 
-            var modulesToRemove = DictionaryPool<string, List<TransientModule>>.Shared.Rent();
+            var modulesToRemove = DictionaryPool<string, List<TransientModule>>.Rent();
 
             foreach (var modulePair in _cachedModules)
             {
@@ -212,7 +212,7 @@ namespace LabExtended.API.Modules
                 ListPool<TransientModule>.Shared.Return(removedPair.Value);
             }
 
-            DictionaryPool<string, List<TransientModule>>.Shared.Return(modulesToRemove);
+            DictionaryPool<string, List<TransientModule>>.Return(modulesToRemove);
         }
     }
 }

@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
@@ -13,15 +11,11 @@ using PlayerRoles;
 
 using PluginAPI.Events;
 
-using System.Reflection;
-
 namespace LabExtended.Patches.Events
 {
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.ServerSetRole))]
     public static class PlayerSpawningPatch
     {
-        private static readonly EventInfo _event = typeof(PlayerRoleManager).Event("OnServerRoleSet");
-
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags)
         {
             try
@@ -46,7 +40,7 @@ namespace LabExtended.Patches.Events
                     || __instance.isLocalPlayer)
                 {
                     if (!player.Stats.KeepMaxHealthOnRoleChange)
-                        player.Stats._maxHealthOverride.Reset();
+                        player.Stats._maxHealthOverride.ClearValue();
 
                     if (!player.FakePosition.KeepOnRoleChange || (!player.FakePosition.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
                         player.FakePosition.ClearValues();
@@ -59,12 +53,6 @@ namespace LabExtended.Patches.Events
                     spawnFlags = spawningEv.SpawnFlags;
 
                     InternalEvents.InternalHandleRoleChange(spawningEv);
-
-                    try
-                    {
-                        _event.Raise(null, __instance.Hub, newRole, reason);
-                    }
-                    catch { }
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                 }

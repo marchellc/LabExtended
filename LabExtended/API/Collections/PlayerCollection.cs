@@ -1,6 +1,5 @@
-﻿using Common.Extensions;
-using LabExtended.API;
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
+
 using Mirror;
 
 using PluginAPI.Core;
@@ -16,11 +15,11 @@ namespace LabExtended.API.Collections
 
         internal PlayerCollection()
         {
-            _netIdList = new HashSet<uint>(20);
+            _netIdList = new LockedHashSet<uint>(20);
             _handlers.Add(this);
         }
 
-        internal HashSet<uint> _netIdList;
+        internal LockedHashSet<uint> _netIdList;
 
         /// <summary>
         /// Adds a specific network ID.

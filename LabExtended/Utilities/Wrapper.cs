@@ -1,12 +1,10 @@
-﻿using Common.Values;
-
-namespace LabExtended.Utilities
+﻿namespace LabExtended.Utilities
 {
     /// <summary>
     /// A wrapper class.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Wrapper<T> : IWrapper<T>
+    public class Wrapper<T>
     {
         /// <summary>
         /// Creates a new wrapper instance.

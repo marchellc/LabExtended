@@ -1,6 +1,3 @@
-using Common.Extensions;
-using Common.Utilities;
-
 using LabExtended.Attributes;
 using LabExtended.Utilities;
 
@@ -26,6 +23,7 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
+using LabExtended.Extensions;
 
 namespace LabExtended.Core.Hooking
 {
@@ -158,7 +156,7 @@ namespace LabExtended.Core.Hooking
                 if (_activeDelegates.Any(p => p.Value.Any(d => d.Event == eventInfo && d.TypeInstance.IsEqualTo(typeInstance))))
                     continue;
 
-                var eventField = type.Field(eventInfo.Name);
+                var eventField = type.FindField(eventInfo.Name);
 
                 if (eventField is null || !eventInfo.IsMulticast)
                     continue;
@@ -230,7 +228,7 @@ namespace LabExtended.Core.Hooking
                 hookDelegateObjects.Clear();
                 hookDelegateObjects.AddRange(ordered);
 
-                ExLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.ToName()}&r (&6{eventType.Name}&r)");
+                ExLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.GetMemberName()}&r (&6{eventType.Name}&r)");
             }
         }
 
@@ -239,32 +237,32 @@ namespace LabExtended.Core.Hooking
             if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
                 return;
 
-            if (!method.IsStatic && !method.DeclaringType.IsValidInstance(typeInstance, false))
+            if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
                 return;
 
             if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance) && h.Method == method)))
             {
-                ExLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
                 return;
             }
 
-            var methodArgs = method.Parameters();
+            var methodArgs = method.GetAllParameters();
 
             if (!TryGetEventType(hookDescriptorAttribute, pluginEvent, methodArgs, out var eventType))
             {
-                ExLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.GetMemberName()}&r");
                 return;
             }
 
             if (!TryGetBinder(methodArgs, eventType, out var hookBinder))
             {
-                ExLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.GetMemberName()}&r");
                 return;
             }
 
             if (!TryGetRunner(method.ReturnType, out var hookRunner))
             {
-                ExLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.GetMemberName()}&r");
                 return;
             }
 
@@ -277,7 +275,7 @@ namespace LabExtended.Core.Hooking
             {
                 var newPriority = priority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
 
-                ExLoader.Warn("Hooking API", $"Hook &3{method.ToName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
+                ExLoader.Warn("Hooking API", $"Hook &3{method.GetMemberName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
 
                 priority = newPriority;
             }
@@ -291,7 +289,7 @@ namespace LabExtended.Core.Hooking
             hooks.Clear();
             hooks.AddRange(ordered);
 
-            ExLoader.Debug("Hooking API", $"Registered a new hook: &3{method.ToName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
+            ExLoader.Debug("Hooking API", $"Registered a new hook: &3{method.GetMemberName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
         }
 
         private static bool TryGetRunner(Type returnType, out IHookRunner hookRunner)
@@ -322,7 +320,7 @@ namespace LabExtended.Core.Hooking
 
             if (methodArgs.Length == 1 && methodArgs[0].ParameterType == eventType)
             {
-                binder = new SimpleOverloadBinder(ExLoader.Loader.Config.Hooks.UsePoolingOnSimpleOverloads);
+                binder = new SimpleOverloadBinder();
                 return true;
             }
 
@@ -354,7 +352,7 @@ namespace LabExtended.Core.Hooking
                 binding[i] = property;
             }
 
-            binder = new CustomOverloadBinder(methodArgs, binding, ExLoader.Loader.Config.Hooks.UsePoolingOnCustomOverloads);
+            binder = new CustomOverloadBinder(methodArgs, binding);
             return true;
         }
 

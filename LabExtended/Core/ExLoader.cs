@@ -1,5 +1,3 @@
-using Common.Logging;
-
 using HarmonyLib;
 using LabExtended.API.Modules;
 using LabExtended.Core.Hooking;
@@ -97,28 +95,6 @@ namespace LabExtended.Core
                 {
                     Error("Extended Loader", "The plugin's config is missing! Seems like you made an error. Delete it and restart the server.");
                     return;
-                }
-
-                if (Config.Logging.PipeEnabled && !Config.Logging.DisabledSources.Contains("common"))
-                {
-                    var logger = new ExLogger();
-
-                    foreach (var output in LogOutput.Outputs)
-                    {
-                        if (output.HasLogger<ExLogger>())
-                            continue;
-
-                        output.AddLogger(logger);
-                    }
-
-                    if (!LogOutput.DefaultLoggers.Any(logger => logger != null && logger.GetType() == typeof(ExLogger)))
-                        LogOutput.DefaultLoggers.Add(logger);
-
-                    if (Config.Logging.DebugEnabled && !Config.Logging.DisabledSources.Contains("common_debug"))
-                    {
-                        LogOutput.EnableForAll(LogLevel.Debug | LogLevel.Verbose | LogLevel.Trace);
-                        LogUtils.Default = LogUtils.General | LogUtils.Debug;
-                    }
                 }
 
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");

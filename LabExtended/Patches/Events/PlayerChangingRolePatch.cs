@@ -15,10 +15,6 @@ using PluginAPI.Events;
 
 using CustomPlayerEffects;
 
-using System.Reflection;
-
-using Common.Extensions;
-
 using LabExtended.Core;
 using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
@@ -28,8 +24,6 @@ namespace LabExtended.Patches.Events
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.InitializeNewRole))]
     public static class PlayerChangingRolePatch
     {
-        private static readonly EventInfo _event = typeof(PlayerRoleManager).Event("OnRoleChanged");
-
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
         {
             try
@@ -78,15 +72,6 @@ namespace LabExtended.Patches.Events
                 else if (targetId != RoleTypeId.Spectator && !__instance.isLocalPlayer)
                 {
                     EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId));
-                }
-
-                if (prevRole != null)
-                {
-                    try
-                    {
-                        _event.Raise(null, __instance.Hub, prevRole, newRole);
-                    }
-                    catch { }
                 }
 
                 var hasSpawnProtection = false;

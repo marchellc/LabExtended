@@ -1,6 +1,4 @@
-﻿using Common.Pooling.Pools;
-
-using Footprinting;
+﻿using Footprinting;
 
 using GameCore;
 
@@ -8,8 +6,9 @@ using LabExtended.API.Enums;
 using LabExtended.API.Internal;
 
 using LabExtended.Core;
-using LabExtended.Core.Profiling;
 using LabExtended.Extensions;
+
+using NorthwoodLib.Pools;
 
 using PlayerRoles;
 using PlayerRoles.RoleAssign;

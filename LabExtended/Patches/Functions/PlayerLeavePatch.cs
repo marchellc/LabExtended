@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.API;
 
@@ -22,7 +20,7 @@ namespace LabExtended.Patches.Functions
                 if (__instance.isLocalPlayer || !ExPlayer.TryGet(__instance, out var player))
                     return true;
 
-                OnLeaving.Call(player);
+                OnLeaving.InvokeSafe(player);
 
                 InternalEvents.InternalHandlePlayerLeave(player);
                 return true;

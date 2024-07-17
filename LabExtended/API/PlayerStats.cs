@@ -1,4 +1,4 @@
-﻿using Common.Values;
+﻿using LabExtended.Utilities.Values;
 
 using PlayerRoles.PlayableScps.HumeShield;
 using PlayerRoles.PlayableScps.Scp106;
@@ -9,7 +9,7 @@ namespace LabExtended.API
 {
     public class PlayerStats
     {
-        internal StatusValue<float> _maxHealthOverride;
+        internal OverrideValue<float> _maxHealthOverride;
 
         internal PlayerStats(PlayerStatsSystem.PlayerStats playerStats)
         {
@@ -22,7 +22,7 @@ namespace LabExtended.API
             AdminFlags = Get<AdminFlagsStat>();
             HumeShield = Get<HumeShieldStat>();
 
-            _maxHealthOverride = new StatusValue<float>(() => Health.CurValue);
+            _maxHealthOverride = new OverrideValue<float>(() => Health.CurValue);
         }
 
         public PlayerStatsSystem.PlayerStats Stats { get; }

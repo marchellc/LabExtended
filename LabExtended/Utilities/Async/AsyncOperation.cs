@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core;
+﻿using LabExtended.Extensions;
 
 using MEC;
 
@@ -40,7 +38,7 @@ namespace LabExtended.Utilities.Async
             while (!_done)
                 yield return Timing.WaitForSeconds(0.1f);
 
-            callback.Call(null, ex => ExLoader.Error("Async API", $"Callback caught an error:\n{ex}"));
+            callback.InvokeSafe();
         }
     }
 }

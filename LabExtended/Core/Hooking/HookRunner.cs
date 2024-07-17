@@ -1,8 +1,7 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Hooking.Interfaces;
+﻿using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Profiling;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Core.Hooking
 {
@@ -44,7 +43,7 @@ namespace LabExtended.Core.Hooking
                         }
                         catch (Exception ex)
                         {
-                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedDelegate.Method.ToName()}&r:\n{ex.ToColoredString()}");
+                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
                         }
                     }
                 }
@@ -62,7 +61,7 @@ namespace LabExtended.Core.Hooking
 
                             if (value is null)
                             {
-                                ExLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.ToName()}&r");
+                                ExLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
                                 continue;
                             }
 
@@ -76,7 +75,7 @@ namespace LabExtended.Core.Hooking
                         }
                         catch (Exception ex)
                         {
-                            ExLoader.Error("Hooking API", $"An error occured while running custom delegates (&3{hookDelegateObject.Event.ToName()}&r)!\n{ex.ToColoredString()}");
+                            ExLoader.Error("Hooking API", $"An error occured while running custom delegates (&3{hookDelegateObject.Event.GetMemberName()}&r)!\n{ex.ToColoredString()}");
                         }
                     }
                 }
@@ -103,7 +102,7 @@ namespace LabExtended.Core.Hooking
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hook.Method.ToName()}&r due to an exception:\n{ex.ToColoredString()}");
+                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hook.Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
                 }
             }
 

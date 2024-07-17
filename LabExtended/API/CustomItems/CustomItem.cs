@@ -1,7 +1,4 @@
-﻿using Common.Extensions;
-using Common.Pooling.Pools;
-
-using InventorySystem;
+﻿using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 

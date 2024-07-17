@@ -1,4 +1,4 @@
-﻿using Common.Extensions;
+﻿using LabExtended.Extensions;
 
 namespace LabExtended.Utilities.Values
 {
@@ -6,7 +6,7 @@ namespace LabExtended.Utilities.Values
     /// A helper class used for managing flag enums.
     /// </summary>
     /// <typeparam name="TEnum"></typeparam>
-    public class EnumValue<TEnum> where TEnum : struct, Enum
+    public struct EnumValue<TEnum> where TEnum : struct, Enum
     {
         private Func<TEnum> _getter;
         private Action<TEnum> _setter;

@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using LabExtended.API.Voice;
+﻿using LabExtended.API.Voice;
 using LabExtended.API.Input.Interfaces;
 using LabExtended.API.Input.Inputs;
 

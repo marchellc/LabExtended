@@ -1,11 +1,9 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
-
+using LabExtended.Extensions;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
 
@@ -30,9 +28,8 @@ namespace LabExtended.Patches.Events
 
             __instance.Position = teleportingArgs.NewPosition;
             __instance.Hub.connectionToClient.Send(new FpcOverrideMessage(teleportingArgs.NewPosition, teleportingArgs.DeltaRotation.y));
-            __instance.OnServerPositionOverwritten?.Call();
+            __instance.OnServerPositionOverwritten.InvokeSafe();
 
-            HookRunner.RunEvent(new PlayerTeleportedArgs(player, teleportingArgs.CurrentPosition, teleportingArgs.NewPosition, teleportingArgs.DeltaRotation));
             return false;
         }
     }

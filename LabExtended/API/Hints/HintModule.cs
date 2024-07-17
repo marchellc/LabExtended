@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using Hints;
+﻿using Hints;
 
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
@@ -8,6 +6,7 @@ using LabExtended.API.Hints.Elements;
 using LabExtended.API.Modules;
 
 using LabExtended.Core;
+using LabExtended.Extensions;
 using LabExtended.Ticking;
 using LabExtended.Utilities;
 
@@ -54,7 +53,7 @@ namespace LabExtended.API.Hints
 
             foreach (var globalType in _globalElements)
             {
-                if (globalType.Value != null && !globalType.Value.Call(CastParent))
+                if (globalType.Value != null && !globalType.Value.InvokeSafe(CastParent))
                     continue;
 
                 if (_activeElements.Any(element => element.GetType() == globalType.Key))

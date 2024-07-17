@@ -1,12 +1,11 @@
 ﻿using CommandSystem;
-using Common.Extensions;
 
 using LabExtended.API;
 
 using LabExtended.Core.Commands.Arguments;
 using LabExtended.Core.Commands.Attributes;
 using LabExtended.Core.Commands.Interfaces;
-
+using LabExtended.Extensions;
 using RemoteAdmin;
 
 using System.Reflection;
@@ -24,7 +23,7 @@ namespace LabExtended.Core.Commands
         public CommandInfo()
         {
             _onCall = TryFindMethod();
-            _parameters = _onCall.Parameters();
+            _parameters = _onCall.GetAllParameters();
             _emptyArgs = new object[] { };
         }
 
@@ -229,7 +228,7 @@ namespace LabExtended.Core.Commands
         private MethodInfo TryFindMethod()
         {
             var type = GetType();
-            var method = type.Method("OnCalled");
+            var method = type.FindMethod("OnCalled");
 
             if (method is null)
                 throw new MethodAccessException($"Failed to find command method 'OnCalled' in class {type.FullName}");

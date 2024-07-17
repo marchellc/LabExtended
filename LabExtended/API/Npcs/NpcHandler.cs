@@ -8,10 +8,6 @@ using UnityEngine;
 
 using CentralAuth;
 
-using Common.Utilities.Generation;
-using Common.Extensions;
-using Common.Caching;
-
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 
@@ -24,6 +20,8 @@ using InventorySystem.Items.Pickups;
 
 using LabExtended.Core;
 using LabExtended.API.Modules;
+using LabExtended.Utilities.Generation;
+using LabExtended.Extensions;
 
 namespace LabExtended.API.Npcs
 {
@@ -33,7 +31,7 @@ namespace LabExtended.API.Npcs
     public class NpcHandler
     {
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
-        private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(new MemoryCache<int>(), 9000, 100000); // A unique ID generator ranging from 9000 to 1000.
+        private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
 
         /// <summary>
         /// A list of all NPCs.

@@ -1,6 +1,6 @@
 ﻿using CentralAuth;
+
 using CommandSystem;
-using Common.Extensions;
 
 using CustomPlayerEffects;
 
@@ -28,7 +28,6 @@ using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
-using LabExtended.Ticking;
 using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
 
@@ -461,7 +460,7 @@ namespace LabExtended.API
             _sentRoles = new LockedDictionary<uint, RoleTypeId>();
             _droppedItems = new LockedHashSet<ItemPickupBase>();
 
-            ArrayExtensions.TryPeekIndex(LiteNetLib4MirrorServer.Peers, ConnectionId, out _peer); // In case the hub is an NPC.
+            LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
 
             InfoArea = new EnumValue<PlayerInfoArea>(() => _hub.nicknameSync.Network_playerInfoToShow, value => _hub.nicknameSync.Network_playerInfoToShow = value);
             MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(_hub), value => VoiceChatMutes.SetFlags(_hub, value));
@@ -528,8 +527,8 @@ namespace LabExtended.API
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
         public IEnumerable<ExPlayer> PlayersInSight => _players.Where(p => p.IsInLineOfSight(this));
 
-        public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Where<Firearm>();
-        public IEnumerable<KeycardItem> Keycards => _hub.inventory.UserInventory.Items.Where<KeycardItem>();
+        public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Values.Where<Firearm>();
+        public IEnumerable<KeycardItem> Keycards => _hub.inventory.UserInventory.Items.Values.Where<KeycardItem>();
 
         public IEnumerable<StatusEffectBase> InactiveEffects => _hub.playerEffectsController.AllEffects.Where(e => !e.IsEnabled);
         public IEnumerable<StatusEffectBase> ActiveEffects => _hub.playerEffectsController.AllEffects.Where(e => e.IsEnabled);
@@ -1061,11 +1060,11 @@ namespace LabExtended.API
         public IEnumerable<ItemBase> GetItems(params ItemType[] types)
             => Items.Where(item => types.Contains(item.ItemTypeId));
 
-        public List<T> GetItems<T>() where T : ItemBase
+        public IEnumerable<T> GetItems<T>() where T : ItemBase
             => Items.Where<T>();
 
-        public List<T> GetItems<T>(ItemType type) where T : ItemBase
-            => Items.Where<T>(false, item => item.ItemTypeId == type);
+        public IEnumerable<T> GetItems<T>(ItemType type) where T : ItemBase
+            => Items.Where<T>(item => item.ItemTypeId == type);
 
         public bool HasItem(ItemType type)
             => Items.Any(it => it.ItemTypeId == type);
@@ -1237,7 +1236,7 @@ namespace LabExtended.API
             void CustomSyncVarGenerator(NetworkWriter targetWriter)
             {
                 targetWriter.WriteULong(NetworkUtils._syncVars[$"{targetType.Name}.{propertyName}"]);
-                NetworkUtils._writerExtensions[value.GetType()]?.Call(null, targetWriter, value);
+                NetworkUtils._writerExtensions[value.GetType()]?.InvokeMethod(null, targetWriter, value);
             }
         }
 
@@ -1249,7 +1248,7 @@ namespace LabExtended.API
             var writer = NetworkWriterPool.Get();
 
             foreach (var value in values)
-                NetworkUtils._writerExtensions[value.GetType()].Call(null, writer, value);
+                NetworkUtils._writerExtensions[value.GetType()].InvokeMethod(null, writer, value);
 
             var msg = new RpcMessage()
             {

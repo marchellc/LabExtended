@@ -3,14 +3,19 @@ using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.Utilities.Values
 {
-    public class FakeValue<T>
+    public struct FakeValue<T>
     {
-        private readonly LockedDictionary<uint, T> _values = new LockedDictionary<uint, T>();
+        private readonly LockedDictionary<uint, T> _values;
 
         public T GlobalValue { get; set; }
 
         public bool KeepOnDeath { get; set; }
         public bool KeepOnRoleChange { get; set; }
+
+        public FakeValue()
+        {
+            _values = new LockedDictionary<uint, T>();
+        }
 
         public T GetValue(uint netId, T defaultValue = default)
             => _values.TryGetValue(netId, out var fakedValue) ? fakedValue : defaultValue;

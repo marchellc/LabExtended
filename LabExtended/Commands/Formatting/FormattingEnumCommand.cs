@@ -1,7 +1,6 @@
-﻿using Common.Extensions;
-
-using LabExtended.API;
+﻿using LabExtended.API;
 using LabExtended.Core.Commands;
+using LabExtended.Extensions;
 
 using System.Text;
 
@@ -16,7 +15,7 @@ namespace LabExtended.Commands.Formatting
 
         public object OnCalled(ExPlayer sender, string enumName)
         {
-            if (!EnumTypes.TryGetFirst(t => t.Name.ToLower() == enumName.ToLower(), out var foundEnum))
+            if (!EnumTypes.TryGetFirst<Type>(t => t.Name.ToLower() == enumName.ToLower(), out var foundEnum))
                 return $"Unknown enum type: {enumName}";
 
             var values = Enum.GetValues(foundEnum);

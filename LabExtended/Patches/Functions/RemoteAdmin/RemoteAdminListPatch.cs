@@ -1,13 +1,11 @@
 ﻿using CentralAuth;
 
-using Common.Pooling.Pools;
-
 using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
 using LabExtended.Core;
-
+using NorthwoodLib.Pools;
 using RemoteAdmin;
 using RemoteAdmin.Communication;
 
@@ -49,7 +47,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             var hasHiddenBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenBadges);
             var hasGlobalHiddenBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenGlobalBadges);
             var sorting = (RaPlayerList.PlayerSorting)sortingType;
-            var builder = StringBuilderPool.Shared.RentLines("\n");
+            var builder = StringBuilderPool.Shared.Rent("\n");
 
             player.RemoteAdmin.InternalPrependObjects(builder);
 

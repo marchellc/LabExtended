@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Commands.Interfaces;
+﻿using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Core.Commands.Parsing;
 
 using System.Reflection;
@@ -74,7 +72,7 @@ namespace LabExtended.Core.Commands.Arguments
 
                 if (definition == typeof(List<>))
                 {
-                    var elementType = Type.GetFirstGenericType();
+                    var elementType = Type.GetGenericArguments()[0];
 
                     if (elementType.IsEnum)
                     {

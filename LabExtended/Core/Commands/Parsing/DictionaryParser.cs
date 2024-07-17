@@ -1,7 +1,5 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Commands.Interfaces;
-
+﻿using LabExtended.Core.Commands.Interfaces;
+using LabExtended.Extensions;
 using System.Collections;
 
 namespace LabExtended.Core.Commands.Parsing

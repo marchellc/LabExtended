@@ -1,6 +1,5 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Commands.Interfaces;
+﻿using LabExtended.Core.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Core.Commands.Parsing
 {
@@ -40,8 +39,8 @@ namespace LabExtended.Core.Commands.Parsing
             Type = numericType;
             Parser = Parsers[numericType];
 
-            MaxValue = numericType.Field("MaxValue")?.GetValue(null) ?? 0;
-            MinValue = numericType.Field("MinValue")?.GetValue(null) ?? 0;
+            MaxValue = numericType.FindField("MaxValue")?.GetValue(null) ?? 0;
+            MinValue = numericType.FindField("MinValue")?.GetValue(null) ?? 0;
         }
 
         public bool TryParse(string value, out string failureMessage, out object result)

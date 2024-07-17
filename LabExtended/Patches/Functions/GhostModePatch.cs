@@ -1,10 +1,8 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Collections.Locked;
-
+using LabExtended.Extensions;
 using Mirror;
 
 using PlayerRoles.FirstPersonControl;
@@ -40,7 +38,7 @@ namespace LabExtended.Patches.Functions
                 return true;
 
             var index = 0;
-            var hasCustomVisibility = player.Role.Role.TryTypeCast<ICustomVisibilityRole>(out var customVisibilityRole);
+            var hasCustomVisibility = player.Role.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole);
 
             foreach (var other in ExPlayer.Players)
             {

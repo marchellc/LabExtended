@@ -1,5 +1,5 @@
-﻿using Common.Extensions;
-using LabExtended.Core;
+﻿using LabExtended.Core;
+using LabExtended.Extensions;
 using LabExtended.Ticking;
 
 namespace LabExtended.API.Modules

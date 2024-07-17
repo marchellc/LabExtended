@@ -1,9 +1,4 @@
-﻿using Common.Caching;
-using Common.Extensions;
-using Common.Utilities.Generation;
-using Common.Pooling.Pools;
-
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Modules;
 using LabExtended.API.Enums;
 using LabExtended.API.RemoteAdmin.Enums;
@@ -17,16 +12,16 @@ using LabExtended.Events.Player;
 using LabExtended.Ticking;
 
 using System.Text;
+using LabExtended.Utilities.Generation;
+using NorthwoodLib.Pools;
+using LabExtended.Extensions;
 
 namespace LabExtended.API.RemoteAdmin
 {
     public class RemoteAdminModule : GenericModule<ExPlayer>
     {
-        private static readonly MemoryCache<string> _objectIdCache = new MemoryCache<string>();
-        private static readonly MemoryCache<int> _listIdCache = new MemoryCache<int>();
-
-        private static readonly UniqueStringGenerator _objectIdGenerator = new UniqueStringGenerator(_objectIdCache, 10, false);
-        private static readonly UniqueInt32Generator _listIdGenerator = new UniqueInt32Generator(_listIdCache, 6000, 11000);
+        private static readonly UniqueStringGenerator _objectIdGenerator = new UniqueStringGenerator(10, false);
+        private static readonly UniqueInt32Generator _listIdGenerator = new UniqueInt32Generator(6000, 11000);
 
         private static readonly LockedHashSet<Type> _globalObjects = new LockedHashSet<Type>();
 
@@ -69,8 +64,8 @@ namespace LabExtended.API.RemoteAdmin
                     obj.OnDisabled();
                 }
 
-                _objectIdCache.Remove(obj.Id);
-                _listIdCache.Remove(obj.ListId);
+                _objectIdGenerator.Free(obj.Id);
+                _listIdGenerator.Free(obj.ListId);
             }
         }
 
@@ -180,8 +175,8 @@ namespace LabExtended.API.RemoteAdmin
                 remoteAdminObject.OnDisabled();
             }
 
-            _objectIdCache.Remove(remoteAdminObject.Id);
-            _listIdCache.Remove(remoteAdminObject.ListId);
+            _objectIdGenerator.Free(remoteAdminObject.Id);
+            _listIdGenerator.Free(remoteAdminObject.ListId);
 
             return _objects.Remove(remoteAdminObject);
         }

@@ -1,6 +1,5 @@
-﻿using Common.Pooling.Pools;
-
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Core.Profiling
 {

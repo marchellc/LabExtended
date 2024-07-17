@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using InventorySystem;
+﻿using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;

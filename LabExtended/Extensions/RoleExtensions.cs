@@ -1,6 +1,4 @@
-﻿using Common.Extensions;
-
-using GameObjectPools;
+﻿using GameObjectPools;
 
 using LabExtended.API;
 using LabExtended.Core;

@@ -1,12 +1,14 @@
-﻿using Common.Utilities;
-using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Hints;
+
 using LabExtended.Core;
+
 using System.Text.RegularExpressions;
 
 namespace LabExtended.Utilities
 {
-    public static class HintUtils {
+    public static class HintUtils
+    {
         public static readonly Regex SizeTagRegex = new Regex("<(?:size=|\\/size)([^>]*)>", RegexOptions.Compiled);
         public static readonly Regex NewLineRegex = new Regex("\\n|(<[^>]*>)+|\\s*[^<\\s\\r\\n]+[^\\S\\r\\n]*|\\s*", RegexOptions.Compiled);
 
@@ -56,22 +58,27 @@ namespace LabExtended.Utilities
             biggestSizeValue = -1;
             int deepCount = 0;
             int lastOpenTagIndex = 0;
-            for (int i = 0; i < matches.Count; i++) {
+            for (int i = 0; i < matches.Count; i++)
+            {
                 var isEnding = matches[i].Groups[1].Length == 0;
                 deepCount += isEnding ? -1 : 1;
-                if (deepCount == 0) {
+                if (deepCount == 0)
+                {
                     lastOpenTagIndex = i;
                 }
-                if (!isEnding && TryGetPixelSize(matches[i].Groups[1].Value, out var sizeValue) && sizeValue > biggestSizeValue) {
+                if (!isEnding && TryGetPixelSize(matches[i].Groups[1].Value, out var sizeValue) && sizeValue > biggestSizeValue)
+                {
                     biggestSizeValue = sizeValue;
                 }
             }
-            if (biggestSizeValue <= -1) {
+            if (biggestSizeValue <= -1)
+            {
                 biggestSizeValue = PixelsPerEm;
             }
 
             sizeTagClosed = deepCount <= 0;
-            if (!sizeTagClosed) {
+            if (!sizeTagClosed)
+            {
                 return TryGetPixelSize(matches[lastOpenTagIndex].Groups[1].Value, out sizeTagValue);
             }
 
@@ -109,7 +116,8 @@ namespace LabExtended.Utilities
                     if (HintModule.ShowDebug)
                         ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset} size={pixelSize}");
 
-                    if (!messages.IsEmpty()) {
+                    if (!messages.IsEmpty())
+                    {
                         vOffset -= biggestPixelSize / (float)PixelsPerEm;
                     }
 

@@ -1,7 +1,5 @@
-﻿using Common.Extensions;
-
-using LabExtended.API;
-
+﻿using LabExtended.API;
+using LabExtended.Extensions;
 using PlayerRoles;
 
 namespace LabExtended.Core.Commands.Parsing.PlayerList.Nodes
