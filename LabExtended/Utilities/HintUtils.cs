@@ -1,4 +1,5 @@
 ﻿using Common.Utilities;
+using LabExtended.API.Collections.Locked;
 using LabExtended.API.Hints;
 using LabExtended.Core;
 using System.Text.RegularExpressions;
@@ -78,7 +79,7 @@ namespace LabExtended.Utilities
             return false;
         }
 
-        internal static void GetMessages(float vOffset, int charsPerLine, string content, List<HintData> messages)
+        internal static void GetMessages(float vOffset, int charsPerLine, string content, LockedHashSet<HintData> messages)
         {
             var matches = NewLineRegex.Matches(content);
             var line = "";
