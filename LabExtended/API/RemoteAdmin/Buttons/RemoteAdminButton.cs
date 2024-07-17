@@ -31,7 +31,7 @@ namespace LabExtended.API.RemoteAdmin.Buttons
 
                 HintUtils.TrimStartNewLines(ref line, out _);
 
-                if (!HintUtils.TryGetSizeTag(line, ref size, out var closed))
+                if (!HintUtils.TryGetSizeTag(line, out size, out _, out var closed))
                     size = 1;
                 else
                 {

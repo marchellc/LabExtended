@@ -2,7 +2,9 @@
 /.cr/personal/FeatureAdvisor
 /.idea/.idea.LabExtended/.idea
 /.vs
-/LabExtended/bin/Release/net48
+/LabExtended/bin/Release
+/LabExtended/bin/Debug
 /LabExtended/obj
 /LabExtended.Testing/bin/Release
+/LabExtended.Testing/bin/Debug
 /LabExtended.Testing/obj

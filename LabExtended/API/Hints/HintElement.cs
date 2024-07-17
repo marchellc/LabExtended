@@ -1,10 +1,11 @@
-﻿using LabExtended.API.Enums;
+﻿using LabExtended.API.Collections.Locked;
+using LabExtended.API.Enums;
 
 namespace LabExtended.API.Hints
 {
     public abstract class HintElement
     {
-        internal readonly SortedSet<HintData> _messages = new SortedSet<HintData>(new HintSorter());
+        internal readonly LockedHashSet<HintData> _messages = new LockedHashSet<HintData>();
         internal string _prev = null;
 
         public virtual bool IsActive { get; set; }
