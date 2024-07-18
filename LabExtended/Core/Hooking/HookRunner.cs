@@ -48,6 +48,24 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
+                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates))
+                {
+                    foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
+                    {
+                        try
+                        {
+                            var result = predefinedReturnDelegate(eventObject);
+
+                            if (result != null && result is T castResult)
+                                returnValue = castResult;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedReturnDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                        }
+                    }
+                }
+
                 if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks.Count > 0)
                     returnValue = RunInternal(eventObject, hooks, returnValue);
 

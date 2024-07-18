@@ -1,5 +1,4 @@
 ﻿using CommandSystem;
-using LabExtended.Commands.Formatting;
 
 namespace LabExtended.API.CustomCommands.Formatting
 {

@@ -17,6 +17,7 @@ using LabExtended.Patches.Functions;
 using LabExtended.Events.Player;
 using LabExtended.API.Collections;
 using NorthwoodLib.Pools;
+using LabExtended.Commands;
 
 namespace LabExtended.Events
 {
@@ -145,6 +146,8 @@ namespace LabExtended.Events
 
             GhostModePatch.GhostedPlayers.Remove(player.NetId);
             GhostModePatch.GhostedTo.Remove(player.NetId);
+
+            CustomCommand._continuedContexts.Remove(player.NetId);
 
             foreach (var pair in GhostModePatch.GhostedTo)
                 pair.Value.Remove(player.NetId);

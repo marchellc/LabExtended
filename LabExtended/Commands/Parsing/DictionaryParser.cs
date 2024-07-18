@@ -1,5 +1,6 @@
 ﻿using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Extensions;
+
 using System.Collections;
 
 namespace LabExtended.Core.Commands.Parsing
@@ -7,7 +8,7 @@ namespace LabExtended.Core.Commands.Parsing
     public class DictionaryParser : ICommandParser
     {
         public string Name => $"Dictionary (a list of key [{KeyParser.Name}] and value [{ValueParser.Name}] pairs)";
-        public string Description => $"A list of key and value pairs (formatting: key=value,key2=value2,key3=value3)\nKey description: {KeyParser.Description}\nValue description: {ValueParser.Description}";
+        public string Description => $"A list of key and value pairs (formatting: key=value,key2=value2,key3=value3)";
 
         public ICommandParser KeyParser { get; }
         public ICommandParser ValueParser { get; }

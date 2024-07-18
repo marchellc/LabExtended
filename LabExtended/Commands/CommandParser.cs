@@ -10,6 +10,9 @@ using UnityEngine;
 using NorthwoodLib.Pools;
 
 using System.Reflection;
+using LabExtended.Commands;
+using LabExtended.Commands.Arguments;
+using static HarmonyLib.Code;
 
 namespace LabExtended.Core.Commands
 {
@@ -142,22 +145,48 @@ namespace LabExtended.Core.Commands
         public static bool TryGetParser(Type type, out ICommandParser parser)
             => Parsers.TryGetValue(type, out parser);
 
-        public static bool TryParseArgs(string arg, CommandInfo command, object[] parsedArgs, out ICommandArgument failedArg, out string failedReason)
+        public static bool TryParseDefaultArgs(string arg, CustomCommand command, ArgumentCollection collection, out ArgumentDefinition failedArg, out string failedReason)
+            => InternalParseArgs(arg, command, (parsedArg, parsedValue) => collection.Add(parsedArg.Name, parsedValue), () => collection.Size, out failedArg, out failedReason);
+
+        public static bool TryParseCustomArgs(string arg, CustomCommand command, object[] parsedArgs, out ArgumentDefinition failedArg, out string failedReason)
+        {
+            var list = ListPool<object>.Shared.Rent();
+            var success = InternalParseArgs(arg, command, (parsedArg, parsedValue) => list.Add(parsedValue), () => list.Count, out failedArg, out failedReason);
+
+            for (int i = 0; i < list.Count; i++)
+                parsedArgs[i + 1] = list[i];
+
+            ListPool<object>.Shared.Return(list);
+            return success;
+        }
+
+        internal enum StringPart
+        {
+            None,
+            Parameter,
+            QuotedParameter
+        }
+
+        internal static bool IsOpen(char character)
+            => Quotes.ContainsKey(character) || character == '\"';
+
+        internal static char GetMatch(char character)
+            => Quotes.TryGetValue(character, out var match) ? match : '\"';
+
+        internal static bool InternalParseArgs(string arg, CustomCommand command, Action<ArgumentDefinition, object> setArgumentValue, Func<int> countArgs, out ArgumentDefinition failedArg, out string failedReason)
         {
             failedArg = null;
             failedReason = null;
 
             if (command.Arguments.Length == 1 && command.Arguments[0].Type == typeof(string))
             {
-                parsedArgs[1] = arg.Trim();
+                setArgumentValue(command.Arguments[0], arg.Trim());
                 return true;
             }
 
-            var curArg = default(ICommandArgument);
+            var curArg = default(ArgumentDefinition);
             var curBuilder = StringBuilderPool.Shared.Rent();
             var curPart = StringPart.None;
-
-            var argList = ListPool<object>.Shared.Rent();
 
             var endIndex = arg.Length;
             var prevIndex = int.MinValue;
@@ -174,7 +203,7 @@ namespace LabExtended.Core.Commands
                 else
                     curChar = '\0';
 
-                if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)) && i != endIndex)
+                if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)) && i != endIndex)
                 {
                     curBuilder.Append(curChar);
                     continue;
@@ -194,7 +223,7 @@ namespace LabExtended.Core.Commands
                     }
                 }
 
-                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length))))
+                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length))))
                 {
                     isEscaping = true;
                     continue;
@@ -208,7 +237,6 @@ namespace LabExtended.Core.Commands
                     }
                     else if (i == prevIndex)
                     {
-                        ListPool<object>.Shared.Return(argList);
                         StringBuilderPool.Shared.Return(curBuilder);
 
                         failedArg = curArg;
@@ -219,9 +247,9 @@ namespace LabExtended.Core.Commands
                     else
                     {
                         if (curArg is null)
-                            curArg = command.Arguments.Length > argList.Count ? command.Arguments[argList.Count] : null;
+                            curArg = command.Arguments.Length > countArgs() ? command.Arguments[countArgs()] : null;
 
-                        if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)))
+                        if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)))
                         {
                             curBuilder.Append(curChar);
                             continue;
@@ -275,7 +303,6 @@ namespace LabExtended.Core.Commands
 
                     if (!curArg.Parser.TryParse(argString, out var failureMessage, out var result))
                     {
-                        ListPool<object>.Shared.Return(argList);
                         StringBuilderPool.Shared.Return(curBuilder);
 
                         failedReason = failureMessage;
@@ -284,19 +311,18 @@ namespace LabExtended.Core.Commands
                         return false;
                     }
 
+                    setArgumentValue(curArg, result);
+
                     curPart = StringPart.None;
                     curBuilder.Clear();
                     curArg = null;
-
-                    argList.Add(result);
                 }
             }
 
-            if (curArg != null && (curArg.IsRemainder || ((argList.Count + 1) >= command.Arguments.Length)))
+            if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)))
             {
                 if (!curArg.Parser.TryParse(curBuilder.ToString(), out var failureMessage, out var remainderResult))
                 {
-                    ListPool<object>.Shared.Return(argList);
                     StringBuilderPool.Shared.Return(curBuilder);
 
                     failedReason = failureMessage;
@@ -305,13 +331,12 @@ namespace LabExtended.Core.Commands
                     return false;
                 }
 
-                argList.Add(remainderResult);
+                setArgumentValue(curArg, remainderResult);
                 curArg = null;
             }
 
             if (isEscaping)
             {
-                ListPool<object>.Shared.Return(argList);
                 StringBuilderPool.Shared.Return(curBuilder);
 
                 failedArg = curArg;
@@ -322,7 +347,6 @@ namespace LabExtended.Core.Commands
 
             if (curPart is StringPart.QuotedParameter)
             {
-                ListPool<object>.Shared.Return(argList);
                 StringBuilderPool.Shared.Return(curBuilder);
 
                 failedArg = curArg;
@@ -331,13 +355,12 @@ namespace LabExtended.Core.Commands
                 return false;
             }
 
-            for (int i = argList.Count; i < command.Arguments.Length; i++)
+            for (int i = countArgs(); i < command.Arguments.Length; i++)
             {
                 curArg = command.Arguments[i];
 
                 if (!curArg.IsOptional)
                 {
-                    ListPool<object>.Shared.Return(argList);
                     StringBuilderPool.Shared.Return(curBuilder);
 
                     failedArg = curArg;
@@ -346,32 +369,11 @@ namespace LabExtended.Core.Commands
                     return false;
                 }
 
-                argList.Add(curArg.DefaultValue);
+                setArgumentValue(curArg, curArg.Default);
             }
 
-            for (int i = 0; i < argList.Count; i++)
-                parsedArgs[i + 1] = argList[i];
-
-            ListPool<object>.Shared.Return(argList);
             StringBuilderPool.Shared.Return(curBuilder);
-
-            failedArg = null;
-            failedReason = null;
-
             return true;
-        }
-
-        internal static bool IsOpen(char character)
-            => Quotes.ContainsKey(character) || character == '\"';
-
-        internal static char GetMatch(char character)
-            => Quotes.TryGetValue(character, out var match) ? match : '\"';
-
-        internal enum StringPart
-        {
-            None,
-            Parameter,
-            QuotedParameter
         }
     }
 }

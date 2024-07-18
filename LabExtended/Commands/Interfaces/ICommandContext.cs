@@ -1,11 +1,14 @@
 ﻿using LabExtended.API;
+
 using LabExtended.Commands.Arguments;
-using LabExtended.Core.Commands.Responses;
+using LabExtended.Commands.Contexts;
 
 namespace LabExtended.Core.Commands.Interfaces
 {
     public interface ICommandContext
     {
+        ICommandResponse Response { get; }
+
         string RawInput { get; }
         string[] RawArgs { get; }
 
@@ -18,8 +21,12 @@ namespace LabExtended.Core.Commands.Interfaces
         void Respond(object response, bool success);
 
         void RespondOk(object response);
-        void RespondFail(object response);
+        void RespondOk(IEnumerable<object> lines);
 
-        void RespondContinued(object message, Action<ContinuedContext> onContinued);
+        void RespondFail(object response);
+        void RespondFail(IEnumerable<object> lines);
+
+        void RespondContinued(object response, Action<ContinuedContext> onContinued);
+        void RespondContinued(IEnumerable<object> lines, Action<ContinuedContext> onContinued);
     }
 }

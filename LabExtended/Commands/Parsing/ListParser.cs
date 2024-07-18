@@ -1,5 +1,6 @@
 ﻿using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Extensions;
+
 using System.Collections;
 
 namespace LabExtended.Core.Commands.Parsing
@@ -7,7 +8,7 @@ namespace LabExtended.Core.Commands.Parsing
     public class ListParser : ICommandParser
     {
         public string Name => $"A list of items ({ElementParser.Name})";
-        public string Description => $"A list of items (string separated by a comma (item1,item2,item3))\nElement type description: {ElementParser.Description}";
+        public string Description => $"A list of items (string separated by a comma (item1,item2,item3))";
 
         public ICommandParser ElementParser { get; }
 

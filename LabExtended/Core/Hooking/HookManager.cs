@@ -1,5 +1,7 @@
 using LabExtended.Attributes;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
+using LabExtended.Commands;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
@@ -23,12 +25,29 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
-using LabExtended.Extensions;
 
 namespace LabExtended.Core.Hooking
 {
     public static class HookManager
     {
+        public static LockedDictionary<Type, List<Func<object, object>>> PredefinedReturnDelegates { get; } = new LockedDictionary<Type, List<Func<object, object>>>()
+        {
+            [typeof(RemoteAdminCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleRemoteAdminCommand((RemoteAdminCommandEvent)ev)
+            },
+
+            [typeof(ConsoleCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleConsoleCommand((ConsoleCommandEvent)ev)
+            },
+
+            [typeof(PlayerGameConsoleCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleGameConsoleCommand((PlayerGameConsoleCommandEvent)ev)
+            },
+        };
+
         public static LockedDictionary<Type, List<Action<object>>> PredefinedDelegates { get; } = new LockedDictionary<Type, List<Action<object>>>()
         {
             [typeof(RoundStartEvent)] = new List<Action<object>>()

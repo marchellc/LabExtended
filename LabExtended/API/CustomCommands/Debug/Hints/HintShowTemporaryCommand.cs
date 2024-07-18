@@ -1,17 +1,31 @@
-﻿using LabExtended.API;
-using LabExtended.Core.Commands;
+﻿using LabExtended.Commands;
+using LabExtended.Commands.Arguments;
+
+using LabExtended.Core.Commands.Interfaces;
 
 namespace LabExtended.API.CustomCommands.Debug.Hints
 {
-    public class HintShowTemporaryCommand : CommandInfo
+    public class HintShowTemporaryCommand : CustomCommand
     {
         public override string Command => "hintshow";
         public override string Description => "Shows a temporary hint";
 
-        public object OnCalled(ExPlayer player, string hintDuration, string hintContent)
+        public override ArgumentDefinition[] Arguments { get; } = new ArgumentDefinition[]
         {
-            player.Hints.Show(hintContent, ushort.Parse(hintDuration));
-            return "Shown hint";
+            ArgumentDefinition.FromType<ushort>("duration", "The hint's duration"),
+            ArgumentDefinition.FromType<string>("content", "The hint's content")
+        };
+
+        public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
+        {
+            base.OnCommand(sender, ctx, args);
+
+            var duration = args.Get<ushort>("duration");
+            var content = args.Get<string>("content");
+
+            sender.Hints.Show(content, duration);
+
+            ctx.RespondOk("Hint shown.");
         }
     }
 }

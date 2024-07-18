@@ -1,20 +1,24 @@
-﻿using LabExtended.API;
-using LabExtended.Core.Commands;
+﻿using LabExtended.Commands;
+using LabExtended.Commands.Arguments;
+
+using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Utilities.Debug;
 
 namespace LabExtended.API.CustomCommands.Debug.CustomItems
 {
-    public class GiveDebugItemCommand : CommandInfo
+    public class GiveDebugItemCommand : CustomCommand
     {
         public override string Command => "giveitem";
         public override string Description => "Gives you the debug custom item.";
 
-        public object OnCalled(ExPlayer sender)
+        public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
         {
+            base.OnCommand(sender, ctx, args);
+
             DebugCustomItem.RegisterItem();
             API.CustomItems.CustomItem.Give<DebugCustomItem>(sender);
 
-            return "Gave you the debug custom item.";
+            ctx.RespondOk("Gave you the custom item.");
         }
     }
 }

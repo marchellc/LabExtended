@@ -1,10 +1,10 @@
 ﻿using CommandSystem;
-using LabExtended.Commands;
-using LabExtended.Commands.Debug.CustomItems;
 
-using LabExtended.Commands.Debug.Hints;
-using LabExtended.Commands.Debug.RemoteAdmin;
-using LabExtended.Commands.Debug.Toys;
+using LabExtended.Commands;
+
+using LabExtended.API.CustomCommands.Debug.CustomItems;
+using LabExtended.API.CustomCommands.Debug.RemoteAdmin;
+using LabExtended.API.CustomCommands.Debug.Hints;
 
 namespace LabExtended.API.CustomCommands.Debug
 {
@@ -24,9 +24,6 @@ namespace LabExtended.API.CustomCommands.Debug
             RegisterCommand(new HintSetDebugContentCommand());
             RegisterCommand(new HintShowTemporaryCommand());
             RegisterCommand(new HintToggleDebugCommand());
-
-            RegisterCommand(new SpawnLightCommand());
-            RegisterCommand(new SpawnPrimitiveCommand());
 
             RegisterCommand(new GiveDebugItemCommand());
             RegisterCommand(new PrintDebugItemCommand());

@@ -1,4 +1,5 @@
 ﻿using CommandSystem;
+
 using LabExtended.Commands;
 
 namespace LabExtended.API.CustomCommands.Formatting
@@ -32,7 +33,7 @@ namespace LabExtended.API.CustomCommands.Formatting
                 $" >- team(*,3) - This would select players with team of ID 3 from all players.\n" +
                 $" >- rand(*,5) - This would select five random players from all players.\n" +
                 $" >- rank(*, admin) - This would select players with the 'admin' tag from all players.\n" +
-                $" >- tag(*, Administrator) - This would select players with the 'Administator' group name from all players.\n" +
+                $" >- tag(*, Administrator) - This would select players with the 'Administrator' group name from all players.\n" +
                 $"Let's try combining them.\n" +
                 $" >- rand(role(*,1),3)  - This would select three random players from a list of players with a role ID that matches 1.\n" +
                 $" >- rand(tag(team(*,1),admin,2) - This would select all players that have a team ID of 1 and then from those players select those who have an 'admin' tag .. and then from those players it'd take 2 random players.";

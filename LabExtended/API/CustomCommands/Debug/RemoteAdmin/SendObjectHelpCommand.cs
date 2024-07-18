@@ -1,19 +1,23 @@
-﻿using LabExtended.API;
-using LabExtended.Core.Commands;
+﻿using LabExtended.Commands;
+using LabExtended.Commands.Arguments;
+
+using LabExtended.Core.Commands.Interfaces;
 
 using MEC;
 
 namespace LabExtended.API.CustomCommands.Debug.RemoteAdmin
 {
-    public class SendObjectHelpCommand : CommandInfo
+    public class SendObjectHelpCommand : CustomCommand
     {
         public override string Command => "objecthelp";
         public override string Description => "Sends object help";
 
-        public object OnCalled(ExPlayer sender)
+        public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
         {
+            base.OnCommand(sender, ctx, args);
+
             Timing.CallDelayed(3f, () => sender.RemoteAdmin.SendHelp());
-            return "Help sent";
+            ctx.RespondOk("Help sent");
         }
     }
 }

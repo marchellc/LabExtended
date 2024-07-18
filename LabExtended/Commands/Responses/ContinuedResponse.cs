@@ -1,4 +1,5 @@
-﻿using LabExtended.Core.Commands.Interfaces;
+﻿using LabExtended.Commands.Contexts;
+using LabExtended.Core.Commands.Interfaces;
 
 namespace LabExtended.Core.Commands.Responses
 {

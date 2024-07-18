@@ -7,9 +7,6 @@ namespace LabExtended.Core.Configs
         [Description("Toggles logging of debug messages.")]
         public bool DebugEnabled { get; set; }
 
-        [Description("Toggles logging from the support library.")]
-        public bool PipeEnabled { get; set; } = true;
-
         [Description("Whether or not to consider profiling output as debug.")]
         public bool ProfilingAsDebug { get; set; } = true;
 
