@@ -186,6 +186,21 @@ namespace LabExtended.Extensions
             }
         }
 
+        public static bool TryGetFirst<TKey, TValue>(this IDictionary<TKey, TValue> dict, Predicate<KeyValuePair<TKey, TValue>> predicate, out KeyValuePair<TKey, TValue> pair)
+        {
+            foreach (var item in dict)
+            {
+                if (!predicate(item))
+                    continue;
+
+                pair = item;
+                return true;
+            }
+
+            pair = default;
+            return false;
+        }
+
         public static void Remove<T>(this Queue<T> queue, T value)
         {
             var values = queue.ToList();

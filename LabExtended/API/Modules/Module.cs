@@ -1,6 +1,6 @@
 ﻿using LabExtended.Core;
 using LabExtended.Extensions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 namespace LabExtended.API.Modules
 {
@@ -12,17 +12,17 @@ namespace LabExtended.API.Modules
         internal readonly Dictionary<Type, Module> _modules = new Dictionary<Type, Module>();
         internal readonly HashSet<Type> _cache = new HashSet<Type>();
 
-        internal TickHandler _tickHandler;
+        internal TickInfo _tickHandler;
 
         public IReadOnlyCollection<Module> Modules => _modules.Values;
         public IReadOnlyCollection<Type> Cache => _cache;
 
-        public TickHandler TickInfo => _tickHandler;
+        public TickInfo TickInfo => _tickHandler;
 
         /// <summary>
         /// When overriden, retrieves this module's tick settings.
         /// </summary>
-        public virtual TickOptions TickOptions { get; }
+        public virtual TickTimer TickTimer { get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this module is active.
@@ -38,8 +38,8 @@ namespace LabExtended.API.Modules
         {
             IsActive = true;
 
-            if (TickOptions != null)
-                _tickHandler = TickManager.SubscribeTick(TickModule, TickOptions);
+            if (TickTimer != null)
+                _tickHandler = TickManager.SubscribeTick(TickModule, TickTimer);
 
             OnStarted();
         }
@@ -246,7 +246,7 @@ namespace LabExtended.API.Modules
 
         internal void TickModule()
         {
-            if (TickOptions is null || TickInfo is null || !IsActive)
+            if (TickTimer is null || TickInfo is null || !IsActive)
                 return;
 
             OnTick();

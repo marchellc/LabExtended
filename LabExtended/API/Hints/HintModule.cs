@@ -7,7 +7,7 @@ using LabExtended.API.Modules;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 using LabExtended.Utilities;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
@@ -37,7 +37,7 @@ namespace LabExtended.API.Hints
         private int _leftOffset;
         private int _idClock = 0;
 
-        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(500f);
+        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(500f);
 
         public override void OnStarted()
         {

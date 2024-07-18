@@ -9,7 +9,7 @@ using LabExtended.Patches.Functions.RemoteAdmin;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 using System.Text;
 using LabExtended.Utilities.Generation;
@@ -29,7 +29,7 @@ namespace LabExtended.API.RemoteAdmin
         private DateTime _lastListRequestTime = DateTime.MinValue;
         private bool _wasOpen = false;
 
-        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(800f);
+        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(800f);
 
         public bool IsRemoteAdminOpen { get; private set; }
 

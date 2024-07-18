@@ -7,7 +7,7 @@ using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin;
 
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 using LabExtended.Core;
 using LabExtended.Core.Profiling;

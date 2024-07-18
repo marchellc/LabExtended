@@ -19,9 +19,6 @@ namespace LabExtended.Patches.Functions
             if (player is null)
                 return true;
 
-            if (!player.Stats._maxHealthOverride.IsActive)
-                return true;
-
             __result = player.Stats._maxHealthOverride.Value;
             return false;
         }

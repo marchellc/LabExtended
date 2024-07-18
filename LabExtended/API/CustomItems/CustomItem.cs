@@ -14,18 +14,19 @@ using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 using PluginAPI.Events;
 
 using UnityEngine;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.API.CustomItems
 {
     public class CustomItem
     {
         static CustomItem()
-            => TickManager.SubscribeTick(TickItems, TickOptions.None, "Custom Item Tick");
+            => TickManager.SubscribeTick(TickItems, TickTimer.None, "Custom Item Tick");
 
         private static readonly List<ICustomItemInfo> _registeredTypes = new List<ICustomItemInfo>();
         private static readonly LockedDictionary<ushort, CustomItem> _items = new LockedDictionary<ushort, CustomItem>();

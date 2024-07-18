@@ -1,11 +1,11 @@
 using HarmonyLib;
+
 using LabExtended.API.Modules;
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Logging;
 
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;

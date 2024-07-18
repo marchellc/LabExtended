@@ -2,7 +2,7 @@
 using LabExtended.API.Pooling;
 using LabExtended.Core;
 using LabExtended.Extensions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 using LabExtended.Utilities;
 using NorthwoodLib.Pools;
 
@@ -14,7 +14,7 @@ namespace LabExtended.API.Modules
     public class TransientModule : GenericModule<ExPlayer>
     {
         static TransientModule()
-            => TickManager.SubscribeTick(UpdateModules, TickOptions.NoneProfiled, "Transient Modules Tick");
+            => TickManager.SubscribeTick(UpdateModules, TickTimer.NoneProfiled, "Transient Modules Tick");
 
         /// <summary>
         /// The reason for a module's removal.

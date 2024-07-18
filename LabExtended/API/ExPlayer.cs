@@ -17,6 +17,7 @@ using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
+
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
@@ -25,6 +26,7 @@ using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Ticking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
@@ -72,7 +74,7 @@ namespace LabExtended.API
             _hostPlayer = null;
             _localPlayer = null;
 
-            TickManager.SubscribeTick(UpdateSentRoles, TickOptions.None, "Player Role Sync");
+            TickManager.SubscribeTick(UpdateSentRoles, TickTimer.None, "Player Role Sync");
         }
 
         internal static readonly List<ExPlayer> _players;

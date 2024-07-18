@@ -2,7 +2,7 @@
 
 using LabExtended.API.Modules;
 using LabExtended.Core;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 using Mirror;
 
@@ -29,7 +29,7 @@ namespace LabExtended.API.Npcs.Navigation
         public NpcHandler Npc { get; internal set; }
 
         /// <inheritdoc/>
-        public override TickOptions TickOptions { get; } = TickOptions.GetStatic(50f);
+        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(50f);
 
         /// <summary>
         /// Whether or not to allow the NPC to interact.

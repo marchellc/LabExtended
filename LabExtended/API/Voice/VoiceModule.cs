@@ -5,7 +5,7 @@ using LabExtended.API.Voice.Modifiers.Pitch;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
-using LabExtended.Ticking;
+using LabExtended.Core.Ticking;
 
 using VoiceChat;
 using VoiceChat.Networking;
@@ -31,7 +31,7 @@ namespace LabExtended.API.Voice
         public IReadOnlyList<VoiceModifier> Modifiers => _modifiers;
         public IReadOnlyList<VoiceProfile> Profiles => _profiles;
 
-        public override TickOptions TickOptions { get; } = TickOptions.None;
+        public override TickTimer TickTimer { get; } = TickTimer.None;
 
         public float VoicePitch { get; set; } = 1f;
 

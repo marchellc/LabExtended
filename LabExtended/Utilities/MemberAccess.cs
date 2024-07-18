@@ -95,7 +95,7 @@ namespace LabExtended.Utilities
             }
             else
             {
-                throw new ArgumentException("The member must be either a Field or a Property, not " + p_member.MemberType);
+                throw new ArgumentException("The member must be either a Field or a Property, not " + member.MemberType);
             }
         }
 
