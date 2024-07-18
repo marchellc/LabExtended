@@ -34,6 +34,8 @@ namespace LabExtended.API.Hints
             base.OnStopped();
 
             Instance = null;
+
+            ClearElements();
         }
 
         public T AddElement<T>(string customId = null) where T : HintElement
