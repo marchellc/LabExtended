@@ -6,18 +6,18 @@ using LabExtended.API.Voice;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin;
-
-using LabExtended.Core.Ticking;
-
-using LabExtended.Core;
-using LabExtended.Core.Profiling;
-
-using LabExtended.Patches.Functions;
+using LabExtended.API.Collections;
 
 using LabExtended.Events.Player;
-using LabExtended.API.Collections;
-using NorthwoodLib.Pools;
+
+using LabExtended.Core;
+using LabExtended.Core.Ticking;
+using LabExtended.Core.Profiling;
+
 using LabExtended.Commands;
+using LabExtended.Patches.Functions;
+
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Events
 {
@@ -148,6 +148,7 @@ namespace LabExtended.Events
             GhostModePatch.GhostedTo.Remove(player.NetId);
 
             CustomCommand._continuedContexts.Remove(player.NetId);
+            GlobalHintModule.Instance?._playerText.Remove(player.NetId);
 
             foreach (var pair in GhostModePatch.GhostedTo)
                 pair.Value.Remove(player.NetId);

@@ -254,8 +254,8 @@ namespace LabExtended.API.Hints
         {
             var result = "~\n<line-height=1285%>\n<line-height=0>\n";
 
-            if (GlobalHintModule.Instance != null && GlobalHintModule.Instance._buffer != "")
-                result += GlobalHintModule.Instance._buffer;
+            if (GlobalHintModule.Instance != null && GlobalHintModule.Instance._playerText.TryGetValue(CastParent.NetId, out var globalText))
+                result += globalText;
 
             foreach (var element in _activeElements)
             {

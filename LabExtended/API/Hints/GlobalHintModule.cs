@@ -16,15 +16,21 @@ namespace LabExtended.API.Hints
         private readonly LockedHashSet<HintElement> _activeElements = new LockedHashSet<HintElement>();
         private int _idClock = 0;
 
-        internal string _buffer = "";
+        internal readonly LockedDictionary<uint, string> _playerText = new LockedDictionary<uint, string>();
 
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
         public override TickTimer TickTimer { get; } = TickTimer.GetStatic(500f, false, true);
 
+        public override bool ValidateAdd(Module module)
+            => base.ValidateAdd(module) && Instance is null;
+
         public override void OnStarted()
         {
             base.OnStarted();
+
+            _idClock = 0;
+            _playerText.Clear();
 
             Instance = this;
         }
@@ -34,6 +40,9 @@ namespace LabExtended.API.Hints
             base.OnStopped();
 
             Instance = null;
+
+            _idClock = 0;
+            _playerText.Clear();
 
             ClearElements();
         }
@@ -137,8 +146,6 @@ namespace LabExtended.API.Hints
         {
             base.OnTick();
 
-            _buffer = "";
-
             foreach (var element in _activeElements)
             {
                 element.UpdateElement();
@@ -149,12 +156,13 @@ namespace LabExtended.API.Hints
                 foreach (var player in ExPlayer._players)
                 {
                     var data = element.GetContent(player);
+                    var buffer = "";
 
                     if (data is not null && data.Length > 0)
                     {
                         if (element.IsRawDisplay)
                         {
-                            _buffer += data;
+                            buffer += data;
                         }
                         else
                         {
@@ -180,20 +188,29 @@ namespace LabExtended.API.Hints
                                 if (string.IsNullOrWhiteSpace(message.Content))
                                     continue;
 
-                                _buffer += $"<voffset={message.VerticalOffset}em>";
+                                buffer += $"<voffset={message.VerticalOffset}em>";
 
                                 if (element.Alignment is HintAlign.FullLeft)
-                                    _buffer += $"<align=left><pos=-{player.Hints.LeftOffset}%>{message.Content}</pos></align>";
+                                    buffer += $"<align=left><pos=-{player.Hints.LeftOffset}%>{message.Content}</pos></align>";
                                 else if (element.Alignment is HintAlign.Left)
-                                    _buffer += $"<align=left>{message.Content}</align>";
+                                    buffer += $"<align=left>{message.Content}</align>";
                                 else if (element.Alignment is HintAlign.Right)
-                                    _buffer += $"<align=right>{message.Content}</align>";
+                                    buffer += $"<align=right>{message.Content}</align>";
                                 else
-                                    _buffer += message.Content;
+                                    buffer += message.Content;
 
-                                _buffer += "\n";
+                                buffer += "\n";
                             }
                         }
+
+                        if (buffer != null && buffer.Length > 0)
+                            _playerText[player.NetId] = buffer;
+                        else
+                            _playerText.Remove(player.NetId);
+                    }
+                    else
+                    {
+                        _playerText.Remove(player.NetId);
                     }
                 }
             }
