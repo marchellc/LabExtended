@@ -37,7 +37,6 @@ namespace LabExtended.API.Hints
         private int _leftOffset;
         private int _idClock = 0;
 
-        internal DateTime _lastTickTime;
         internal string _globalText;
 
         public IReadOnlyList<HintElement> Elements => _activeElements;

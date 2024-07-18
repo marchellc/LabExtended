@@ -143,14 +143,23 @@ namespace LabExtended.API.Hints
             base.OnTick();
 
             foreach (var element in _activeElements)
+                element._globalTick = false;
+
+            foreach (var player in ExPlayer._players)
             {
-                element.UpdateElement();
+                player.Hints._globalText = "";
 
-                if (!element.IsActive)
-                    continue;
-
-                foreach (var player in ExPlayer._players)
+                foreach (var element in _activeElements)
                 {
+                    if (!element._globalTick)
+                    {
+                        element.UpdateElement();
+                        element._globalTick = false;
+                    }
+
+                    if (!element.IsActive)
+                        continue;
+
                     var data = element.GetContent(player);
                     var buffer = "";
 
@@ -199,15 +208,11 @@ namespace LabExtended.API.Hints
                             }
                         }
 
-                        player.Hints._globalText = buffer;
+                        player.Hints._globalText += buffer;
                     }
-                    else
-                    {
-                        player.Hints._globalText = null;
-                    }
-
-                    player.Hints.InternalTick();
                 }
+
+                player.Hints.InternalTick();
             }
         }
     }
