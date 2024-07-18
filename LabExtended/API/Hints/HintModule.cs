@@ -38,6 +38,7 @@ namespace LabExtended.API.Hints
         private int _idClock = 0;
 
         internal DateTime _lastTickTime;
+        internal string _globalText;
 
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
@@ -254,8 +255,8 @@ namespace LabExtended.API.Hints
         {
             var result = "~\n<line-height=1285%>\n<line-height=0>\n";
 
-            if (GlobalHintModule.Instance != null && GlobalHintModule.Instance._playerText.TryGetValue(CastParent.NetId, out var globalText))
-                result += globalText;
+            if (_globalText != null && _globalText.Length > 0)
+                result += _globalText;
 
             foreach (var element in _activeElements)
             {

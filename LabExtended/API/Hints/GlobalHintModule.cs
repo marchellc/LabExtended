@@ -16,8 +16,6 @@ namespace LabExtended.API.Hints
         private readonly LockedHashSet<HintElement> _activeElements = new LockedHashSet<HintElement>();
         private int _idClock = 0;
 
-        internal readonly LockedDictionary<uint, string> _playerText = new LockedDictionary<uint, string>();
-
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
         public override TickTimer TickTimer { get; } = TickTimer.GetStatic(500f, false, true);
@@ -30,7 +28,6 @@ namespace LabExtended.API.Hints
             base.OnStarted();
 
             _idClock = 0;
-            _playerText.Clear();
 
             Instance = this;
         }
@@ -42,7 +39,6 @@ namespace LabExtended.API.Hints
             Instance = null;
 
             _idClock = 0;
-            _playerText.Clear();
 
             ClearElements();
         }
@@ -203,15 +199,14 @@ namespace LabExtended.API.Hints
                             }
                         }
 
-                        if (buffer != null && buffer.Length > 0)
-                            _playerText[player.NetId] = buffer;
-                        else
-                            _playerText.Remove(player.NetId);
+                        player.Hints._globalText = buffer;
                     }
                     else
                     {
-                        _playerText.Remove(player.NetId);
+                        player.Hints._globalText = null;
                     }
+
+                    player.Hints.InternalTick();
                 }
             }
         }

@@ -148,7 +148,6 @@ namespace LabExtended.Events
             GhostModePatch.GhostedTo.Remove(player.NetId);
 
             CustomCommand._continuedContexts.Remove(player.NetId);
-            GlobalHintModule.Instance?._playerText.Remove(player.NetId);
 
             foreach (var pair in GhostModePatch.GhostedTo)
                 pair.Value.Remove(player.NetId);
