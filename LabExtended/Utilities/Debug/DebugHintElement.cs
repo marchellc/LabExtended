@@ -1,4 +1,5 @@
-﻿using LabExtended.API.Hints;
+﻿using LabExtended.API;
+using LabExtended.API.Hints;
 
 namespace LabExtended.Utilities.Debug
 {
@@ -18,7 +19,7 @@ namespace LabExtended.Utilities.Debug
             ContentToAdd = null;
         }
 
-        public override string GetContent()
+        public override string GetContent(ExPlayer _)
             => ContentToAdd;
     }
 }

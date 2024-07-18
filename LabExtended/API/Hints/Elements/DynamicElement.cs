@@ -3,11 +3,11 @@
     public class DynamicElement : HintElement
     {
         public DynamicElement() { }
-        public DynamicElement(Func<string> content) { Content = content; }
+        public DynamicElement(Func<ExPlayer, string> content) { Content = content; }
 
-        public Func<string> Content { get; set; }
+        public Func<ExPlayer, string> Content { get; set; }
 
-        public override string GetContent()
-            => Content();
+        public override string GetContent(ExPlayer player)
+            => Content(player);
     }
 }

@@ -4,7 +4,7 @@
     {
         public string Content { get; set; }
 
-        public override string GetContent()
+        public override string GetContent(ExPlayer _)
             => Content;
     }
 }

@@ -12,6 +12,7 @@ using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
 using PluginAPI.Enums;
 using PluginAPI.Loader;
+using LabExtended.API.Hints;
 
 namespace LabExtended.Core
 {
@@ -108,7 +109,9 @@ namespace LabExtended.Core
                 TickManager.Init();
 
                 StartModule();
+
                 AddCachedModules();
+                AddModule<GlobalHintModule>(false);
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
                 {

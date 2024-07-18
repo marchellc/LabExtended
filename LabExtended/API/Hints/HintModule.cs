@@ -37,7 +37,11 @@ namespace LabExtended.API.Hints
         private int _leftOffset;
         private int _idClock = 0;
 
-        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(500f);
+        internal DateTime _lastTickTime;
+
+        public IReadOnlyList<HintElement> Elements => _activeElements;
+
+        public int LeftOffset => _leftOffset;
 
         public override void OnStarted()
         {
@@ -62,8 +66,6 @@ namespace LabExtended.API.Hints
                 var activeElement = globalType.Key.Construct<HintElement>();
 
                 activeElement.IsActive = true;
-                activeElement.Player = CastParent;
-
                 activeElement.OnEnabled();
 
                 _activeElements.Add(activeElement);
@@ -108,7 +110,6 @@ namespace LabExtended.API.Hints
 
             activeElement.IsActive = true;
             activeElement.Id = _idClock++;
-            activeElement.Player = CastParent;
 
             if (!string.IsNullOrWhiteSpace(customId))
                 activeElement.CustomId = customId;
@@ -129,7 +130,6 @@ namespace LabExtended.API.Hints
 
             element.IsActive = true;
             element.Id = _idClock++;
-            element.Player = CastParent;
 
             if (!string.IsNullOrWhiteSpace(customId))
                 element.CustomId = customId;
@@ -148,7 +148,6 @@ namespace LabExtended.API.Hints
             element.IsActive = false;
             element.OnDisabled();
 
-            element.Player = null;
             return _activeElements.Remove(element);
         }
 
@@ -160,7 +159,6 @@ namespace LabExtended.API.Hints
             element.IsActive = false;
             element.OnDisabled();
 
-            element.Player = null;
             return _activeElements.Remove(element);
         }
 
@@ -172,7 +170,6 @@ namespace LabExtended.API.Hints
             element.IsActive = false;
             element.OnDisabled();
 
-            element.Player = null;
             return true;
         }
 
@@ -206,16 +203,13 @@ namespace LabExtended.API.Hints
             {
                 activeElement.IsActive = false;
                 activeElement.OnDisabled();
-                activeElement.Player = null;
             }
 
             _activeElements.Clear();
         }
 
-        public override void OnTick()
+        internal void InternalTick()
         {
-            base.OnTick();
-
             _temporaryElement.CheckDuration();
 
             if (!_temporaryElement.IsActive && _temporaryQueue.TryDequeue(out var nextMessage))
@@ -260,6 +254,9 @@ namespace LabExtended.API.Hints
         {
             var result = "~\n<line-height=1285%>\n<line-height=0>\n";
 
+            if (GlobalHintModule.Instance != null && GlobalHintModule.Instance._buffer != "")
+                result += GlobalHintModule.Instance._buffer;
+
             foreach (var element in _activeElements)
             {
                 element.UpdateElement();
@@ -267,7 +264,7 @@ namespace LabExtended.API.Hints
                 if (!element.IsActive)
                     continue;
 
-                var data = element.GetContent();
+                var data = element.GetContent(CastParent);
 
                 if (data is not null && data.Length > 0)
                 {

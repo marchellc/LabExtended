@@ -14,8 +14,6 @@ namespace LabExtended.API.Hints
         public int Id { get; internal set; }
         public virtual string CustomId { get; set; }
 
-        public ExPlayer Player { get; internal set; }
-
         public virtual float VerticalOffset { get; set; } = 0f;
         public virtual int MaxCharactersPerLine { get; set; } = 60;
 
@@ -26,7 +24,7 @@ namespace LabExtended.API.Hints
 
         public virtual void UpdateElement() { }
 
-        public abstract string GetContent();
+        public abstract string GetContent(ExPlayer player);
 
         internal bool CompareId(string customId)
             => !string.IsNullOrWhiteSpace(customId) && !string.IsNullOrWhiteSpace(CustomId) && customId == CustomId;

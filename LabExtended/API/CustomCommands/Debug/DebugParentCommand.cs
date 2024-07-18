@@ -19,6 +19,7 @@ namespace LabExtended.API.CustomCommands.Debug
 
             RegisterCommand(new AddDebugObjectCommand());
             RegisterCommand(new SendObjectHelpCommand());
+            RegisterCommand(new ContinuedResponseCommand());
 
             RegisterCommand(new HintDisableDebugHintCommand());
             RegisterCommand(new HintSetDebugContentCommand());

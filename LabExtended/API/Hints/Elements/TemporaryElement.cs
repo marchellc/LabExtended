@@ -11,7 +11,7 @@ namespace LabExtended.API.Hints.Elements
         public override float VerticalOffset { get; set; } = -5f;
         public override HintAlign Alignment { get; set; } = HintAlign.Center;
 
-        public override string GetContent()
+        public override string GetContent(ExPlayer player)
             => _content;
 
         internal void SetHint(HintMessage hintMessage)

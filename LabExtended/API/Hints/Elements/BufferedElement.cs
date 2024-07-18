@@ -6,7 +6,7 @@
 
         public virtual bool ClearBuffer { get; set; } = true;
 
-        public abstract void WriteContent();
+        public abstract void WriteContent(ExPlayer player);
 
         public void Append(string content)
         {
@@ -27,12 +27,12 @@
         public void Clear()
             => _buffer = "";
 
-        public override string GetContent()
+        public override string GetContent(ExPlayer player)
         {
             if (ClearBuffer || _buffer is null)
                 _buffer = "";
 
-            WriteContent();
+            WriteContent(player);
             return _buffer;
         }
     }
