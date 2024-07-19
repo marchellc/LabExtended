@@ -287,7 +287,7 @@ namespace LabExtended.API.Hints
                             if (offset == 0f)
                                 offset = -count;
 
-                            HintUtils.GetMessages(offset, element.MaxCharactersPerLine, data, element._messages);
+                            HintUtils.GetMessages(offset, data, element._messages);
                         }
 
                         foreach (var message in element._messages)

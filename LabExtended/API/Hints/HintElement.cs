@@ -15,7 +15,6 @@ namespace LabExtended.API.Hints
         public virtual string CustomId { get; set; }
 
         public virtual float VerticalOffset { get; set; } = 0f;
-        public virtual int MaxCharactersPerLine { get; set; } = 60;
 
         public virtual HintAlign Alignment { get; set; } = HintAlign.Center;
 
