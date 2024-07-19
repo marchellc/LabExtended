@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
-
+using LabExtended.Core;
+using LabExtended.Utilities;
 using System.Reflection;
 
 namespace LabExtended.Extensions
@@ -65,6 +66,44 @@ namespace LabExtended.Extensions
 
         public static FieldInfo FindField(this Type type, string fieldName)
             => FindField(type, field => field.Name == fieldName);
+
+        public static PropertyInfo FindProperty(this Type type, Func<PropertyInfo, bool> predicate)
+            => GetAllProperties(type).FirstOrDefault(p => predicate(p));
+
+        public static PropertyInfo FindProperty(this Type type, string propertyName)
+            => FindProperty(type, p => p.Name == propertyName);
+
+        public static EventInfo FindEvent(this Type type, Func<EventInfo, bool> predicate)
+            => GetAllEvents(type).FirstOrDefault(ev => predicate(ev));
+
+        public static EventInfo FindEvent(this Type type, string eventName)
+            => FindEvent(type, ev => ev.Name == eventName);
+
+        public static EventInfo FindEvent(this Type type, Type eventType)
+            => FindEvent(type, ev => ev.EventHandlerType == eventType);
+
+        public static EventInfo FindEvent<THandler>(this Type type) where THandler : Delegate
+            => FindEvent(type, typeof(THandler));
+
+        public static void RaiseEvent(this Type type, string eventName, object target, params object[] args)
+        {
+            var ev = FindEvent(type, eventName);
+
+            if (ev is null)
+                throw new Exception($"Event '{eventName}' has not been found in type '{type.FullName}'");
+
+            var field = FindField(type, ev.Name);
+
+            if (field is null)
+                throw new Exception($"Event '{eventName}' does not have a backing field");
+
+            var delValue = field.GetValue(target);
+
+            if (delValue is null || delValue is not Delegate del)
+                return;
+
+            del.DynamicInvoke(args);
+        }
 
         public static object Construct(this Type type)
             => Activator.CreateInstance(type);

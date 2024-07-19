@@ -2,27 +2,18 @@
 {
     public class OverrideValue<T>
     {
-        private Func<T> _getter;
         private OptionalValue<T> _override;
 
         public T Value
         {
-            get
-            {
-                if (_override.HasValue)
-                    return _override.Value;
-
-                return _getter();
-            }
-            set
-            {
-                _override = OptionalValue<T>.FromValue(value);
-            }
+            get => _override.Value;
+            set => _override = OptionalValue<T>.FromValue(value);
         }
 
-        public OverrideValue(Func<T> getter)
+        public bool HasValue => _override.HasValue;
+
+        public OverrideValue()
         {
-            _getter = getter;
             _override = OptionalValue<T>.FromNull();
         }
 

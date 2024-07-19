@@ -30,8 +30,7 @@ namespace LabExtended.Commands
 
         private ArgumentDefinition[] _customArgs;
         private ParameterInfo[] _customParams;
-
-        private Func<object, object[], object> _wrappedCall;
+        private MethodInfo _customMethod;
 
         public virtual string Command { get; }
         public virtual string Description { get; }
@@ -89,7 +88,7 @@ namespace LabExtended.Commands
                 var result = default(object);
                 var success = false;
 
-                if (_wrappedCall != null)
+                if (_customMethod != null)
                 {
                     var args = new object[_customParams.Length];
 
@@ -100,7 +99,7 @@ namespace LabExtended.Commands
                     }
                     else
                     {
-                        result = _wrappedCall(this, args);
+                        result = _customMethod.Invoke(this, args);
                         success = true;
                     }
                 }
@@ -195,8 +194,6 @@ namespace LabExtended.Commands
 
             if (method != null)
             {
-                _wrappedCall = method.GetWrappedCaller();
-
                 if (Arguments is null)
                 {
                     var validParams = method.GetAllParameters().Skip(1).ToArray();

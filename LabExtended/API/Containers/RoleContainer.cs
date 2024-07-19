@@ -20,11 +20,11 @@ using PlayerRoles.PlayableScps.Scp079.Rewards;
 
 using UnityEngine;
 
-namespace LabExtended.API
+namespace LabExtended.API.Containers
 {
-    public class PlayerRoles
+    public class RoleContainer
     {
-        internal PlayerRoles(PlayerRoleManager manager)
+        internal RoleContainer(PlayerRoleManager manager)
             => Manager = manager;
 
         public PlayerRoleManager Manager { get; }
@@ -230,7 +230,7 @@ namespace LabExtended.API
                 return false;
             }
 
-            return SubroutineManager.TryGetSubroutine<T>(out routine);
+            return SubroutineManager.TryGetSubroutine(out routine);
         }
 
         public bool IfRoutine<T>(Action<T> action) where T : SubroutineBase

@@ -36,7 +36,7 @@ namespace LabExtended.Core.Hooking.Binders
             }
 
             for (int i = 0; i < Size; i++)
-                args[i] = _binding[i].Get(eventObject);
+                args[i] = _binding[i].GetValue(eventObject);
 
             return true;
         }

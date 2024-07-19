@@ -2,6 +2,7 @@
 using LabExtended.Core.Hooking.Interfaces;
 
 using LabExtended.Core.Profiling;
+using LabExtended.Utilities;
 
 using System.Reflection;
 

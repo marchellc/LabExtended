@@ -5,13 +5,13 @@ using PlayerRoles.PlayableScps.Scp106;
 
 using PlayerStatsSystem;
 
-namespace LabExtended.API
+namespace LabExtended.API.Containers
 {
-    public class PlayerStats
+    public class StatsContainer
     {
         internal OverrideValue<float> _maxHealthOverride;
 
-        internal PlayerStats(PlayerStatsSystem.PlayerStats playerStats)
+        internal StatsContainer(PlayerStats playerStats)
         {
             Stats = playerStats;
 
@@ -22,10 +22,10 @@ namespace LabExtended.API
             AdminFlags = Get<AdminFlagsStat>();
             HumeShield = Get<HumeShieldStat>();
 
-            _maxHealthOverride = new OverrideValue<float>(() => Health.CurValue);
+            _maxHealthOverride = new OverrideValue<float>();
         }
 
-        public PlayerStatsSystem.PlayerStats Stats { get; }
+        public PlayerStats Stats { get; }
 
         public StatBase[] AllStats => Stats._statModules;
 
@@ -96,6 +96,6 @@ namespace LabExtended.API
             => Stats.GetModule<T>();
 
         public bool TryGet<T>(out T stat) where T : StatBase
-            => Stats.TryGetModule<T>(out stat);
+            => Stats.TryGetModule(out stat);
     }
 }

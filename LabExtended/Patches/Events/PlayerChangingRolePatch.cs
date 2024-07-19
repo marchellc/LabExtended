@@ -18,12 +18,16 @@ using CustomPlayerEffects;
 using LabExtended.Core;
 using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Events
 {
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.InitializeNewRole))]
     public static class PlayerChangingRolePatch
     {
+        static PlayerChangingRolePatch()
+            => EventUtils<PlayerRoleManager.RoleChanged>.DefineEvent(typeof(PlayerRoleManager), "OnRoleChanged");
+
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
         {
             try
@@ -34,11 +38,14 @@ namespace LabExtended.Patches.Events
                     return true;
 
                 var prevRole = default(PlayerRoleBase);
+                var wasSet = false;
 
                 if (__instance._anySet)
                 {
                     prevRole = __instance.CurrentRole;
                     prevRole.DisableRole(targetId);
+
+                    wasSet = true;
                 }
 
                 if (reason is RoleChangeReason.Destroyed && targetId is RoleTypeId.None)
@@ -87,6 +94,9 @@ namespace LabExtended.Patches.Events
 
                 foreach (var item in customItems)
                     item.OnOwnerSpawned(changedArgs);
+
+                if (wasSet)
+                    EventUtils<PlayerRoleManager.RoleChanged>.InvokeEvent(typeof(PlayerRoleManager), "OnRoleChanged", null, player.Hub, prevRole, newRole);
 
                 return false;
             }

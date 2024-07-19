@@ -75,9 +75,9 @@ namespace LabExtended.Core.Hooking
                     {
                         try
                         {
-                            var value = hookDelegateObject.Field.Get<Delegate>();
+                            var value = hookDelegateObject.Field.GetValue(null);
 
-                            if (value is null)
+                            if (value is null || value is not Delegate del)
                             {
                                 ExLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
                                 continue;
@@ -89,7 +89,7 @@ namespace LabExtended.Core.Hooking
                                 continue;
                             }
 
-                            value.DynamicInvoke(eventObject);
+                            del.DynamicInvoke(eventObject);
                         }
                         catch (Exception ex)
                         {

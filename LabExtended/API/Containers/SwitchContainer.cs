@@ -1,9 +1,9 @@
-﻿namespace LabExtended.API
+﻿namespace LabExtended.API.Containers
 {
     /// <summary>
     /// A class that holds custom player switches.
     /// </summary>
-    public class PlayerSwitches
+    public class SwitchContainer
     {
         /// <summary>
         /// Gets or sets a value indicating whether or not this player is visible in the Remote Admin player list.

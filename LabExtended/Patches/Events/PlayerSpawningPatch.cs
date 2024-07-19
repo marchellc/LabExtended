@@ -6,6 +6,8 @@ using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Events;
 using LabExtended.Events.Player;
+using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 using PlayerRoles;
 
@@ -16,6 +18,9 @@ namespace LabExtended.Patches.Events
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.ServerSetRole))]
     public static class PlayerSpawningPatch
     {
+        static PlayerSpawningPatch()
+            => EventUtils<PlayerRoleManager.ServerRoleSet>.DefineEvent(typeof(PlayerRoleManager), "OnServerRoleSet");
+
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags)
         {
             try
@@ -53,6 +58,8 @@ namespace LabExtended.Patches.Events
                     spawnFlags = spawningEv.SpawnFlags;
 
                     InternalEvents.InternalHandleRoleChange(spawningEv);
+
+                    EventUtils<PlayerRoleManager.ServerRoleSet>.InvokeEvent(typeof(PlayerRoleManager), "OnServerRoleSet", null, player.Hub, newRole, reason);
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                 }

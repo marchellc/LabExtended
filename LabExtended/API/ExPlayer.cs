@@ -19,6 +19,7 @@ using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API.Collections.Locked;
+using LabExtended.API.Containers;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
@@ -473,9 +474,9 @@ namespace LabExtended.API
             FakePosition = new FakeValue<Vector3>();
             FakeRole = new FakeValue<RoleTypeId>();
 
-            Role = new API.PlayerRoles(component.roleManager);
-            Stats = new API.PlayerStats(component.playerStats);
-            Switches = new API.PlayerSwitches();
+            Role = new RoleContainer(component.roleManager);
+            Stats = new StatsContainer(component.playerStats);
+            Switches = new SwitchContainer();
         }
 
         /// <summary>
@@ -499,9 +500,9 @@ namespace LabExtended.API
 
         public NpcHandler NpcHandler { get; internal set; }
 
-        public API.PlayerRoles Role { get; }
-        public API.PlayerStats Stats { get; }
-        public API.PlayerSwitches Switches { get; }
+        public RoleContainer Role { get; }
+        public StatsContainer Stats { get; }
+        public SwitchContainer Switches { get; }
 
         public ReferenceHub Hub => _hub;
         public GameObject GameObject => _hub.gameObject;
@@ -1239,7 +1240,7 @@ namespace LabExtended.API
             void CustomSyncVarGenerator(NetworkWriter targetWriter)
             {
                 targetWriter.WriteULong(NetworkUtils._syncVars[$"{targetType.Name}.{propertyName}"]);
-                NetworkUtils._writerExtensions[value.GetType()]?.InvokeMethod(null, targetWriter, value);
+                NetworkUtils._writerExtensions[value.GetType()]?.Invoke(null, new object[] { targetWriter, value });
             }
         }
 
@@ -1251,7 +1252,7 @@ namespace LabExtended.API
             var writer = NetworkWriterPool.Get();
 
             foreach (var value in values)
-                NetworkUtils._writerExtensions[value.GetType()].InvokeMethod(null, writer, value);
+                NetworkUtils._writerExtensions[value.GetType()].Invoke(null, new object[] { writer, value });
 
             var msg = new RpcMessage()
             {
