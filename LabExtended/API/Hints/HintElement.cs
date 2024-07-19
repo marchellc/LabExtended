@@ -6,7 +6,6 @@ namespace LabExtended.API.Hints
     public abstract class HintElement
     {
         internal readonly LockedHashSet<HintData> _messages = new LockedHashSet<HintData>();
-        internal bool _globalTick;
         internal string _prev = null;
 
         public virtual bool IsActive { get; set; }

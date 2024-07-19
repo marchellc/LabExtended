@@ -23,7 +23,7 @@ namespace LabExtended.Core.Ticking
         public bool IsSeparate { get; set; } = false;
 
         public bool IsRunning => TickManager.IsRunning(Id) && !IsPaused;
-        public bool IsSubscribed => TickManager._activeTicks.ContainsKey(Id);
+        public bool IsSubscribed => TickManager._activeTicks.Any(h => h.Id == Id);
 
         public bool CanTick
         {
@@ -60,10 +60,27 @@ namespace LabExtended.Core.Ticking
             => IsPaused = !IsPaused;
 
         public void Unsubscribe()
-            => TickManager._activeTicks.Remove(Id);
+        {
+            TickManager._activeTicks.RemoveWhere(h => h.Id == Id);
+
+            _separateComponent?.Stop();
+            _separateComponent = null;
+        }
 
         public void Subscribe()
-            => TickManager._activeTicks[Id] = this;
+        {
+            if (TickManager._activeTicks.Contains(this))
+                return;
+
+            TickManager._activeTicks.Add(this);
+
+            if (IsSeparate)
+            {
+                _separateComponent?.Stop();
+
+                TickComponent.Create(Id, Target, () => CanTick, out _, out _separateComponent);
+            }
+        }
 
         internal void RegisterTickStart()
         {

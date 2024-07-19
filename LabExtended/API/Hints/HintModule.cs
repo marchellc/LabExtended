@@ -7,7 +7,6 @@ using LabExtended.API.Modules;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 using LabExtended.Utilities;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
@@ -215,7 +214,7 @@ namespace LabExtended.API.Hints
             if (!_temporaryElement.IsActive && _temporaryQueue.TryDequeue(out var nextMessage))
                 _temporaryElement.SetHint(nextMessage);
 
-            if (_activeElements.Count(element => element.IsActive) < 1)
+            if ((_globalText is null || _globalText.Length <= 1) && _activeElements.Count(element => element.IsActive) < 1)
             {
                 if (!_clearedAfterEmpty)
                 {
@@ -318,18 +317,10 @@ namespace LabExtended.API.Hints
 
         private void InternalRefreshAspectRatio(bool isInitial)
         {
-            if (isInitial)
+            if (isInitial || _aspectRatio != CastParent.AspectRatio)
             {
                 _aspectRatio = CastParent.AspectRatio;
                 _leftOffset = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
-            }
-            else
-            {
-                if (_aspectRatio != CastParent.AspectRatio)
-                {
-                    _aspectRatio = CastParent.AspectRatio;
-                    _leftOffset = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
-                }
             }
         }
     }

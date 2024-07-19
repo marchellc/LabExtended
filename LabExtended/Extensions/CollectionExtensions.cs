@@ -53,18 +53,18 @@ namespace LabExtended.Extensions
             }
         }
 
-        public static bool TryGetFirst(this IEnumerable<object> objects, Func<object, bool> predicate, out object result)
+        public static bool TryGetFirst<T>(this IEnumerable<T> objects, Func<T, bool> predicate, out T result)
         {
             foreach (var obj in objects)
             {
-                if (!predicate(obj))
+                if (obj is null || obj is not T cast || !predicate(cast))
                     continue;
 
-                result = obj;
+                result = cast;
                 return true;
             }
 
-            result = null;
+            result = default;
             return false;
         }
 

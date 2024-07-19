@@ -143,7 +143,7 @@ namespace LabExtended.API.Hints
             base.OnTick();
 
             foreach (var element in _activeElements)
-                element._globalTick = false;
+                element.UpdateElement();
 
             foreach (var player in ExPlayer._players)
             {
@@ -151,12 +151,6 @@ namespace LabExtended.API.Hints
 
                 foreach (var element in _activeElements)
                 {
-                    if (!element._globalTick)
-                    {
-                        element.UpdateElement();
-                        element._globalTick = false;
-                    }
-
                     if (!element.IsActive)
                         continue;
 

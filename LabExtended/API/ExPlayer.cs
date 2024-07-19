@@ -75,6 +75,7 @@ namespace LabExtended.API
             _localPlayer = null;
 
             TickManager.SubscribeTick(UpdateSentRoles, TickTimer.None, "Player Role Sync");
+            TickManager.Init();
         }
 
         internal static readonly List<ExPlayer> _players;

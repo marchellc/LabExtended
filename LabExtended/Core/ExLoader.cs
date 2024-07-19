@@ -1,18 +1,19 @@
 using HarmonyLib;
 
+using LabExtended.API.Hints;
 using LabExtended.API.Modules;
+
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Ticking;
 
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
-using LabExtended.Core.Ticking;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
 using PluginAPI.Core.Attributes;
 using PluginAPI.Enums;
 using PluginAPI.Loader;
-using LabExtended.API.Hints;
 
 namespace LabExtended.Core
 {
@@ -105,8 +106,6 @@ namespace LabExtended.Core
 
                 HookPatch.Enable();
                 HookManager.RegisterAll();
-
-                TickManager.Init();
 
                 StartModule();
 
