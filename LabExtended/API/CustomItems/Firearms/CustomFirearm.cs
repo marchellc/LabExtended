@@ -16,6 +16,8 @@ namespace LabExtended.API.CustomItems.Firearms
 {
     public class CustomFirearm : CustomItem
     {
+        internal FirearmStatus? _cachedStatus;
+
         public CustomFirearmInfo FirearmInfo => (CustomFirearmInfo)Info;
 
         public Firearm FirearmItem
@@ -54,8 +56,11 @@ namespace LabExtended.API.CustomItems.Firearms
             }
             set
             {
-                FirearmItem!.Status = new FirearmStatus(value, FirearmItem.Status.Flags, FirearmItem.Status.Attachments);
-                FirearmPickup!.NetworkStatus = new FirearmStatus(value, FirearmPickup.Status.Flags, FirearmPickup.Status.Attachments);
+                if (FirearmItem != null)
+                    FirearmItem.Status = new FirearmStatus(value, FirearmItem.Status.Flags, FirearmItem.Status.Attachments);
+
+                if (FirearmPickup != null)
+                    FirearmPickup.NetworkStatus = new FirearmStatus(value, FirearmPickup.Status.Flags, FirearmPickup.Status.Attachments);
             }
         }
 
@@ -65,6 +70,7 @@ namespace LabExtended.API.CustomItems.Firearms
         public byte StartingAmmo => FirearmInfo.StartAmmo;
 
         public bool HasUnlimitedAmmo => (FirearmInfo.FirearmFlags & CustomFirearmFlags.UnlimitedAmmo) == CustomFirearmFlags.UnlimitedAmmo;
+        public bool ReuseStatus => (FirearmInfo.FirearmFlags & CustomFirearmFlags.ReuseStatus) == CustomFirearmFlags.ReuseStatus;
 
         public virtual void OnRequestReceived(ProcessingFirearmRequestArgs args) { }
         public virtual void OnRequestProcessed(ProcessedFirearmRequestArgs args) { }
@@ -99,8 +105,20 @@ namespace LabExtended.API.CustomItems.Firearms
 
         internal override void SetupItem()
         {
-            FirearmItem.Status = new FirearmStatus(StartingAmmo, FirearmItem.Status.Flags | FirearmStatusFlags.MagazineInserted, FirearmItem.Status.Attachments);
-            FirearmItem.ApplyPreferences(Owner);
+            base.SetupItem();
+
+            if (_cachedStatus.HasValue && ReuseStatus)
+            {
+                FirearmItem.Status = new FirearmStatus(_cachedStatus.Value.Ammo, _cachedStatus.Value.Flags, FirearmItem.ValidateAttachmentsCode(_cachedStatus.Value.Attachments));
+                FirearmItem.ApplyAttachmentsCode(FirearmItem.Status.Attachments, false);
+
+                _cachedStatus = null;
+            }
+            else
+            {
+                FirearmItem.Status = new FirearmStatus(StartingAmmo, FirearmItem.Status.Flags | FirearmStatusFlags.MagazineInserted, FirearmItem.Status.Attachments);
+                FirearmItem.ApplyPreferences(Owner);
+            }
         }
 
         internal bool InternalCanReload()
@@ -108,8 +126,11 @@ namespace LabExtended.API.CustomItems.Firearms
 
         internal void InternalReload(byte ammoToReload)
         {
-            if (AmmoType is ItemType.None)
+            if (AmmoType is ItemType.None || ammoToReload < 1)
                 return;
+
+            if (ammoToReload > MaxAmmo)
+                ammoToReload = MaxAmmo;
 
             if (FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) && !AmmoType.IsAmmo())
             {

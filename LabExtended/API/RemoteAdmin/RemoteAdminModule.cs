@@ -82,7 +82,6 @@ namespace LabExtended.API.RemoteAdmin
                 if (IsRemoteAdminOpen)
                 {
                     HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(CastParent));
-                    SendObjectHelp();
                     ExLoader.Debug("Remote Admin API", $"Player opened Remote Admin ({CastParent.Name})");
                 }
                 else

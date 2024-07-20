@@ -897,10 +897,10 @@ namespace LabExtended.API
             => SendRemoteAdminMessage($"$1 {content}", true, false);
 
         public void SendRemoteAdminQR(string data, bool isBig = false)
-            => SendRemoteAdminMessage($"$2 {(isBig ? 1 : 0)} {data}");
+            => SendRemoteAdminMessage($"$2 {(isBig ? 1 : 0)} {data}", true, false);
 
         public void SendRemoteAdminClipboard(string data, RaClipboard.RaClipBoardType type = RaClipboard.RaClipBoardType.UserId)
-            => SendRemoteAdminMessage($"$6 {(int)type} {data}");
+            => SendRemoteAdminMessage($"$6 {(int)type} {data}", true, false);
 
         public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
         {

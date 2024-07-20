@@ -10,8 +10,6 @@ namespace LabExtended.API
 {
     public static class ExMap
     {
-        private static readonly ProfilerMarker _genMarker = new ProfilerMarker("Map Generation");
-
         private static bool _pickupEventsRegistered;
 
         internal static readonly List<ItemPickupBase> _pickups = new List<ItemPickupBase>();
@@ -24,8 +22,6 @@ namespace LabExtended.API
 
         internal static void GenerateMap()
         {
-            _genMarker.MarkStart();
-
             try
             {
                 if (!_pickupEventsRegistered)
@@ -60,8 +56,6 @@ namespace LabExtended.API
             {
                 ExLoader.Error("Extended API", $"Map generation failed!\n{ex.ToColoredString()}");
             }
-
-            _genMarker.MarkEnd();
         }
     }
 }

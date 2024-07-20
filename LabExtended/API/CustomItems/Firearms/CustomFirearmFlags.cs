@@ -5,6 +5,7 @@
     {
         None = 0,
         AmmoAsInventoryItems = 2,
-        UnlimitedAmmo = 4
+        UnlimitedAmmo = 4,
+        ReuseStatus = 8
     }
 }

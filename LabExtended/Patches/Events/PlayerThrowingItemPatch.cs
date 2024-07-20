@@ -2,10 +2,12 @@
 
 using InventorySystem;
 using InventorySystem.Items;
+using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Firearms;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
@@ -73,6 +75,14 @@ namespace LabExtended.Patches.Events
 
                 customItem.SetupPickup();
                 customItem.OnDropped(droppingEv);
+
+                if (customItem is CustomFirearm customFirearm)
+                {
+                    if (item is Firearm firearm)
+                        customFirearm._cachedStatus = firearm.Status;
+                    else
+                        customFirearm._cachedStatus = null;
+                }
             }
 
             if (pickup is null)
