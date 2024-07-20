@@ -12,19 +12,14 @@ namespace LabExtended.Extensions
 
         public static void RemoveItems(this ReferenceHub hub, ItemType itemType, int toRemove)
         {
-            if (!hub.inventory.UserInventory.Items.Any(item => item.Value.ItemTypeId == itemType))
+            if (hub.inventory.UserInventory.Items.Count(item => item.Value.ItemTypeId == itemType) < 1)
                 return;
 
             var curAmount = hub.inventory.UserInventory.Items.Count(item => item.Value.ItemTypeId == itemType);
-            var newAmount = 0;
+            var items = hub.inventory.UserInventory.Items.TakeWhere(curAmount, p => p.Value.ItemTypeId == itemType);
 
-            if (curAmount < toRemove)
-                newAmount = 0;
-            else
-                newAmount = curAmount - toRemove;
-
-            while (hub.inventory.UserInventory.Items.Count(item => item.Value.ItemTypeId == itemType) != newAmount)
-                hub.inventory.ServerRemoveItem(hub.inventory.UserInventory.Items.First(item => item.Value.ItemTypeId == itemType).Key, null);
+            foreach (var item in items)
+                hub.inventory.ServerRemoveItem(item.Key, item.Value.PickupDropModel);
         }
     }
 }

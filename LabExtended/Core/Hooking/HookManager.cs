@@ -100,6 +100,16 @@ namespace LabExtended.Core.Hooking
             {
                 ev => CustomFirearm.InternalOnProcessedRequested((ProcessedFirearmRequestArgs)ev),
             },
+
+            [typeof(PlayerAuthorizingShotArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnAuthorizingShot((PlayerAuthorizingShotArgs)ev),
+            },
+
+            [typeof(PlayerPerformingShotArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnPerformingShot((PlayerPerformingShotArgs)ev),
+            },
         };
 
         internal static readonly LockedDictionary<Type, List<HookInfo>> _activeHooks = new LockedDictionary<Type, List<HookInfo>>();

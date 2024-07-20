@@ -47,7 +47,7 @@ namespace LabExtended.Patches.Functions.Items
                 {
                     curCustomItem.OnDeselecting(switchingArgs);
 
-                    if (!switchingArgs.Cancellation)
+                    if (!switchingArgs.IsAllowed)
                         return false;
                 }
 
@@ -64,7 +64,7 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         nextCustomItem.OnSelecting(switchingArgs);
 
-                        if (!switchingArgs.Cancellation)
+                        if (!switchingArgs.IsAllowed)
                             return false;
                     }
 

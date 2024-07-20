@@ -41,7 +41,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public bool DestroyPickup { get; set; }
 
-        internal PlayerPickingUpItemArgs(ExPlayer player, ItemPickupBase pickup, SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup) : base(true)
+        internal PlayerPickingUpItemArgs(ExPlayer player, ItemPickupBase pickup, SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup)
         {
             Player = player;
             Pickup = pickup;

@@ -3,6 +3,7 @@ using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.BasicMessages;
 
 using LabExtended.Events.Other;
+using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
 using PlayerRoles.Spectating;
@@ -17,7 +18,7 @@ namespace LabExtended.API.CustomItems.Firearms
     {
         public CustomFirearmInfo FirearmInfo => (CustomFirearmInfo)Info;
 
-        public Firearm Firearm
+        public Firearm FirearmItem
         {
             get
             {
@@ -28,10 +29,34 @@ namespace LabExtended.API.CustomItems.Firearms
             }
         }
 
+        public FirearmPickup FirearmPickup
+        {
+            get
+            {
+                if (Pickup != null && Pickup is FirearmPickup firearmPickup)
+                    return firearmPickup;
+
+                return null;
+            }
+        }
+
         public byte CurrentAmmo
         {
-            get => Firearm?.Status.Ammo ?? 0;
-            set => Firearm!.Status = new FirearmStatus(value, Firearm.Status.Flags, Firearm.Status.Attachments);
+            get
+            {
+                if (FirearmItem != null)
+                    return FirearmItem.Status.Ammo;
+
+                if (FirearmPickup != null)
+                    return FirearmPickup.Status.Ammo;
+
+                return 0;
+            }
+            set
+            {
+                FirearmItem!.Status = new FirearmStatus(value, FirearmItem.Status.Flags, FirearmItem.Status.Attachments);
+                FirearmPickup!.NetworkStatus = new FirearmStatus(value, FirearmPickup.Status.Flags, FirearmPickup.Status.Attachments);
+            }
         }
 
         public ItemType AmmoType => FirearmInfo.AmmoType;
@@ -39,11 +64,17 @@ namespace LabExtended.API.CustomItems.Firearms
         public byte MaxAmmo => FirearmInfo.MaxAmmo;
         public byte StartingAmmo => FirearmInfo.StartAmmo;
 
+        public bool HasUnlimitedAmmo => (FirearmInfo.FirearmFlags & CustomFirearmFlags.UnlimitedAmmo) == CustomFirearmFlags.UnlimitedAmmo;
+
         public virtual void OnRequestReceived(ProcessingFirearmRequestArgs args) { }
         public virtual void OnRequestProcessed(ProcessedFirearmRequestArgs args) { }
 
-        public virtual bool OnReloading(ref int ammoToReload) => true;
-        public virtual void OnReloaded(int addedAmmo) { }
+        public virtual void OnAuthorizingShot(PlayerAuthorizingShotArgs args) { }
+        public virtual void OnPerformingShot(PlayerPerformingShotArgs args) { }
+        public virtual void OnProcessingShot(ProcessingFirearmShotArgs args) { }
+
+        public virtual bool OnReloading(ref byte ammoToReload) => true;
+        public virtual void OnReloaded(byte addedAmmo) { }
 
         public virtual bool OnStoppingReload() => true;
         public virtual void OnStoppedReload() { }
@@ -68,52 +99,85 @@ namespace LabExtended.API.CustomItems.Firearms
 
         internal override void SetupItem()
         {
-            Firearm.Status = new FirearmStatus(StartingAmmo, Firearm.Status.Flags | FirearmStatusFlags.MagazineInserted, Firearm.Status.Attachments);
-            Firearm.ApplyPreferences(Owner);
+            FirearmItem.Status = new FirearmStatus(StartingAmmo, FirearmItem.Status.Flags | FirearmStatusFlags.MagazineInserted, FirearmItem.Status.Attachments);
+            FirearmItem.ApplyPreferences(Owner);
         }
 
         internal bool InternalCanReload()
             => AmmoType != ItemType.None && (!FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) ? Owner.GetAmmo(AmmoType) > 0 : Owner.CountItems(AmmoType) > 0);
 
-        internal void InternalReload(int ammoToReload)
+        internal void InternalReload(byte ammoToReload)
         {
             if (AmmoType is ItemType.None)
                 return;
 
-            OnReloading(ref ammoToReload);
-
-            if (FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems))
+            if (FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) && !AmmoType.IsAmmo())
             {
-                var reloadableAmmo = Owner.CountItems(AmmoType);
+                var availableAmmo = (byte)Owner.CountItems(AmmoType);
 
-                if (reloadableAmmo < 1)
+                if (availableAmmo < 1)
                     return;
 
-                ammoToReload = Mathf.Clamp(ammoToReload, ammoToReload, reloadableAmmo);
+                if (availableAmmo > ammoToReload)
+                    availableAmmo = ammoToReload;
 
-                Owner.Hub.RemoveItems(AmmoType, ammoToReload);
-                CurrentAmmo += (byte)ammoToReload;
+                if (!OnReloading(ref availableAmmo))
+                    return;
+
+                Owner.RemoveItems(AmmoType, availableAmmo);
+                CurrentAmmo += availableAmmo;
 
                 new RequestMessage(Serial, RequestType.Reload).SendToAuthenticated();
 
-                OnReloaded(ammoToReload);
+                OnReloaded(availableAmmo);
             }
             else
             {
-                var reloadableAmmo = Owner.GetAmmo(AmmoType);
+                var availableAmmo = (byte)Mathf.Clamp(Owner.GetAmmo(AmmoType), 0f, ammoToReload);
 
-                if (reloadableAmmo < 1)
+                if (availableAmmo < 1)
                     return;
 
-                ammoToReload = Mathf.Clamp(ammoToReload, ammoToReload, reloadableAmmo);
+                if (availableAmmo > ammoToReload)
+                    availableAmmo = ammoToReload;
 
-                Owner.SubstractAmmo(AmmoType, (ushort)ammoToReload);
-                CurrentAmmo += (byte)ammoToReload;
+                if (!OnReloading(ref availableAmmo))
+                    return;
+
+                Owner.SubstractAmmo(AmmoType, availableAmmo);
+                CurrentAmmo += availableAmmo;
 
                 new RequestMessage(Serial, RequestType.Reload).SendToAuthenticated();
 
-                OnReloaded(ammoToReload);
+                OnReloaded(availableAmmo);
             }
+        }
+
+        internal static void InternalOnProcessingShot(ProcessingFirearmShotArgs args)
+        {
+            if (!TryGetItem<CustomFirearm>(args.Firearm, out var customFirearm))
+                return;
+
+            customFirearm.OnProcessingShot(args);
+        }
+
+        internal static void InternalOnAuthorizingShot(PlayerAuthorizingShotArgs shotArgs)
+        {
+            if (!TryGetItem<CustomFirearm>(shotArgs.Firearm, out var customFirearm))
+                return;
+
+            if (customFirearm.HasUnlimitedAmmo)
+                shotArgs.SubstractAmmo = 0;
+
+            customFirearm.OnAuthorizingShot(shotArgs);
+        }
+
+        internal static void InternalOnPerformingShot(PlayerPerformingShotArgs args)
+        {
+            if (!TryGetItem<CustomFirearm>(args.Firearm, out var customFirearm))
+                return;
+
+            customFirearm.OnPerformingShot(args);
         }
 
         internal static void InternalOnProcessedRequested(ProcessedFirearmRequestArgs args)
@@ -136,7 +200,7 @@ namespace LabExtended.API.CustomItems.Firearms
                         if (!customFirearm.InternalCanReload())
                             return false;
 
-                        customFirearm.InternalReload(customFirearm.MaxAmmo - customFirearm.CurrentAmmo);
+                        customFirearm.InternalReload((byte)(customFirearm.MaxAmmo - customFirearm.CurrentAmmo));
                         return false;
                     }
 
@@ -197,18 +261,18 @@ namespace LabExtended.API.CustomItems.Firearms
 
                 case RequestType.ToggleFlashlight:
                     {
-                        if (!customFirearm.Firearm.HasAdvantageFlag(AttachmentDescriptiveAdvantages.Flashlight))
+                        if (!customFirearm.FirearmItem.HasAdvantageFlag(AttachmentDescriptiveAdvantages.Flashlight))
                             return false;
 
-                        var isEnabled = customFirearm.Firearm.HasFlashlightEnabled();
+                        var isEnabled = customFirearm.FirearmItem.HasFlashlightEnabled();
 
                         if (!customFirearm.OnTogglingFlashlight(!isEnabled))
                             return false;
 
                         if (!isEnabled)
-                            customFirearm.Firearm.DisableFlashlight();
+                            customFirearm.FirearmItem.DisableFlashlight();
                         else
-                            customFirearm.Firearm.EnableFlashlight();
+                            customFirearm.FirearmItem.EnableFlashlight();
 
                         customFirearm.OnToggledFlashlight(!isEnabled);
                         return false;

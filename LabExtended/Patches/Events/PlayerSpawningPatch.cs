@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Events
                 var spawningEv = new PlayerSpawningArgs(player, __instance.CurrentRole, newRole, reason, spawnFlags);
                 var customItems = CustomItem.GetItems<CustomItem>(player);
 
-                spawningEv.Cancellation = true;
+                spawningEv.IsAllowed = true;
 
                 foreach (var item in customItems)
                     item.OnOwnerSpawning(spawningEv);

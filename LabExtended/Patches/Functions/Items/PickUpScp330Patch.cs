@@ -45,7 +45,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpItemEv = new PlayerPickingUpItemArgs(player, scp330Pickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, scp330Pickup.StoredCandies.Count - (Scp330Bag.TryGetBag(player.Hub, out var playerBag) ? 6 - playerBag.Candies.Count : 0) <= 0);
 
-            pickingUpItemEv.Cancellation = true;
+            pickingUpItemEv.IsAllowed = true;
 
             if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
             {
@@ -53,7 +53,7 @@ namespace LabExtended.Patches.Functions.Items
                 customItem.OnPickingUp(pickingUpItemEv);
             }
 
-            if (!HookRunner.RunCancellable(pickingUpItemEv, pickingUpItemEv.Cancellation))
+            if (!HookRunner.RunCancellable(pickingUpItemEv, pickingUpItemEv.IsAllowed))
             {
                 if (pickingUpItemEv.DestroyPickup)
                 {
@@ -72,6 +72,7 @@ namespace LabExtended.Patches.Functions.Items
                 customItem.Pickup = null;
                 customItem.Item = bag;
 
+                customItem.SetupItem();
                 customItem.OnPickedUp(pickingUpItemEv);
 
                 if ((customItem.Info.ItemFlags & CustomItemFlags.SelectOnPickup) == CustomItemFlags.SelectOnPickup)

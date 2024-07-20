@@ -46,7 +46,7 @@ namespace LabExtended.Patches.Events
             {
                 customItem.OnDropping(droppingEv);
 
-                if (!droppingEv.Cancellation)
+                if (!droppingEv.IsAllowed)
                     return false;
 
                 customItem.IsSelected = false;
@@ -71,6 +71,7 @@ namespace LabExtended.Patches.Events
                 customItem.Item = null;
                 customItem.Pickup = pickup;
 
+                customItem.SetupPickup();
                 customItem.OnDropped(droppingEv);
             }
 
@@ -100,7 +101,7 @@ namespace LabExtended.Patches.Events
                 {
                     customItem.OnThrowing(throwingEv);
 
-                    if (!throwingEv.Cancellation)
+                    if (!throwingEv.IsAllowed)
                         return false;
                 }
 

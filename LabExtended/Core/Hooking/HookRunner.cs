@@ -1,7 +1,7 @@
 ﻿using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Profiling;
+
 using LabExtended.Extensions;
-using LabExtended.Utilities;
 
 namespace LabExtended.Core.Hooking
 {
@@ -13,11 +13,11 @@ namespace LabExtended.Core.Hooking
         {
             var cancellableEvent = eventObject as ICancellableEvent<T>;
 
-            cancellableEvent!.Cancellation = cancellation;
+            cancellableEvent!.IsAllowed = cancellation;
             cancellation = RunEvent(eventObject, cancellation);
 
             if (cancellableEvent != null)
-                return cancellableEvent.Cancellation;
+                return cancellableEvent.IsAllowed;
 
             return cancellation;
         }

@@ -39,7 +39,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, scp244DeployablePickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
 
-            pickingUpEv.Cancellation = true;
+            pickingUpEv.IsAllowed = true;
 
             if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
             {
@@ -47,7 +47,7 @@ namespace LabExtended.Patches.Functions.Items
                 customItem.OnPickingUp(pickingUpEv);
             }
 
-            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.Cancellation))
+            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.IsAllowed))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -82,6 +82,7 @@ namespace LabExtended.Patches.Functions.Items
                     customItem.Pickup = null;
                     customItem.Item = item;
 
+                    customItem.SetupItem();
                     customItem.OnPickedUp(pickingUpEv);
 
                     if ((customItem.Info.ItemFlags & CustomItemFlags.SelectOnPickup) == CustomItemFlags.SelectOnPickup)

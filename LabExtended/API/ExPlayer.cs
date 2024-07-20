@@ -40,7 +40,7 @@ using MapGeneration;
 
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
-
+using NorthwoodLib.Pools;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps;
@@ -54,6 +54,8 @@ using PluginAPI.Events;
 using RelativePositioning;
 using RemoteAdmin;
 using RemoteAdmin.Communication;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 using Utils;
@@ -1052,6 +1054,43 @@ namespace LabExtended.API
         public ItemBase AddItem(ItemType type)
            => Hub.inventory.ServerAddItem(type);
 
+        public ItemPickupBase DropItem(ushort serial)
+            => Hub.inventory.ServerDropItem(serial);
+
+        public ItemPickupBase DropItem(ItemBase item)
+            => Hub.inventory.ServerDropItem(item.ItemSerial);
+
+        public ItemPickupBase DropHeldItem()
+            => Hub.inventory.ServerDropItem(CurrentItemIdentifier.SerialNumber);
+
+        public List<ItemPickupBase> DropItems(Predicate<ItemBase> predicate = null)
+        {
+            var list = new List<ItemPickupBase>();
+            var items = ListPool<ItemBase>.Shared.Rent(Items);
+
+            foreach (var item in items)
+            {
+                if (predicate != null && !predicate(item))
+                    continue;
+
+                var pickup = _hub.inventory.ServerDropItem(item.ItemSerial);
+
+                if (pickup is null)
+                    continue;
+
+                list.Add(pickup);
+            }
+
+            ListPool<ItemBase>.Shared.Return(items);
+            return list;
+        }
+
+        public List<ItemPickupBase> DropItems(params ItemType[] types)
+            => DropItems(item => types.Contains(item.ItemTypeId));
+
+        public IEnumerable<T> DropItems<T>(params ItemType[] types) where T : ItemPickupBase
+            => DropItems(item => item.PickupDropModel != null && item.PickupDropModel is T).Where<T>(item => types.Length < 1 || types.Contains(item.Info.ItemId));
+
         public IEnumerable<ItemBase> GetItems(params ItemType[] types)
             => Items.Where(item => types.Contains(item.ItemTypeId));
 
@@ -1064,11 +1103,58 @@ namespace LabExtended.API
         public bool HasItem(ItemType type)
             => Items.Any(it => it.ItemTypeId == type);
 
+        public bool HasItems(ItemType type, int count)
+            => Items.Count(it => it.ItemTypeId == type) >= count;
+
         public bool HasKeycardPermission(KeycardPermissions keycardPermissions)
             => Keycards.Any(card => card.Permissions.HasFlagFast(keycardPermissions));
 
         public int CountItems(ItemType type)
             => Items.Count(it => it.ItemTypeId == type);
+
+        public void RemoveItem(ushort serial)
+            => _hub.inventory.ServerRemoveItem(serial, null);
+
+        public void RemoveItem(ItemBase item, ItemPickupBase pickup = null)
+            => _hub.inventory.ServerRemoveItem(item.ItemSerial, pickup);
+
+        public void RemoveHeldItem()
+            => _hub.inventory.ServerRemoveItem(CurrentItemIdentifier.SerialNumber, CurrentItem?.PickupDropModel ?? null);
+
+        public void RemoveItems(Predicate<ItemBase> predicate = null)
+        {
+            var items = ListPool<ItemBase>.Shared.Rent(Items);
+
+            foreach (var item in items)
+            {
+                if (predicate != null && !predicate(item))
+                    continue;
+
+                _hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
+            }
+
+            ListPool<ItemBase>.Shared.Return(items);
+        }
+
+        public void RemoveItems(ItemType type, int count = -1)
+        {
+            var items = ListPool<ItemBase>.Shared.Rent(Items);
+            var removed = 0;
+
+            foreach (var item in items)
+            {
+                if (item.ItemTypeId != type)
+                    continue;
+
+                if (count > 0 && removed >= count)
+                    break;
+
+                removed++;
+                _hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
+            }
+
+            ListPool<ItemBase>.Shared.Return(items);
+        }
 
         public void ClearInventory(IEnumerable<ItemType> newInventory = null)
         {
@@ -1086,9 +1172,6 @@ namespace LabExtended.API
 
             _hub.inventory.SendItemsNextFrame = true;
         }
-
-        public void DropInventory()
-            => _hub.inventory.ServerDropEverything();
 
         public bool AddOrSpawnItem(ItemType type)
         {

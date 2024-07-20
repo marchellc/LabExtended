@@ -4,7 +4,6 @@ using LabExtended.API.CustomItems.Info;
 
 using LabExtended.Core;
 
-using LabExtended.Events;
 using LabExtended.Events.Other;
 using LabExtended.Events.Player;
 
@@ -113,10 +112,10 @@ namespace LabExtended.Utilities.Debug
             return true;
         }
 
-        public override void OnReloaded(int addedAmmo)
+        public override void OnReloaded(byte addedAmmo)
             => ExLoader.Info("Debug Custom Item", $"OnReloaded addedAmmo={addedAmmo}");
 
-        public override bool OnReloading(ref int ammoToReload)
+        public override bool OnReloading(ref byte ammoToReload)
         {
             ExLoader.Info("Debug Custom Item", $"OnReloading ammoToReload={ammoToReload}");
             return true;
@@ -179,6 +178,30 @@ namespace LabExtended.Utilities.Debug
         {
             ExLoader.Info("Debug Custom Item", "OnZoomingOut");
             return true;
+        }
+
+        public override void OnProcessingShot(ProcessingFirearmShotArgs args)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnProcessingShot\n" +
+                $"Origin: {args.Ray.origin}\n" +
+                $"Direction: {args.Ray.direction}");
+        }
+
+        public override void OnAuthorizingShot(PlayerAuthorizingShotArgs args)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnAuthorizingShot\n" +
+                $"SubstractAmmo: {args.SubstractAmmo}");
+        }
+
+        public override void OnPerformingShot(PlayerPerformingShotArgs args)
+        {
+            ExLoader.Info("Debug Custom Item", $"OnPerformingShot\n" +
+                $"TargetPlayer: {args.Target?.Name ?? "null"}\n" +
+                $"TargetDestructible: {args.Destructible?.GetType().FullName ?? "null"}\n" +
+                $"Origin: {args.Ray.origin}\n" +
+                $"Direction: {args.Ray.direction}\n" +
+                $"Point: {args.Hit.point}\n" +
+                $"Collider: {args.Hit.collider?.name ?? "null"}");
         }
 
         public void PrintState()

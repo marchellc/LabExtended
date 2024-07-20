@@ -9,8 +9,6 @@ using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
 
 using LabExtended.Core;
-
-using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
@@ -19,6 +17,7 @@ using LabExtended.Core.Ticking;
 using PluginAPI.Events;
 
 using UnityEngine;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.API.CustomItems
@@ -92,7 +91,7 @@ namespace LabExtended.API.CustomItems
 
                 OnPickingUp(args);
 
-                if (!args.Cancellation)
+                if (!args.IsAllowed)
                     return;
 
                 var item = Pickup.Info.ItemId.GetItemInstance<ItemBase>(Serial);
@@ -108,6 +107,7 @@ namespace LabExtended.API.CustomItems
                 Pickup = null;
 
                 OnPickedUp(args);
+                SetupItem();
             }
             else if (IsInInventory)
             {
@@ -115,13 +115,14 @@ namespace LabExtended.API.CustomItems
 
                 OnPickingUp(args);
 
-                if (!args.Cancellation)
+                if (!args.IsAllowed)
                     return;
 
                 Item.SetupItem(player.Hub, false);
                 Owner = player;
 
                 OnPickedUp(args);
+                SetupItem();
             }
             else
             {
@@ -138,7 +139,7 @@ namespace LabExtended.API.CustomItems
 
             OnDropping(args);
 
-            if (!args.Cancellation)
+            if (!args.IsAllowed)
                 return;
 
             Item.OwnerInventory.ServerRemoveItem(Serial, Item.PickupDropModel);
@@ -149,6 +150,7 @@ namespace LabExtended.API.CustomItems
             Pickup = pickup;
 
             OnDropped(args);
+            SetupPickup();
         }
 
         public void Throw()
@@ -172,7 +174,7 @@ namespace LabExtended.API.CustomItems
 
             OnThrowing(args);
 
-            if (!args.Cancellation)
+            if (!args.IsAllowed)
                 return;
 
             pickupRigidbody.position = args.Position;
@@ -188,9 +190,11 @@ namespace LabExtended.API.CustomItems
             Item = null;
 
             OnThrown(args);
+            SetupPickup();
         }
 
         internal virtual void SetupItem() { }
+        internal virtual void SetupPickup() { }
 
         public static bool RegisterItem<TItem>(string name, string id, string description, ItemType inventoryType, CustomItemPickupInfo pickupInfo, CustomItemFlags flags = CustomItemFlags.DropOnDeath) where TItem : CustomItem
             => RegisterItem(new CustomItemInfo(typeof(TItem), id, name, description, inventoryType, flags, pickupInfo));
@@ -368,6 +372,7 @@ namespace LabExtended.API.CustomItems
             customItem.Pickup = gamePickup;
             customItem.Serial = gamePickup.Info.Serial;
 
+            customItem.SetupPickup();
             customItem.OnSpawned();
 
             _items[customItem.Serial] = customItem;

@@ -47,7 +47,7 @@ namespace LabExtended.Events.Player
         public uint Amount { get; set; }
 
         internal PlayerPickingUpAmmoArgs(ExPlayer player, AmmoPickup pickup,
-            SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup, uint amount) : base(true)
+            SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup, uint amount)
         {
             Player = player;
             Pickup = pickup;

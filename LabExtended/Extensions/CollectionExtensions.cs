@@ -30,6 +30,27 @@ namespace LabExtended.Extensions
             return value;
         }
 
+        public static List<T> TakeWhere<T>(this ICollection<T> objects, int count, Predicate<T> predicate)
+        {
+            if (objects.Count(o => predicate(o)) < count)
+                return null;
+
+            var list = new List<T>(count);
+            var added = 0;
+
+            while (added != count)
+            {
+                var item = objects.First(o => predicate(o));
+
+                objects.Remove(item);
+                list.Add(item);
+
+                added++;
+            }
+
+            return list;
+        }
+
         public static IEnumerable<T> Where<T>(this IEnumerable<object> objects)
             => objects.Where(obj => obj is T).Select(obj => (T)obj);
 

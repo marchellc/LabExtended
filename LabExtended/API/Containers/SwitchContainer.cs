@@ -102,5 +102,15 @@
         /// <para>Overrides <see cref="CanBeHeard"/>.</para>
         /// </summary>
         public bool CanBeHeardBySpectators { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not any damage dealt to other players will result in instant death.
+        /// </summary>
+        public bool HasInstantKill { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player consumes ammo while shooting.
+        /// </summary>
+        public bool HasUnlimitedAmmo { get; set; } = false;
     }
 }
