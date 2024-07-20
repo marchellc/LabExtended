@@ -122,7 +122,7 @@ namespace LabExtended.Utilities
                     if (HintModule.ShowDebug)
                         ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset} size={pixelSize}");
 
-                    if (!messages.IsEmpty())
+                    if (messages.Count > 0)
                     {
                         vOffset -= biggestPixelSize / (float)PixelsPerEm;
                     }
@@ -154,7 +154,7 @@ namespace LabExtended.Utilities
                     if (lineUsage > 0f) {
                         ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
-                        if (!messages.IsEmpty())
+                        if (messages.Count > 0)
                             vOffset -= biggestPixelSize / (float)PixelsPerEm;
 
                         messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
@@ -171,7 +171,7 @@ namespace LabExtended.Utilities
 
                         ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
-                        if (!messages.IsEmpty())
+                        if (messages.Count > 0)
                             vOffset -= biggestPixelSize / (float)PixelsPerEm;
 
                         messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
@@ -195,7 +195,7 @@ namespace LabExtended.Utilities
             {
                 ManageSize(ref line, out biggestPixelSize, out _, out _);
 
-                if (!messages.IsEmpty())
+                if (messages.Count > 0)
                     vOffset -= biggestPixelSize / (float)PixelsPerEm;
 
                 messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
