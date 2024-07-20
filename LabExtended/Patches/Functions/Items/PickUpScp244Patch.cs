@@ -6,11 +6,12 @@ using InventorySystem.Items.Usables.Scp244;
 using InventorySystem.Searching;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking;
-using LabExtended.Extensions;
-using LabExtended.Events;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Enums;
+
+using LabExtended.Core.Hooking;
+using LabExtended.Events.Player;
+using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions.Items
 {

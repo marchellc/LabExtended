@@ -1,17 +1,18 @@
 ﻿using HarmonyLib;
 
 using InventorySystem;
+using InventorySystem.Items;
 using InventorySystem.Searching;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking;
-using LabExtended.Extensions;
-using LabExtended.Events;
-
-using PluginAPI.Events;
-using InventorySystem.Items;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Enums;
+
+using LabExtended.Core.Hooking;
+using LabExtended.Events.Player;
+using LabExtended.Extensions;
+
+using PluginAPI.Events;
 
 namespace LabExtended.Patches.Functions.Items
 {

@@ -82,7 +82,7 @@ namespace LabExtended.API.RemoteAdmin
                 if (IsRemoteAdminOpen)
                 {
                     HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(CastParent));
-                    SendHelp();
+                    SendObjectHelp();
                     ExLoader.Debug("Remote Admin API", $"Player opened Remote Admin ({CastParent.Name})");
                 }
                 else
@@ -93,7 +93,7 @@ namespace LabExtended.API.RemoteAdmin
             }
         }
 
-        public void SendHelp()
+        public void SendObjectHelp()
         {
             var list = ListPool<IRemoteAdminObject>.Shared.Rent();
             var builder = StringBuilderPool.Shared.Rent();
@@ -108,7 +108,7 @@ namespace LabExtended.API.RemoteAdmin
             }
 
             ListPool<IRemoteAdminObject>.Shared.Return(list);
-            CastParent.RemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
+            CastParent.SendRemoteAdminMessage(StringBuilderPool.Shared.ToStringReturn(builder));
         }
 
         public IRemoteAdminObject AddObject(Type objectType, string customId = null)

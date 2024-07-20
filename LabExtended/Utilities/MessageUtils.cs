@@ -20,9 +20,9 @@ namespace LabExtended.Utilities
             foreach (var player in args)
             {
                 if (message is HintMessage)
-                    player.Hint(message.Content, message.Duration);
+                    player.SendHint(message.Content, message.Duration);
                 else if (message is API.Messages.BroadcastMessage broadcastMessage)
-                    player.Broadcast(broadcastMessage.Content, broadcastMessage.Duration, broadcastMessage.ClearPrevious);
+                    player.SendBroadcast(broadcastMessage.Content, broadcastMessage.Duration, broadcastMessage.ClearPrevious);
                 else
                     throw new InvalidOperationException($"Unknown IMessage type: {message.GetType().FullName}");
             }

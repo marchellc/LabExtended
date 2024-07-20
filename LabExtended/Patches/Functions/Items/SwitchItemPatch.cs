@@ -5,8 +5,10 @@ using InventorySystem.Items;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
+
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Functions.Items

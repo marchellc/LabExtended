@@ -6,7 +6,9 @@ using LabExtended.API.RemoteAdmin.Enums;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
+
 using NorthwoodLib.Pools;
+
 using RemoteAdmin;
 using RemoteAdmin.Communication;
 
@@ -28,7 +30,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (array.Length != 2 || !int.TryParse(array[0], out var result))
                 {
-                    player.RemoteAdmin.SendHelp();
+                    player.RemoteAdmin.SendObjectHelp();
 
                     ExLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
                     return false;
@@ -42,7 +44,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (!array[1].TrySplit('.', true, null, out var args))
                 {
-                    player.RemoteAdmin.SendHelp();
+                    player.RemoteAdmin.SendObjectHelp();
 
                     ExLoader.Debug("Remote Admin API", $"Failed to split {array[1]}");
                     return false;

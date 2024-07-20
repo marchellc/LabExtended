@@ -63,7 +63,7 @@ namespace LabExtended.API.RemoteAdmin.Buttons
             foreach (var obj in objects)
                 builder.AppendLine(obj.GetResponse(player, players, _type));
 
-            player.RemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
+            player.SendRemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
             return false;
         }
 

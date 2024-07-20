@@ -106,7 +106,7 @@ namespace LabExtended.Commands
                 else
                 {
                     var collection = new ArgumentCollection();
-                    var context = new CommandContext(arg, arguments.Array, collection, player);
+                    var context = new CommandContext(arg, arguments.Array, collection, this, player);
 
                     if (!CommandParser.TryParseDefaultArgs(arg, this, collection, out var failedArg, out var failedReason))
                     {
@@ -243,7 +243,7 @@ namespace LabExtended.Commands
             }
             catch (Exception ex)
             {
-                player.RemoteAdminMessage($"Command execution failed: {ex}", false);
+                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
             }
 
             if (ctx.Response is ContinuedResponse continuedResponse)
@@ -251,7 +251,7 @@ namespace LabExtended.Commands
             else
                 _continuedContexts.Remove(player.NetId);
 
-            player.RemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess);
+            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
             return false;
         }
 
@@ -271,7 +271,7 @@ namespace LabExtended.Commands
             }
             catch (Exception ex)
             {
-                player.RemoteAdminMessage($"Command execution failed: {ex}", false);
+                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
             }
 
             if (ctx.Response is ContinuedResponse continuedResponse)
@@ -279,7 +279,7 @@ namespace LabExtended.Commands
             else
                 _continuedContexts.Remove(player.NetId);
 
-            player.RemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess);
+            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
             return false;
         }
 
@@ -299,7 +299,7 @@ namespace LabExtended.Commands
             }
             catch (Exception ex)
             {
-                player.RemoteAdminMessage($"Command execution failed: {ex}", false);
+                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
             }
 
             if (ctx.Response is ContinuedResponse continuedResponse)
@@ -307,7 +307,7 @@ namespace LabExtended.Commands
             else
                 _continuedContexts.Remove(player.NetId);
 
-            player.RemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess);
+            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
             return false;
         }
     }

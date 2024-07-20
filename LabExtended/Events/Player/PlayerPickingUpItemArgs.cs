@@ -4,7 +4,7 @@ using InventorySystem.Searching;
 using LabExtended.API;
 using LabExtended.Core.Events;
 
-namespace LabExtended.Events
+namespace LabExtended.Events.Player
 {
     /// <summary>
     /// Gets called when a player finishes picking up an item.

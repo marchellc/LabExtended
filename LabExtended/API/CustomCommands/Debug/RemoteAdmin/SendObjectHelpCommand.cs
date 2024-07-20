@@ -16,7 +16,7 @@ namespace LabExtended.API.CustomCommands.Debug.RemoteAdmin
         {
             base.OnCommand(sender, ctx, args);
 
-            Timing.CallDelayed(3f, () => sender.RemoteAdmin.SendHelp());
+            Timing.CallDelayed(3f, () => sender.RemoteAdmin.SendObjectHelp());
             ctx.RespondOk("Help sent");
         }
     }

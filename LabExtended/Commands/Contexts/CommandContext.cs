@@ -14,18 +14,20 @@ namespace LabExtended.Commands.Contexts
         public string[] RawArgs { get; }
 
         public ArgumentCollection Args { get; }
+        public CustomCommand Command { get; }
         public ExPlayer Sender { get; }
 
         public bool IsHost { get; }
 
         public ICommandResponse Response { get; private set; }
 
-        public CommandContext(string arg, string[] args, ArgumentCollection collection, ExPlayer sender)
+        public CommandContext(string arg, string[] args, ArgumentCollection collection, CustomCommand cmd, ExPlayer sender)
         {
             RawInput = arg;
             RawArgs = args;
 
             Args = collection;
+            Command = cmd;
 
             Sender = sender;
             IsHost = sender.IsServer;

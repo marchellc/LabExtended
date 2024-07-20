@@ -37,10 +37,14 @@ namespace LabExtended.API.Hints
         private int _idClock = 0;
 
         internal string _globalText;
+        internal bool _paused;
 
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
         public int LeftOffset => _leftOffset;
+
+        public global::Hints.HintMessage TextMessage => new global::Hints.HintMessage(_textHint);
+        public global::Hints.HintMessage EmptyMessage => new global::Hints.HintMessage(_emptyHint);
 
         public override void OnStarted()
         {
@@ -209,6 +213,9 @@ namespace LabExtended.API.Hints
 
         internal void InternalTick()
         {
+            if (_paused)
+                return;
+
             _temporaryElement.CheckDuration();
 
             if (!_temporaryElement.IsActive && _temporaryQueue.TryDequeue(out var nextMessage))
@@ -218,7 +225,7 @@ namespace LabExtended.API.Hints
             {
                 if (!_clearedAfterEmpty)
                 {
-                    CastParent.Connection.Send(new global::Hints.HintMessage(_emptyHint));
+                    CastParent.Connection.Send(EmptyMessage);
                     _clearedAfterEmpty = true;
                 }
 
@@ -246,7 +253,7 @@ namespace LabExtended.API.Hints
 
             _clearedAfterEmpty = false;
 
-            CastParent.Connection.Send(new global::Hints.HintMessage(_textHint));
+            CastParent.Connection.Send(TextMessage);
         }
 
         internal string InternalBuildString()

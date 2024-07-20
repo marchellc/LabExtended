@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-
+using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Contexts;
 
@@ -13,7 +13,7 @@ namespace LabExtended.Core.Commands.Interfaces
         string[] RawArgs { get; }
 
         ArgumentCollection Args { get; }
-
+        CustomCommand Command { get; }
         ExPlayer Sender { get; }
 
         bool IsHost { get; }

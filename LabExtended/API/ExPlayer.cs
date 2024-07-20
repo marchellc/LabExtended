@@ -53,6 +53,7 @@ using PluginAPI.Events;
 
 using RelativePositioning;
 using RemoteAdmin;
+using RemoteAdmin.Communication;
 using UnityEngine;
 
 using Utils;
@@ -73,7 +74,6 @@ namespace LabExtended.API
             _allPlayers = new List<ExPlayer>();
 
             _hostPlayer = null;
-            _localPlayer = null;
 
             TickManager.SubscribeTick(UpdateSentRoles, TickTimer.None, "Player Role Sync");
             TickManager.Init();
@@ -83,7 +83,6 @@ namespace LabExtended.API
         internal static readonly List<ExPlayer> _npcPlayers;
         internal static readonly List<ExPlayer> _allPlayers;
 
-        internal static ExPlayer _localPlayer;
         internal static ExPlayer _hostPlayer;
 
         /// <summary>
@@ -119,30 +118,10 @@ namespace LabExtended.API
                         throw new Exception($"Failed to fetch the host ReferenceHub.");
 
                     _hostPlayer = new ExPlayer(hostHub);
-                    _players.Add(_hostPlayer);
+                    _allPlayers.Add(_hostPlayer);
                 }
 
                 return _hostPlayer;
-            }
-        }
-
-        /// <summary>
-        /// Gets the local player.
-        /// </summary>
-        public static ExPlayer Local
-        {
-            get
-            {
-                if (_localPlayer is null)
-                {
-                    if (!ReferenceHub.TryGetLocalHub(out var localHub))
-                        throw new Exception($"Failed to fetch the local ReferenceHub.");
-
-                    _localPlayer = new ExPlayer(localHub);
-                    _players.Add(_localPlayer);
-                }
-
-                return _localPlayer;
             }
         }
 
@@ -152,7 +131,7 @@ namespace LabExtended.API
         /// <param name="hub">The <see cref="ReferenceHub"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(ReferenceHub hub)
-            => _players.FirstOrDefault(p => p._hub != null && p._hub == hub);
+            => _allPlayers.FirstOrDefault(p => p._hub != null && p._hub == hub);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="PluginAPI.Core.Player"/>.
@@ -168,7 +147,7 @@ namespace LabExtended.API
         /// <param name="gameObject">The <see cref="UnityEngine.GameObject"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(GameObject gameObject)
-            => _players.FirstOrDefault(p => p.GameObject != null && p.GameObject == gameObject);
+            => _allPlayers.FirstOrDefault(p => p.GameObject != null && p.GameObject == gameObject);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="Collider"/>.
@@ -184,7 +163,7 @@ namespace LabExtended.API
         /// <param name="connection">The <see cref="NetworkConnection"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(NetworkConnection connection)
-            => _players.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
+            => _allPlayers.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="NetworkIdentity"/>.
@@ -240,7 +219,7 @@ namespace LabExtended.API
         /// <param name="playerId">The player ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(int playerId)
-            => _players.FirstOrDefault(p => p.PlayerId == playerId);
+            => _allPlayers.FirstOrDefault(p => p.PlayerId == playerId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a network ID.
@@ -248,7 +227,7 @@ namespace LabExtended.API
         /// <param name="networkId">The network ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(uint networkId)
-            => _players.FirstOrDefault(p => p.NetId == networkId);
+            => _allPlayers.FirstOrDefault(p => p.NetId == networkId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a connection ID.
@@ -256,7 +235,7 @@ namespace LabExtended.API
         /// <param name="connectionId">The connection ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByConnectionId(int connectionId)
-            => _players.FirstOrDefault(p => p.ConnectionId == connectionId);
+            => _allPlayers.FirstOrDefault(p => p.ConnectionId == connectionId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a user ID.
@@ -264,7 +243,7 @@ namespace LabExtended.API
         /// <param name="userId">The user ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByUserId(string userId)
-            => _players.FirstOrDefault(p => p.UserId == userId || p.ClearUserId == userId);
+            => _allPlayers.FirstOrDefault(p => p.UserId == userId || p.ClearUserId == userId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a user ID, player ID, network ID, IP or name.
@@ -274,7 +253,7 @@ namespace LabExtended.API
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(string nameOrId, double minNameScore = 0.85)
         {
-            foreach (var player in _players)
+            foreach (var player in _allPlayers)
             {
                 if (player.IsNpc || player.IsServer)
                     continue;
@@ -895,10 +874,13 @@ namespace LabExtended.API
         public void ClearBroadcasts()
             => global::Broadcast.Singleton?.TargetClearElements(Connection);
 
-        public void Hint(object content, ushort duration, bool isPriority = false)
+        public void ClearHints()
+            => Connection.Send(Hints.EmptyMessage);
+
+        public void SendHint(object content, ushort duration, bool isPriority = false)
             => Hints.Show(content.ToString(), duration, isPriority);
 
-        public void Broadcast(object content, ushort duration, bool clearPrevious = true, global::Broadcast.BroadcastFlags broadcastFlags = global::Broadcast.BroadcastFlags.Normal)
+        public void SendBroadcast(object content, ushort duration, bool clearPrevious = true, global::Broadcast.BroadcastFlags broadcastFlags = global::Broadcast.BroadcastFlags.Normal)
         {
             if (clearPrevious)
                 global::Broadcast.Singleton?.TargetClearElements(Connection);
@@ -906,19 +888,28 @@ namespace LabExtended.API
             global::Broadcast.Singleton?.TargetAddElement(Connection, content.ToString(), duration, broadcastFlags);
         }
 
-        public void ConsoleMessage(object content, string color = "red")
+        public void SendConsoleMessage(object content, string color = "red")
             => _hub.gameConsoleTransmission.SendToClient(content.ToString(), color);
 
-        public void RemoteAdminInfo(object content)
-            => RemoteAdminMessage($"$1 {content}", true, false);
+        public void SendRemoteAdminInfo(object content)
+            => SendRemoteAdminMessage($"$1 {content}", true, false);
 
-        public void RemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
+        public void SendRemoteAdminQR(string data, bool isBig = false)
+            => SendRemoteAdminMessage($"$2 {(isBig ? 1 : 0)} {data}");
+
+        public void SendRemoteAdminClipboard(string data, RaClipboard.RaClipBoardType type = RaClipboard.RaClipBoardType.UserId)
+            => SendRemoteAdminMessage($"$6 {(int)type} {data}");
+
+        public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
         {
             if (!HasRemoteAdminAccess)
                 return;
 
             _hub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
         }
+
+        public void SendKeyBind(string command, KeyCode key)
+            => _hub.characterClassManager.TargetChangeCmdBinding(key, command);
         #endregion
 
         #region Positional Methods

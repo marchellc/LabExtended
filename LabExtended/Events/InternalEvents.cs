@@ -30,22 +30,11 @@ namespace LabExtended.Events
 
         internal static void InternalHandleRoundWaiting()
         {
-            if (ExPlayer._localPlayer != null)
-            {
-                ExPlayer._localPlayer.StopModule();
-                ExPlayer._localPlayer = null;
-            }
-
             if (ExPlayer._hostPlayer != null)
             {
                 ExPlayer._hostPlayer.StopModule();
                 ExPlayer._hostPlayer = null;
             }
-
-            if (ReferenceHub.TryGetLocalHub(out var localHub))
-                ExPlayer._localPlayer = new ExPlayer(localHub);
-            else
-                ExLoader.Warn("Player API", $"Failed to fetch the local player.");
 
             if (ReferenceHub.TryGetHostHub(out var hostHub))
                 ExPlayer._hostPlayer = new ExPlayer(hostHub);

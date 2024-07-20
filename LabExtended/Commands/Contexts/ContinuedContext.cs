@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Contexts
 {
     public class ContinuedContext : CommandContext
     {
-        public ContinuedContext(ContinuedResponse prevResponse, ICommandContext ctx, string arg, string[] args) : base(arg, args, ctx.Args, ctx.Sender)
+        public ContinuedContext(ContinuedResponse prevResponse, ICommandContext ctx, string arg, string[] args) : base(arg, args, ctx.Args, ctx.Command, ctx.Sender)
         {
             PreviousContext = ctx;
             PreviousResponse = prevResponse;

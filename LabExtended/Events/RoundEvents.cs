@@ -1,4 +1,4 @@
-﻿namespace LabExtended.Utilities
+﻿namespace LabExtended.Events
 {
     /// <summary>
     /// A class used for round event delegates. These delegates get called before any other event handlers.
