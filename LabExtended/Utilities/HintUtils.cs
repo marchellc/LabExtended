@@ -90,7 +90,7 @@ namespace LabExtended.Utilities
             return 0.06f * (pixelSize - 1f);
         }
 
-        internal static void GetMessages(float vOffset, string content, LockedHashSet<HintData> messages)
+        internal static void GetMessages(string content, LockedHashSet<HintData> messages, float vOffset, bool autoLineWrap)
         {
             var matches = NewLineRegex.Matches(content);
             int clock = 0;
@@ -135,8 +135,6 @@ namespace LabExtended.Utilities
                     line = tagEnded ? "" : $"<size={pixelSize}>";
                     avgCharWidth = AvgCharWidth(pixelSize);
                     lineUsage = 0f;
-
-                    continue;
                 }
                 else if (text.StartsWith("<"))
                 {
@@ -144,13 +142,11 @@ namespace LabExtended.Utilities
                     if (TryGetSizeTag(text, out _, out pixelSize, out tagEnded)) {
                         avgCharWidth = AvgCharWidth(pixelSize);
                     }
-                    continue;
                 }
-                else if (lineUsage + text.Length * avgCharWidth <= 100f)
+                else if (!autoLineWrap || (lineUsage + text.Length * avgCharWidth <= 100f))
                 {
                     line += text;
                     lineUsage += text.Length * avgCharWidth;
-                    continue;
                 }
                 else
                 {
