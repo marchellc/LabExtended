@@ -86,15 +86,21 @@ namespace LabExtended.Utilities
             return false;
         }
 
-        internal static void GetMessages(float vOffset, int charsPerLine, string content, LockedHashSet<HintData> messages)
+        public static float AvgCharWidth(int pixelSize) {
+            return 0.06f * (pixelSize - 1f);
+        }
+
+        internal static void GetMessages(string content, LockedHashSet<HintData> messages, float vOffset, bool autoLineWrap)
         {
             var matches = NewLineRegex.Matches(content);
-            var line = "";
-            var biggestPixelSize = PixelsPerEm;
-            var pixelSize = PixelsPerEm;
-            var lineLength = 0;
-            var tagEnded = true;
-            var clock = 0;
+            int clock = 0;
+            string line = "";
+            int biggestPixelSize;
+
+            int pixelSize = PixelsPerEm;
+            float avgCharWidth = AvgCharWidth(pixelSize);
+            float lineUsage = 0f;
+            bool tagEnded = true;
 
             if (HintModule.ShowDebug)
                 ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset}");
@@ -116,7 +122,7 @@ namespace LabExtended.Utilities
                     if (HintModule.ShowDebug)
                         ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset} size={pixelSize}");
 
-                    if (!messages.IsEmpty())
+                    if (messages.Count > 0)
                     {
                         vOffset -= biggestPixelSize / (float)PixelsPerEm;
                     }
@@ -126,70 +132,59 @@ namespace LabExtended.Utilities
                     if (HintModule.ShowDebug)
                         ExLoader.Debug("Hint API - GetMessages()", $"[TEXT == NEW LINE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
 
-                    if (!tagEnded)
-                    {
-                        line = $"<size={pixelSize}>";
-                        lineLength = 0;
-                    }
-                    else
-                    {
-                        line = "";
-                        lineLength = 0;
-                    }
-
-                    continue;
+                    line = tagEnded ? "" : $"<size={pixelSize}>";
+                    avgCharWidth = AvgCharWidth(pixelSize);
+                    lineUsage = 0f;
                 }
                 else if (text.StartsWith("<"))
                 {
                     line += text;
-                    continue;
+                    if (TryGetSizeTag(text, out _, out pixelSize, out tagEnded)) {
+                        avgCharWidth = AvgCharWidth(pixelSize);
+                    }
                 }
-                else if (lineLength + text.Length <= charsPerLine && charsPerLine > 0)
+                else if (!autoLineWrap || (lineUsage + text.Length * avgCharWidth <= 100f))
                 {
                     line += text;
-                    lineLength += text.Length;
-                    continue;
+                    lineUsage += text.Length * avgCharWidth;
                 }
                 else
                 {
                     line = line.Trim();
+                    if (lineUsage > 0f) {
+                        ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
-                    ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
+                        if (messages.Count > 0)
+                            vOffset -= biggestPixelSize / (float)PixelsPerEm;
 
-                    if (!messages.IsEmpty())
-                        vOffset -= biggestPixelSize / (float)PixelsPerEm;
+                        messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
-                    messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
-
-                    if (HintModule.ShowDebug)
-                        ExLoader.Debug("Hint API - GetMessages()", $"[ELSE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
-
-                    if (charsPerLine > 0)
-                    {
-                        while (text.Length > charsPerLine)
-                        {
-                            var line2 = text.Substring(0, charsPerLine);
-
-                            ManageSize(ref line2, out biggestPixelSize, out pixelSize, out tagEnded);
-
-                            if (!messages.IsEmpty())
-                                vOffset -= biggestPixelSize / (float)PixelsPerEm;
-
-                            messages.Add(new HintData(line2, biggestPixelSize, vOffset, ++clock));
-
-
-                            if (HintModule.ShowDebug)
-                                ExLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
-
-                            text = text.Substring(charsPerLine);
-                        }
-
-                        line = text;
-                        lineLength = text.Length;
-
-                        if (!tagEnded)
-                            line = $"<size={pixelSize}>{line}";
+                        if (HintModule.ShowDebug)
+                            ExLoader.Debug("Hint API - GetMessages()", $"[ELSE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
                     }
+
+                    while (text.Length * avgCharWidth > 100f)
+                    {
+                        int cutIndex = (int)(100f / avgCharWidth);
+                        line = tagEnded ? "" : $"<size={pixelSize}>";
+                        line += text.Substring(0, cutIndex);
+
+                        ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
+
+                        if (messages.Count > 0)
+                            vOffset -= biggestPixelSize / (float)PixelsPerEm;
+
+                        messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
+
+
+                        if (HintModule.ShowDebug)
+                            ExLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
+
+                        text = text.Substring(cutIndex);
+                    }
+
+                    lineUsage = text.Length * avgCharWidth;
+                    line = tagEnded ? text : $"<size={pixelSize}>{text}";
                 }
             }
 
@@ -198,9 +193,9 @@ namespace LabExtended.Utilities
 
             if (!string.IsNullOrWhiteSpace(line))
             {
-                ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
+                ManageSize(ref line, out biggestPixelSize, out _, out _);
 
-                if (!messages.IsEmpty())
+                if (messages.Count > 0)
                     vOffset -= biggestPixelSize / (float)PixelsPerEm;
 
                 messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
