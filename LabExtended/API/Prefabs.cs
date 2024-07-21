@@ -220,6 +220,7 @@ namespace LabExtended.API
             _prefabNames[PrefabType.Scp268Pedestal] = "Scp268PedestalStructure Variant";
             _prefabNames[PrefabType.Scp500Pedestal] = "Scp500PedestalStructure Variant";
             _prefabNames[PrefabType.Scp1576Pedestal] = "Scp1576PedestalStructure Variant";
+            _prefabNames[PrefabType.AntiScp207Pedestal] = "AntiScp207PedestalStructure Variant";
             _prefabNames[PrefabType.AmnesticCloud] = "Amnestic Cloud Hazard";
             _prefabNames[PrefabType.WorkStation] = "Spawnable Work Station Structure";
             _prefabNames[PrefabType.Tantrum] = "TantrumObj";

@@ -81,6 +81,7 @@
         Scp268Pedestal,
         Scp500Pedestal,
         Scp1576Pedestal,
+        AntiScp207Pedestal,
 
         Generator,
         LargeGunLocker,
