@@ -71,7 +71,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the loader's server version compatibility.
         /// </summary>
-        public readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 0));
+        public readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 1));
 
         /// <summary>
         /// Loads the plugin.

@@ -9,8 +9,6 @@ namespace LabExtended.Commands
 
         public virtual string[] Aliases { get; } = Array.Empty<string>();
 
-        public virtual bool SanitizeResponse => false;
-
         public abstract bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response);
     }
 }

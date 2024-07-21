@@ -38,8 +38,6 @@ namespace LabExtended.Commands
         public virtual string[] Aliases { get; } = Array.Empty<string>();
         public virtual string[] Usage => _usage;
 
-        public virtual bool SanitizeResponse => false;
-
         public virtual ArgumentDefinition[] Arguments => _customArgs;
 
         public virtual ICommandResponse CheckPreconditions(ExPlayer sender)
