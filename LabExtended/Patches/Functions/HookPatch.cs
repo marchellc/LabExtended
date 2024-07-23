@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-
+using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Extensions;
@@ -40,6 +40,7 @@ namespace LabExtended.Patches.Functions
         /// <summary>
         /// Enables the hooking patch.
         /// </summary>
+        [OnLoad]
         public static void Enable()
         {
             try

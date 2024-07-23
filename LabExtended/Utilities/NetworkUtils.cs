@@ -1,5 +1,7 @@
 ﻿using LabExtended.API;
 using LabExtended.API.Collections.Locked;
+
+using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using Mirror;
@@ -22,6 +24,7 @@ namespace LabExtended.Utilities
         public static Action<NetworkBehaviour, ulong> SetSyncVarDirtyBit { get; } = (behaviour, syncVar) => behaviour.SetSyncVarDirtyBit(syncVar);
 
         #region Loading
+        [OnLoad]
         internal static void LoadMirror()
         {
             LoadSyncVars();

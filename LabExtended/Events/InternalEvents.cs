@@ -63,9 +63,15 @@ namespace LabExtended.Events
 
         internal static void InternalHandleRoundRestart()
         {
-            NpcHandler.DestroyNpcs();
-
             TickManager.PauseTick("Tesla Gate Update");
+
+            try
+            {
+                ExTeslaGate._wrappers.Clear();
+            }
+            catch { }
+
+            NpcHandler.DestroyNpcs();
 
             ExRound.State = RoundState.Restarting;
         }

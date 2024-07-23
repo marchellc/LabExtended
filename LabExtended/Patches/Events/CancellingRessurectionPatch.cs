@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.Attributes;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
@@ -24,6 +25,7 @@ namespace LabExtended.Patches.Events
 
         public static Harmony Harmony => ExLoader.Loader.Harmony;
 
+        [OnLoad]
         public static void Enable()
             => Harmony.Patch(TargetMethod, new HarmonyMethod(ReplacementMethod));
 

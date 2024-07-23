@@ -2,7 +2,7 @@ using HarmonyLib;
 
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
-
+using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
@@ -103,12 +103,18 @@ namespace LabExtended.Core
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
                 Harmony.PatchAll();
 
-                NetworkUtils.LoadMirror();
+                foreach (var type in typeof(ExLoader).Assembly.GetTypes())
+                {
+                    foreach (var method in type.GetAllMethods())
+                    {
+                        if (!method.IsStatic || !method.HasAttribute<OnLoadAttribute>())
+                            continue;
 
-                HookPatch.Enable();
+                        try { method.Invoke(null, null); } catch { }
+                    }
+                }
+
                 HookManager.RegisterAll();
-
-                CancellingRessurectionPatch.Enable();
 
                 StartModule();
 
@@ -129,6 +135,14 @@ namespace LabExtended.Core
 
                     foreach (var type in pluginType.Assembly.GetTypes())
                     {
+                        foreach (var method in type.GetAllMethods())
+                        {
+                            if (!method.IsStatic || !method.HasAttribute<OnLoadAttribute>())
+                                continue;
+
+                            try { method.Invoke(null, null); } catch { }
+                        }
+
                         if (type == pluginType)
                             continue;
 
