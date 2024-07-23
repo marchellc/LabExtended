@@ -1,22 +1,35 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
+
 using LabExtended.Events.Scp049;
+using LabExtended.Extensions;
 
 using Mirror;
 
 using PlayerRoles.PlayableScps.Scp049;
 using PlayerRoles.Ragdolls;
 
+using System.Reflection;
+
 namespace LabExtended.Patches.Events
 {
-    [HarmonyPatch(typeof(Scp049ResurrectAbility), nameof(Scp049ResurrectAbility.ServerProcessCmd))]
     public static class CancellingRessurectionPatch
     {
-        public static bool Prefix(Scp049ResurrectAbility __instance, NetworkReader reader)
+        public static readonly MethodInfo ReplacementMethod = typeof(CancellingRessurectionPatch).FindMethod("Prefix");
+        public static readonly MethodInfo TargetMethod = typeof(RagdollAbilityBase<>).MakeGenericType(typeof(Scp049Role)).FindMethod("ServerProcessCmd");
+
+        public static Harmony Harmony => ExLoader.Loader.Harmony;
+
+        public static void Enable()
+            => Harmony.Patch(TargetMethod, new HarmonyMethod(ReplacementMethod));
+
+        private static bool Prefix(RagdollAbilityBase<Scp049Role> __instance, NetworkReader reader)
         {
-            if (__instance is null)
+            if (__instance is null || __instance is not Scp049ResurrectAbility)
                 return true;
 
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))

@@ -7,6 +7,7 @@ using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
 using LabExtended.Extensions;
+using LabExtended.Patches.Events;
 using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
@@ -106,6 +107,8 @@ namespace LabExtended.Core
 
                 HookPatch.Enable();
                 HookManager.RegisterAll();
+
+                CancellingRessurectionPatch.Enable();
 
                 StartModule();
 
