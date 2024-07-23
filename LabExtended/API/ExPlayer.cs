@@ -205,7 +205,7 @@ namespace LabExtended.API
         /// <param name="footprint">The <see cref="Footprinting.Footprint"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(Footprint footprint)
-            => Get(footprint.Hub);
+            => footprint.IsSet ? Get(footprint.Hub) : null;
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance from a <see cref="ICommandSender"/>.

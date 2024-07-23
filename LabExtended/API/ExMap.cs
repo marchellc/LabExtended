@@ -1,8 +1,8 @@
 ﻿using InventorySystem.Items.Pickups;
 
 using LabExtended.Core;
-using LabExtended.Core.Profiling;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 using MapGeneration.Distributors;
 
@@ -26,9 +26,7 @@ namespace LabExtended.API
             {
                 if (!_pickupEventsRegistered)
                 {
-                    ItemPickupBase.OnPickupAdded += _pickups.Add;
-                    ItemPickupBase.OnPickupDestroyed += pickup => _pickups.Remove(pickup);
-
+                    ItemPickupBase.OnPickupAdded += OnPickupAdded;
                     _pickupEventsRegistered = true;
                 }
 
@@ -56,6 +54,20 @@ namespace LabExtended.API
             {
                 ExLoader.Error("Extended API", $"Map generation failed!\n{ex.ToColoredString()}");
             }
+        }
+
+        private static void OnPickupAdded(ItemPickupBase pickup)
+        {
+            if (pickup is null)
+                return;
+
+            _pickups.Add(pickup);
+
+            NetworkDestroy.Subscribe(pickup.netId, id =>
+            {
+                ExLoader.Debug("Map API", $"Pickup identity destroyed: {id.netId} ({pickup.netId})");
+                _pickups.RemoveAll(p => p.netId == id.netId);
+            });
         }
     }
 }

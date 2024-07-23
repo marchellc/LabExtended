@@ -45,6 +45,7 @@ namespace LabExtended.Events
             GhostModePatch.GhostedTo.Clear();
 
             ExRound.RoundNumber++;
+            ExRound.IsScp079Recontained = false;
             ExRound.StartedAt = DateTime.MinValue;
             ExRound.State = RoundState.WaitingForPlayers;
 

@@ -68,6 +68,11 @@ namespace LabExtended.API
         public static bool IsWaitingForPlayers => State is RoundState.WaitingForPlayers;
 
         /// <summary>
+        /// Gets a value indicating whether or not SCP-079 was recontained.
+        /// </summary>
+        public static bool IsScp079Recontained { get; internal set; }
+
+        /// <summary>
         /// Gets the date of this round's start.
         /// </summary>
         public static DateTime StartedAt { get; internal set; }
