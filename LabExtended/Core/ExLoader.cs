@@ -7,8 +7,6 @@ using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
 using LabExtended.Extensions;
-using LabExtended.Patches.Events;
-using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
@@ -103,16 +101,7 @@ namespace LabExtended.Core
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
                 Harmony.PatchAll();
 
-                foreach (var type in typeof(ExLoader).Assembly.GetTypes())
-                {
-                    foreach (var method in type.GetAllMethods())
-                    {
-                        if (!method.IsStatic || !method.HasAttribute<OnLoadAttribute>())
-                            continue;
-
-                        try { method.Invoke(null, null); } catch { }
-                    }
-                }
+                typeof(ExLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
 
                 HookManager.RegisterAll();
 
@@ -135,19 +124,15 @@ namespace LabExtended.Core
 
                     foreach (var type in pluginType.Assembly.GetTypes())
                     {
-                        foreach (var method in type.GetAllMethods())
-                        {
-                            if (!method.IsStatic || !method.HasAttribute<OnLoadAttribute>())
-                                continue;
-
-                            try { method.Invoke(null, null); } catch { }
-                        }
+                        type.InvokeStaticMethod(m => m.HasAttribute<OnLoadAttribute>());
 
                         if (type == pluginType)
                             continue;
 
                         HookManager.RegisterAll(type, null);
                     }
+
+                    pluginType.Assembly.InvokeStaticMethods(m => m.HasAttribute<HookCallbackAttribute>());
 
                     Info("Extended Loader", $"Loaded plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r!");
                 }

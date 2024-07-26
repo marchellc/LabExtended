@@ -132,5 +132,22 @@ namespace LabExtended.Extensions
 
             return true;
         }
+
+        public static void InvokeStaticMethod(this Type type, Func<MethodInfo, bool> predicate, params object[] args)
+        {
+            var method = type.FindMethod(predicate);
+
+            if (method is null || !method.IsStatic)
+                return;
+
+            try
+            {
+                method.Invoke(null, args);
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("Extended API", $"Failed to invoke static method &3{method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
+            }
+        }
     }
 }

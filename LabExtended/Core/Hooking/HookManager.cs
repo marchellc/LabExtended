@@ -1,5 +1,4 @@
 using LabExtended.Attributes;
-using LabExtended.Utilities;
 using LabExtended.Extensions;
 using LabExtended.Commands;
 
@@ -269,7 +268,7 @@ namespace LabExtended.Core.Hooking
             if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
                 return;
 
-            if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance) && h.Method == method)))
+            if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance, true) && h.Method == method)))
             {
                 ExLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
                 return;
