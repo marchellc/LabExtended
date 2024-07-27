@@ -2,18 +2,18 @@
 
 namespace LabExtended.API
 {
-    public struct ClientRotation
+    public struct CompressedRotation
     {
         public readonly ushort HorizontalAxis;
         public readonly ushort VerticalAxis;
 
-        public ClientRotation(ushort horizontal, ushort vertical)
+        public CompressedRotation(ushort horizontal, ushort vertical)
         {
             HorizontalAxis = horizontal;
             VerticalAxis = vertical;
         }
 
-        public ClientRotation(Quaternion rotation)
+        public CompressedRotation(Quaternion rotation)
         {
             if (rotation.eulerAngles.z != 0f)
                 rotation = Quaternion.LookRotation(rotation * Vector3.forward, Vector3.up);
@@ -30,7 +30,7 @@ namespace LabExtended.API
             VerticalAxis = (ushort)Mathf.RoundToInt((Mathf.Clamp(outfVertical, -88f, 88f) + 88f) * (65535 / 176f));
         }
 
-        public ClientRotation(Vector3 rotation)
+        public CompressedRotation(Vector3 rotation)
             : this(new Quaternion(rotation.x, rotation.y, rotation.z, 0f)) { }
     }
 }

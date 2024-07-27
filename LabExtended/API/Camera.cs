@@ -2,7 +2,6 @@
 using LabExtended.API.Npcs;
 
 using LabExtended.Core;
-using LabExtended.Utilities;
 
 using MapGeneration;
 
@@ -152,8 +151,8 @@ namespace LabExtended.API
 
         internal static NpcHandler _camNpc;
 
-        internal float? _verticalValue;
-        internal float? _horizontalValue;
+        internal float? _vertical;
+        internal float? _horizontal;
 
         internal static Scp079CameraRotationSync _rotSync;
         internal static Scp079CurrentCameraSync _camSync;
@@ -205,6 +204,8 @@ namespace LabExtended.API
 
         public ushort Id => Base.SyncId;
 
+        public float Zoom => Base.ZoomAxis.CurValue;
+
         public Vector3 Position => Base.CameraPosition;
 
         public FacilityZone Zone => Room?.Zone ?? FacilityZone.None;
@@ -218,16 +219,10 @@ namespace LabExtended.API
             set => Base.IsActive = value;
         }
 
-        public float Zoom
-        {
-            get => Base.ZoomAxis.CurValue;
-            set => SetZoom(value);
-        }
-
         public Quaternion Rotation
         {
             get => Base._cameraAnchor.rotation;
-            set => SetRotation(value.eulerAngles);
+            set => SetRotation(value);
         }
 
         public void LookAt(Transform transform)
@@ -243,76 +238,40 @@ namespace LabExtended.API
             => LookAt(player.Position);
 
         public void LookAt(Vector3 position)
-            => SetRotation(RotationUtils.LookAt(Position - position, Vector3.up));
+            => SetRotation(Quaternion.LookRotation(Position - position, Vector3.up));
 
-        #region Helper Methods
-        private void SetZoom(float zoom)
+        // will figure it out later
+        public void SetRotation(Quaternion rotation)
+        {
+
+        }
+
+        public void SetRotation(float horizontal /* Y */, float vertical /* Z */)
         {
             if (_rotSync != null && _camSync != null)
             {
                 if (_camSync.CurrentCamera is null || _camSync.CurrentCamera != Base)
                 {
-                    ExLoader.Debug("Camera API", $"Setting current camera to {Name} ({Id} - {RoomName})");
+                    _camSync._clientSwitchRequest = Scp079CurrentCameraSync.ClientSwitchState.None;
+                    _camSync._errorCode = Scp079HudTranslation.Zoom;
 
-                    _camSync._auxManager.CurrentAux = _camSync._auxManager.MaxAux;
-                    _camSync.ClientSwitchTo(Base);
-
-                    ExLoader.Debug("Camera API", $"Switch result: error={_camSync._errorCode} req={_camSync._clientSwitchRequest}");
+                    _camSync.CurrentCamera = Base;
                 }
-
-                var prev = Base.ZoomAxis.TargetValue;
 
                 Scp079CursorManager.LockCameras = false;
 
-                Base.IsActive = true;
-                Base.ZoomAxis.TargetValue = zoom;
-
-                Base.Update();
-
-                ExLoader.Debug("Camera API", $"Setting ROTATION to {zoom} (prev: {prev})");
-
-                _rotSync.ServerSendRpc(true);
-            }
-        }
-
-        private void SetRotation(Vector3 value)
-        {
-            if (_rotSync != null && _camSync != null)
-            {
-                if (_camSync.CurrentCamera is null || _camSync.CurrentCamera != Base)
-                {
-                    ExLoader.Debug("Camera API", $"Setting current camera to {Name} ({Id} - {RoomName})");
-
-                    _camSync._auxManager.CurrentAux = _camSync._auxManager.MaxAux;
-                    _camSync.ClientSwitchTo(Base);
-
-                    ExLoader.Debug("Camera API", $"Switch result: error={_camSync._errorCode} req={_camSync._clientSwitchRequest}");
-                }
-
-                var prevH = Base.HorizontalAxis.TargetValue;
-                var prevV = Base.VerticalAxis.TargetValue;
-
-                Scp079CursorManager.LockCameras = false;
+                _horizontal = horizontal;
+                _vertical = vertical;
 
                 Base.IsActive = true;
-
-                Base.HorizontalAxis.TargetValue = value.y;
-                Base.VerticalAxis.TargetValue = value.x;
-
-                _horizontalValue = value.y;
-                _verticalValue = value.x;
-
                 Base.Update();
-
-                ExLoader.Debug("Camera API", $"Setting ROTATION to {value.y}/{value.x} (prev: {prevH}/{prevV})");
 
                 _rotSync.ServerSendRpc(true);
 
-                _horizontalValue = null;
-                _verticalValue = null;
+                _horizontal = null;
+                _vertical = null;
             }
         }
-        #endregion
 
         #region Static Methods
         internal static void OnRestart()

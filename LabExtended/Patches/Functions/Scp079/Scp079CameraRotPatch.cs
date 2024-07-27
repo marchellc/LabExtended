@@ -16,15 +16,15 @@ namespace LabExtended.Patches.Functions
             if (camera is null)
                 return true;
 
-            if (__instance._isVertical && camera._verticalValue.HasValue)
+            if (__instance._isVertical && camera._vertical.HasValue)
             {
-                __instance.TargetValue = camera._verticalValue.Value;
+                __instance.TargetValue = camera._vertical.Value;
                 return false;
             }
 
-            if (!__instance._isVertical && camera._horizontalValue.HasValue)
+            if (!__instance._isVertical && camera._horizontal.HasValue)
             {
-                __instance.TargetValue = camera._horizontalValue.Value;
+                __instance.TargetValue = camera._horizontal.Value;
                 return false;
             }
 
