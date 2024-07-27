@@ -9,7 +9,6 @@ using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
 using LabExtended.Core.Ticking;
-using LabExtended.Utilities;
 
 using MapGeneration;
 
@@ -23,7 +22,7 @@ using UnityEngine;
 namespace LabExtended.API
 {
     /// <summary>
-    /// A wrapper for the <see cref="TeslaGate"/> class.
+    /// A wrapper for the <see cref="ExTeslaGate"/> class.
     /// </summary>
     public class ExTeslaGate :
         Wrapper<TeslaGate>,

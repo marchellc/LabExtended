@@ -503,7 +503,10 @@ namespace LabExtended.API
         public ExPlayer ClosestPlayer => _players.Where(p => p.NetId != NetId).OrderBy(DistanceTo).FirstOrDefault();
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
 
+        public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
+
         public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
+        public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(this));
 
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 

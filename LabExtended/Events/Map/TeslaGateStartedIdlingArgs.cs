@@ -11,9 +11,9 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// Gets the tesla gate that started idling.
         /// </summary>
-        public ExTeslaGate Gate { get; }
+        public API.ExTeslaGate Gate { get; }
 
-        internal TeslaGateStartedIdlingArgs(ExTeslaGate gate)
+        internal TeslaGateStartedIdlingArgs(API.ExTeslaGate gate)
         {
             Gate = gate;
         }

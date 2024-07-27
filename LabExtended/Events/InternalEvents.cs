@@ -67,7 +67,7 @@ namespace LabExtended.Events
 
             try
             {
-                ExTeslaGate._wrappers.Clear();
+                API.ExTeslaGate._wrappers.Clear();
             }
             catch { }
 

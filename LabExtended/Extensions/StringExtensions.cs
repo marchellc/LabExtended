@@ -234,6 +234,26 @@ namespace LabExtended.Extensions
         public static string SubstringPostfix(this string str, int length, string postfix = " ...")
             => str.SubstringPostfix(0, length, postfix);
 
+        public static string GetBefore(this string input, char c)
+        {
+            int start = input.IndexOf(c);
+
+            if (start > 0)
+                input = input.Substring(0, start);
+
+            return input;
+        }
+
+        public static string RemoveBracketsOnEndOfName(this string name)
+        {
+            int bracketStart = name.IndexOf('(') - 1;
+
+            if (bracketStart > 0)
+                name = name.Remove(bracketStart, name.Length - bracketStart);
+
+            return name;
+        }
+
         public static string SnakeCase(this string str)
         {
             if (str is null)
