@@ -650,7 +650,7 @@ namespace LabExtended.API.Npcs
                 }
             }
 
-            ExPlayer._npcPlayers.Add(player);
+            ExPlayer._allPlayers.Add(player);
 
             _spawnedNpcs.Add(npc);
 

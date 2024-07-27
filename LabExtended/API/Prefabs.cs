@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 
+using Hazards;
+
 using Interactables.Interobjects.DoorUtils;
 
 using LabExtended.API.Collections.Locked;
@@ -7,10 +9,14 @@ using LabExtended.API.Enums;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
+
 using MapGeneration;
 
 using Mirror;
 
+using PlayerRoles;
+using PlayerRoles.PlayableScps.Scp173;
+using PlayerRoles.PlayableScps.Scp939;
 using PluginAPI.Core;
 
 using UnityEngine;
@@ -57,6 +63,16 @@ namespace LabExtended.API
         /// Gets the Entrance Zone door prefab.
         /// </summary>
         public static DoorVariant EzDoorPrefab => _prefabDoors[PrefabType.EntranceZoneDoor];
+
+        /// <summary>
+        /// Gets the <see cref="TantrumEnvironmentalHazard"/> prefab.
+        /// </summary>
+        public static TantrumEnvironmentalHazard TantrumPrefab { get; private set; }
+
+        /// <summary>
+        /// Gets the <see cref="Scp939AmnesticCloudInstance"/> prefab.
+        /// </summary>
+        public static Scp939AmnesticCloudInstance AmnesticCloudPrefab { get; private set; }
 
         /// <summary>
         /// Gets a new player instance.
@@ -124,9 +140,19 @@ namespace LabExtended.API
                 SetPrefabNames();
 
             _prefabDoors.Clear();
-            _prefabObjects.Clear();
 
+            _prefabObjects.Clear();
             _prefabObjects[PrefabType.Player] = NetworkManager.singleton.playerPrefab;
+
+            if (RoleTypeId.Scp173.TryGetPrefab<Scp173Role>(out var scp173) && scp173.SubroutineModule.TryGetSubroutine<Scp173TantrumAbility>(out var tantrumAbility))
+                TantrumPrefab = tantrumAbility._tantrumPrefab;
+            else
+                ExLoader.Warn("Prefab API", $"Failed to get the Tantrum prefab");
+
+            if (RoleTypeId.Scp939.TryGetPrefab<Scp939Role>(out var scp939) && scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out var cloudAbility))
+                AmnesticCloudPrefab = cloudAbility._instancePrefab;
+            else
+                ExLoader.Warn("Prefab API", $"Failed to get the Amnestic Cloud prefab");
 
             foreach (var prefab in NetworkClient.prefabs.Values)
             {

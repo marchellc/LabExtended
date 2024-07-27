@@ -16,7 +16,8 @@ namespace LabExtended.API.CustomCommands.Debug.CustomItems
             base.OnCommand(sender, ctx, args);
 
             DebugCustomItem.RegisterItem();
-            API.CustomItems.CustomItem.Give<DebugCustomItem>(sender);
+
+            LabExtended.API.CustomItems.CustomItem.Give<DebugCustomItem>(sender);
 
             ctx.RespondOk("Gave you the custom item.");
         }

@@ -16,7 +16,7 @@ namespace LabExtended.API.CustomCommands.Debug.CustomItems
             base.OnCommand(sender, ctx, args);
 
             DebugCustomItem.RegisterItem();
-            API.CustomItems.CustomItem.Spawn<DebugCustomItem>(sender.Position, sender.Rotation, null, sender);
+            LabExtended.API.CustomItems.CustomItem.Spawn<DebugCustomItem>(sender.Position, sender.Rotation, null, sender);
 
             ctx.RespondOk("Spawned the debug custom item.");
         }

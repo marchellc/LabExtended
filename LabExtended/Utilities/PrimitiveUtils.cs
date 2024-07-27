@@ -49,5 +49,42 @@ namespace LabExtended.Utilities
 
             return primitiveObject;
         }
+
+        public static void FixColor(ref Color color)
+        {
+            var rValue = color.r;
+            var gValue = color.g;
+            var bValue = color.b;
+            var aValue = color.a;
+
+            var changed = false;
+
+            if (rValue > 1f)
+            {
+                rValue = rValue / 255f;
+                changed = true;
+            }
+
+            if (gValue > 1f)
+            {
+                gValue = gValue / 255f;
+                changed = true;
+            }
+
+            if (bValue > 1f)
+            {
+                bValue = bValue / 255f;
+                changed = true;
+            }
+
+            if (aValue > 1f)
+            {
+                aValue = aValue / 255f;
+                changed = true;
+            }
+
+            if (changed)
+                color = new Color(rValue, gValue, bValue, aValue);
+        }
     }
 }

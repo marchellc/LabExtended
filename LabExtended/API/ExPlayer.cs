@@ -5,12 +5,14 @@ using CommandSystem;
 using CustomPlayerEffects;
 
 using Decals;
+
 using Footprinting;
 
 using Interactables.Interobjects.DoorUtils;
 
 using InventorySystem;
 using InventorySystem.Disarming;
+
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Ammo;
@@ -26,11 +28,14 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
+
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
+
 using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
 
@@ -40,7 +45,9 @@ using MapGeneration;
 
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
+
 using NorthwoodLib.Pools;
+
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.PlayableScps;
@@ -52,10 +59,10 @@ using PluginAPI.Core;
 using PluginAPI.Events;
 
 using RelativePositioning;
+
 using RemoteAdmin;
 using RemoteAdmin.Communication;
-using System;
-using System.Collections.Generic;
+
 using UnityEngine;
 
 using Utils;
@@ -74,8 +81,6 @@ namespace LabExtended.API
             _players = new List<ExPlayer>();
             _npcPlayers = new List<ExPlayer>();
             _allPlayers = new List<ExPlayer>();
-
-            _hostPlayer = null;
 
             TickManager.SubscribeTick(UpdateSentRoles, TickTimer.None, "Player Role Sync");
             TickManager.Init();
@@ -120,6 +125,10 @@ namespace LabExtended.API
                         throw new Exception($"Failed to fetch the host ReferenceHub.");
 
                     _hostPlayer = new ExPlayer(hostHub);
+
+                    _hostPlayer.Switches.IsVisibleInRemoteAdmin = false;
+                    _hostPlayer.Switches.IsVisibleInSpectatorList = false;
+
                     _allPlayers.Add(_hostPlayer);
                 }
 
@@ -431,7 +440,7 @@ namespace LabExtended.API
         internal VoiceModule _voice;
         internal HintModule _hints;
 
-        internal readonly LockedDictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+        internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
 
         public ExPlayer(ReferenceHub component) : base()
@@ -442,7 +451,7 @@ namespace LabExtended.API
             _hub = component;
             _forcedIcons = RemoteAdminIconType.None;
 
-            _sentRoles = new LockedDictionary<uint, RoleTypeId>();
+            _sentRoles = new LockedDictionary<int, RoleTypeId>();
             _droppedItems = new LockedHashSet<ItemPickupBase>();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
@@ -704,6 +713,32 @@ namespace LabExtended.API
         {
             get => _hub.nicknameSync.Network_displayName;
             set => _hub.nicknameSync.Network_displayName = value;
+        }
+
+        public string CustomInfo
+        {
+            get => _hub.nicknameSync.Network_customPlayerInfoString;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value) || !ValidateCustomInfo(value))
+                {
+                    _hub.nicknameSync.Network_customPlayerInfoString = string.Empty;
+                    _hub.nicknameSync.Network_playerInfoToShow &= ~PlayerInfoArea.CustomInfo;
+                }
+                else
+                {
+                    if (!_hub.nicknameSync.Network_playerInfoToShow.Any(PlayerInfoArea.CustomInfo))
+                        _hub.nicknameSync.Network_playerInfoToShow |= PlayerInfoArea.CustomInfo;
+
+                    _hub.nicknameSync.Network_customPlayerInfoString = value;
+                }
+            }
+        }
+
+        public PlayerInfoArea InfoToShow
+        {
+            get => _hub.nicknameSync.Network_playerInfoToShow;
+            set => _hub.nicknameSync.Network_playerInfoToShow = value;
         }
 
         public ClientInstanceMode InstanceMode
@@ -1387,15 +1422,62 @@ namespace LabExtended.API
             foreach (var target in _players)
                 NetworkServer.SendSpawnMessage(_hub.netIdentity, target.Connection);
         }
+
+        private static bool ValidateCustomInfo(string customInfo)
+        {
+            if (customInfo.Contains('<'))
+            {
+                foreach (var token in customInfo.Split('<'))
+                {
+                    if (token.StartsWith("/", StringComparison.Ordinal) ||
+                        token.StartsWith("b>", StringComparison.Ordinal) ||
+                        token.StartsWith("i>", StringComparison.Ordinal) ||
+                        token.StartsWith("size=", StringComparison.Ordinal) ||
+                        token.Length is 0)
+                        continue;
+
+                    if (token.StartsWith("color=", StringComparison.Ordinal))
+                    {
+                        if (token.Length < 14 || token[13] != '>')
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(6, 7)))
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                    }
+                    else if (token.StartsWith("#", StringComparison.Ordinal))
+                    {
+                        if (token.Length < 8 || token[7] != '>')
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(0, 7)))
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
         #endregion
 
         #region Internal Methods
         internal RoleTypeId? GetRoleForJoinedPlayer(ExPlayer joinedPlayer)
         {
-            if (joinedPlayer.NetId == NetId)
-                return null;
-
-            if (!joinedPlayer.Role.IsAlive && !Switches.IsVisibleInSpectatorList)
+            if (!Switches.IsVisibleInSpectatorList)
                 return RoleTypeId.Spectator;
 
             return null;
@@ -1410,7 +1492,7 @@ namespace LabExtended.API
                 if (player.Role.Role is IObfuscatedRole obfuscatedRole)
                     curRoleId = obfuscatedRole.GetRoleForUser(player.Hub);
 
-                foreach (var other in _players)
+                foreach (var other in _allPlayers)
                 {
                     if (player.FakeRole.TryGetValue(other, out var fakedRole))
                         curRoleId = fakedRole;
@@ -1418,10 +1500,12 @@ namespace LabExtended.API
                     if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
                         curRoleId = RoleTypeId.Spectator;
 
-                    if (player._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == curRoleId)
+                    if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == curRoleId)
                         continue;
 
-                    player._sentRoles[other.NetId] = curRoleId;
+                    ExLoader.Debug("Player API", $"Sending role &3{curRoleId}&r to &3{other.Name}&r (&6{other.UserId}&r) - target &3{player.Name}&r (&6{player.UserId}&r)");
+
+                    player._sentRoles[other.PlayerId] = curRoleId;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
                 }
             }

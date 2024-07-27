@@ -171,6 +171,9 @@ namespace LabExtended.Events
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)
         {
+            if (args.Player is null || args.Player.IsNpc || args.Player.Voice is null)
+                return;
+
             var profilesToRemove = ListPool<VoiceProfile>.Shared.Rent();
 
             foreach (var profile in args.Player.Voice.Profiles)

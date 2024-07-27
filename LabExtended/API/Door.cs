@@ -48,7 +48,7 @@ namespace LabExtended.API
 
         public bool IsConsideredOpen => Base.IsConsideredOpen();
 
-        public bool IsMoving => (State > 0f && State < 1f || (IsGate && (Base as PryableDoor)._remainingPryCooldown > 0f);
+        public bool IsMoving => (State > 0f && State < 1f || (IsGate && (Base as PryableDoor)._remainingPryCooldown > 0f));
 
         public bool IsGate => Base is PryableDoor;
         public bool IsElevator => Base is ElevatorDoor;

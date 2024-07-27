@@ -7,7 +7,7 @@ using LabExtended.API.Internal;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
-
+using LightContainmentZoneDecontamination;
 using NorthwoodLib.Pools;
 
 using PlayerRoles;
@@ -71,6 +71,11 @@ namespace LabExtended.API
         /// Gets a value indicating whether or not SCP-079 was recontained.
         /// </summary>
         public static bool IsScp079Recontained { get; internal set; }
+
+        /// <summary>
+        /// Gets a value indicating whether or not Light Containmetn Zone has started decontaminating.
+        /// </summary>
+        public static bool IsLczDecontaminated => DecontaminationController.Singleton?.IsDecontaminating ?? false;
 
         /// <summary>
         /// Gets the date of this round's start.
@@ -163,6 +168,29 @@ namespace LabExtended.API
                     ExLoader.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Name ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
                 else
                     ExLoader.Debug("Round API", $"Lobby Lock disabled.");
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the forced decontamination status.
+        /// </summary>
+        public static DecontaminationController.DecontaminationStatus DecontaminationStatus
+        {
+            get => DecontaminationController.Singleton?.NetworkDecontaminationOverride ?? DecontaminationController.DecontaminationStatus.None;
+            set => DecontaminationController.Singleton!.NetworkDecontaminationOverride = value;
+        }
+
+        /// <summary>
+        /// Gets the decontamination phase.
+        /// </summary>
+        public static DecontaminationController.DecontaminationPhase.PhaseFunction DecontaminationPhase
+        {
+            get
+            {
+                if (DecontaminationController.Singleton._nextPhase < 0)
+                    return DecontaminationController.DecontaminationPhase.PhaseFunction.None;
+
+                return DecontaminationController.Singleton.DecontaminationPhases[DecontaminationController.Singleton._nextPhase].Function;
             }
         }
 

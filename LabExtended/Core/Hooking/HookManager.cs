@@ -24,6 +24,7 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
+using LabExtended.API;
 
 namespace LabExtended.Core.Hooking
 {
@@ -52,6 +53,7 @@ namespace LabExtended.Core.Hooking
             [typeof(RoundStartEvent)] = new List<Action<object>>()
             {
                 _ => InternalEvents.InternalHandleRoundStart(),
+                _ => Camera.OnRoundStart(),
                 _ => RoundEvents.InvokeStarted(),
             },
 
@@ -64,6 +66,7 @@ namespace LabExtended.Core.Hooking
             [typeof(RoundRestartEvent)] = new List<Action<object>>()
             {
                 _ => InternalEvents.InternalHandleRoundRestart(),
+                _ => Camera.OnRestart(),
                 _ => RoundEvents.InvokeRestarted()
             },
 

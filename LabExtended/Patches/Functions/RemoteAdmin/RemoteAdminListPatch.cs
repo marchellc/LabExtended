@@ -4,8 +4,11 @@ using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
+
 using LabExtended.Core;
+
 using NorthwoodLib.Pools;
+
 using RemoteAdmin;
 using RemoteAdmin.Communication;
 
@@ -56,9 +59,6 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 var other = ExPlayer.Get(otherHub);
 
                 if (other is null)
-                    continue;
-
-                if (!other.IsNpc && (other.InstanceMode is ClientInstanceMode.DedicatedServer || other.InstanceMode is ClientInstanceMode.Unverified))
                     continue;
 
                 if (!other.Switches.IsVisibleInRemoteAdmin)

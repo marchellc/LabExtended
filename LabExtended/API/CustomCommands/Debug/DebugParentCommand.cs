@@ -5,6 +5,7 @@ using LabExtended.Commands;
 using LabExtended.API.CustomCommands.Debug.CustomItems;
 using LabExtended.API.CustomCommands.Debug.RemoteAdmin;
 using LabExtended.API.CustomCommands.Debug.Hints;
+using LabExtended.API.CustomCommands.Debug.API;
 
 namespace LabExtended.API.CustomCommands.Debug
 {
@@ -30,6 +31,8 @@ namespace LabExtended.API.CustomCommands.Debug
             RegisterCommand(new PrintDebugItemCommand());
             RegisterCommand(new SpawnDebugItemCommand());
             RegisterCommand(new SelectDebugItemCommand());
+
+            RegisterCommand(new CameraLookCommand());
         }
     }
 }
