@@ -31,5 +31,8 @@ namespace LabExtended.API
 
         public void Toggle()
             => Base.ToggleAirlock();
+
+        public void PlayAlarm()
+            => Base.RpcAlarm();
     }
 }

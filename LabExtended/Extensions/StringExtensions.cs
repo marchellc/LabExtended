@@ -6,10 +6,73 @@ namespace LabExtended.Extensions
 {
     public static class StringExtensions
     {
+        public const char LogAnsiColorEscapeChar = (char)27;
+
         public static readonly Regex NewLineRegex = new Regex("r\n|\r|\n", RegexOptions.Compiled);
 
         public static readonly Regex PascalCaseRegex = new Regex("([a-z,0-9](?=[A-Z])|[A-Z](?=[A-Z][a-z]))", RegexOptions.Compiled);
         public static readonly Regex CamelCaseRegex = new Regex("([A-Z])([A-Z]+)($|[A-Z])", RegexOptions.Compiled);
+
+        public static readonly IReadOnlyList<string> LogAnsiColors = new List<string>()
+        {
+            "[30m", // Black - &0
+            "[31m", // Red = &1
+            "[32m", // Green - &2
+            "[33m", // Yellow - &3
+            "[34m", // Blue - &4
+            "[35m", // Purple - &5
+            "[36m", // Cyan - &6
+            "[37m", // White - &7
+
+            "[0m", // Reset - &r
+
+            "[1m", // Bold On - &b
+            "[22m", // Bold Off - &B
+
+            "[3m", // Italic On - &o
+            "[23m", // Italic Off - &O
+
+            "[4m", // Underline On - &n
+            "[24m", // Underline Off - &N
+
+            "[9m", // Strikethrough On - &m
+            "[29m" // Strikethrough Off - &M
+        };
+
+        public static void TrimEnds(this string[] strings, params char[] chars)
+        {
+            for (int i = 0; i < strings.Length; i++)
+                strings[i] = strings[i].TrimEnd(chars);
+        }
+
+        public static void TrimStarts(this string[] strings, params char[] chars)
+        {
+            for (int i = 0; i < strings.Length; i++)
+                strings[i] = strings[i].TrimStart(chars);
+        }
+
+        public static void TrimStrings(this string[] strings)
+        {
+            for (int i = 0; i < strings.Length; i++)
+                strings[i] = strings[i].Trim();
+        }
+
+        public static void TrimStrings(this string[] strings, params char[] chars)
+        {
+            for (int i = 0; i < strings.Length; i++)
+                strings[i] = strings[i].Trim(chars);
+        }
+
+        public static string RemoveLogAnsiColors(this string str, bool removeTags = false)
+        {
+            if (removeTags)
+                str = str.RemoveHtmlTags();
+
+            foreach (var color in LogAnsiColors)
+                str = str.Replace($"{LogAnsiColorEscapeChar}{color}", "");
+
+            return str;
+        }
 
         public static bool TryPeekIndex(this string str, int index, out char value)
         {
@@ -174,6 +237,7 @@ namespace LabExtended.Extensions
                 for (int j = 1; j <= targetWordCount; j++)
                 {
                     var cost = (target[j - 1] == source[i - 1]) ? 0 : 1;
+
                     distance[i, j] = Math.Min(Math.Min(distance[i - 1, j] + 1, distance[i, j - 1] + 1), distance[i - 1, j - 1] + cost);
                 }
             }

@@ -443,7 +443,9 @@ namespace LabExtended.API
         internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
 
-        public ExPlayer(ReferenceHub component) : base()
+        public ExPlayer(ReferenceHub hub) : this(hub, new SwitchContainer()) { }
+
+        public ExPlayer(ReferenceHub component, SwitchContainer switches) : base()
         {
             if (component is null)
                 throw new ArgumentNullException(nameof(component));
@@ -466,7 +468,9 @@ namespace LabExtended.API
 
             Role = new RoleContainer(component.roleManager);
             Stats = new StatsContainer(component.playerStats);
-            Switches = new SwitchContainer();
+            Subroutines = new SubroutineContainer(Role);
+
+            Switches = switches;
         }
 
         /// <summary>
@@ -493,6 +497,7 @@ namespace LabExtended.API
         public RoleContainer Role { get; }
         public StatsContainer Stats { get; }
         public SwitchContainer Switches { get; }
+        public SubroutineContainer Subroutines { get; }
 
         public ReferenceHub Hub => _hub;
         public GameObject GameObject => _hub.gameObject;
@@ -513,9 +518,11 @@ namespace LabExtended.API
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
 
         public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
+        public Camera ClosestCamera => ExMap.GetNearCameras(Position).FirstOrDefault();
 
         public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
         public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(this));
+        public Camera Camera => ExMap.GetCamera(Subroutines.Scp079CurrentCameraSync?.CurrentCamera);
 
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 
@@ -535,7 +542,7 @@ namespace LabExtended.API
         public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
 
         public Transform Transform => _hub.transform;
-        public Transform Camera => _hub.PlayerCameraReference;
+        public Transform CameraTransform => _hub.PlayerCameraReference;
 
         public Vector3 Velocity => _hub.GetVelocity();
 
@@ -1037,7 +1044,7 @@ namespace LabExtended.API
             if (countSpectating && player.IsSpectatedBy(this))
                 return true;
 
-            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, radius, distance);
+            var vision = VisionInformation.GetVisionInformation(Hub, CameraTransform, player.CameraTransform.position, radius, distance);
 
             if (vision.IsInLineOfSight || vision.IsLooking)
                 return true;
@@ -1050,7 +1057,7 @@ namespace LabExtended.API
             if (countSpectating && player.IsSpectatedBy(this))
                 return true;
 
-            var vision = VisionInformation.GetVisionInformation(Hub, Camera, player.Camera.position, radius, distance);
+            var vision = VisionInformation.GetVisionInformation(Hub, CameraTransform, player.CameraTransform.position, radius, distance);
 
             if (vision.IsLooking)
                 return true;
@@ -1251,13 +1258,13 @@ namespace LabExtended.API
             var velocity = Velocity;
             var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 
-            velocity = velocity / 3f + Camera.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
+            velocity = velocity / 3f + CameraTransform.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
 
             velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
             velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
             velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
 
-            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, pickupRigidbody, Camera.position, velocity, angular);
+            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, pickupRigidbody, CameraTransform.position, velocity, angular);
 
             if (!HookRunner.RunCancellable(throwingEv, true))
                 return pickupInstance;
@@ -1324,12 +1331,6 @@ namespace LabExtended.API
         #endregion
 
         #region Network Methods
-        public void PlayGunSound(ItemType gunType, byte volume = 100)
-            => Connection.Send(new GunAudioMessage(Hub, (byte)gunType, volume, Hub));
-
-        public void SpawnGunDecal()
-            => Connection.Send(new GunDecalMessage(Position, Camera.forward, DecalPoolType.Bullet));
-
         public void SendFakeSyncVar(NetworkIdentity behaviorOwner, Type targetType, string propertyName, object value)
         {
             if (!IsOnline)

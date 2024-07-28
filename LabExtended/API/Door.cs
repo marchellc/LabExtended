@@ -311,6 +311,9 @@ namespace LabExtended.API
         public void Destroy(DoorDamageType type = DoorDamageType.ServerCommand)
             => (Base as BreakableDoor)?.ServerDamage(float.MaxValue, type);
 
+        public void PlayDeniedSound(bool setButtons = true)
+            => (Base as BasicDoor)?.RpcPlayBeepSound(setButtons);
+
         public static DoorType GetDoorType(DoorVariant door)
         {
             if (door is null)
