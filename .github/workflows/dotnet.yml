@@ -1,0 +1,44 @@
+name: .NET
+run-name: ${{ github.event.head_commit.message }}
+on:
+  push:
+    branches: [ "main" ]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      LAB_EX_REFERENCES: "/home/runner/work/dependencies"
+      SL_REFERENCES: "/home/runner/work/dependencies"
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Download Dependencies
+      run: wget https://cdn.peanutclub.eu/labextended/dependencies.rar
+    - name: Install RAR
+      run: sudo apt install -y rar
+    - name: Move RAR
+      run: cp dependencies.rar /home/runner/work/
+    - name: Delete RAR
+      run: rm dependencies.rar
+    - name: Extract dependencies
+      run: cd /home/runner/work/ && rar x dependencies.rar
+    - name: CD back
+      run: cd /home/runner/work/LabExtended
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore --property WarningLevel=0
+    - name: Create artifacts
+      run: mkdir /home/runner/work/artifacts/ && cp ./LabExtended/bin/Release/net48/LabExtended.dll /home/runner/work/artifacts
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4.3.4
+      with:
+        name: LabExtended.dll
+        path: /home/runner/work/artifacts
+        overwrite: true
