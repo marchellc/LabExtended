@@ -96,7 +96,7 @@ namespace LabExtended.API.Npcs.Navigation
                 if (!AllowInteractions)
                     return;
 
-                if (Physics.Raycast(new Ray(Npc.Player.Camera.position, Npc.Player.Transform.forward), out var hit, 300f, InteractionMask))
+                if (Physics.Raycast(new Ray(Npc.Player.CameraTransform.position, Npc.Player.CameraTransform.forward), out var hit, 300f, InteractionMask))
                 {
                     if (!hit.collider.TryGetComponent<InteractableCollider>(out var interactableCollider))
                         return;

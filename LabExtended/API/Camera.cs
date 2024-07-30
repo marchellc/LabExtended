@@ -195,7 +195,10 @@ namespace LabExtended.API
         }
 
         public GameObject GameObject => Base.gameObject;
+
         public Transform Transform => Base.transform;
+        public Transform Anchor => Base._cameraAnchor;
+        public Transform Pivot => Base.HorizontalAxis._pivot;
 
         public RoomIdentifier Room => Base.Room;
         public ExPlayer User => ExPlayer.Players.FirstOrDefault(x => x.Role.Is<Scp079Role>(out var scp) && scp.CurrentCamera != null && scp.CurrentCamera == Base);
@@ -206,7 +209,7 @@ namespace LabExtended.API
 
         public float Zoom => Base.ZoomAxis.CurValue;
 
-        public Vector3 Position => Base.CameraPosition;
+        public Vector3 Position => Base._cameraAnchor.position;
 
         public FacilityZone Zone => Room?.Zone ?? FacilityZone.None;
         public RoomName RoomName => Room?.Name ?? RoomName.Unnamed;
@@ -285,8 +288,8 @@ namespace LabExtended.API
             {
                 _camNpc = npc;
 
-                _rotSync = npc.Player.Role.GetRoutine<Scp079CameraRotationSync>();
-                _camSync = npc.Player.Role.GetRoutine<Scp079CurrentCameraSync>();
+                _rotSync = npc.Player.Subroutines.Scp079CameraRotationSync;
+                _camSync = npc.Player.Subroutines.Scp079CurrentCameraSync;
 
                 npc.Player.Switches.IsVisibleInRemoteAdmin = false;
                 npc.Player.Switches.IsVisibleInSpectatorList = false;

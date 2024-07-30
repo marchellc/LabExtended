@@ -137,6 +137,9 @@ namespace LabExtended.Core
                     Info("Extended Loader", $"Loaded plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r!");
                 }
 
+                foreach (var plugin in AssemblyLoader.Plugins.Keys)
+                    plugin.InvokeStaticMethods(m => m.HasAttribute<LoaderCallbackAttribute>());
+
                 Info("Extended Loader", $"Finished loading!");
             }
             catch (Exception ex)

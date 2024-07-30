@@ -164,13 +164,13 @@ namespace LabExtended.API.CustomItems
             var velocity = Owner.Velocity;
             var angular = Vector3.Lerp(Item.ThrowSettings.RandomTorqueA, Item.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 
-            velocity = velocity / 3f + Owner.Camera.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
+            velocity = velocity / 3f + Owner.CameraTransform.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
 
             velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (!(velocity.x < 0f) ? 1 : -1);
             velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (!(velocity.y < 0f) ? 1 : -1);
             velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (!(velocity.z < 0f) ? 1 : -1);
 
-            var args = new PlayerThrowingItemArgs(Owner, Item, pickupInstance, pickupRigidbody, Owner.Camera.position, velocity, angular);
+            var args = new PlayerThrowingItemArgs(Owner, Item, pickupInstance, pickupRigidbody, Owner.CameraTransform.position, velocity, angular);
 
             OnThrowing(args);
 

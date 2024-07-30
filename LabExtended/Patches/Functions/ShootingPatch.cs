@@ -94,7 +94,7 @@ namespace LabExtended.Patches.Functions
                         standardHitreg.SetHitboxes(targetPlayer.Hub, true);
                 }
 
-                var ray = new Ray(player.Camera.position, player.Camera.forward);
+                var ray = new Ray(player.CameraTransform.position, player.CameraTransform.forward);
                 var processingArgs = new ProcessingFirearmShotArgs(player, firearm, ray);
 
                 standardHitreg.PrimaryTargetNetId = msg.TargetNetId;
@@ -161,8 +161,8 @@ namespace LabExtended.Patches.Functions
                     var pelletVector = Vector2.Lerp(pellet, buckshotHitreg.GenerateRandomPelletDirection, buckshotHitreg.BuckshotRandomness) * buckshotHitreg.BuckshotScale;
                     var pelletDirection = ray.direction;
 
-                    pelletDirection = Quaternion.AngleAxis(vector.x + vector.x, player.Camera.up) * pelletDirection;
-                    pelletDirection = Quaternion.AngleAxis(vector.y + vector.y, player.Camera.right) * pelletDirection;
+                    pelletDirection = Quaternion.AngleAxis(vector.x + vector.x, player.CameraTransform.up) * pelletDirection;
+                    pelletDirection = Quaternion.AngleAxis(vector.y + vector.y, player.CameraTransform.right) * pelletDirection;
 
                     var newRay = new Ray(ray.origin, pelletDirection);
 
