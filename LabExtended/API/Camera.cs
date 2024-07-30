@@ -151,9 +151,6 @@ namespace LabExtended.API
 
         internal static NpcHandler _camNpc;
 
-        internal float? _vertical;
-        internal float? _horizontal;
-
         internal static Scp079CameraRotationSync _rotSync;
         internal static Scp079CurrentCameraSync _camSync;
 
@@ -222,10 +219,8 @@ namespace LabExtended.API
             set => Base.IsActive = value;
         }
 
-        public Quaternion Rotation
-        {
+        public Quaternion AnchorRotation {
             get => Base._cameraAnchor.rotation;
-            set => SetRotation(value);
         }
 
         public void LookAt(Transform transform)
@@ -238,15 +233,30 @@ namespace LabExtended.API
             => LookAt(behaviour.transform.position);
 
         public void LookAt(ExPlayer player)
-            => LookAt(player.Position);
+            => LookAt(player.Camera.position);
 
         public void LookAt(Vector3 position)
-            => SetRotation(Quaternion.LookRotation(Position - position, Vector3.up));
+            => SetRotation(Quaternion.LookRotation(position - Base._cameraAnchor.position));
 
-        // will figure it out later
-        public void SetRotation(Quaternion rotation)
+        public void SetRotation(Quaternion rotation)    
+            => SetRotation(rotation.eulerAngles);
+
+        public void SetRotation(Vector3 eulerRotation)
         {
+            var cameraRotation = Base.transform.rotation.eulerAngles;
 
+            float vertical = (eulerRotation.x - cameraRotation.x + 360f) % 360f;
+            float horizontal = (eulerRotation.y - cameraRotation.y + 360f) % 360f;
+
+            if (vertical > 180f) {
+                vertical -= 360f;
+            }
+
+            if (horizontal > 180f) {
+                horizontal -= 360f;
+            }
+
+            SetRotation(horizontal, vertical);
         }
 
         public void SetRotation(float horizontal /* Y */, float vertical /* Z */)
@@ -263,16 +273,13 @@ namespace LabExtended.API
 
                 Scp079CursorManager.LockCameras = false;
 
-                _horizontal = horizontal;
-                _vertical = vertical;
+                Base.VerticalAxis.TargetValue = vertical;
+                Base.HorizontalAxis.TargetValue = horizontal;
 
                 Base.IsActive = true;
                 Base.Update();
 
                 _rotSync.ServerSendRpc(true);
-
-                _horizontal = null;
-                _vertical = null;
             }
         }
 
