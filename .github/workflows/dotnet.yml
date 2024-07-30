@@ -40,5 +40,5 @@ jobs:
       uses: actions/upload-artifact@v4.3.4
       with:
         name: LabExtended.dll
-        path: /home/runner/work/artifacts
+        path: /home/runner/work/artifacts/LabExtended.dll
         overwrite: true
