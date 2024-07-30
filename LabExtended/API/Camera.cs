@@ -235,18 +235,21 @@ namespace LabExtended.API
         public void LookAt(Vector3 position)
             => SetRotation(Quaternion.LookRotation(position - Base._cameraAnchor.position));
 
-        public void SetRotation(Quaternion rotation) {
-            var eulerRotation = rotation.eulerAngles;
+        public void SetRotation(Quaternion rotation)    
+            => SetRotation(rotation.eulerAngles);
+
+        public void SetRotation(Vector3 eulerRotation)
+        {
             var cameraRotation = Base.transform.rotation.eulerAngles;
 
             float vertical = (eulerRotation.x - cameraRotation.x + 360f) % 360f;
             float horizontal = (eulerRotation.y - cameraRotation.y + 360f) % 360f;
 
-            if (vertical > 180) {
+            if (vertical > 180f) {
                 vertical -= 360f;
             }
 
-            if (horizontal > 180) {
+            if (horizontal > 180f) {
                 horizontal -= 360f;
             }
 
