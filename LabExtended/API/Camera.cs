@@ -219,7 +219,8 @@ namespace LabExtended.API
             set => Base.IsActive = value;
         }
 
-        public Quaternion AnchorRotation {
+        public Quaternion AnchorRotation
+        {
             get => Base._cameraAnchor.rotation;
         }
 
@@ -233,12 +234,12 @@ namespace LabExtended.API
             => LookAt(behaviour.transform.position);
 
         public void LookAt(ExPlayer player)
-            => LookAt(player.Camera.position);
+            => LookAt(player.CameraTransform.position);
 
         public void LookAt(Vector3 position)
             => SetRotation(Quaternion.LookRotation(position - Base._cameraAnchor.position));
 
-        public void SetRotation(Quaternion rotation)    
+        public void SetRotation(Quaternion rotation)
             => SetRotation(rotation.eulerAngles);
 
         public void SetRotation(Vector3 eulerRotation)
@@ -248,11 +249,13 @@ namespace LabExtended.API
             float vertical = (eulerRotation.x - cameraRotation.x + 360f) % 360f;
             float horizontal = (eulerRotation.y - cameraRotation.y + 360f) % 360f;
 
-            if (vertical > 180f) {
+            if (vertical > 180f)
+            {
                 vertical -= 360f;
             }
 
-            if (horizontal > 180f) {
+            if (horizontal > 180f)
+            {
                 horizontal -= 360f;
             }
 
