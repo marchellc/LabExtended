@@ -1,13 +1,14 @@
-﻿using Common.IO.Collections;
+﻿using LabExtended.API.Collections.Locked;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Core.Profiling
 {
     /// <summary>
     /// Used to profile method timings.
     /// </summary>
-    public class ProfilerMarker
+    public class ProfilerMarker : IDisposable
     {
-        internal static readonly LockedList<ProfilerMarker> _allMarkers = new LockedList<ProfilerMarker>();
+        internal static readonly LockedHashSet<ProfilerMarker> _allMarkers = new LockedHashSet<ProfilerMarker>();
 
         /// <summary>
         /// Gets all created markers.
@@ -21,9 +22,9 @@ namespace LabExtended.Core.Profiling
 
         private bool _isInvoking;
 
-        private readonly int _samples;
-        private readonly string _name;
-        private readonly List<ProfilerFrame> _frames;
+        private int _samples;
+        private string _name;
+        private List<ProfilerFrame> _frames;
 
         /// <summary>
         /// Creates a new profiler.
@@ -68,6 +69,16 @@ namespace LabExtended.Core.Profiling
         public TimeSpan TimeSinceLastInvocation => !WasEverInvoked ? TimeSpan.Zero : DateTime.Now - LastInvocation;
 
         /// <summary>
+        /// Gets the profiler's longest frame.
+        /// </summary>
+        public ProfilerFrame LongestFrame => _frames.OrderBy(f => f.Duration).Last();
+
+        /// <summary>
+        /// Gets the profiler's shortest frame.
+        /// </summary>
+        public ProfilerFrame ShortestFrame => _frames.OrderBy(f => f.Duration).First();
+
+        /// <summary>
         /// Gets all captured frames.
         /// </summary>
         public IEnumerable<ProfilerFrame> Frames => _frames;
@@ -75,7 +86,7 @@ namespace LabExtended.Core.Profiling
         /// <summary>
         /// Gets a value indicating whether or not this marker has been marked.
         /// </summary>
-        public bool WasEverInvoked { get; private set; }
+        public bool WasEverInvoked => _frames.Count > 0;
 
         /// <summary>
         /// Gets a value indicating whether or not the marker is currently executing.
@@ -109,8 +120,6 @@ namespace LabExtended.Core.Profiling
             if (!_isInvoking)
                 return;
 
-            WasEverInvoked = true;
-
             _invEnd = DateTime.Now;
             _isInvoking = false;
 
@@ -133,7 +142,7 @@ namespace LabExtended.Core.Profiling
         /// <param name="isDebug">Whether or not to use the DEBUG tag instead of INFO.</param>
         public void LogStats(bool isDebug = false)
         {
-            if (!WasEverInvoked || _frames.Count < 1)
+            if (!WasEverInvoked)
                 return;
 
             var longestFrame = _frames.OrderBy(f => f.Duration).Last();
@@ -151,9 +160,9 @@ namespace LabExtended.Core.Profiling
                 $" &3-> Comment:&r &6{shortestFrame.Info ?? "none"}&r";
 
             if (isDebug)
-                ExLoader.Debug("Profiling", text);
+                ExLoader.Debug("Profiler", text);
             else
-                ExLoader.Info("Profiling", text);
+                ExLoader.Info("Profiler", text);
         }
 
         /// <summary>
@@ -161,6 +170,25 @@ namespace LabExtended.Core.Profiling
         /// </summary>
         public void Clear()
             => _frames.Clear();
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            _allMarkers.Remove(this);
+
+            _invEnd = DateTime.MinValue;
+            _invStart = DateTime.MinValue;
+
+            _isInvoking = false;
+
+            _samples = 0;
+
+            _frames.Clear();
+            _frames = null;
+
+            _invComm = null;
+            _name = null;
+        }
 
         /// <inheritdoc/>
         public override string ToString()
@@ -172,8 +200,25 @@ namespace LabExtended.Core.Profiling
         /// <param name="isDebug">Whether or not to use the DEBUG tag instead of the INFO tag.</param>
         public static void LogAllMarkers(bool isDebug = false)
         {
+            var builder = StringBuilderPool.Shared.Rent();
+
+            builder.AppendLine($"Displaying statistics of '{_allMarkers.Count}' markers.");
+
             foreach (var marker in _allMarkers)
-                marker.LogStats(isDebug);
+            {
+                if (!marker.WasEverInvoked)
+                    continue;
+
+                var longest = marker.LongestFrame;
+                var shortest = marker.ShortestFrame;
+
+                builder.AppendLine($"&3{marker.Name}&r: &6{marker.AvgDuration.TotalMilliseconds} ms&r average, &6{longest.Duration.TotalMilliseconds} ms&r maximum{(!string.IsNullOrWhiteSpace(longest.Info) && longest.Info != "none" ? $" [{longest.Info}]" : "")}, &6{marker.MinDuration.TotalMilliseconds}&r minimum{(!string.IsNullOrWhiteSpace(shortest.Info) && shortest.Info != "none" ? $" [{shortest.Info}]" : "")}, (&6{marker._frames.Count} frames&r)");
+            }
+
+            if (isDebug)
+                ExLoader.Debug("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
+            else
+                ExLoader.Info("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
         }
 
         /// <summary>

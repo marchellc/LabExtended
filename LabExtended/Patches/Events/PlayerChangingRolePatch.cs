@@ -15,81 +15,96 @@ using PluginAPI.Events;
 
 using CustomPlayerEffects;
 
-using System.Reflection;
-
-using Common.Extensions;
+using LabExtended.Core;
+using LabExtended.API.CustomItems;
+using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Events
 {
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.InitializeNewRole))]
     public static class PlayerChangingRolePatch
     {
-        private static readonly EventInfo _event = typeof(PlayerRoleManager).Event("OnRoleChanged");
+        static PlayerChangingRolePatch()
+            => EventUtils<PlayerRoleManager.RoleChanged>.DefineEvent(typeof(PlayerRoleManager), "OnRoleChanged");
 
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
         {
-            var player = ExPlayer.Get(__instance.Hub);
-
-            if (player is null)
-                return true;
-
-            var prevRole = default(PlayerRoleBase);
-
-            if (__instance._anySet)
+            try
             {
-                prevRole = __instance.CurrentRole;
-                prevRole.DisableRole(targetId);
-            }
+                var player = ExPlayer.Get(__instance.Hub);
 
-            if (reason is RoleChangeReason.Destroyed && targetId is RoleTypeId.None)
-                return false;
+                if (player is null)
+                    return true;
 
-            var newRole = __instance.GetRoleBase(targetId);
+                var prevRole = default(PlayerRoleBase);
+                var wasSet = false;
 
-            newRole.transform.parent = __instance.transform;
-
-            newRole.transform.localPosition = Vector3.zero;
-            newRole.transform.localRotation = Quaternion.identity;
-
-            __instance.CurrentRole = newRole;
-
-            var dataPos = data?.Position ?? -1;
-            var changingEv = new PlayerChangingRoleArgs(player, prevRole, newRole, reason, spawnFlags, data);
-
-            HookRunner.RunEvent(changingEv);
-
-            reason = changingEv.ChangeReason;
-            spawnFlags = changingEv.SpawnFlags;
-
-            newRole.Init(__instance.Hub, reason, spawnFlags);
-            newRole.SetupPoolObject();
-
-            if (newRole is ISpawnDataReader spawnDataReader && data != null)
-            {
-                if (targetId is not RoleTypeId.Spectator && !__instance.isLocalPlayer && EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId)))
-                    spawnDataReader.ReadSpawnData(data);
-            }
-            else if (targetId != RoleTypeId.Spectator && !__instance.isLocalPlayer)
-            {
-                EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId));
-            }
-
-            if (prevRole != null)
-            {
-                try
+                if (__instance._anySet)
                 {
-                    _event.Raise(null, __instance.Hub, prevRole, newRole);
+                    prevRole = __instance.CurrentRole;
+                    prevRole.DisableRole(targetId);
+
+                    wasSet = true;
                 }
-                catch { }
+
+                if (reason is RoleChangeReason.Destroyed && targetId is RoleTypeId.None)
+                    return false;
+
+                var newRole = targetId.GetInstance();
+
+                newRole.transform.parent = __instance.transform;
+
+                newRole.transform.localPosition = Vector3.zero;
+                newRole.transform.localRotation = Quaternion.identity;
+
+                __instance.CurrentRole = newRole;
+
+                var dataPos = data?.Position ?? -1;
+                var changingEv = new PlayerChangingRoleArgs(player, prevRole, newRole, reason, spawnFlags, data);
+
+                HookRunner.RunEvent(changingEv);
+
+                reason = changingEv.ChangeReason;
+                spawnFlags = changingEv.SpawnFlags;
+
+                newRole.Init(__instance.Hub, reason, spawnFlags);
+                newRole.SetupPoolObject();
+
+                if (newRole is ISpawnDataReader spawnDataReader && data != null)
+                {
+                    if (targetId is not RoleTypeId.Spectator && !__instance.isLocalPlayer && EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId)))
+                        spawnDataReader.ReadSpawnData(data);
+                }
+                else if (targetId != RoleTypeId.Spectator && !__instance.isLocalPlayer)
+                {
+                    EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId));
+                }
+
+                var hasSpawnProtection = false;
+
+                if (changingEv.GiveSpawnProtection)
+                    hasSpawnProtection = SpawnProtected.TryGiveProtection(__instance.Hub);
+
+                var changedArgs = new PlayerChangedRoleArgs(player, prevRole, newRole, reason, spawnFlags, data, hasSpawnProtection);
+
+                HookRunner.RunEvent(changedArgs);
+
+                var customItems = CustomItem.GetItems<CustomItem>(player);
+
+                foreach (var item in customItems)
+                    item.OnOwnerSpawned(changedArgs);
+
+                if (wasSet)
+                    EventUtils<PlayerRoleManager.RoleChanged>.InvokeEvent(typeof(PlayerRoleManager), "OnRoleChanged", null, player.Hub, prevRole, newRole);
+
+                return false;
             }
-
-            var hasSpawnProtection = false;
-
-            if (changingEv.GiveSpawnProtection)
-                hasSpawnProtection = SpawnProtected.TryGiveProtection(__instance.Hub);
-
-            HookRunner.RunEvent(new PlayerChangedRoleArgs(player, prevRole, newRole, reason, spawnFlags, data, hasSpawnProtection));
-            return false;
+            catch (Exception ex)
+            {
+                ExLoader.Error("PlayerChangingRolePatch", ex);
+                return true;
+            }
         }
     }
 }

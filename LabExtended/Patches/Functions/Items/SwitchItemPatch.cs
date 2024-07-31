@@ -4,7 +4,11 @@ using InventorySystem;
 using InventorySystem.Items;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
+
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
+
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Functions.Items
@@ -14,60 +18,96 @@ namespace LabExtended.Patches.Functions.Items
     {
         public static bool Prefix(Inventory __instance, ushort itemSerial)
         {
-            var player = ExPlayer.Get(__instance._hub);
-
-            if (player is null)
-                return true;
-
-            if (!player.Switches.CanSwitchItems)
-                return false;
-
-            if (itemSerial == __instance.CurItem.SerialNumber)
-                return false;
-
-            // Hate this language sometimes ..
-            ItemBase curItem = null;
-            ItemBase newItem = null;
-
-            var curIdentifier = __instance.CurItem;
-            var flag = __instance.CurItem.SerialNumber == 0 || (__instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out curItem) && __instance.CurInstance != null);
-            var switchingItemsEv = new PlayerSelectingItemArgs(player, __instance.CurInstance, itemSerial);
-
-            if (!HookRunner.RunCancellable(switchingItemsEv, true))
-                return false;
-
-            itemSerial = switchingItemsEv.NextSerial;
-
-            if (itemSerial == 0 || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
+            try
             {
-                if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.CanHolster()) || (itemSerial != 0 && !newItem.CanEquip()))
+                if (itemSerial == __instance.CurItem.SerialNumber)
                     return false;
 
-                if (itemSerial == 0)
+                if (!ExPlayer.TryGet(__instance._hub, out var player))
+                    return false;
+
+                if (!player.Switches.CanSwitchItems)
+                    return false;
+
+                ItemBase curItem = null;
+                ItemBase newItem = null;
+
+                CustomItem curCustomItem = null;
+                CustomItem nextCustomItem = null;
+
+                var prevIdentifier = __instance.NetworkCurItem;
+                var switchingArgs = new PlayerSelectingItemArgs(player, __instance.CurInstance, itemSerial);
+
+                if (!HookRunner.RunCancellable(switchingArgs, true))
+                    return false;
+
+                itemSerial = switchingArgs.NextSerial;
+
+                if (__instance.CurInstance != null && CustomItem.TryGetItem(__instance.CurInstance, out curCustomItem))
                 {
-                    __instance.NetworkCurItem = ItemIdentifier.None;
+                    curCustomItem.OnDeselecting(switchingArgs);
 
-                    if (!__instance.isLocalPlayer)
-                        __instance.CurInstance = null;
+                    if (!switchingArgs.IsAllowed)
+                        return false;
                 }
-                else
+
+                var flag = __instance.CurItem.SerialNumber == 0 || __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out curItem) && __instance.CurInstance != null;
+
+                itemSerial = switchingArgs.NextSerial;
+
+                if (itemSerial == 0 || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
-                    __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
+                    if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.CanHolster()) || (itemSerial != 0 && !newItem.CanEquip()))
+                        return false;
 
-                    if (!__instance.isLocalPlayer)
+                    if (newItem != null && CustomItem.TryGetItem(newItem, out nextCustomItem))
+                    {
+                        nextCustomItem.OnSelecting(switchingArgs);
+
+                        if (!switchingArgs.IsAllowed)
+                            return false;
+                    }
+
+                    if (itemSerial == 0)
+                    {
+                        __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
+                    }
+                    else
+                    {
+                        __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
+                        __instance.CurInstance = newItem;
+                    }
                 }
-            }
-            else if (!flag)
-            {
-                __instance.NetworkCurItem = ItemIdentifier.None;
-
-                if (!__instance.isLocalPlayer)
+                else if (!flag)
+                {
+                    __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
-            }
+                }
 
-            HookRunner.RunEvent(new PlayerSelectedItemArgs(player, curItem, newItem, curIdentifier, __instance.CurItem));
-            return false;
+                var switchedArgs = new PlayerSelectedItemArgs(player, curItem, newItem, prevIdentifier, __instance.CurItem);
+
+                HookRunner.RunEvent(switchedArgs);
+
+                if (curCustomItem != null)
+                {
+                    curCustomItem.IsSelected = false;
+                    curCustomItem.OnDeselected(switchedArgs);
+                }
+
+                if (nextCustomItem != null)
+                {
+                    nextCustomItem.IsSelected = true;
+                    nextCustomItem.OnSelected(switchedArgs);
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("SwitchItemPatch", ex);
+                return true;
+            }
         }
     }
 }

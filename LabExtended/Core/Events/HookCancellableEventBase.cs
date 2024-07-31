@@ -9,33 +9,8 @@ namespace LabExtended.Core.Events
     public class HookCancellableEventBase<T> : ICancellableEvent<T>
     {
         /// <summary>
-        /// Gets the value that allows the event to continue.
-        /// </summary>
-        public virtual T AllowedValue { get; }
-
-        /// <summary>
-        /// Gets the value that prevents the event from continuing.
-        /// </summary>
-        public virtual T DeniedValue { get; }
-
-        /// <summary>
         /// Gets or sets the event's cancellation status.
         /// </summary>
-        public T Cancellation { get; set; }
-
-        /// <summary>
-        /// Allows the event to continue.
-        /// </summary>
-        public void Allow()
-            => Cancellation = AllowedValue;
-
-        /// <summary>
-        /// Prevents the event from continuing.
-        /// </summary>
-        public void Cancel()
-            => Cancellation = DeniedValue;
-
-        internal virtual bool IsAllowed(T value)
-            => false;
+        public T IsAllowed { get; set; }
     }
 }

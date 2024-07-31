@@ -1,8 +1,5 @@
-﻿using Common.Extensions;
-using Common.Pooling.Pools;
-
-using LabExtended.Core.Hooking.Interfaces;
-
+﻿using LabExtended.Core.Hooking.Interfaces;
+using LabExtended.Utilities;
 using System.Reflection;
 
 namespace LabExtended.Core.Hooking.Binders
@@ -17,26 +14,18 @@ namespace LabExtended.Core.Hooking.Binders
 
         public int Size => _parameters.Length;
 
-        public bool UsePooling { get; set; } = true;
-
-        internal CustomOverloadBinder(ParameterInfo[] parameters, PropertyInfo[] binding, bool usePooling = true)
+        internal CustomOverloadBinder(ParameterInfo[] parameters, PropertyInfo[] binding)
         {
             _parameters = parameters;
             _binding = binding;
 
             _cache = new object[parameters.Length];
             _hasCacheReturned = true;
-
-            UsePooling = usePooling;
         }
 
         public bool BindArgs(object eventObject, out object[] args)
         {
-            if (UsePooling)
-            {
-                args = ArrayPool<object>.Shared.Rent(Size);
-            }
-            else if (_hasCacheReturned)
+            if (_hasCacheReturned)
             {
                 args = _cache;
                 _hasCacheReturned = false;
@@ -47,7 +36,7 @@ namespace LabExtended.Core.Hooking.Binders
             }
 
             for (int i = 0; i < Size; i++)
-                args[i] = _binding[i].Get(eventObject);
+                args[i] = _binding[i].GetValue(eventObject);
 
             return true;
         }
@@ -56,12 +45,6 @@ namespace LabExtended.Core.Hooking.Binders
         {
             if (args is null)
                 throw new ArgumentNullException(nameof(args));
-
-            if (UsePooling)
-            {
-                ArrayPool<object>.Shared.Return(args);
-                return true;
-            }
 
             if (!_hasCacheReturned && args == _cache)
             {

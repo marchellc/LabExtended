@@ -1,7 +1,6 @@
-﻿using Common.Extensions;
-
-using LabExtended.Core.Hooking.Interfaces;
+﻿using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Profiling;
+
 using LabExtended.Extensions;
 
 namespace LabExtended.Core.Hooking
@@ -14,11 +13,11 @@ namespace LabExtended.Core.Hooking
         {
             var cancellableEvent = eventObject as ICancellableEvent<T>;
 
-            cancellableEvent!.Cancellation = cancellation;
+            cancellableEvent!.IsAllowed = cancellation;
             cancellation = RunEvent(eventObject, cancellation);
 
             if (cancellableEvent != null)
-                return cancellableEvent.Cancellation;
+                return cancellableEvent.IsAllowed;
 
             return cancellation;
         }
@@ -30,7 +29,7 @@ namespace LabExtended.Core.Hooking
         {
             var type = eventObject.GetType();
 
-            _marker.MarkStart(type.FullName);
+            _marker.MarkStart(type.Name);
 
             try
             {
@@ -44,7 +43,25 @@ namespace LabExtended.Core.Hooking
                         }
                         catch (Exception ex)
                         {
-                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedDelegate.Method.ToName()}&r:\n{ex.ToColoredString()}");
+                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                        }
+                    }
+                }
+
+                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates))
+                {
+                    foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
+                    {
+                        try
+                        {
+                            var result = predefinedReturnDelegate(eventObject);
+
+                            if (result != null && result is T castResult)
+                                returnValue = castResult;
+                        }
+                        catch (Exception ex)
+                        {
+                            ExLoader.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedReturnDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
                         }
                     }
                 }
@@ -58,11 +75,11 @@ namespace LabExtended.Core.Hooking
                     {
                         try
                         {
-                            var value = hookDelegateObject.Field.Get<Delegate>();
+                            var value = hookDelegateObject.Field.GetValue(null);
 
-                            if (value is null)
+                            if (value is null || value is not Delegate del)
                             {
-                                ExLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.ToName()}&r");
+                                ExLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
                                 continue;
                             }
 
@@ -72,11 +89,11 @@ namespace LabExtended.Core.Hooking
                                 continue;
                             }
 
-                            value.DynamicInvoke(eventObject);
+                            del.DynamicInvoke(eventObject);
                         }
                         catch (Exception ex)
                         {
-                            ExLoader.Error("Hooking API", $"An error occured while running custom delegates (&3{hookDelegateObject.Event.ToName()}&r)!\n{ex.ToColoredString()}");
+                            ExLoader.Error("Hooking API", $"An error occured while running custom delegates (&3{hookDelegateObject.Event.GetMemberName()}&r)!\n{ex.ToColoredString()}");
                         }
                     }
                 }
@@ -103,7 +120,7 @@ namespace LabExtended.Core.Hooking
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hook.Method.ToName()}&r due to an exception:\n{ex.ToColoredString()}");
+                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hook.Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
                 }
             }
 

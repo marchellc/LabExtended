@@ -4,7 +4,7 @@ using InventorySystem.Searching;
 using LabExtended.API;
 using LabExtended.Core.Events;
 
-namespace LabExtended.Events
+namespace LabExtended.Events.Player
 {
     /// <summary>
     /// Gets called when a player finishes picking up an item.
@@ -41,7 +41,7 @@ namespace LabExtended.Events
         /// </summary>
         public bool DestroyPickup { get; set; }
 
-        internal PlayerPickingUpItemArgs(ExPlayer player, ItemPickupBase pickup, SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup) : base(true)
+        internal PlayerPickingUpItemArgs(ExPlayer player, ItemPickupBase pickup, SearchCompletor searchCompletor, SearchSessionPipe searchPipe, SearchCoordinator searchCoordinator, bool destroyPickup)
         {
             Player = player;
             Pickup = pickup;

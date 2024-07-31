@@ -1,9 +1,8 @@
-﻿using Common.Utilities.Dynamic;
-
-using LabExtended.Core.Hooking.Enums;
+﻿using LabExtended.Core.Hooking.Enums;
 using LabExtended.Core.Hooking.Interfaces;
 
 using LabExtended.Core.Profiling;
+using LabExtended.Utilities;
 
 using System.Reflection;
 
@@ -21,7 +20,6 @@ namespace LabExtended.Core.Hooking
         public HookPriority Priority { get; }
 
         public MethodInfo Method { get; }
-        public DynamicMethod Dynamic { get; }
 
         public object Instance { get; }
 
@@ -44,8 +42,6 @@ namespace LabExtended.Core.Hooking
 
             Method = method;
             Instance = instance;
-
-            Dynamic = DynamicMethod.Create(method);
         }
 
         internal object Run(object eventObject)

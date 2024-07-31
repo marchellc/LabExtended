@@ -11,15 +11,7 @@ namespace LabExtended.Patches.Functions
     {
         public static bool Prefix(HealthStat __instance, ref float __result)
         {
-            if (__instance.Hub is null)
-                return true;
-
-            var player = ExPlayer.Get(__instance.Hub);
-
-            if (player is null)
-                return true;
-
-            if (!player.Stats._maxHealthOverride.IsActive)
+            if (!ExPlayer.TryGet(__instance.Hub, out var player) || !player.Stats._maxHealthOverride.HasValue)
                 return true;
 
             __result = player.Stats._maxHealthOverride.Value;

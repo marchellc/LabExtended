@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.Core;
 
 using Mirror;
 
@@ -21,9 +22,9 @@ namespace LabExtended.Patches.Functions.SpectatorList
             if (receiver is null)
                 return true;
 
-            writer.WriteUShort((ushort)ExPlayer.Count);
+            writer.WriteUShort((ushort)ExPlayer._allPlayers.Count);
 
-            foreach (var player in ExPlayer.Players)
+            foreach (var player in ExPlayer._allPlayers)
             {
                 var sentRole = player.Role.Type;
                 var fakedRole = player.GetRoleForJoinedPlayer(receiver);
@@ -36,7 +37,7 @@ namespace LabExtended.Patches.Functions.SpectatorList
 
                 new RoleSyncInfo(player.Hub, sentRole, receiver.Hub).Write(writer);
 
-                player._sentRoles[receiver.NetId] = sentRole;
+                player._sentRoles[receiver.PlayerId] = sentRole;
             }
 
             return false;

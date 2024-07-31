@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Voice;
 using LabExtended.Core;
 
 using Mirror;
@@ -33,7 +32,7 @@ namespace LabExtended.Patches.Functions
 
             if (!ExLoader.Loader.Config.Voice.DisableCustomVoice)
             {
-                VoiceSystem.Receive(ref msg, speaker);
+                speaker._voice.ReceiveMessage(ref msg);
                 return false;
             }
 

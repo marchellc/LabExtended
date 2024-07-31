@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Map;
 using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player
@@ -18,9 +17,9 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// Gets the tesla gate.
         /// </summary>
-        public ExTeslaGate Gate { get; }
+        public API.ExTeslaGate Gate { get; }
 
-        internal PlayerTriggeringTeslaGateArgs(ExPlayer player, ExTeslaGate gate)
+        internal PlayerTriggeringTeslaGateArgs(ExPlayer player, API.ExTeslaGate gate)
         {
             Player = player;
             Gate = gate;

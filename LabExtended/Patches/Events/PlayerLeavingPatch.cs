@@ -23,8 +23,6 @@ namespace LabExtended.Patches.Events
             if (player is null)
                 return true;
 
-            player.StopModules();
-
             HookRunner.RunEvent(new PlayerLeavingArgs(player, disconnectinfo.Reason is DisconnectReason.Timeout, disconnectinfo));
             return true;
         }

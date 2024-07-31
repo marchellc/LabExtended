@@ -1,22 +1,19 @@
-﻿using Common.Extensions;
-
-using HarmonyLib;
-
+﻿using HarmonyLib;
+using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Profiling;
 using LabExtended.Extensions;
-
 using PluginAPI.Events;
 
 using System.Reflection;
 
 namespace LabExtended.Patches.Functions
 {
+    /// <summary>
+    /// A patch that replaces PluginAPI's default event execution with a call to <see cref="HookRunner.RunEvent{T}(object, T)"/>.
+    /// </summary>
     public static class HookPatch
     {
-        private static readonly ProfilerMarker _marker = new ProfilerMarker("Hooks (Patch)");
-
         private static MethodInfo _pluginApiExecuteMethod;
         private static MethodInfo _replacementExecuteMethod;
 
@@ -43,16 +40,13 @@ namespace LabExtended.Patches.Functions
         /// <summary>
         /// Enables the hooking patch.
         /// </summary>
+        [OnLoad]
         public static void Enable()
         {
-            _marker.MarkStart();
-
             try
             {
-                ExLoader.Info("Hooking API", $"Patching base-game events ..");
-
-                _pluginApiExecuteMethod ??= typeof(EventManager).GetAllMethods().FirstOrDefault(m => m.Name == "ExecuteEvent" && m.ContainsGenericParameters);
-                _replacementExecuteMethod ??= typeof(HookPatch).GetAllMethods().FirstOrDefault(m => m.Name == "RunEvent");
+                _pluginApiExecuteMethod ??= typeof(EventManager).FindMethod(m => m.Name == "ExecuteEvent" && m.ContainsGenericParameters);
+                _replacementExecuteMethod ??= typeof(HookPatch).FindMethod(m => m.Name == "RunEvent");
 
                 foreach (var type in CancellationTypes)
                 {
@@ -60,18 +54,12 @@ namespace LabExtended.Patches.Functions
                     var replacementMethod = _replacementExecuteMethod.MakeGenericMethod(type);
 
                     Harmony.Patch(pluginApiMethod, new HarmonyMethod(replacementMethod));
-                }
-
-                ExLoader.Info("Hooking API", $"Finished patching base-game events.");
+                };
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Hooking API", $"An error occured while patching base-game events!\n{ex.ToColoredString()}");
+                ExLoader.Error("HookPatch", ex);
             }
-
-            _marker.MarkEnd();
-            _marker.LogStats();
-            _marker.Clear();
         }
 
         private static bool RunEvent<T>(IEventArguments args, ref T __result) where T : struct

@@ -2,9 +2,6 @@
 {
     public interface ICancellableEvent<T> : IHookEvent
     {
-        T Cancellation { get; set; }
-
-        void Cancel();
-        void Allow();
+        T IsAllowed { get; set; }
     }
 }

@@ -45,7 +45,7 @@ namespace LabExtended.Events.Scp079
         /// </summary>
         public float AuxCost { get; set; }
 
-        internal Scp079SpawningPingArgs(ExPlayer player, Scp079Role scp079, Scp079PingAbility pingAbility, Scp079PingType pingType, Vector3 position, float cost) : base(true)
+        internal Scp079SpawningPingArgs(ExPlayer player, Scp079Role scp079, Scp079PingAbility pingAbility, Scp079PingType pingType, Vector3 position, float cost)
         {
             Player = player;
             Scp079 = scp079;

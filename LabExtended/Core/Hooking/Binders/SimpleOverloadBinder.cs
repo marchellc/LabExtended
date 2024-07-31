@@ -1,6 +1,4 @@
-﻿using Common.Pooling.Pools;
-
-using LabExtended.Core.Hooking.Interfaces;
+﻿using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Core.Hooking.Binders
 {
@@ -9,21 +7,16 @@ namespace LabExtended.Core.Hooking.Binders
         private object[] _cache;
         private bool _hasCacheReturned;
 
-        public SimpleOverloadBinder(bool usePooling = true)
+        public SimpleOverloadBinder()
         {
             _cache = new object[1];
-            _hasCacheReturned = true;
         }
 
         public bool UsePooling { get; set; } = true;
 
         public bool BindArgs(object eventObject, out object[] args)
         {
-            if (UsePooling)
-            {
-                args = ArrayPool<object>.Shared.Rent(1);
-            }
-            else if (_hasCacheReturned)
+            if (_hasCacheReturned)
             {
                 args = _cache;
                 _hasCacheReturned = false;
@@ -41,12 +34,6 @@ namespace LabExtended.Core.Hooking.Binders
         {
             if (args is null)
                 throw new ArgumentNullException(nameof(args));
-
-            if (UsePooling)
-            {
-                ArrayPool<object>.Shared.Return(args);
-                return true;
-            }
 
             if (!_hasCacheReturned && args == _cache)
             {

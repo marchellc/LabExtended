@@ -1,1 +1,1 @@
-# LabExtended
+# LabExtended.

@@ -1,14 +1,13 @@
-﻿using Common.Pooling.Pools;
-
-using HarmonyLib;
+﻿using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.RemoteAdmin;
+using LabExtended.API.RemoteAdmin.Enums;
 
 using LabExtended.Core;
-
-using PluginAPI.Core;
-
+using LabExtended.Extensions;
+using NorthwoodLib.Pools;
+using RemoteAdmin;
 using RemoteAdmin.Communication;
 
 namespace LabExtended.Patches.Functions.RemoteAdmin
@@ -18,46 +17,50 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
     {
         public static bool Prefix(RaPlayerAuth __instance, CommandSender sender, string data)
         {
-            if (!Player.TryGet(sender, out var apiPlayer))
+            try
             {
-                ExLoader.Debug("Remote Admin API", $"Failed to fetch NW API player");
+                ExLoader.Debug("Remote Admin API", $"RA request: &1{data}&r");
+
+                if (!ExPlayer.TryGet(sender, out var player))
+                    return true;
+
+                if (!RemoteAdminButtons.TryGetButton(RemoteAdminButtonType.RequestAuth, out var dataButton))
+                    return true;
+
+                if (!player.IsNorthwoodModerator && !player.Hub.authManager.BypassBansFlagSet && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
+                    return false;
+
+                var array = data.Split(' ');
+
+                if (array.Length != 1)
+                {
+                    ExLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
+                    return false;
+                }
+
+                if (!array[0].TrySplit('.', true, null, out var args))
+                    return false;
+
+                var list = ListPool<int>.Shared.Rent();
+
+                foreach (var arg in args)
+                {
+                    if (!int.TryParse(arg.Remove("."), out var id))
+                        continue;
+
+                    list.Add(id);
+                }
+
+                var processed = dataButton.OnPressed(player, list);
+
+                ListPool<int>.Shared.Return(list);
+                return processed;
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("Remote Admin API", $"An error occured while handling RA Player request:\n{ex.ToColoredString()}");
                 return true;
             }
-
-            var player = ExPlayer.Get(apiPlayer.ReferenceHub);
-
-            if (player is null)
-            {
-                ExLoader.Debug("Remote Admin API", $"Failed to fetch Ex Player");
-                return true;
-            }
-
-            var args = data.Split(' ');
-
-            if (args.Length != 1)
-            {
-                ExLoader.Debug("Remote Admin API", $"Unexpected array size: {args.Length} / 1");
-                return true;
-            }
-
-            if (!int.TryParse(args[0].Replace(".", string.Empty).Trim(), out var objectId))
-            {
-                ExLoader.Debug("Remote Admin API", $"Object ID parsing failure: {args[0]}");
-                return true;
-            }
-
-            if (!RemoteAdminUtils.TryGetObject(objectId, out var remoteAdminPlayerObject) || !remoteAdminPlayerObject.IsActive || !remoteAdminPlayerObject.IsVisible(player))
-                return true;
-
-            var builder = StringBuilderPool.Shared.Rent();
-
-            builder.Append($"$1 ");
-
-            remoteAdminPlayerObject.OnUpdate();
-            remoteAdminPlayerObject.OnRequest(player, RemoteAdminPlayerRequestType.PlayerAuth, builder);
-
-            sender.RaReply(StringBuilderPool.Shared.ToStringReturn(builder), true, true, string.Empty);
-            return false;
         }
     }
 }

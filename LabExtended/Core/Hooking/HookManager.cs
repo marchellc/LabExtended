@@ -1,10 +1,15 @@
-using Common.Extensions;
-using Common.IO.Collections;
-using Common.Utilities;
-
 using LabExtended.Attributes;
+using LabExtended.Extensions;
+using LabExtended.Commands;
+
 using LabExtended.Events;
-using LabExtended.Utilities;
+using LabExtended.Events.Player;
+using LabExtended.Events.Other;
+
+using LabExtended.API.Input;
+using LabExtended.API.Collections.Locked;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Firearms;
 
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Hooking.Enums;
@@ -16,42 +21,95 @@ using LabExtended.Core.Events;
 using MEC;
 
 using PluginAPI.Events;
+using PluginAPI.Core.Attributes;
 
 using System.Reflection;
-
-using PluginAPI.Core.Attributes;
+using LabExtended.API;
 
 namespace LabExtended.Core.Hooking
 {
     public static class HookManager
     {
+        public static LockedDictionary<Type, List<Func<object, object>>> PredefinedReturnDelegates { get; } = new LockedDictionary<Type, List<Func<object, object>>>()
+        {
+            [typeof(RemoteAdminCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleRemoteAdminCommand((RemoteAdminCommandEvent)ev)
+            },
+
+            [typeof(ConsoleCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleConsoleCommand((ConsoleCommandEvent)ev)
+            },
+
+            [typeof(PlayerGameConsoleCommandEvent)] = new List<Func<object, object>>()
+            {
+                ev => CustomCommand.InternalHandleGameConsoleCommand((PlayerGameConsoleCommandEvent)ev)
+            },
+        };
+
         public static LockedDictionary<Type, List<Action<object>>> PredefinedDelegates { get; } = new LockedDictionary<Type, List<Action<object>>>()
         {
-            // Public Round Events
             [typeof(RoundStartEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeStarted((RoundStartEvent)ev),
+                _ => InternalEvents.InternalHandleRoundStart(),
+                _ => Camera.OnRoundStart(),
+                _ => RoundEvents.InvokeStarted(),
             },
 
             [typeof(RoundEndEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeEnded((RoundEndEvent)ev),
+                _ => RoundEvents.InvokeEnded()
             },
 
             [typeof(RoundRestartEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeRestarted((RoundRestartEvent)ev),
+                _ => InternalEvents.InternalHandleRoundRestart(),
+                _ => Camera.OnRestart(),
+                _ => RoundEvents.InvokeRestarted()
             },
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
-                ev => RoundEvents.InvokeWaiting((WaitingForPlayersEvent)ev)
+                _ => InternalEvents.InternalHandleRoundWaiting(),
+                _ => CustomItem.InternalHandleWaiting(),
+                _ => RoundEvents.InvokeWaiting(),
+                _ => InputHandler.OnWaiting()
             },
 
-            // Internal Events
             [typeof(MapGeneratedEvent)] = new List<Action<object>>()
             {
-                ev => InternalEvents.OnMapGenerated((MapGeneratedEvent)ev),
+                _ => InternalEvents.InternalHandleMapGenerated()
+            },
+
+            [typeof(PlayerDyingEvent)] = new List<Action<object>>()
+            {
+                ev => CustomItem.InternalHandleDying((PlayerDyingEvent)ev),
+            },
+
+            [typeof(PlayerTogglingNoClipArgs)] = new List<Action<object>>()
+            {
+                ev => InputHandler.OnTogglingNoClip((PlayerTogglingNoClipArgs)ev),
+            },
+
+            [typeof(ProcessingFirearmRequestArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnProcessingRequest((ProcessingFirearmRequestArgs)ev),
+            },
+
+            [typeof(ProcessedFirearmRequestArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnProcessedRequested((ProcessedFirearmRequestArgs)ev),
+            },
+
+            [typeof(PlayerAuthorizingShotArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnAuthorizingShot((PlayerAuthorizingShotArgs)ev),
+            },
+
+            [typeof(PlayerPerformingShotArgs)] = new List<Action<object>>()
+            {
+                ev => CustomFirearm.InternalOnPerformingShot((PlayerPerformingShotArgs)ev),
             },
         };
 
@@ -128,7 +186,7 @@ namespace LabExtended.Core.Hooking
                 if (_activeDelegates.Any(p => p.Value.Any(d => d.Event == eventInfo && d.TypeInstance.IsEqualTo(typeInstance))))
                     continue;
 
-                var eventField = type.Field(eventInfo.Name);
+                var eventField = type.FindField(eventInfo.Name);
 
                 if (eventField is null || !eventInfo.IsMulticast)
                     continue;
@@ -200,7 +258,7 @@ namespace LabExtended.Core.Hooking
                 hookDelegateObjects.Clear();
                 hookDelegateObjects.AddRange(ordered);
 
-                ExLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.ToName()}&r (&6{eventType.Name}&r)");
+                ExLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.GetMemberName()}&r (&6{eventType.Name}&r)");
             }
         }
 
@@ -209,29 +267,32 @@ namespace LabExtended.Core.Hooking
             if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
                 return;
 
-            if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance) && h.Method == method)))
+            if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
+                return;
+
+            if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance, true) && h.Method == method)))
             {
-                ExLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
                 return;
             }
 
-            var methodArgs = method.Parameters();
+            var methodArgs = method.GetAllParameters();
 
             if (!TryGetEventType(hookDescriptorAttribute, pluginEvent, methodArgs, out var eventType))
             {
-                ExLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.GetMemberName()}&r");
                 return;
             }
 
             if (!TryGetBinder(methodArgs, eventType, out var hookBinder))
             {
-                ExLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.GetMemberName()}&r");
                 return;
             }
 
             if (!TryGetRunner(method.ReturnType, out var hookRunner))
             {
-                ExLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.ToName()}&r");
+                ExLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.GetMemberName()}&r");
                 return;
             }
 
@@ -244,7 +305,7 @@ namespace LabExtended.Core.Hooking
             {
                 var newPriority = priority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
 
-                ExLoader.Warn("Hooking API", $"Hook &3{method.ToName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
+                ExLoader.Warn("Hooking API", $"Hook &3{method.GetMemberName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
 
                 priority = newPriority;
             }
@@ -258,7 +319,7 @@ namespace LabExtended.Core.Hooking
             hooks.Clear();
             hooks.AddRange(ordered);
 
-            ExLoader.Debug("Hooking API", $"Registered a new hook: &3{method.ToName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
+            ExLoader.Debug("Hooking API", $"Registered a new hook: &3{method.GetMemberName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
         }
 
         private static bool TryGetRunner(Type returnType, out IHookRunner hookRunner)
@@ -289,7 +350,7 @@ namespace LabExtended.Core.Hooking
 
             if (methodArgs.Length == 1 && methodArgs[0].ParameterType == eventType)
             {
-                binder = new SimpleOverloadBinder(ExLoader.Loader.Config.Hooks.UsePoolingOnSimpleOverloads);
+                binder = new SimpleOverloadBinder();
                 return true;
             }
 
@@ -321,7 +382,7 @@ namespace LabExtended.Core.Hooking
                 binding[i] = property;
             }
 
-            binder = new CustomOverloadBinder(methodArgs, binding, ExLoader.Loader.Config.Hooks.UsePoolingOnCustomOverloads);
+            binder = new CustomOverloadBinder(methodArgs, binding);
             return true;
         }
 

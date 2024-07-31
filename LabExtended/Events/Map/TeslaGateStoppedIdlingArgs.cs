@@ -1,4 +1,4 @@
-﻿using LabExtended.API.Map;
+﻿using LabExtended.API;
 using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Map
@@ -11,9 +11,9 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// Gets the tesla gate that stopped idling.
         /// </summary>
-        public ExTeslaGate Gate { get; }
+        public API.ExTeslaGate Gate { get; }
 
-        internal TeslaGateStoppedIdlingArgs(ExTeslaGate gate)
+        internal TeslaGateStoppedIdlingArgs(API.ExTeslaGate gate)
         {
             Gate = gate;
         }

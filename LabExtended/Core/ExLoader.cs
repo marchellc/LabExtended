@@ -1,15 +1,12 @@
-using Common.Logging;
-
 using HarmonyLib;
 
+using LabExtended.API.Hints;
+using LabExtended.API.Modules;
+using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Logging;
-using LabExtended.Core.Profiling;
+using LabExtended.Core.Ticking;
 
-using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Modules;
-using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
@@ -22,7 +19,7 @@ namespace LabExtended.Core
     /// <summary>
     /// The main class, used as a loader. Can also be used for modules.
     /// </summary>
-    public class ExLoader : ModuleParent
+    public class ExLoader : Module
     {
         /// <summary>
         /// Gets the server's version.
@@ -49,8 +46,6 @@ namespace LabExtended.Core
         /// </summary>
         public static string Folder => Loader.Handler.PluginDirectoryPath;
 
-        private readonly ProfilerMarker _marker = new ProfilerMarker("Startup");
-
         /// <summary>
         /// Creates a new <see cref="ExLoader"/> instance. This is included only to implement the base constructor of <see cref="ModuleParent"/>.
         /// </summary>
@@ -75,7 +70,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the loader's server version compatibility.
         /// </summary>
-        public readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 0));
+        public readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 1));
 
         /// <summary>
         /// Loads the plugin.
@@ -84,8 +79,6 @@ namespace LabExtended.Core
         [PluginPriority(LoadPriority.Lowest)]
         public void Load()
         {
-            _marker.MarkStart();
-
             try
             {
                 Handler = PluginHandler.Get(this);
@@ -105,39 +98,17 @@ namespace LabExtended.Core
                     return;
                 }
 
-                if (Config.Logging.PipeEnabled && !Config.Logging.DisabledSources.Contains("common"))
-                {
-                    var logger = new ExLogger();
-
-                    foreach (var output in LogOutput.Outputs)
-                    {
-                        if (output.HasLogger<ExLogger>())
-                            continue;
-
-                        output.AddLogger(logger);
-                    }
-
-                    if (!LogOutput.DefaultLoggers.Any(logger => logger != null && logger.GetType() == typeof(ExLogger)))
-                        LogOutput.DefaultLoggers.Add(logger);
-
-                    if (Config.Logging.DebugEnabled && !Config.Logging.DisabledSources.Contains("common_debug"))
-                    {
-                        LogOutput.EnableForAll(LogLevel.Debug | LogLevel.Verbose | LogLevel.Trace);
-                        LogUtils.Default = LogUtils.General | LogUtils.Debug;
-                    }
-                }
-
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
                 Harmony.PatchAll();
 
-                NetworkUtils.LoadMirror();
+                typeof(ExLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
 
-                HookPatch.Enable();
                 HookManager.RegisterAll();
 
-                UpdateEvent.Initialize();
+                StartModule();
 
-                StartModules();
+                AddCachedModules();
+                AddModule<GlobalHintModule>(false);
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
                 {
@@ -153,14 +124,21 @@ namespace LabExtended.Core
 
                     foreach (var type in pluginType.Assembly.GetTypes())
                     {
+                        type.InvokeStaticMethod(m => m.HasAttribute<OnLoadAttribute>());
+
                         if (type == pluginType)
                             continue;
 
                         HookManager.RegisterAll(type, null);
                     }
 
+                    pluginType.Assembly.InvokeStaticMethods(m => m.HasAttribute<HookCallbackAttribute>());
+
                     Info("Extended Loader", $"Loaded plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r!");
                 }
+
+                foreach (var plugin in AssemblyLoader.Plugins.Keys)
+                    plugin.InvokeStaticMethods(m => m.HasAttribute<LoaderCallbackAttribute>());
 
                 Info("Extended Loader", $"Finished loading!");
             }
@@ -168,10 +146,6 @@ namespace LabExtended.Core
             {
                 Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
             }
-
-            _marker.MarkEnd();
-            _marker.LogStats();
-            _marker.Clear();
         }
 
         /// <summary>
@@ -185,9 +159,9 @@ namespace LabExtended.Core
             Harmony.UnpatchAll();
             Harmony = null;
 
-            StopModules();
+            StopModule();
 
-            UpdateEvent.KillEvent();
+            TickManager.Kill();
 
             HookManager._activeDelegates.Clear();
             HookManager._activeHooks.Clear();
@@ -255,6 +229,9 @@ namespace LabExtended.Core
 
         private static bool CanDebug(string source)
         {
+            if (Loader is null || Loader.Config is null)
+                return true;
+
             if (!string.IsNullOrWhiteSpace(source))
             {
                 if (Loader.Config.Logging.DisabledSources.Contains(source))

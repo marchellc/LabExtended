@@ -1,28 +1,26 @@
-﻿using LabExtended.Modules;
+﻿using CentralAuth;
+using Footprinting;
+
+using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
+using LabExtended.API.Containers;
+using LabExtended.API.Modules;
 using LabExtended.API.Npcs.Navigation;
+
+using LabExtended.Core;
+using LabExtended.Extensions;
+using LabExtended.Utilities.Generation;
 
 using MEC;
 
 using Mirror;
-
-using UnityEngine;
-
-using CentralAuth;
-
-using Common.Utilities.Generation;
-using Common.Extensions;
-using Common.Caching;
 
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 
 using PluginAPI.Core;
 
-using Footprinting;
-
-using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
-using LabExtended.Core;
+using UnityEngine;
 
 namespace LabExtended.API.Npcs
 {
@@ -32,7 +30,7 @@ namespace LabExtended.API.Npcs
     public class NpcHandler
     {
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
-        private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(new MemoryCache<int>(), 9000, 100000); // A unique ID generator ranging from 9000 to 1000.
+        private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
 
         /// <summary>
         /// A list of all NPCs.
@@ -626,7 +624,18 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var player = new ExPlayer(hubComponent);
+            var switches = new SwitchContainer()
+            {
+                IsVisibleInRemoteAdmin = false,
+                IsVisibleInSpectatorList = false,
+
+                CanBlockScp173 = false,
+                CanTriggerScp096 = false,
+
+                CanBlockRoundEnd = false
+            };
+
+            var player = new ExPlayer(hubComponent, switches);
             var npc = new NpcHandler(hubComponent, connection, player);
 
             if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))
@@ -637,12 +646,12 @@ namespace LabExtended.API.Npcs
 
                     if (!player._modules.ContainsKey(type))
                     {
-                        player._modules.Add(type, new ModuleContainer(module));
+                        player._modules[type] = module;
 
                         module.Parent = player;
-                        module.IsActive = true;
+                        module.StartModule();
 
-                        module.Start();
+                        player.OnModuleAdded(module);
                     }
                     else
                     {
@@ -651,7 +660,7 @@ namespace LabExtended.API.Npcs
                 }
             }
 
-            ExPlayer._players.Add(player);
+            ExPlayer._allPlayers.Add(player);
 
             _spawnedNpcs.Add(npc);
 

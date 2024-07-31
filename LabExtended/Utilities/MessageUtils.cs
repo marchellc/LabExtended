@@ -1,0 +1,34 @@
+﻿using LabExtended.API;
+using LabExtended.API.Interfaces;
+using LabExtended.API.Messages;
+
+namespace LabExtended.Utilities
+{
+    public static class MessageUtils
+    {
+        public static bool IsValid(this IMessage message)
+            => message != null && message.Duration > 0 && !string.IsNullOrWhiteSpace(message.Content);
+
+        public static void Show(this IMessage message, IEnumerable<ExPlayer> args)
+        {
+            if (message is null)
+                throw new ArgumentNullException(nameof(message));
+
+            if (!message.IsValid())
+                return;
+
+            foreach (var player in args)
+            {
+                if (message is HintMessage)
+                    player.SendHint(message.Content, message.Duration);
+                else if (message is API.Messages.BroadcastMessage broadcastMessage)
+                    player.SendBroadcast(broadcastMessage.Content, broadcastMessage.Duration, broadcastMessage.ClearPrevious);
+                else
+                    throw new InvalidOperationException($"Unknown IMessage type: {message.GetType().FullName}");
+            }
+        }
+
+        public static void ShowGlobal(this IMessage message)
+            => message.Show(ExPlayer.Players);
+    }
+}

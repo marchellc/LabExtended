@@ -2,11 +2,15 @@
 
 using InventorySystem;
 using InventorySystem.Items;
+using InventorySystem.Items.Firearms;
+using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Firearms;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
-using LabExtended.Events.Scp173;
+using LabExtended.Extensions;
 
 using PlayerRoles.FirstPersonControl;
 
@@ -38,13 +42,53 @@ namespace LabExtended.Patches.Events
             if (!HookRunner.RunCancellable(droppingEv, true))
                 return false;
 
-            var pickup = __instance.ServerDropItem(itemSerial);
+            ItemPickupBase pickup = null;
+
+            if (CustomItem.TryGetItem(item, out var customItem))
+            {
+                customItem.OnDropping(droppingEv);
+
+                if (!droppingEv.IsAllowed)
+                    return false;
+
+                customItem.IsSelected = false;
+
+                if (customItem.Info.PickupInfo.Type != ItemType.None)
+                {
+                    __instance.ServerRemoveItem(itemSerial, item.PickupDropModel);
+                    pickup = customItem.Info.PickupInfo.Type.GetPickupInstance<ItemPickupBase>(player.Position, customItem.Info.PickupInfo.Scale, player.Rotation, customItem.Serial, true);
+                }
+            }
+            else
+            {
+                pickup = __instance.ServerDropItem(itemSerial);
+            }
 
             __instance.SendItemsNextFrame = true;
+
             tryThrow = droppingEv.IsThrow;
+
+            if (customItem != null)
+            {
+                customItem.Item = null;
+                customItem.Pickup = pickup;
+
+                customItem.SetupPickup();
+                customItem.OnDropped(droppingEv);
+
+                if (customItem is CustomFirearm customFirearm)
+                {
+                    if (item is Firearm firearm)
+                        customFirearm._cachedStatus = firearm.Status;
+                    else
+                        customFirearm._cachedStatus = null;
+                }
+            }
 
             if (pickup is null)
                 return false;
+
+            player._droppedItems.Add(pickup);
 
             if (player.Switches.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody)
                 && EventManager.ExecuteEvent(new PlayerThrowItemEvent(__instance._hub, item, rigidbody)))
@@ -58,10 +102,18 @@ namespace LabExtended.Patches.Events
                 velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
                 velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
 
-                var throwingEv = new PlayerThrowingItemArgs(player, item, pickup, rigidbody, __instance._hub.PlayerCameraReference.forward, velocity, angular);
+                var throwingEv = new PlayerThrowingItemArgs(player, item, pickup, rigidbody, __instance._hub.PlayerCameraReference.position, velocity, angular);
 
                 if (!HookRunner.RunCancellable(throwingEv, true))
                     return false;
+
+                if (customItem != null)
+                {
+                    customItem.OnThrowing(throwingEv);
+
+                    if (!throwingEv.IsAllowed)
+                        return false;
+                }
 
                 rigidbody.position = throwingEv.Position;
                 rigidbody.velocity = throwingEv.Velocity;
@@ -69,6 +121,8 @@ namespace LabExtended.Patches.Events
 
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
+
+                customItem?.OnThrown(throwingEv);
             }
 
             return false;

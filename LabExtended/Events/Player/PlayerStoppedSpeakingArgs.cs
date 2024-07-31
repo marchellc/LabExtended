@@ -26,9 +26,9 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// An array of captured voice packets.
         /// </summary>
-        public byte[][] Packets { get; }
+        public IReadOnlyList<byte[]> Packets { get; }
 
-        internal PlayerStoppedSpeakingArgs(ExPlayer player, DateTime startedAt, TimeSpan speakingFor, byte[][] packets)
+        internal PlayerStoppedSpeakingArgs(ExPlayer player, DateTime startedAt, TimeSpan speakingFor, IReadOnlyList<byte[]> packets)
         {
             Player = player;
             StartedAt = startedAt;

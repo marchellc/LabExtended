@@ -1,19 +1,4 @@
-﻿using LabExtended.API;
-using LabExtended.API.Map;
-using LabExtended.API.Npcs;
-using LabExtended.API.Npcs.Navigation;
-using LabExtended.API.Prefabs;
-using LabExtended.API.RemoteAdmin;
-using LabExtended.API.Round;
-
-using LabExtended.Core;
-using LabExtended.Core.Profiling;
-
-using LabExtended.Patches.Functions;
-
-using PluginAPI.Events;
-
-namespace LabExtended.Utilities
+﻿namespace LabExtended.Events
 {
     /// <summary>
     /// A class used for round event delegates. These delegates get called before any other event handlers.
@@ -23,73 +8,33 @@ namespace LabExtended.Utilities
         /// <summary>
         /// Gets called when the round ends.
         /// </summary>
-        public static event Action<RoundEndEvent> OnRoundEnded;
+        public static event Action OnRoundEnded;
 
         /// <summary>
         /// Gets called when the round starts.
         /// </summary>
-        public static event Action<RoundStartEvent> OnRoundStarted;
+        public static event Action OnRoundStarted;
 
         /// <summary>
         /// Gets called when the round starts restarting.
         /// </summary>
-        public static event Action<RoundRestartEvent> OnRoundRestarted;
+        public static event Action OnRoundRestarted;
 
         /// <summary>
         /// Gets called when the round starts waiting for players.
         /// </summary>
-        public static event Action<WaitingForPlayersEvent> OnWaitingForPlayers;
+        public static event Action OnWaitingForPlayers;
 
-        static RoundEvents()
-        {
-            OnWaitingForPlayers += InternalHandleWaiting;
-            OnRoundRestarted += InternalHandleRestarting;
-            OnRoundStarted += InternalHandleStarting;
-        }
+        internal static void InvokeWaiting()
+            => OnWaitingForPlayers?.Invoke();
 
-        private static void InternalHandleRestarting(RoundRestartEvent _)
-        {
-            NpcHandler.DestroyNpcs();
-            RemoteAdminUtils.ClearObjects();
-            ExRound.State = RoundState.Restarting;
-            ExTeslaGate._pauseUpdate = true;
-        }
+        internal static void InvokeStarted()
+            => OnRoundStarted?.Invoke();
 
-        private static void InternalHandleWaiting(WaitingForPlayersEvent _)
-        {
-            ExPlayer._localPlayer = null;
-            ExPlayer._hostPlayer = null;
+        internal static void InvokeEnded()
+            => OnRoundEnded?.Invoke();
 
-            GhostModePatch.GhostedPlayers.Clear();
-            GhostModePatch.GhostedTo.Clear();
-
-            ExRound.RoundNumber++;
-            ExRound.StartedAt = DateTime.MinValue;
-            ExRound.State = RoundState.WaitingForPlayers;
-
-            NavigationMesh.Reset();
-            PrefabUtils.ReloadPrefabs();
-
-            ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
-            ProfilerMarker.ClearAllMarkers();
-        }
-
-        private static void InternalHandleStarting(RoundStartEvent _)
-        {
-            ExRound.StartedAt = DateTime.Now;
-            ExRound.State = RoundState.InProgress;
-        }
-
-        internal static void InvokeWaiting(WaitingForPlayersEvent ev)
-            => OnWaitingForPlayers?.Invoke(ev);
-
-        internal static void InvokeStarted(RoundStartEvent ev)
-            => OnRoundStarted?.Invoke(ev);
-
-        internal static void InvokeEnded(RoundEndEvent ev)
-            => OnRoundEnded?.Invoke(ev);
-
-        internal static void InvokeRestarted(RoundRestartEvent ev)
-            => OnRoundRestarted?.Invoke(ev);
+        internal static void InvokeRestarted()
+            => OnRoundRestarted?.Invoke();
     }
 }

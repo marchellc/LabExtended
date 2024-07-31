@@ -1,7 +1,8 @@
-﻿using Common.Extensions;
-using Common.IO.Collections;
+﻿using LabExtended.API;
+using LabExtended.API.Collections.Locked;
 
-using LabExtended.API;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 using Mirror;
 
@@ -23,6 +24,7 @@ namespace LabExtended.Utilities
         public static Action<NetworkBehaviour, ulong> SetSyncVarDirtyBit { get; } = (behaviour, syncVar) => behaviour.SetSyncVarDirtyBit(syncVar);
 
         #region Loading
+        [OnLoad]
         internal static void LoadMirror()
         {
             LoadSyncVars();
@@ -80,10 +82,10 @@ namespace LabExtended.Utilities
             var generated = assembly.GetType("Mirror.GeneratedNetworkCode");
 
             foreach (var method in typeof(NetworkWriterExtensions).GetAllMethods().Where(x => !x.IsGenericMethod && x.GetCustomAttribute(typeof(ObsoleteAttribute)) == null && (x.GetParameters()?.Length == 2)))
-                _writerExtensions[method.Parameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
+                _writerExtensions[method.GetAllParameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
 
             foreach (var method in generated.GetAllMethods().Where(x => !x.IsGenericMethod && (x.GetParameters()?.Length == 2) && (x.ReturnType == typeof(void))))
-                _writerExtensions[method.GetParameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
+                _writerExtensions[method.GetAllParameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
 
             foreach (var serializer in assembly.GetTypes())
             {
@@ -95,7 +97,7 @@ namespace LabExtended.Utilities
                     if (method.ReturnType != typeof(void) || !method.Name.StartsWith("Write"))
                         continue;
 
-                    _writerExtensions[method.Parameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
+                    _writerExtensions[method.GetAllParameters().First(x => x.ParameterType != typeof(NetworkWriter)).ParameterType] = method;
                 }
             }
         }
