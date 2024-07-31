@@ -1,8 +1,8 @@
-name: dev
+name: Build
 run-name: ${{ github.event.head_commit.message }}
 on:
   push:
-    branches: [ "dev" ]
+    branches: [ "dev", "main" ]
     
 jobs:
   build:
@@ -39,6 +39,6 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.3.4
       with:
-        name: labextended-dev
+        name: labextended
         path: /home/runner/work/artifacts/LabExtended.dll
         overwrite: true
