@@ -8,7 +8,6 @@ using MapGeneration;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
-using PlayerRoles.PlayableScps.Scp079.GUI;
 
 using UnityEngine;
 
@@ -206,23 +205,21 @@ namespace LabExtended.API
 
         public float Zoom => Base.ZoomAxis.CurValue;
 
-        public Vector3 Position => Base._cameraAnchor.position;
+        public float VerticalAxis => Base.VerticalAxis.CurValue;
+        public float HorizontalAxis => Base.HorizontalAxis.CurValue;
+
+        public bool IsUsed => Base.IsActive;
+
+        public Vector3 Position => Base.transform.position;
+
+        public Quaternion Rotation => Base.transform.rotation;
+        public Quaternion AnchorRotation => Anchor.rotation;
+        public Quaternion PivotRotation => Pivot.localRotation;
 
         public FacilityZone Zone => Room?.Zone ?? FacilityZone.None;
         public RoomName RoomName => Room?.Name ?? RoomName.Unnamed;
 
         public CameraType Type { get; }
-
-        public bool IsUsed
-        {
-            get => Base.IsActive;
-            set => Base.IsActive = value;
-        }
-
-        public Quaternion AnchorRotation
-        {
-            get => Base._cameraAnchor.rotation;
-        }
 
         public void LookAt(Transform transform)
             => LookAt(transform.position);
@@ -262,7 +259,7 @@ namespace LabExtended.API
             SetRotation(horizontal, vertical);
         }
 
-        public void SetRotation(float horizontal /* Y */, float vertical /* Z */)
+        public void SetRotation(float horizontal, float vertical)
         {
             if (_rotSync != null && _camSync != null)
             {
@@ -273,8 +270,6 @@ namespace LabExtended.API
 
                     _camSync.CurrentCamera = Base;
                 }
-
-                Scp079CursorManager.LockCameras = false;
 
                 Base.VerticalAxis.TargetValue = vertical;
                 Base.HorizontalAxis.TargetValue = horizontal;

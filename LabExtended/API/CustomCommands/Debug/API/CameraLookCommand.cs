@@ -3,12 +3,14 @@ using LabExtended.Commands.Arguments;
 
 using LabExtended.Core.Commands.Interfaces;
 
-using UnityEngine;
+using MEC;
 
 namespace LabExtended.API.CustomCommands.Debug.API
 {
     public class CameraLookCommand : CustomCommand
     {
+        private CoroutineHandle _coroutine;
+
         public override string Command => "camlook";
         public override string Description => "Forces a camera to look at you.";
 
@@ -16,24 +18,29 @@ namespace LabExtended.API.CustomCommands.Debug.API
         {
             base.OnCommand(sender, ctx, args);
 
-            var room = sender.Room;
+            if (Timing.IsRunning(_coroutine))
+                Timing.KillCoroutines(_coroutine);
 
-            if (room is null)
+            _coroutine = Timing.RunCoroutine(Coroutine(sender));
+
+            ctx.RespondOk($"Forcing cams to look at you.");
+        }
+
+        private static IEnumerator<float> Coroutine(ExPlayer player)
+        {
+            var curCam = default(Camera);
+
+            while (true)
             {
-                ctx.RespondFail("You are not in a valid room.");
-                return;
+                var closestCam = player.ClosestCamera;
+
+                if (closestCam != null && (curCam is null || curCam != closestCam))
+                    curCam = closestCam;
+
+                curCam?.LookAt(player);
+
+                yield return Timing.WaitForSeconds(0.5f);
             }
-
-            sender.SendRemoteAdminMessage($"Room: {room.Name}, Position: {sender.Position}");
-
-            var camera = ExMap.Cameras.OrderBy(x => Vector3.Distance(x.Position, sender.Position)).First();
-            var distance = Vector3.Distance(camera.Position, sender.Position);
-
-            sender.SendRemoteAdminMessage($"Camera: {camera.Name} {camera.Id} ({camera.RoomName}) [{distance}]");
-
-            camera.LookAt(sender);
-
-            ctx.RespondOk("Forced a camera to look at you.");
         }
     }
 }

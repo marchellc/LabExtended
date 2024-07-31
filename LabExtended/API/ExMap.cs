@@ -159,9 +159,6 @@ namespace LabExtended.API
         }
 
         #region Cameras
-        public static IEnumerable<Camera> GetNearCameras(Vector3 position, float toleration = 15f)
-            => GetCameras(x => (position - x.Position).sqrMagnitude <= toleration * toleration);
-
         public static IEnumerable<Camera> GetCameras(RoomName room)
             => GetCameras(x => x.RoomName == room);
 

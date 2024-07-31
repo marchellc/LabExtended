@@ -28,6 +28,7 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
@@ -518,7 +519,7 @@ namespace LabExtended.API
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
 
         public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
-        public Camera ClosestCamera => ExMap.GetNearCameras(Position).FirstOrDefault();
+        public Camera ClosestCamera => ExMap.Cameras.OrderBy(x => Vector3.Distance(x.Position, Position)).First();
 
         public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
         public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(this));
