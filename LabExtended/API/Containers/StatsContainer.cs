@@ -82,13 +82,11 @@ namespace LabExtended.API.Containers
 
         public float MaxHealth
         {
-            get => _maxHealthOverride.Value;
+            get => _maxHealthOverride.HasValue ? _maxHealthOverride.Value : Health.MaxValue;
             set => _maxHealthOverride.Value = value;
         }
 
         public bool KeepMaxHealthOnRoleChange { get; set; }
-
-        public bool UsesStamina { get; set; } = true;
 
         public bool UsesHumeShield => Stats._hub.roleManager.CurrentRole is IHumeShieldedRole;
 
