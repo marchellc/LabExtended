@@ -1,13 +1,9 @@
 ﻿using Interactables.Interobjects;
 
-using LabExtended.API.Collections.Locked;
-
 namespace LabExtended.API
 {
-    public class Airlock : Wrapper<AirlockController>
+    public class Airlock : NetworkWrapper<AirlockController>
     {
-        internal static readonly LockedDictionary<AirlockController, Airlock> _wrappers = new LockedDictionary<AirlockController, Airlock>();
-
         public Airlock(AirlockController baseValue) : base(baseValue)
         {
             DoorA = ExMap.GetDoor(baseValue._doorA);

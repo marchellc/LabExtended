@@ -71,8 +71,6 @@ namespace LabExtended.Core.Ticking
             }
 
             tick.IsPaused = true;
-
-            ExLoader.Debug("Tick API", $"Paused tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&6)");
             return true;
         }
 
@@ -91,8 +89,6 @@ namespace LabExtended.Core.Ticking
             }
 
             tick.IsPaused = true;
-
-            ExLoader.Debug("Tick API", $"Paused tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&6)");
             return true;
         }
 
@@ -111,8 +107,6 @@ namespace LabExtended.Core.Ticking
             }
 
             tick.IsPaused = false;
-
-            ExLoader.Debug("Tick API", $"Resumed tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&6)");
             return true;
         }
 
@@ -131,8 +125,6 @@ namespace LabExtended.Core.Ticking
             }
 
             tick.IsPaused = false;
-
-            ExLoader.Debug("Tick API", $"Resumed tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&6)");
             return true;
         }
 
@@ -165,7 +157,6 @@ namespace LabExtended.Core.Ticking
                 TickComponent.Create("Global Tick", CallUpdate, null, out _object, out _component);
             }
 
-            ExLoader.Debug("Tick API", $"Subscribed a new tick: &3{action.Method.GetMemberName()}&r (&6{customId}&r)");
             return handler;
         }
 

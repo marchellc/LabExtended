@@ -1,20 +1,17 @@
 ﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Modules;
 using LabExtended.API.Enums;
+using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
-
-using LabExtended.Patches.Functions.RemoteAdmin;
-
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
 using LabExtended.Core.Ticking;
-
-using System.Text;
+using LabExtended.Events.Player;
+using LabExtended.Extensions;
+using LabExtended.Patches.Functions.RemoteAdmin;
 using LabExtended.Utilities.Generation;
 using NorthwoodLib.Pools;
-using LabExtended.Extensions;
+using System.Text;
 
 namespace LabExtended.API.RemoteAdmin
 {
@@ -80,20 +77,15 @@ namespace LabExtended.API.RemoteAdmin
                 _wasOpen = IsRemoteAdminOpen;
 
                 if (IsRemoteAdminOpen)
-                {
                     HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(CastParent));
-                    ExLoader.Debug("Remote Admin API", $"Player opened Remote Admin ({CastParent.Name})");
-                }
-                else
-                {
-                    HookRunner.RunEvent(new PlayerClosedRemoteAdminArgs(CastParent));
-                    ExLoader.Debug("Remote Admin API", $"Player closed Remote Admin ({CastParent.Name})");
-                }
             }
         }
 
         public void SendObjectHelp()
         {
+            if (_objects.Count < 1)
+                return;
+
             var list = ListPool<IRemoteAdminObject>.Shared.Rent();
             var builder = StringBuilderPool.Shared.Rent();
             var pos = 0;
@@ -107,7 +99,8 @@ namespace LabExtended.API.RemoteAdmin
             }
 
             ListPool<IRemoteAdminObject>.Shared.Return(list);
-            CastParent.SendRemoteAdminMessage(StringBuilderPool.Shared.ToStringReturn(builder));
+
+            CastParent.SendRemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
         }
 
         public IRemoteAdminObject AddObject(Type objectType, string customId = null)

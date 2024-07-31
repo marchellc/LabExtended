@@ -59,7 +59,6 @@ namespace LabExtended.Core.Hooking
 
             [typeof(RoundEndEvent)] = new List<Action<object>>()
             {
-                _ => InternalEvents.InternalHandleRoundEnd(),
                 _ => RoundEvents.InvokeEnded()
             },
 

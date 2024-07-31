@@ -9,12 +9,6 @@ namespace LabExtended.Core.Ticking
 
         public bool IsPaused { get; set; } = true;
 
-        void Start()
-            => ExLoader.Debug("Tick API", $"Component {gameObject.name} started.");
-
-        void OnDestroy()
-            => ExLoader.Debug("Tick API", $"Component {gameObject.name} destroyed.");
-
         void Update()
         {
             if (IsPaused)

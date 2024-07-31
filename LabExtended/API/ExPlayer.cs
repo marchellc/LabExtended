@@ -1505,8 +1505,6 @@ namespace LabExtended.API
                     if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == curRoleId)
                         continue;
 
-                    ExLoader.Debug("Player API", $"Sending role &3{curRoleId}&r to &3{other.Name}&r (&6{other.UserId}&r) - target &3{player.Name}&r (&6{player.UserId}&r)");
-
                     player._sentRoles[other.PlayerId] = curRoleId;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
                 }

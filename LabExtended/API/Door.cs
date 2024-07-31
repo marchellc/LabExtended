@@ -1,28 +1,17 @@
 ﻿using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 
-using LabExtended.API.Collections.Locked;
-using LabExtended.API.Interfaces;
 using LabExtended.API.Enums;
-
 using LabExtended.Extensions;
 
 using MapGeneration;
-
-using Mirror;
 
 using UnityEngine;
 
 namespace LabExtended.API
 {
-    public class Door : Wrapper<DoorVariant>,
-        IMapObject,
-
-        INetworkedPosition,
-        INetworkedRotation
+    public class Door : NetworkWrapper<DoorVariant>
     {
-        internal static readonly LockedDictionary<DoorVariant, Door> _wrappers = new LockedDictionary<DoorVariant, Door>();
-
         public const float Scp173TimedGateOpenState = 0.5845918f;
 
         public Door(DoorVariant baseValue, DoorType type) : base(baseValue)
@@ -190,45 +179,6 @@ namespace LabExtended.API
             set => Base.RequiredPermissions!.RequiredPermissions = value;
         }
 
-        public Vector3 Position
-        {
-            get => Base.transform.position;
-            set
-            {
-                NetworkServer.UnSpawn(GameObject);
-
-                Base.transform.position = value;
-
-                NetworkServer.Spawn(GameObject);
-            }
-        }
-
-        public Vector3 Scale
-        {
-            get => Base.transform.localScale;
-            set
-            {
-                NetworkServer.UnSpawn(GameObject);
-
-                Base.transform.localScale = value;
-
-                NetworkServer.Spawn(GameObject);
-            }
-        }
-
-        public Quaternion Rotation
-        {
-            get => Base.transform.rotation;
-            set
-            {
-                NetworkServer.UnSpawn(GameObject);
-
-                Base.transform.rotation = value;
-
-                NetworkServer.Spawn(GameObject);
-            }
-        }
-
         public bool GetLock(DoorLockReason reason)
             => ActiveLocks.HasFlagFast(reason);
 
@@ -261,19 +211,6 @@ namespace LabExtended.API
 
         public bool TryPry(ExPlayer player = null)
             => Base is PryableDoor pryableDoor && pryableDoor.TryPryGate(player?.Hub);
-
-        public void SetPositionAndRotation(Vector3 position, Quaternion rotation, Vector3? scale = null)
-        {
-            NetworkServer.UnSpawn(GameObject);
-
-            Base.transform.position = position;
-            Base.transform.rotation = rotation;
-
-            if (scale.HasValue)
-                Base.transform.localScale = scale.Value;
-
-            NetworkServer.Spawn(GameObject);
-        }
 
         public void SetHealth(float health)
         {

@@ -2,7 +2,6 @@
 
 using InventorySystem.Items.Pickups;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.Interfaces;
 
 using Mirror;
@@ -25,8 +24,6 @@ namespace LabExtended.API
         INetworkedPosition,
         INetworkedRotation
     {
-        internal static LockedDictionary<ElevatorChamber, Elevator> _wrappers = new LockedDictionary<ElevatorChamber, Elevator>();
-
         public Elevator(ElevatorChamber baseValue) : base(baseValue) { }
 
         public IReadOnlyList<ElevatorPanel> Panels => Base.AllPanels;

@@ -1,27 +1,26 @@
-﻿using LabExtended.API.Npcs.Navigation;
+﻿using CentralAuth;
+using Footprinting;
+
+using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
+using LabExtended.API.Containers;
+using LabExtended.API.Modules;
+using LabExtended.API.Npcs.Navigation;
+
+using LabExtended.Core;
+using LabExtended.Extensions;
+using LabExtended.Utilities.Generation;
 
 using MEC;
 
 using Mirror;
-
-using UnityEngine;
-
-using CentralAuth;
 
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 
 using PluginAPI.Core;
 
-using Footprinting;
-
-using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
-
-using LabExtended.Core;
-using LabExtended.API.Modules;
-using LabExtended.Utilities.Generation;
-using LabExtended.Extensions;
+using UnityEngine;
 
 namespace LabExtended.API.Npcs
 {
@@ -625,7 +624,18 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var player = new ExPlayer(hubComponent);
+            var switches = new SwitchContainer()
+            {
+                IsVisibleInRemoteAdmin = false,
+                IsVisibleInSpectatorList = false,
+
+                CanBlockScp173 = false,
+                CanTriggerScp096 = false,
+
+                CanBlockRoundEnd = false
+            };
+
+            var player = new ExPlayer(hubComponent, switches);
             var npc = new NpcHandler(hubComponent, connection, player);
 
             if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))

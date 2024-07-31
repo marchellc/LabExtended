@@ -1,8 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Npcs;
-
 using LabExtended.Core;
-
 using MapGeneration;
 
 using PlayerRoles;
@@ -145,9 +143,6 @@ namespace LabExtended.API
             ["TUNNEL ENTRANCE"] = CameraType.TunnelEntrance,
         };
         #endregion
-
-        internal static readonly LockedDictionary<Scp079Camera, Camera> _wrappers = new LockedDictionary<Scp079Camera, Camera>();
-
         internal static NpcHandler _camNpc;
 
         internal static Scp079CameraRotationSync _rotSync;
@@ -289,18 +284,17 @@ namespace LabExtended.API
         }
 
         internal static void OnRoundStart()
-            => NpcHandler.Spawn("Camera NPC", RoleTypeId.Scp079, null, null, null, npc =>
+        {
+            if (!ExLoader.Loader.Config.Api.EnableCameraNpc)
+                return;
+
+            NpcHandler.Spawn("Camera NPC", RoleTypeId.Scp079, null, null, null, npc =>
             {
                 _camNpc = npc;
-
                 _rotSync = npc.Player.Subroutines.Scp079CameraRotationSync;
                 _camSync = npc.Player.Subroutines.Scp079CurrentCameraSync;
-
-                npc.Player.Switches.IsVisibleInRemoteAdmin = false;
-                npc.Player.Switches.IsVisibleInSpectatorList = false;
-
-                ExLoader.Debug("Camera API", $"Spawned camera NPC");
             });
+        }
         #endregion
     }
 }

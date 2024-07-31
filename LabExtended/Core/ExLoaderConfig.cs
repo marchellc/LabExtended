@@ -14,5 +14,8 @@ namespace LabExtended.Core
 
         [Description("Voice chat configuration.")]
         public VoiceConfig Voice { get; set; } = new VoiceConfig();
+
+        [Description("Advanced API configuration.")]
+        public ApiConfig Api { get; set; } = new ApiConfig();
     }
 }

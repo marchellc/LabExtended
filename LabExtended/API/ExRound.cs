@@ -38,16 +38,6 @@ namespace LabExtended.API
         public static RoundState State { get; internal set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether or not to disable the round lock if the player who enabled it leaves.
-        /// </summary>
-        public static bool DisableRoundLockOnLeave { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not to disable the lobby lock if the player who enabled it leaves.
-        /// </summary>
-        public static bool DisableLobbyLockOnLeave { get; set; }
-
-        /// <summary>
         /// Gets a value indicating whether the round is ending.
         /// </summary>
         public static bool IsEnding => State is RoundState.Ending;
@@ -135,8 +125,14 @@ namespace LabExtended.API
             get => _roundLockTracking;
             set
             {
+                if (!value.HasValue && !_roundLockTracking.HasValue)
+                    return;
+
                 if (value.HasValue && value.Value.EnabledBy is null)
                     value = new RoundLock(ExPlayer.Host);
+
+                if (value.HasValue && _roundLockTracking.HasValue && _roundLockTracking.Value.EnabledBy == value.Value.EnabledBy)
+                    return;
 
                 _roundLockTracking = value;
 
@@ -157,8 +153,14 @@ namespace LabExtended.API
             get => _lobbyLockTracking;
             set
             {
+                if (!value.HasValue && !_lobbyLockTracking.HasValue)
+                    return;
+
                 if (value.HasValue && value.Value.EnabledBy is null)
                     value = new RoundLock(ExPlayer.Host);
+
+                if (value.HasValue && _lobbyLockTracking.HasValue && _lobbyLockTracking.Value.EnabledBy == value.Value.EnabledBy)
+                    return;
 
                 _lobbyLockTracking = value;
 
@@ -209,7 +211,7 @@ namespace LabExtended.API
         public static bool IsRoundLocked
         {
             get => _roundLockTracking.HasValue || RoundSummary.RoundLock;
-            set => _roundLockTracking = value ? new RoundLock(ExPlayer.Host) : null;
+            set => RoundLock = value ? new RoundLock(ExPlayer.Host) : null;
         }
 
         /// <summary>
@@ -218,7 +220,7 @@ namespace LabExtended.API
         public static bool IsLobbyLocked
         {
             get => _lobbyLockTracking.HasValue || RoundStart.LobbyLock;
-            set => _lobbyLockTracking = value ? new RoundLock(ExPlayer.Host) : null;
+            set => LobbyLock = value ? new RoundLock(ExPlayer.Host) : null;
         }
 
         /// <summary>
@@ -356,8 +358,6 @@ namespace LabExtended.API
                     RoleAssigner._prevQueueSize = respawnQueue.Length;
                 }
 
-                ExLoader.Debug("Round API", $"Generating roles");
-
                 var humanIndex = 0;
                 var totalIndex = 0;
 
@@ -386,12 +386,8 @@ namespace LabExtended.API
                         scps++;
                 }
 
-                ExLoader.Debug("Round API", $"SCPs to generate: {scps}");
-
                 DecideScps(players, roles, scps);
                 DecideHumans(players, roles, RoleAssigner._humanQueue, humanIndex);
-
-                ExLoader.Debug("Round API", $"Generated {roles.Count} roles");
             }
             catch (Exception ex)
             {
@@ -415,8 +411,6 @@ namespace LabExtended.API
                     array[i] = HumanSpawner.NextHumanRoleToSpawn;
 
                 array.ShuffleList();
-
-                ExLoader.Debug("Round API", $"Generating human roles");
 
                 for (int i = 0; i < players.Count; i++)
                 {
@@ -446,17 +440,11 @@ namespace LabExtended.API
 
                             candidates.Add(player);
                             num = num2;
-
-                            ExLoader.Debug("Round API", $"Chosen candidate {player.Name}");
                         }
                     }
 
                     if (candidates.Count > 0)
-                    {
-                        var random = candidates.RandomItem();
-                        roles[random] = role;
-                        ExLoader.Debug("Round API", $"Assigned role of {random.Name} to {role}");
-                    }
+                        roles[candidates.RandomItem()] = role;
                 }
 
                 ListPool<ExPlayer>.Shared.Return(candidates);
@@ -464,8 +452,6 @@ namespace LabExtended.API
 
             void DecideScps(List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, int scps)
             {
-                ExLoader.Debug("Round API", $"Generating SCP roles");
-
                 ScpSpawner.EnqueuedScps.Clear();
 
                 for (int i = 0; i < scps; i++)
@@ -473,16 +459,10 @@ namespace LabExtended.API
 
                 var candidates = ListPool<ExPlayer>.Shared.Rent();
 
-                ExLoader.Debug("Round API", $"Generating list");
-
                 GenerateScpList(candidates, players, scps);
-
-                ExLoader.Debug("Round API", $"Choosing players");
 
                 while (ScpSpawner.EnqueuedScps.Count > 0)
                     ChooseScps(candidates, players, roles);
-
-                ExLoader.Debug("Round API", $"Selected {roles.Count} SCPs");
 
                 players.RemoveAll(p => roles.ContainsKey(p));
 
@@ -509,8 +489,6 @@ namespace LabExtended.API
 
                             num = tickets;
                             candidates.Add(player);
-
-                            ExLoader.Debug("Round API", $"Added SCP candidate {player.Name}");
                         }
                     }
 
@@ -520,8 +498,6 @@ namespace LabExtended.API
 
                         candidates.Clear();
                         candidates.Add(randomPlayer);
-
-                        ExLoader.Debug("Round API", $"Selected random candidate: {randomPlayer.Name}");
                     }
 
                     scps -= candidates.Count;
@@ -544,8 +520,6 @@ namespace LabExtended.API
 
                             potential.Add(new ScpPlayerPicker.PotentialScp { Player = player.Hub, Weight = num3 });
                             num2 += num3;
-
-                            ExLoader.Debug("Round API", $"Added potential SCP {player.Name} ({num3})");
                         }
                     }
 
@@ -564,14 +538,13 @@ namespace LabExtended.API
                                 scps--;
                                 candidates.Add(ExPlayer.Get(scp.Player));
                                 potential.RemoveAt(i);
+
                                 num2 -= scp.Weight;
-                                ExLoader.Debug("Round API", $"Added candidate {scp.Player.nicknameSync.MyNick}");
+
                                 break;
                             }
                         }
                     }
-
-                    ExLoader.Debug("Round API", $"Found {candidates.Count} candidates");
 
                     ListPool<ScpPlayerPicker.PotentialScp>.Shared.Return(potential);
                 }
@@ -581,8 +554,6 @@ namespace LabExtended.API
             {
                 var scpRole = ScpSpawner.EnqueuedScps[0];
 
-                ExLoader.Debug("Round API", $"Spawning SCP: {scpRole}");
-
                 ScpSpawner.EnqueuedScps.RemoveAt(0);
                 ScpSpawner.ChancesBuffer.Clear();
 
@@ -591,14 +562,10 @@ namespace LabExtended.API
 
                 foreach (var player in candidates)
                 {
-                    ExLoader.Debug("Round API", $"Checking candidate: {player.Name}");
-
                     var num3 = ScpSpawner.GetPreferenceOfPlayer(player.Hub, scpRole);
 
                     foreach (var otherScp in ScpSpawner.EnqueuedScps)
                         num3 -= ScpSpawner.GetPreferenceOfPlayer(player.Hub, otherScp);
-
-                    ExLoader.Debug("Round API", $"Weight: {num3}");
 
                     num2++;
 
@@ -613,8 +580,9 @@ namespace LabExtended.API
                 foreach (var pair in ScpSpawner.ChancesBuffer)
                 {
                     var num5 = Mathf.Pow(pair.Value - num + 1f, num2);
+
                     ScpSpawner.SelectedSpawnChances[pair.Key] = num5;
-                    ExLoader.Debug("Round API", $"{pair.Key.nicknameSync.MyNick} weight: {num5}");
+
                     num4 += num5;
                 }
 
@@ -629,8 +597,8 @@ namespace LabExtended.API
                     {
                         candidates.RemoveAll(p => p.Hub == pair.Key);
                         players.RemoveAll(p => p.Hub == pair.Key);
+
                         roles[ExPlayer.Get(pair.Key)] = scpRole;
-                        ExLoader.Debug("Round API", $"Assigned SCP {scpRole} to {pair.Key.nicknameSync.MyNick}");
                     }
                 }
             }

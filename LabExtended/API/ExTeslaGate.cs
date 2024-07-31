@@ -1,14 +1,15 @@
 ﻿using Hazards;
-using LabExtended.API.Collections.Locked;
+
 using LabExtended.API.Interfaces;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Ticking;
 
 using LabExtended.Events.Map;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 
 using MapGeneration;
 
@@ -25,15 +26,12 @@ namespace LabExtended.API
     /// A wrapper for the <see cref="ExTeslaGate"/> class.
     /// </summary>
     public class ExTeslaGate :
-        Wrapper<TeslaGate>,
+        NetworkWrapper<TeslaGate>,
 
-        IMapObject,
         IDamageObject
     {
         static ExTeslaGate()
             => TickManager.SubscribeTick(TickGates, TickTimer.NoneProfiled, "Tesla Gate Update");
-
-        internal static readonly LockedDictionary<TeslaGate, ExTeslaGate> _wrappers = new LockedDictionary<TeslaGate, ExTeslaGate>();
 
         internal ExTeslaGate(TeslaGate baseValue) : base(baseValue) { }
 
@@ -259,15 +257,6 @@ namespace LabExtended.API
             Base.RpcPlayAnimation();
         }
 
-        /// <summary>
-        /// Deletes this tesla gate.
-        /// </summary>
-        public void Delete()
-        {
-            _wrappers.Remove(Base);
-            NetworkServer.Destroy(GameObject);
-        }
-
         internal void InternalTick()
         {
             if (IsDisabled || GameObject is null || !Base.isActiveAndEnabled)
@@ -287,7 +276,7 @@ namespace LabExtended.API
                 if (!player.Switches.CanTriggerTesla)
                     continue;
 
-                if (!player.Role.IsAlive)
+                if (!player.Role.IsAlive || player.Role.Is(RoleTypeId.Scp079))
                     continue;
 
                 if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team))
@@ -338,11 +327,11 @@ namespace LabExtended.API
 
         private static void TickGates()
         {
-            foreach (var pair in _wrappers)
+            foreach (var pair in ExMap._gates)
             {
                 try
                 {
-                    pair.Value.InternalTick();
+                    pair.InternalTick();
                 }
                 catch (Exception ex)
                 {

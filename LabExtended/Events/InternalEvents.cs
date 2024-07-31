@@ -23,11 +23,6 @@ namespace LabExtended.Events
 {
     internal static class InternalEvents
     {
-        internal static void InternalHandleRoundEnd()
-        {
-
-        }
-
         internal static void InternalHandleRoundWaiting()
         {
             if (ExPlayer._hostPlayer != null)
@@ -67,7 +62,7 @@ namespace LabExtended.Events
 
             try
             {
-                API.ExTeslaGate._wrappers.Clear();
+                ExMap._gates.Clear();
             }
             catch { }
 
@@ -123,21 +118,24 @@ namespace LabExtended.Events
             ExPlayer._players.Add(player);
             ExPlayer._allPlayers.Add(player);
 
-            ExLoader.Info("Extended API", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address}&r!");
+            ExLoader.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address}&r!");
         }
 
         internal static void InternalHandlePlayerLeave(ExPlayer player)
         {
-            if (ExRound.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
+            if (ExRound.State is RoundState.InProgress || ExRound.State is RoundState.WaitingForPlayers)
             {
-                ExRound.IsRoundLocked = false;
-                ExLoader.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
-            }
+                if (ExLoader.Loader.Config.Api.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
+                {
+                    ExRound.IsRoundLocked = false;
+                    ExLoader.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                }
 
-            if (ExRound.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
-            {
-                ExRound.IsLobbyLocked = false;
-                ExLoader.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                if (ExLoader.Loader.Config.Api.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
+                {
+                    ExRound.IsLobbyLocked = false;
+                    ExLoader.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                }
             }
 
             GhostModePatch.GhostedPlayers.Remove(player.NetId);
@@ -158,7 +156,7 @@ namespace LabExtended.Events
             if (!player.IsNpc)
             {
                 ExPlayer._players.Remove(player);
-                ExLoader.Info("Extended API", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
+                ExLoader.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
             }
             else
             {

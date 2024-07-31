@@ -1,9 +1,12 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Pooling;
+
 using LabExtended.Core;
-using LabExtended.Extensions;
 using LabExtended.Core.Ticking;
+
+using LabExtended.Extensions;
 using LabExtended.Utilities;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.API.Modules
@@ -135,13 +138,11 @@ namespace LabExtended.API.Modules
             {
                 if (transientModules.Remove(this))
                 {
-                    ExLoader.Debug("Transient Modules", $"Removed transient module &3{GetType().Name}&r (&6{ModuleId}&r) from player &3{CastParent.Name}&r (&6{CastParent.UserId}&r).");
                     OnRemoved(RemovalReason.Requested);
                 }
             }
             else
             {
-                ExLoader.Debug("Transient Modules", $"Cached transient module &3{GetType().Name}&r (&6{ModuleId}&r) for player &3{CastParent.Name}&r (&6{CastParent.UserId}&r).");
                 _isCached = true;
             }
         }
@@ -180,8 +181,6 @@ namespace LabExtended.API.Modules
 
                         if (!removedModules.Contains(module))
                             removedModules.Add(module);
-
-                        ExLoader.Debug("Transient Modules", $"Removing transient module &3{type.Name}&r (&6{module.ModuleId}&r): life time expired.");
 
                         module.OnRemoved(RemovalReason.Expired);
                         continue;

@@ -41,16 +41,20 @@ namespace LabExtended.API
             => NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
 
         internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
+        internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
+        internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
+        internal static readonly LockedHashSet<Airlock> _airlocks = new LockedHashSet<Airlock>();
         internal static readonly LockedHashSet<Locker> _lockers = new LockedHashSet<Locker>();
-
-        public static IEnumerable<ExTeslaGate> TeslaGates => ExTeslaGate._wrappers.Values;
-        public static IEnumerable<Elevator> Elevators => Elevator._wrappers.Values;
-        public static IEnumerable<Airlock> Airlocks => Airlock._wrappers.Values;
-        public static IEnumerable<Camera> Cameras => Camera._wrappers.Values;
-        public static IEnumerable<Door> Doors => Door._wrappers.Values;
+        internal static readonly LockedHashSet<Camera> _cams = new LockedHashSet<Camera>();
+        internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
 
         public static IReadOnlyList<ItemPickupBase> Pickups => _pickups;
+        public static IReadOnlyList<ExTeslaGate> TeslaGates => _gates;
+        public static IReadOnlyList<Elevator> Elevators => _elevators;
+        public static IReadOnlyList<Airlock> Airlocks => _airlocks;
         public static IReadOnlyList<Locker> Lockers => _lockers;
+        public static IReadOnlyList<Camera> Cameras => _cams;
+        public static IReadOnlyList<Door> Doors => _doors;
 
         public static IEnumerable<LockerChamber> LockerChambers => _lockers.SelectMany(x => x.Chambers);
 
@@ -186,26 +190,31 @@ namespace LabExtended.API
 
         #region Elevators
         public static IEnumerable<Elevator> GetElevators(Predicate<Elevator> predicate)
-            => Elevator._wrappers.Values.Where(x => predicate(x));
+            => _elevators.Where(x => predicate(x));
 
         public static Elevator GetElevator(Vector3 position)
             => GetElevator(x => x.Contains(position));
 
         public static Elevator GetElevator(Predicate<Elevator> predicate)
-            => Elevator._wrappers.Values.FirstOrDefault(x => predicate(x));
+            => _elevators.FirstOrDefault(x => predicate(x));
 
         public static Elevator GetElevator(ElevatorManager.ElevatorGroup group)
-            => Elevator._wrappers.Values.FirstOrDefault(p => p.Group == group);
+            => _elevators.FirstOrDefault(p => p.Group == group);
 
         public static Elevator GetElevator(ElevatorChamber chamber)
         {
             if (chamber is null)
                 return null;
 
-            if (!Elevator._wrappers.TryGetValue(chamber, out var elevator))
-                return Elevator._wrappers[chamber] = new Elevator(chamber);
+            if (!_elevators.TryGetFirst(x => x.Base == chamber, out var wrapper))
+            {
+                wrapper = new Elevator(chamber);
 
-            return elevator;
+                _elevators.Add(wrapper);
+                return wrapper;
+            }
+
+            return wrapper;
         }
         #endregion
 
@@ -220,10 +229,10 @@ namespace LabExtended.API
             => GetDoors(x => x.Type == type);
 
         public static IEnumerable<Door> GetDoors(Predicate<Door> predicate)
-            => Door._wrappers.Values.Where(x => predicate(x));
+            => _doors.Where(x => predicate(x));
 
         public static Door GetDoor(Predicate<Door> predicate)
-            => Door._wrappers.Values.FirstOrDefault(x => predicate(x));
+            => _doors.FirstOrDefault(x => predicate(x));
 
         public static Door GetDoor(Collider collider)
         {
@@ -254,8 +263,13 @@ namespace LabExtended.API
             if (door is null)
                 return null;
 
-            if (!Door._wrappers.TryGetValue(door, out var wrapper))
-                return Door._wrappers[door] = CreateDoor(door);
+            if (!_doors.TryGetFirst(x => x.Base == door, out var wrapper))
+            {
+                wrapper = new Door(door, Door.GetDoorType(door));
+
+                _doors.Add(wrapper);
+                return wrapper;
+            }
 
             return wrapper;
         }
@@ -275,37 +289,27 @@ namespace LabExtended.API
             {
                 AmbientSoundPlayer = ReferenceHub.HostHub.GetComponent<AmbientSoundPlayer>();
 
-                ExTeslaGate._wrappers.Clear();
-                Elevator._wrappers.Clear();
-                Airlock._wrappers.Clear();
-                Camera._wrappers.Clear();
-                Door._wrappers.Clear();
-
+                _elevators.Clear();
+                _airlocks.Clear();
                 _pickups.Clear();
                 _lockers.Clear();
+                _doors.Clear();
+                _gates.Clear();
+                _cams.Clear();
 
                 NavigationMesh.Prepare();
 
-                if (TeslaGateController.Singleton != null)
-                {
-                    foreach (var gate in TeslaGateController.Singleton.TeslaGates)
-                    {
-                        ExTeslaGate._wrappers[gate] = new ExTeslaGate(gate);
-                    }
-                }
-                else
-                {
-                    ExLoader.Warn("Map API", $"Attempted to reload Tesla Gates while the singleton is still null!");
-                }
-
-                foreach (var elevator in ElevatorManager.SpawnedChambers.Values)
-                    Elevator._wrappers[elevator] = new Elevator(elevator);
+                foreach (var gate in TeslaGateController.Singleton.TeslaGates)
+                    _gates.Add(new ExTeslaGate(gate));
 
                 foreach (var door in DoorVariant.AllDoors)
-                    Door._wrappers[door] = CreateDoor(door);
+                    _doors.Add(new Door(door, Door.GetDoorType(door)));
 
                 foreach (var airlock in UnityEngine.Object.FindObjectsOfType<AirlockController>())
-                    Airlock._wrappers[airlock] = new Airlock(airlock);
+                    _airlocks.Add(new Airlock(airlock));
+
+                foreach (var elevator in ElevatorManager.SpawnedChambers.Values)
+                    _elevators.Add(new Elevator(elevator));
 
                 foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>())
                     _lockers.Add(locker);
@@ -315,15 +319,15 @@ namespace LabExtended.API
                     if (interactable is null || interactable is not Scp079Camera cam)
                         continue;
 
-                    Camera._wrappers[cam] = new Camera(cam);
+                    _cams.Add(new Camera(cam));
                 }
 
                 ExLoader.Debug("Map API", $"Finished populating objects, cache state:\n" +
-                    $"Tesla {ExTeslaGate._wrappers.Count}\n" +
-                    $"Elevator {Elevator._wrappers.Count}\n" +
-                    $"Airlock {Airlock._wrappers.Count}\n" +
-                    $"Camera {Camera._wrappers.Count}\n" +
-                    $"Door {Door._wrappers.Count}\n" +
+                    $"Tesla {_gates.Count}\n" +
+                    $"Elevator {_elevators.Count}\n" +
+                    $"Airlock {_airlocks.Count}\n" +
+                    $"Camera {_cams.Count}\n" +
+                    $"Door {_doors.Count}\n" +
                     $"Lockers {_lockers.Count}");
             }
             catch (Exception ex)
@@ -336,26 +340,14 @@ namespace LabExtended.API
         {
             try
             {
-                var teslaRemoved = false;
-                var doorRemoved = false;
-                var airlockRemoved = false;
-
-                var removedPickups = _pickups.RemoveWhere(x => x.netId == identity.netId);
-                var removedLockers = _lockers.RemoveWhere(x => x.netId == identity.netId);
-
-                if (ExTeslaGate._wrappers.TryGetFirst(x => x.Key.netId == identity.netId, out var tesla))
-                    teslaRemoved = ExTeslaGate._wrappers.Remove(tesla.Key);
-
-                if (Door._wrappers.TryGetFirst(x => x.Key.netId == identity.netId, out var door))
-                    doorRemoved = Door._wrappers.Remove(door.Key);
-
-                if (Airlock._wrappers.TryGetFirst(x => x.Key.netId == identity.netId, out var airlock))
-                    airlockRemoved = Airlock._wrappers.Remove(airlock.Key);
+                _airlocks.RemoveWhere(x => x.NetId == identity.netId);
+                _pickups.RemoveWhere(x => x.netId == identity.netId);
+                _lockers.RemoveWhere(x => x.netId == identity.netId);
+                _gates.RemoveWhere(x => x.NetId == identity.netId);
+                _doors.RemoveWhere(x => x.NetId == identity.netId);
 
                 foreach (var player in ExPlayer.Players)
-                    removedPickups += player._droppedItems.RemoveWhere(x => x.netId == identity.netId);
-
-                ExLoader.Debug("Map API", $"Identity destroyed: {identity.netId} teslaRemoved={teslaRemoved} doorRemoved={doorRemoved} airlockRemoved={airlockRemoved} removedPickups={removedPickups} removedLockers={removedLockers}");
+                    player._droppedItems.RemoveWhere(x => x.netId == identity.netId);
             }
             catch (Exception ex)
             {

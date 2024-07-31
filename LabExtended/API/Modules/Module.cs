@@ -230,11 +230,8 @@ namespace LabExtended.API.Modules
         public virtual void OnStarted() { }
         public virtual void OnStopped() { }
 
-        public virtual void OnModuleAdded(Module module)
-            => ExLoader.Debug("Module API", $"Added module &3{module.GetType().FullName}&r to module &6{GetType().FullName}&r");
-
-        public virtual void OnModuleRemoved(Module module)
-            => ExLoader.Debug("Module API", $"Removed module &3{module.GetType().FullName}&r from module &6{GetType().FullName}&r");
+        public virtual void OnModuleAdded(Module module) { }
+        public virtual void OnModuleRemoved(Module module) { }
 
         /// <summary>
         /// 

@@ -142,8 +142,6 @@ namespace LabExtended.API.Npcs.Navigation
             NavAgent.radius = 0.1f;
             NavAgent.areaMask = 1;
             NavAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
-
-            ExLoader.Debug("Navigation API", $"NavAgent initialized for NPC &3{Npc.Id}&r");
         }
     }
 }
