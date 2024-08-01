@@ -29,7 +29,6 @@ using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
 
-using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
@@ -1322,6 +1321,73 @@ namespace LabExtended.API
             NetworkWriterPool.Return(writer);
             NetworkWriterPool.Return(writer2);
         }
+        #endregion
+
+        #region Operators
+        public override bool Equals(object obj)
+        {
+            if (obj != null)
+            {
+                if (obj is Player player)
+                    return player.NetworkId == NetId;
+
+                if (obj is ReferenceHub hub)
+                    return hub.netId == NetId;
+
+                if (obj is ExPlayer ply)
+                    return ply.NetId == NetId;
+
+                if (obj is NetworkBehaviour behaviour)
+                    return behaviour.netId == NetId;
+            }
+
+            return false;
+        }
+
+        public override string ToString()
+            => $"{Role.Name} {Name} ({UserId})";
+
+        public override int GetHashCode()
+            => GameObject != null ? GameObject.GetHashCode() : base.GetHashCode();
+
+        public static implicit operator ExPlayer(ReferenceHub hub)
+            => Get(hub);
+
+        public static implicit operator ExPlayer(GameObject gameObject)
+            => Get(gameObject);
+
+        public static implicit operator ExPlayer(Player player)
+            => Get(player);
+
+        public static implicit operator ExPlayer(Collider collider)
+            => Get(collider);
+
+        public static implicit operator ExPlayer(NetworkIdentity identity)
+            => Get(identity);
+
+        public static implicit operator ExPlayer(NetworkConnection connection)
+            => Get(connection);
+
+        public static implicit operator ExPlayer(NetPeer peer)
+            => Get(peer);
+
+        public static implicit operator ExPlayer(ItemBase item)
+            => Get(item);
+
+        public static implicit operator ExPlayer(ItemPickupBase pickup)
+            => Get(pickup);
+
+        public static implicit operator ExPlayer(CommandSender sender)
+            => Get(sender);
+
+        public static implicit operator ExPlayer(PlayerRoleBase role)
+            => (role is null || !role.TryGetOwner(out var owner) ? null : Get(owner));
+
+        public static implicit operator ExPlayer(Footprint footprint)
+            => Get(footprint);
+
+        public static implicit operator bool(ExPlayer player)
+            => player != null && player.IsVerified;
         #endregion
 
         #region Private Methods
