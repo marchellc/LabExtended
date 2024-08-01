@@ -51,7 +51,7 @@ namespace LabExtended.Patches.Events
 
                 __instance._errorCode = __instance.ServerValidateCancel();
 
-                var cancellingArgs = new Scp049CancellingRessurectionArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub), __instance._errorCode);
+                var cancellingArgs = new Scp049CancellingResurrectionArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub), __instance._errorCode);
 
                 if (!HookRunner.RunCancellable(cancellingArgs, true) || cancellingArgs.ErrorCode != 0)
                 {
