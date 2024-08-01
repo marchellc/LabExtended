@@ -3,6 +3,7 @@ using Footprinting;
 
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+
 using LabExtended.API.Containers;
 using LabExtended.API.Modules;
 using LabExtended.API.Npcs.Navigation;
@@ -31,6 +32,25 @@ namespace LabExtended.API.Npcs
     {
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
         private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
+
+        /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs.
+        /// </summary>
+        public static SwitchContainer NpcSwitches => new SwitchContainer
+        {
+            CanBePocketDimensionItemTarget = false,
+            CanBeRespawned = false,
+            CanBeScp049Target = false,
+            CanBeStrangledBy3114 = false,
+            CanBeResurrectedBy049 = false,
+            CanBlockRoundEnd = false,
+            CanCountAs079ExpTarget = false,
+            CanBlockScp173 = false,
+            CanTriggerScp096 = false,
+
+            IsVisibleInRemoteAdmin = false,
+            IsVisibleInSpectatorList = false,
+        };
 
         /// <summary>
         /// A list of all NPCs.
@@ -624,18 +644,7 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var switches = new SwitchContainer()
-            {
-                IsVisibleInRemoteAdmin = false,
-                IsVisibleInSpectatorList = false,
-
-                CanBlockScp173 = false,
-                CanTriggerScp096 = false,
-
-                CanBlockRoundEnd = false
-            };
-
-            var player = new ExPlayer(hubComponent, switches);
+            var player = new ExPlayer(hubComponent, NpcSwitches);
             var npc = new NpcHandler(hubComponent, connection, player);
 
             if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))

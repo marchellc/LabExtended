@@ -138,6 +138,9 @@ namespace LabExtended.Extensions
             return (T)pickup;
         }
 
+        public static bool TryGetRigidbody(this ItemPickupBase pickup, out Rigidbody rigidbody)
+            => (rigidbody = GetRigidbody(pickup)) != null;
+
         /// <summary>
         /// Gets the pickup's <see cref="Rigidbody"/> component.
         /// </summary>

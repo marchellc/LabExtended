@@ -72,7 +72,6 @@ namespace LabExtended.API.Containers
         public Invigorated Invigorated { get; private set; }
         public Invisible Invisible { get; private set; }
 
-        public MarshmallowEffect Marshmallow { get; private set; }
         public MovementBoost MovementBoost { get; private set; }
 
         public PocketCorroding PocketCorroding { get; private set; }

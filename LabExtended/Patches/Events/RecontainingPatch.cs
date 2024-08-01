@@ -26,7 +26,7 @@ namespace LabExtended.Patches.Events
         {
             var list = ListPool<ExPlayer>.Shared.Rent();
 
-            list.AddRange(ExPlayer.Get(RoleTypeId.Scp079));
+            list.AddRange(ExPlayer.Get(x => x.Role.Is(RoleTypeId.Scp079) && x.Switches.CanBeRecontainedAs079));
 
             if (list.Count < 1)
             {

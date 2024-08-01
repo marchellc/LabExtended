@@ -20,6 +20,12 @@ namespace LabExtended.Patches.Events
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
+            if (!scp.Switches.CanUseResurrectAs049)
+            {
+                __result = Scp049ResurrectAbility.ResurrectError.Refused;
+                return false;
+            }
+
             __result = Scp049ResurrectAbility.ResurrectError.None;
 
             if (ragdoll.Info.RoleType is RoleTypeId.Scp0492)
@@ -55,15 +61,23 @@ namespace LabExtended.Patches.Events
                     __result = Scp049ResurrectAbility.ResurrectError.Refused;
             }
 
-            var ressurectingArgs = new Scp049AttemptingRessurectionArgs(scp, ExPlayer.Get(ragdoll.Info.OwnerHub), __result);
+            var target = ExPlayer.Get(ragdoll.Info.OwnerHub);
 
-            if (!HookRunner.RunCancellable(ressurectingArgs, true))
+            if (target != null && !target.Switches.CanBeResurrectedBy049)
+            {
+                __result = Scp049ResurrectAbility.ResurrectError.TargetInvalid;
+                return false;
+            }
+
+            var resurrectingArgs = new Scp049AttemptingResurrectionArgs(scp, target, __result);
+
+            if (!HookRunner.RunCancellable(resurrectingArgs, true))
             {
                 __result = Scp049ResurrectAbility.ResurrectError.Refused;
                 return false;
             }
 
-            __result = ressurectingArgs.Error;
+            __result = resurrectingArgs.Error;
             return false;
         }
     }

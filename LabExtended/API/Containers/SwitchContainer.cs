@@ -1,4 +1,5 @@
 ﻿using LabExtended.API.Collections.Locked;
+using LabExtended.Extensions;
 
 namespace LabExtended.API.Containers
 {
@@ -8,7 +9,7 @@ namespace LabExtended.API.Containers
     public class SwitchContainer
     {
         /// <summary>
-        /// Gets a list of ignored effecct types.
+        /// Gets a list of ignored effect types.
         /// </summary>
         public LockedHashSet<Type> IgnoredEffects { get; } = new LockedHashSet<Type>();
 
@@ -40,12 +41,12 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can become a target of SCP-049's Sense ability.
         /// </summary>
-        public bool CanBeScp049Target { get; set; } = true; // not done
+        public bool CanBeScp049Target { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can become a target of a random item drop from the Pocket Dimension.
         /// </summary>
-        public bool CanBePocketDimensionItemTarget { get; set; } = true; // not done
+        public bool CanBePocketDimensionItemTarget { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can trigger SCP-096.
@@ -60,37 +61,57 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can be teleported to the Pocket Dimension by SCP-106.
         /// </summary>
-        public bool CanBeCapturedBy106 { get; set; } = true; // Not done
+        public bool CanBeCapturedBy106 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can be strangled by SCP-3114.
         /// </summary>
-        public bool CanBeStrangledBy3114 { get; set; } = true; // not done
+        public bool CanBeStrangledBy3114 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can hear SCP-939's Amnestic Cloud.
         /// </summary>
-        public bool CanHearAmnesticCloud { get; set; } = true; // not done
+        public bool CanHearAmnesticCloudSpawn { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can become a target for SCP-079's EXP rewards.
         /// </summary>
-        public bool CanCountAs079ExpTarget { get; set; } = true; // not done
+        public bool CanCountAs079ExpTarget { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can be resurrected by SCP-049.
         /// </summary>
-        public bool CanBeResurrectedBy049 { get; set; } = true; // not done
+        public bool CanBeResurrectedBy049 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player's ragdoll can be consumed by Zombies.
         /// </summary>
-        public bool CanBeConsumedByZombies { get; set; } = true; // not done
+        public bool CanBeConsumedByZombies { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not SCP-049 can use it's Sense ability.
+        /// </summary>
+        public bool CanUseSenseAs049 { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not SCP-049 can use it's Resurrect ability.
+        /// </summary>
+        public bool CanUseResurrectAs049 { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can strangle other players when playing as SCP-3114.
+        /// </summary>
+        public bool CanStrangleAs3114 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can capture other players when playing as SCP-106.
         /// </summary>
-        public bool CanCaptureAs106 { get; set; } = true; // Not done
+        public bool CanCaptureAs106 { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can consume ragdolls when playing as SCP-049-2.
+        /// </summary>
+        public bool CanConsumeRagdollsAsZombie { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-096) can be triggered by other players.
@@ -120,7 +141,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-079) can be recontained.
         /// </summary>
-        public bool CanBeRecontainedAs079 { get; set; } = true; // Not done
+        public bool CanBeRecontainedAs079 { get; set; } = true;
         #endregion
 
         #region Item Switches
@@ -149,6 +170,11 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool CanSwitchItems { get; set; } = true;
         #endregion
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can receive effects.
+        /// </summary>
+        public bool CanReceiveEffects { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can trigger tesla gates.
@@ -194,5 +220,13 @@ namespace LabExtended.API.Containers
         /// Gets or sets a value indicating whether or not this player consumes ammo while shooting.
         /// </summary>
         public bool HasUnlimitedAmmo { get; set; } = false;
+
+        public void Copy(SwitchContainer other)
+        {
+            if (other is null)
+                return;
+
+            other.CopyPropertiesTo(this);
+        }
     }
 }

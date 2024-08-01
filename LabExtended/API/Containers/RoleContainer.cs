@@ -115,13 +115,13 @@ namespace LabExtended.API.Containers
         public bool Is(RoleTypeId type)
             => Type == type;
 
-        public bool Is<T>() where T : PlayerRoleBase
+        public bool Is<T>()
             => Role is T;
 
-        public bool Is<T>(out T role) where T : PlayerRoleBase
-            => (role = Role as T) != null;
+        public bool Is<T>(out T role)
+            => (role = (T)(object)Role) != null;
 
-        public bool IfRole<T>(Action<T> action) where T : PlayerRoleBase
+        public bool IfRole<T>(Action<T> action)
         {
             if (Role is T tRole)
             {

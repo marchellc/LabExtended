@@ -136,11 +136,12 @@ namespace LabExtended.Patches.Functions
                 ammo--;
 
                 var chambered = action.ChamberedRounds;
+
                 action.ChamberedRounds--;
 
                 chambered = action.CockedHammers;
-                action.CockedHammers--;
 
+                action.CockedHammers--;
                 action.LastFiredAmount = chambered + 1;
 
                 if (action.LastFiredAmount > 0)

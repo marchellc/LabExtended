@@ -18,7 +18,7 @@ namespace LabExtended.Patches.Functions
         public static bool Prefix(Scp939AmnesticCloudInstance __instance)
         {
             using (var writer = NetworkWriterPool.Get())
-                NetworkUtils.SendRpc(__instance, FunctionName, FunctionHash, writer, 0, true, true, ExPlayer.Players);
+                NetworkUtils.SendRpc(__instance, FunctionName, FunctionHash, writer, 0, true, true, ExPlayer.Get(x => x.Switches.CanHearAmnesticCloudSpawn));
 
             return false;
         }
