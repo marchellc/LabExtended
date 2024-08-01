@@ -17,7 +17,7 @@ namespace LabExtended.Patches.Functions
             if (scp is null || player is null)
                 return true;
 
-            if (!scp.Switches.CanBeTriggered)
+            if (!scp.Switches.CanBeTriggeredAs096)
             {
                 __result = false;
                 return false;

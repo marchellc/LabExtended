@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Npcs;
+using LabExtended.API.Wrappers;
 using LabExtended.Core;
 using MapGeneration;
 

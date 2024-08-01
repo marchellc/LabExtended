@@ -15,23 +15,7 @@ namespace LabExtended.Patches.Fixes
             if (newRole != RoleTypeId.Spectator || !__instance.IsScpButNot079(hub.roleManager.CurrentRole))
                 return false;
 
-            var count = 0;
-
-            foreach (var role in Scp079Role.ActiveInstances)
-            {
-                if (!role.TryGetOwner(out var owner))
-                    continue;
-
-                if (!ExPlayer.TryGet(owner, out var ply))
-                    continue;
-
-                if (ply.IsNpc)
-                    continue;
-
-                count++;
-            }
-
-            if (count == 0)
+            if (!Scp079Role.ActiveInstances.Any(x => x.TryGetOwner(out var owner) && ExPlayer.TryGet(owner, out var player) && player.Switches.CanBeRecontainedAs079))
                 return false;
 
             if (ReferenceHub.AllHubs.Count(x => x != hub && __instance.IsScpButNot079(x.roleManager.CurrentRole)) > 0)

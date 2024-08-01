@@ -6,7 +6,7 @@ using Mirror;
 
 using UnityEngine;
 
-namespace LabExtended.API
+namespace LabExtended.API.Wrappers
 {
     public class NetworkWrapper<T> :
         Wrapper<T>,

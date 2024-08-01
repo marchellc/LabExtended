@@ -1,4 +1,5 @@
 ﻿using Interactables.Interobjects;
+using LabExtended.API.Wrappers;
 
 namespace LabExtended.API
 {

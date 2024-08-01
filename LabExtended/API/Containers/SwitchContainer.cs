@@ -1,10 +1,18 @@
-﻿namespace LabExtended.API.Containers
+﻿using LabExtended.API.Collections.Locked;
+
+namespace LabExtended.API.Containers
 {
     /// <summary>
     /// A class that holds custom player switches.
     /// </summary>
     public class SwitchContainer
     {
+        /// <summary>
+        /// Gets a list of ignored effecct types.
+        /// </summary>
+        public LockedHashSet<Type> IgnoredEffects { get; } = new LockedHashSet<Type>();
+
+        #region Visibility Switches
         /// <summary>
         /// Gets or sets a value indicating whether or not this player is visible in the Remote Admin player list.
         /// </summary>
@@ -14,16 +22,30 @@
         /// Gets or sets a value indicating whether or not this player is visible in the Spectator List.
         /// </summary>
         public bool IsVisibleInSpectatorList { get; set; } = true;
+        #endregion
 
+        #region Round Switches
         /// <summary>
         /// Gets or sets a value indicating whether or not this player should count in the next respawn wave.
         /// </summary>
-        public bool CanRespawn { get; set; } = true;
+        public bool CanBeRespawned { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player prevents the round from ending.
         /// </summary>
         public bool CanBlockRoundEnd { get; set; } = true;
+        #endregion
+
+        #region Scp Switches
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can become a target of SCP-049's Sense ability.
+        /// </summary>
+        public bool CanBeScp049Target { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can become a target of a random item drop from the Pocket Dimension.
+        /// </summary>
+        public bool CanBePocketDimensionItemTarget { get; set; } = true; // not done
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can trigger SCP-096.
@@ -31,20 +53,77 @@
         public bool CanTriggerScp096 { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether or not this player (when playing as SCP-096) can be triggered by other players.
-        /// </summary>
-        public bool CanBeTriggered { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets a value indicating whether or not this player can block SCP-173's movement.
         /// </summary>
         public bool CanBlockScp173 { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether or not this player can be teleported to the Pocket Dimension by SCP-106.
+        /// </summary>
+        public bool CanBeCapturedBy106 { get; set; } = true; // Not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can be strangled by SCP-3114.
+        /// </summary>
+        public bool CanBeStrangledBy3114 { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can hear SCP-939's Amnestic Cloud.
+        /// </summary>
+        public bool CanHearAmnesticCloud { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can become a target for SCP-079's EXP rewards.
+        /// </summary>
+        public bool CanCountAs079ExpTarget { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can be resurrected by SCP-049.
+        /// </summary>
+        public bool CanBeResurrectedBy049 { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player's ragdoll can be consumed by Zombies.
+        /// </summary>
+        public bool CanBeConsumedByZombies { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can capture other players when playing as SCP-106.
+        /// </summary>
+        public bool CanCaptureAs106 { get; set; } = true; // Not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP-096) can be triggered by other players.
+        /// </summary>
+        public bool CanBeTriggeredAs096 { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-173) can be blocked by other players.
         /// </summary>
-        public bool CanBeBlocked { get; set; } = true;
+        public bool CanBeBlockedAs173 { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP-939) can use the Lunge ability.
+        /// </summary>
+        public bool CanLungeAs939 { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can gain experience when playing as SCP-079.
+        /// </summary>
+        public bool CanGainExpAs079 { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP-939) can use the Mimicry ability.
+        /// </summary>
+        public bool CanUseMimicryAs939 { get; set; } = true; // not done
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP-079) can be recontained.
+        /// </summary>
+        public bool CanBeRecontainedAs079 { get; set; } = true; // Not done
+        #endregion
+
+        #region Item Switches
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can drop items.
         /// </summary>
@@ -69,6 +148,7 @@
         /// Gets or sets a value indicating whether or not this player can switch their currently held item.
         /// </summary>
         public bool CanSwitchItems { get; set; } = true;
+        #endregion
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can trigger tesla gates.
@@ -81,6 +161,7 @@
         /// </summary>
         public bool CanChangeRoles { get; set; } = true;
 
+        #region Voice Switches
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can be heard by anyone.
         /// </summary>
@@ -102,6 +183,7 @@
         /// <para>Overrides <see cref="CanBeHeard"/>.</para>
         /// </summary>
         public bool CanBeHeardBySpectators { get; set; } = true;
+        #endregion
 
         /// <summary>
         /// Gets or sets a value indicating whether or not any damage dealt to other players will result in instant death.

@@ -15,6 +15,7 @@ using PluginAPI.Core;
 using UnityEngine;
 
 using Interactables.Interobjects.DoorUtils;
+using LabExtended.API.Wrappers;
 
 namespace LabExtended.API
 {

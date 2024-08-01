@@ -1,6 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
-using LabExtended.Utilities;
+
 using System.Reflection;
 
 namespace LabExtended.Extensions
@@ -67,11 +67,23 @@ namespace LabExtended.Extensions
         public static FieldInfo FindField(this Type type, string fieldName)
             => FindField(type, field => field.Name == fieldName);
 
+        public static IEnumerable<FieldInfo> FindFields(this Type type, Predicate<FieldInfo> predicate)
+            => GetAllFields(type).Where(x => predicate(x));
+
+        public static IEnumerable<FieldInfo> FindFieldsOfType(this Type type, Type fieldType)
+            => FindFields(type, x => x.FieldType == fieldType);
+
         public static PropertyInfo FindProperty(this Type type, Func<PropertyInfo, bool> predicate)
             => GetAllProperties(type).FirstOrDefault(p => predicate(p));
 
         public static PropertyInfo FindProperty(this Type type, string propertyName)
             => FindProperty(type, p => p.Name == propertyName);
+
+        public static IEnumerable<PropertyInfo> FindProperties(this Type type, Predicate<PropertyInfo> predicate)
+            => GetAllProperties(type).Where(x => predicate(x));
+
+        public static IEnumerable<PropertyInfo> FindPropertiesOfType(this Type type, Type propertyType)
+            => FindProperties(type, x => x.PropertyType == propertyType);
 
         public static EventInfo FindEvent(this Type type, Func<EventInfo, bool> predicate)
             => GetAllEvents(type).FirstOrDefault(ev => predicate(ev));

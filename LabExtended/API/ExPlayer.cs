@@ -469,6 +469,7 @@ namespace LabExtended.API
 
             Role = new RoleContainer(component.roleManager);
             Stats = new StatsContainer(component.playerStats);
+            Effects = new EffectContainer(component.playerEffectsController);
             Subroutines = new SubroutineContainer(Role);
 
             Switches = switches;
@@ -497,6 +498,7 @@ namespace LabExtended.API
 
         public RoleContainer Role { get; }
         public StatsContainer Stats { get; }
+        public EffectContainer Effects { get; }
         public SwitchContainer Switches { get; }
         public SubroutineContainer Subroutines { get; }
 
@@ -534,10 +536,6 @@ namespace LabExtended.API
 
         public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Values.Where<Firearm>();
         public IEnumerable<KeycardItem> Keycards => _hub.inventory.UserInventory.Items.Values.Where<KeycardItem>();
-
-        public IEnumerable<StatusEffectBase> InactiveEffects => _hub.playerEffectsController.AllEffects.Where(e => !e.IsEnabled);
-        public IEnumerable<StatusEffectBase> ActiveEffects => _hub.playerEffectsController.AllEffects.Where(e => e.IsEnabled);
-        public IEnumerable<StatusEffectBase> AllEffects => _hub.playerEffectsController.AllEffects;
 
         public IEnumerable<VoiceModifier> VoiceModifiers => _voice.Modifiers;
         public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
@@ -673,18 +671,6 @@ namespace LabExtended.API
         {
             get => _hub.characterClassManager.GodMode;
             set => _hub.characterClassManager.GodMode = value;
-        }
-
-        public bool CanMove
-        {
-            get => !IsEffectActive<Ensnared>();
-            set
-            {
-                if (value && !CanMove)
-                    DisableEffect<Ensnared>();
-                else if (!value && CanMove)
-                    EnableEffect<Ensnared>(1);
-            }
         }
 
         public int PlayerId
@@ -975,68 +961,6 @@ namespace LabExtended.API
 
         public float DistanceTo(GameObject gameObject)
             => Vector3.Distance(gameObject.transform.position, Position);
-        #endregion
-
-        #region Effect Methods
-        public T GetEffect<T>() where T : StatusEffectBase
-            => _hub.playerEffectsController.GetEffect<T>();
-
-        public bool IsEffectActive<T>() where T : StatusEffectBase
-            => GetEffect<T>().IsEnabled;
-
-        public void EnableEffect<T>(byte intensity, float duration = 0f, bool addDurationIfActive = false) where T : StatusEffectBase
-            => GetEffect<T>().ServerSetState(intensity, duration, addDurationIfActive);
-
-        public void DisableEffect<T>() where T : StatusEffectBase
-            => GetEffect<T>().ServerDisable();
-
-        public byte GetEffectIntensity<T>() where T : StatusEffectBase
-            => GetEffect<T>()?.Intensity ?? 0;
-
-        public void SetEffectIntensity<T>(byte intensity) where T : StatusEffectBase
-            => GetEffect<T>()!.Intensity = intensity;
-
-        public void AddEffectIntensity<T>(byte intensity) where T : StatusEffectBase
-        {
-            var effect = GetEffect<T>();
-
-            if (effect is null)
-                return;
-
-            effect.ServerSetState((byte)Mathf.Clamp(0f, effect.Intensity + intensity, 255f));
-        }
-
-        public void ProlongueEffect<T>(float addedDuration) where T : StatusEffectBase
-        {
-            var effect = GetEffect<T>();
-            effect.ServerSetState(effect.Intensity, addedDuration, true);
-        }
-
-        public void ShortenEffect<T>(float removedDuration) where T : StatusEffectBase
-        {
-            var effect = GetEffect<T>();
-
-            if (!effect.IsEnabled)
-                return;
-
-            if ((effect.Duration - removedDuration) <= 0f)
-            {
-                effect.ServerDisable();
-                return;
-            }
-
-            effect.ServerSetState(effect.Intensity, effect.Duration - removedDuration);
-        }
-
-        public TimeSpan GetRemainingEffectDuration<T>() where T : StatusEffectBase
-        {
-            var effect = GetEffect<T>();
-
-            if (!effect.IsEnabled)
-                return TimeSpan.Zero;
-
-            return TimeSpan.FromSeconds(effect.TimeLeft);
-        }
         #endregion
 
         #region Vision Methods

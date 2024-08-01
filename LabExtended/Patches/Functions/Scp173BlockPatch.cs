@@ -26,7 +26,7 @@ namespace LabExtended.Patches.Functions
             if (scp is null || player is null)
                 return true;
 
-            if (!scp.Switches.CanBeBlocked)
+            if (!scp.Switches.CanBeBlockedAs173)
                 return __result = false;
 
             if (!player.Switches.CanBlockScp173)

@@ -5,7 +5,7 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using Mirror;
-
+using PluginAPI.Events;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -102,6 +102,39 @@ namespace LabExtended.Utilities
             }
         }
         #endregion
+
+        public static void SendRpc(this NetworkBehaviour behaviour, string functionName, int hashCode, NetworkWriter writer, int channelId, bool includeOwner, bool checkObservers, IEnumerable<ExPlayer> players)
+        {
+            if ((behaviour.netIdentity.observers?.Count ?? 0) < 1)
+                return;
+
+            var msg = new RpcMessage()
+            {
+                netId = behaviour.netId,
+                componentIndex = behaviour.ComponentIndex,
+
+                functionHash = (ushort)hashCode,
+
+                payload = writer.ToArraySegment()
+            };
+
+            foreach (var player in players)
+            {
+                if (player.Connection is null)
+                    continue;
+
+                if (checkObservers && !behaviour.netIdentity.observers.ContainsValue(player.Connection))
+                    continue;
+
+                if (!includeOwner && player.Connection == behaviour.netIdentity.connectionToClient)
+                    continue;
+
+                if (!player.Connection.isReady)
+                    continue;
+
+                player.Connection.Send(msg, channelId);
+            }
+        }
 
         public static int GetComponentIndex(this NetworkIdentity identity, Type type)
             => Array.FindIndex(identity.NetworkBehaviours, (x) => x.GetType() == type);

@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Functions
                 return false;
 
             if (SpawnProtected.CheckPlayer(player.Hub) && !SpawnProtected.CanShoot)
-                player.DisableEffect<SpawnProtected>();
+                player.Effects.DisableEffect<SpawnProtected>();
 
             InternalProcessShot(player, firearm, msg);
             return false;

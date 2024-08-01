@@ -1,7 +1,7 @@
 ﻿using Hazards;
 
 using LabExtended.API.Interfaces;
-
+using LabExtended.API.Wrappers;
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;

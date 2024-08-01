@@ -1,6 +1,6 @@
 ﻿using LabExtended.API.Interfaces;
 
-namespace LabExtended.API
+namespace LabExtended.API.Wrappers
 {
     /// <summary>
     /// A wrapper class.

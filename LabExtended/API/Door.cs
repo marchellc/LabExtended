@@ -2,6 +2,7 @@
 using Interactables.Interobjects.DoorUtils;
 
 using LabExtended.API.Enums;
+using LabExtended.API.Wrappers;
 using LabExtended.Extensions;
 
 using MapGeneration;
