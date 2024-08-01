@@ -6,6 +6,7 @@ using LabExtended.Events;
 using LabExtended.Events.Player;
 using LabExtended.Events.Other;
 
+using LabExtended.API;
 using LabExtended.API.Input;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.CustomItems;
@@ -24,7 +25,7 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
-using LabExtended.API;
+using LabExtended.Core.Performance;
 
 namespace LabExtended.Core.Hooking
 {
@@ -71,6 +72,7 @@ namespace LabExtended.Core.Hooking
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
+                _ => PerformanceWatcher.SubmitReport(),
                 _ => InternalEvents.InternalHandleRoundWaiting(),
                 _ => CustomItem.InternalHandleWaiting(),
                 _ => RoundEvents.InvokeWaiting(),

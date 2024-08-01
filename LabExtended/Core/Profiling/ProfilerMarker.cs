@@ -1,4 +1,5 @@
 ﻿using LabExtended.API.Collections.Locked;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Core.Profiling
@@ -13,17 +14,27 @@ namespace LabExtended.Core.Profiling
         /// <summary>
         /// Gets all created markers.
         /// </summary>
-        public static IEnumerable<ProfilerMarker> AllMarkers => _allMarkers;
+        public static IReadOnlyList<ProfilerMarker> AllMarkers => _allMarkers;
+
+        /// <summary>
+        /// Gets the longest frame in all markers.
+        /// </summary>
+        public static ProfilerFrame TotalLongestFrame => AllMarkers.OrderBy(x => (x.WasEverInvoked ? x.LongestFrame.Duration.TotalMilliseconds : 0)).FirstOrDefault().LongestFrame;
+
+        /// <summary>
+        /// Gets the shortest frame in all markers.
+        /// </summary>
+        public static ProfilerFrame TotalShortestFrame => AllMarkers.OrderBy(x => (x.WasEverInvoked ? x.ShortestFrame.Duration.TotalMilliseconds : double.MaxValue)).FirstOrDefault().ShortestFrame;
 
         private DateTime _invStart;
         private DateTime _invEnd;
 
+        private bool _isInvoking;
+        private int _samples;
+
+        private string _name;
         private string _invComm;
 
-        private bool _isInvoking;
-
-        private int _samples;
-        private string _name;
         private List<ProfilerFrame> _frames;
 
         /// <summary>

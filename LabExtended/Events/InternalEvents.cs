@@ -47,7 +47,8 @@ namespace LabExtended.Events
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
 
-            ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
+            if (ExLoader.Loader.Config.Api.EnableProfilerLogs)
+                ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
 
             foreach (var marker in ProfilerMarker.AllMarkers)
             {

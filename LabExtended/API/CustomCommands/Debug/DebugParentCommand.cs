@@ -33,6 +33,7 @@ namespace LabExtended.API.CustomCommands.Debug
             RegisterCommand(new SelectDebugItemCommand());
 
             RegisterCommand(new CameraLookCommand());
+            RegisterCommand(new LogPerformanceReportCommand());
         }
     }
 }

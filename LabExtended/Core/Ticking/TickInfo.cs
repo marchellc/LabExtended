@@ -85,7 +85,7 @@ namespace LabExtended.Core.Ticking
         internal void RegisterTickStart()
         {
             if (Timer.IsProfiled)
-                (_marker ??= new ProfilerMarker(Target.Method.GetMemberName())).MarkStart();
+                (_marker ??= new ProfilerMarker(Target.Method.GetMemberName(), 50)).MarkStart();
             else
             {
                 _marker?.Dispose();
@@ -95,14 +95,7 @@ namespace LabExtended.Core.Ticking
 
         internal void RegisterTickEnd()
         {
-            if (Timer.IsProfiled)
-                (_marker ??= new ProfilerMarker(Target.Method.GetMemberName())).MarkEnd();
-            else
-            {
-                _marker?.Dispose();
-                _marker = null;
-            }
-
+            _marker?.MarkEnd();
             _passedFrames = 0;
 
             if (Timer.DelayValue.HasValue && !Timer.IsFramed && Timer.DelayValue.Value > 0f)
