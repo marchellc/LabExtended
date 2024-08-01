@@ -11,6 +11,7 @@ using PlayerRoles.PlayableScps.Scp049.Zombies;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
 using PlayerRoles.PlayableScps.Scp079.Pinging;
 using PlayerRoles.PlayableScps.Scp079.Rewards;
+using PlayerRoles.PlayableScps.Scp939.Mimicry;
 
 namespace LabExtended.API.Containers
 {
@@ -89,6 +90,12 @@ namespace LabExtended.API.Containers
         public Scp939FocusAbility Scp939FocusAbility => GetRoutine<Scp939FocusAbility>();
         public Scp939LungeAbility Scp939LungeAbility => GetRoutine<Scp939LungeAbility>();
         public Scp939ClawAbility Scp939ClawAbility => GetRoutine<Scp939ClawAbility>();
+
+        public EnvironmentalMimicry EnvironmentalMimicry => GetRoutine<EnvironmentalMimicry>();
+
+        public MimicPointController MimicPointController => GetRoutine<MimicPointController>();
+        public MimicryTransmitter MimicryTransmitter => GetRoutine<MimicryTransmitter>();
+        public MimicryRecorder MimicryRecorder => GetRoutine<MimicryRecorder>();
         #endregion
 
         #region Scp3114 Abilities

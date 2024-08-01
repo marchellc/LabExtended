@@ -23,6 +23,16 @@ namespace LabExtended.API.Containers
         /// Gets or sets a value indicating whether or not this player is visible in the Spectator List.
         /// </summary>
         public bool IsVisibleInSpectatorList { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating if this player is always visible to SCP-939.
+        /// </summary>
+        public bool IsVisibleToScp939 { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player can see every other player when playing as SCP-939.
+        /// </summary>
+        public bool CanSeeEveryoneAs939 { get; set; }
         #endregion
 
         #region Round Switches
@@ -126,17 +136,17 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-939) can use the Lunge ability.
         /// </summary>
-        public bool CanLungeAs939 { get; set; } = true; // not done
+        public bool CanLungeAs939 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can gain experience when playing as SCP-079.
         /// </summary>
-        public bool CanGainExpAs079 { get; set; } = true; // not done
+        public bool CanGainExpAs079 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-939) can use the Mimicry ability.
         /// </summary>
-        public bool CanUseMimicryAs939 { get; set; } = true; // not done
+        public bool CanUseMimicryAs939 { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-079) can be recontained.
