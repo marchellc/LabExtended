@@ -179,7 +179,7 @@ namespace LabExtended.API.Hints
                                 if (offset == 0f)
                                     offset = -count;
 
-                                HintUtils.GetMessages(data, element._messages, offset, element.AutoLineWrap);
+                                HintUtils.GetMessages(data, element._messages, offset, element.AutoLineWrap, element.PixelLineSpacing);
                             }
 
                             foreach (var message in element._messages)

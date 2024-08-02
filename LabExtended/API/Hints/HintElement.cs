@@ -22,6 +22,11 @@ namespace LabExtended.API.Hints
         /// </summary>
         public virtual bool AutoLineWrap { get; set; } = true;
 
+        /// <summary>
+        /// Pixel gap between lines
+        /// </summary>
+        public virtual int PixelLineSpacing { get; set; } = 3;
+
         public virtual HintAlign Alignment { get; set; } = HintAlign.Center;
 
         public virtual void OnDisabled() { }

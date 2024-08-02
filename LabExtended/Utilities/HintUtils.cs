@@ -90,7 +90,7 @@ namespace LabExtended.Utilities
             return 0.06f * (pixelSize - 1f);
         }
 
-        internal static void GetMessages(string content, LockedHashSet<HintData> messages, float vOffset, bool autoLineWrap)
+        internal static void GetMessages(string content, LockedHashSet<HintData> messages, float vOffset, bool autoLineWrap, int pixelLineSpacing)
         {
             var matches = NewLineRegex.Matches(content);
             int clock = 0;
@@ -124,7 +124,7 @@ namespace LabExtended.Utilities
 
                     if (messages.Count > 0)
                     {
-                        vOffset -= biggestPixelSize / (float)PixelsPerEm;
+                        vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
                     }
 
                     messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
@@ -155,7 +155,7 @@ namespace LabExtended.Utilities
                         ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
                         if (messages.Count > 0)
-                            vOffset -= biggestPixelSize / (float)PixelsPerEm;
+                            vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
                         messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
@@ -172,7 +172,7 @@ namespace LabExtended.Utilities
                         ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
                         if (messages.Count > 0)
-                            vOffset -= biggestPixelSize / (float)PixelsPerEm;
+                            vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
                         messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
@@ -196,7 +196,7 @@ namespace LabExtended.Utilities
                 ManageSize(ref line, out biggestPixelSize, out _, out _);
 
                 if (messages.Count > 0)
-                    vOffset -= biggestPixelSize / (float)PixelsPerEm;
+                    vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
                 messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
