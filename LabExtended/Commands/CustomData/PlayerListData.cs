@@ -2,13 +2,13 @@
 
 using System.Collections;
 
-namespace LabExtended.Core.Commands.CustomData
+namespace LabExtended.Commands.CustomData
 {
-    public class PlayerList : IList<ExPlayer>
+    public class PlayerListData : IList<ExPlayer>
     {
         private readonly List<ExPlayer> _list;
 
-        public PlayerList(List<ExPlayer> list)
+        public PlayerListData(List<ExPlayer> list)
             => _list = list;
 
         public ExPlayer this[int index]

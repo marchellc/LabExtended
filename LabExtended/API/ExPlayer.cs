@@ -2,10 +2,6 @@
 
 using CommandSystem;
 
-using CustomPlayerEffects;
-
-using Decals;
-
 using Footprinting;
 
 using Interactables.Interobjects.DoorUtils;
@@ -22,6 +18,7 @@ using InventorySystem.Items.Pickups;
 
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
+using LabExtended.API.CustomModules;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
@@ -34,7 +31,6 @@ using LabExtended.Core.Ticking;
 
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
-using LabExtended.Patches.Functions;
 
 using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
@@ -50,9 +46,10 @@ using NorthwoodLib.Pools;
 
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
+using PlayerRoles.FirstPersonControl.NetworkMessages;
 using PlayerRoles.PlayableScps;
 using PlayerRoles.Spectating;
-
+using PlayerRoles.Visibility;
 using PlayerStatsSystem;
 
 using PluginAPI.Core;
@@ -78,19 +75,29 @@ namespace LabExtended.API
     {
         static ExPlayer()
         {
-            _players = new List<ExPlayer>();
-            _npcPlayers = new List<ExPlayer>();
-            _allPlayers = new List<ExPlayer>();
+            _players = new LockedHashSet<ExPlayer>();
+            _npcPlayers = new LockedHashSet<ExPlayer>();
+            _allPlayers = new LockedHashSet<ExPlayer>();
 
-            TickManager.SubscribeTick(UpdateSentRoles, TickTimer.None, "Player Role Sync");
+            TickManager.SubscribeTick(SynchronizeRoles, TickTimer.NoneProfiled, "Role Synchronization", true);
+            TickManager.SubscribeTick(SynchronizePositions, TickTimer.NoneProfiled, "Position Synchronization", true);
+
             TickManager.Init();
         }
 
-        internal static readonly List<ExPlayer> _players;
-        internal static readonly List<ExPlayer> _npcPlayers;
-        internal static readonly List<ExPlayer> _allPlayers;
+        internal static readonly LockedHashSet<ExPlayer> _players;
+        internal static readonly LockedHashSet<ExPlayer> _npcPlayers;
+        internal static readonly LockedHashSet<ExPlayer> _allPlayers;
+        internal static readonly LockedHashSet<ExPlayer> _ghostedPlayers;
 
         internal static ExPlayer _hostPlayer;
+
+        private static float _sendTime = 0f;
+
+        /// <summary>
+        /// Gets the current position synchronization rate based on the server's TPS. Used in <see cref="SynchronizePositions"/>.
+        /// </summary>
+        public static float PositionSendRate => 1f / Mathf.Clamp(ServerStatic.ServerTickrate, 10, 60);
 
         /// <summary>
         /// Gets a list of all players on the server.
@@ -113,6 +120,11 @@ namespace LabExtended.API
         public static int NpcCount => _npcPlayers.Count;
 
         /// <summary>
+        /// Gets a count of all players on the server (including real players, NPCs and the server player).
+        /// </summary>
+        public static int AllCount => _allPlayers.Count;
+
+        /// <summary>
         /// Gets the host player.
         /// </summary>
         public static ExPlayer Host
@@ -129,6 +141,9 @@ namespace LabExtended.API
                     _hostPlayer.Switches.IsVisibleInRemoteAdmin = false;
                     _hostPlayer.Switches.IsVisibleInSpectatorList = false;
 
+                    _hostPlayer.Switches.ShouldSendPosition = false;
+                    _hostPlayer.Switches.ShouldReceivePositions = false;
+
                     _allPlayers.Add(_hostPlayer);
                 }
 
@@ -136,6 +151,7 @@ namespace LabExtended.API
             }
         }
 
+        #region Get
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ReferenceHub"/>.
         /// </summary>
@@ -429,6 +445,7 @@ namespace LabExtended.API
         /// <returns>A list of all matching players.</returns>
         public static IEnumerable<ExPlayer> Get(RoleTypeId role)
             => Get(n => n.Role.Type == role);
+        #endregion
 
         private NetPeer _peer;
         private ReferenceHub _hub;
@@ -441,6 +458,11 @@ namespace LabExtended.API
         internal HintModule _hints;
 
         internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+
+        internal readonly LockedDictionary<int, FpcSyncData> _newSyncData;
+        internal readonly LockedDictionary<int, FpcSyncData> _prevSyncData;
+
+        internal readonly LockedHashSet<ExPlayer> _invisibility;
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
 
         public ExPlayer(ReferenceHub hub) : this(hub, new SwitchContainer()) { }
@@ -454,6 +476,11 @@ namespace LabExtended.API
             _forcedIcons = RemoteAdminIconType.None;
 
             _sentRoles = new LockedDictionary<int, RoleTypeId>();
+
+            _newSyncData = new LockedDictionary<int, FpcSyncData>();
+            _prevSyncData = new LockedDictionary<int, FpcSyncData>();
+
+            _invisibility = new LockedHashSet<ExPlayer>();
             _droppedItems = new LockedHashSet<ItemPickupBase>();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
@@ -539,6 +566,8 @@ namespace LabExtended.API
         public IEnumerable<VoiceModifier> VoiceModifiers => _voice.Modifiers;
         public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
 
+        public LockedHashSet<ExPlayer> InvisibleToTargets => _invisibility;
+
         public Transform Transform => _hub.transform;
         public Transform CameraTransform => _hub.PlayerCameraReference;
 
@@ -551,6 +580,8 @@ namespace LabExtended.API
         public int Ping => _peer?.Ping ?? -1;
         public int TripTime => _peer?._avgRtt ?? -1;
         public int ConnectionId => _hub.connectionToClient.connectionId;
+
+        public int ItemCount => _hub.inventory.UserInventory.Items.Count;
 
         public float AspectRatio => _hub.aspectRatioSync.AspectRatio;
 
@@ -620,13 +651,13 @@ namespace LabExtended.API
 
         public bool IsInvisible
         {
-            get => GhostModePatch.GhostedPlayers.Contains(NetId);
+            get => _ghostedPlayers.Contains(this);
             set
             {
-                if (value && !GhostModePatch.GhostedPlayers.Contains(NetId))
-                    GhostModePatch.GhostedPlayers.Add(NetId);
-                else if (!value && GhostModePatch.GhostedPlayers.Contains(NetId))
-                    GhostModePatch.GhostedPlayers.Remove(NetId);
+                if (value)
+                    _ghostedPlayers.Add(this);
+                else
+                    _ghostedPlayers.Remove(this);
             }
         }
 
@@ -675,7 +706,7 @@ namespace LabExtended.API
         public int PlayerId
         {
             get => _hub.PlayerId;
-            set => _hub._playerId = new RecyclablePlayerId(value);
+            set => _hub.Network_playerId = new RecyclablePlayerId(value);
         }
 
         public float InfoViewRange
@@ -869,7 +900,7 @@ namespace LabExtended.API
                 else
                     _hub.inventory.UserInventory.ReserveAmmo = value;
 
-                _hub.inventory.ServerSendAmmo();
+                _hub.inventory.SendAmmoNextFrame = true;
             }
         }
 
@@ -994,29 +1025,17 @@ namespace LabExtended.API
             if (IsInvisible)
                 return true;
 
-            if (GhostModePatch.GhostedTo.TryGetValue(NetId, out var ghostedToPlayers) && ghostedToPlayers.Contains(otherPlayer.NetId))
+            if (_invisibility.Contains(otherPlayer))
                 return true;
 
             return false;
         }
 
         public void MakeInvisibleFor(ExPlayer player)
-        {
-            if (!GhostModePatch.GhostedTo.TryGetValue(NetId, out var ghostedToPlayers))
-                GhostModePatch.GhostedTo[NetId] = ghostedToPlayers = new LockedList<uint>();
-
-            if (!ghostedToPlayers.Contains(player.NetId))
-                ghostedToPlayers.Add(player.NetId);
-        }
+            => _invisibility.Add(player);
 
         public void MakeVisibleFor(ExPlayer player)
-        {
-            if (!GhostModePatch.GhostedTo.TryGetValue(NetId, out var ghostedToPlayers))
-                GhostModePatch.GhostedTo[NetId] = ghostedToPlayers = new LockedList<uint>();
-
-            if (ghostedToPlayers.Contains(player.NetId))
-                ghostedToPlayers.Remove(player.NetId);
-        }
+            => _invisibility.Remove(player);
         #endregion
 
         #region Inventory Methods
@@ -1119,6 +1138,7 @@ namespace LabExtended.API
                     break;
 
                 removed++;
+
                 _hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
             }
 
@@ -1211,18 +1231,18 @@ namespace LabExtended.API
         public void SetAmmo(ItemType ammoType, ushort amount)
         {
             Ammo[ammoType] = amount;
-            _hub.inventory.ServerSendAmmo();
+            _hub.inventory.SendAmmoNextFrame = true;
         }
 
         public void AddAmmo(ItemType ammoType, ushort amount)
         {
             Ammo[ammoType] = (ushort)Mathf.Clamp(GetAmmo(ammoType) + amount, 0f, ushort.MaxValue);
-            _hub.inventory.ServerSendAmmo();
+            _hub.inventory.SendAmmoNextFrame = true;
         }
         public void SubstractAmmo(ItemType ammoType, ushort amount)
         {
             Ammo[ammoType] = (ushort)Mathf.Clamp(GetAmmo(ammoType) - amount, 0f, ushort.MaxValue);
-            _hub.inventory.ServerSendAmmo();
+            _hub.inventory.SendAmmoNextFrame = true;
         }
 
         public bool HasAmmo(ItemType itemType, ushort minAmount = 1)
@@ -1231,13 +1251,13 @@ namespace LabExtended.API
         public void ClearAmmo()
         {
             Ammo.Clear();
-            _hub.inventory.ServerSendAmmo();
+            _hub.inventory.SendAmmoNextFrame = true;
         }
 
         public void ClearAmmo(ItemType ammoType)
         {
             Ammo.Remove(ammoType);
-            _hub.inventory.ServerSendAmmo();
+            _hub.inventory.SendAmmoNextFrame = true;
         }
 
         public List<AmmoPickup> DropAllAmmo()
@@ -1390,7 +1410,7 @@ namespace LabExtended.API
             => player != null && player.IsVerified;
         #endregion
 
-        #region Private Methods
+        #region Helper Methods
         private void SetItemList(IEnumerable<ItemBase> items)
         {
             ClearInventory();
@@ -1466,16 +1486,8 @@ namespace LabExtended.API
         }
         #endregion
 
-        #region Internal Methods
-        internal RoleTypeId? GetRoleForJoinedPlayer(ExPlayer joinedPlayer)
-        {
-            if (!Switches.IsVisibleInSpectatorList)
-                return RoleTypeId.Spectator;
-
-            return null;
-        }
-
-        internal static void UpdateSentRoles()
+        #region Synchronization
+        private static void SynchronizeRoles()
         {
             foreach (var player in _allPlayers)
             {
@@ -1499,6 +1511,79 @@ namespace LabExtended.API
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
                 }
             }
+        }
+
+        private static void SynchronizePositions()
+        {
+            _sendTime += Time.deltaTime;
+
+            if (_sendTime < PositionSendRate)
+                return;
+
+            _sendTime -= PositionSendRate;
+
+            foreach (var player in _allPlayers)
+            {
+                if (!player.Switches.ShouldReceivePositions)
+                    continue;
+
+                using (var writer = NetworkWriterPool.Get())
+                {
+                    writer.PackMessage<FpcPositionMessage>(() =>
+                    {
+                        player._newSyncData.Clear();
+
+                        var isGhosted = _ghostedPlayers.Contains(player);
+
+                        var customVisibilityRole = player.Role.Role as ICustomVisibilityRole;
+                        var customVisibilityController = customVisibilityRole?.VisibilityController ?? null;
+
+                        foreach (var other in _allPlayers)
+                        {
+                            if (!other.Switches.ShouldSendPosition)
+                                continue;
+
+                            if (other.NetId == player.NetId)
+                                continue;
+
+                            if (!other.Role.Is<IFpcRole>(out var fpcRole))
+                                continue;
+
+                            var module = other.Role.MovementModule;
+                            var isInvisible = customVisibilityRole != null && !customVisibilityController.ValidateVisibility(other.Hub);
+
+                            if (!isInvisible && (isGhosted || other._invisibility.Contains(player)))
+                                isInvisible = true;
+
+                            if (!player._prevSyncData.TryGetValue(other.PlayerId, out var prevSyncData))
+                                prevSyncData = default;
+
+                            player._newSyncData[other.PlayerId] = prevSyncData = isInvisible ? default : new FpcSyncData(prevSyncData, module.SyncMovementState, module.IsGrounded, new RelativePosition(other.Transform.position), module.MouseLook);
+                            player._prevSyncData[other.PlayerId] = prevSyncData;
+                        }
+
+                        writer.WriteUShort((ushort)player._newSyncData.Count);
+
+                        foreach (var pair in player._newSyncData)
+                        {
+                            writer.WriteRecyclablePlayerId(new RecyclablePlayerId(pair.Key));
+                            pair.Value.Write(writer);
+                        }
+                    });
+
+                    player.Connection.Send(writer.ToArraySegment());
+                }
+            }
+        }
+        #endregion
+
+        #region Internal Methods
+        internal RoleTypeId? GetRoleForJoinedPlayer(ExPlayer joinedPlayer)
+        {
+            if (!Switches.IsVisibleInSpectatorList)
+                return RoleTypeId.Spectator;
+
+            return null;
         }
         #endregion
     }

@@ -6,7 +6,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets called when a tesla gate starts triggering.
     /// </summary>
-    public class TeslaGateTriggeringArgs : HookBooleanCancellableEventBase
+    public class TeslaGateTriggeringArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the tesla gate that started triggering.

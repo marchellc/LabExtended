@@ -1,12 +1,11 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Player
 {
     /// <summary>
     /// An event that gets called when a player stops speaking.
     /// </summary>
-    public class PlayerStoppedSpeakingArgs : IHookEvent
+    public class PlayerStoppedSpeakingArgs
     {
         /// <summary>
         /// The player who stopped speaking.

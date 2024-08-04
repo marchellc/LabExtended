@@ -9,7 +9,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets triggered when a locker is filling it's chamber.
     /// </summary>
-    public class LockerSpawningPickupArgs : HookBooleanCancellableEventBase
+    public class LockerSpawningPickupArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The locker that's filling chambers.

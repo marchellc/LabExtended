@@ -9,7 +9,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets called when an item is being spawned at the round start.
     /// </summary>
-    public class DistributingPickupArgs : HookBooleanCancellableEventBase
+    public class DistributingPickupArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the targeted spawn point.

@@ -5,9 +5,7 @@ using LabExtended.API.Input;
 using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
 
-using LabExtended.Core.Commands.Interfaces;
 using LabExtended.Core.Hooking;
-
 using LabExtended.Events.Player;
 
 using UnityEngine;
@@ -20,12 +18,10 @@ namespace LabExtended.API.CustomCommands.Input
         public override string Command => "input";
         public override string Description => "Used for server key binds.";
 
-        public override ArgumentDefinition[] Arguments { get; } = new ArgumentDefinition[]
-        {
-            ArgumentDefinition.FromType<KeyCode>("key", "Key to send to the server."),
-        };
+        public override ArgumentDefinition[] BuildArgs()
+            => ArgumentBuilder.Get(x => x.WithArg<KeyCode>("key", "Key to send to the server."));
 
-        public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
+        public override void OnCommand(ExPlayer sender, Commands.Interfaces.ICommandContext ctx, ArgumentCollection args)
         {
             base.OnCommand(sender, ctx, args);
 

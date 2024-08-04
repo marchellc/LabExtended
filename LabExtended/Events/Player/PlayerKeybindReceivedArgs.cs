@@ -8,7 +8,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player executes the .input command.
     /// </summary>
-    public class PlayerKeybindReceivedArgs : HookBooleanCancellableEventBase
+    public class PlayerKeybindReceivedArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The player sending the keybind.

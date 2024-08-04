@@ -11,7 +11,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets called when the game starts spawning a structure.
     /// </summary>
-    public class SpawningStructureArgs : HookBooleanCancellableEventBase
+    public class SpawningStructureArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The structure to spawn.

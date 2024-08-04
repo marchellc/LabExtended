@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace LabExtended.Core.Commands.Parsing.PlayerList
+namespace LabExtended.Commands.Parsing.PlayerList
 {
     public struct PlayerToken
     {
@@ -28,7 +28,7 @@ namespace LabExtended.Core.Commands.Parsing.PlayerList
         internal PlayerToken(string name, string regex)
         {
             Name = name;
-            Regex = new Regex("^" + regex);
+            Regex = new Regex("^" + regex, RegexOptions.Compiled);
         }
     }
 }

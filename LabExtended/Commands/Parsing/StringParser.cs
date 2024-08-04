@@ -1,8 +1,6 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-
-namespace LabExtended.Core.Commands.Parsing
+﻿namespace LabExtended.Commands.Parsing
 {
-    public class StringParser : ICommandParser
+    public class StringParser : Interfaces.ICommandParser
     {
         public string Name => "A string of characters, or simply a word.";
         public string Description => "A string of characters, or simply a word.";

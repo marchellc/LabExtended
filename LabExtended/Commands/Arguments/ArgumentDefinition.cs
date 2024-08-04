@@ -1,11 +1,5 @@
 ﻿using LabExtended.API.Collections.Locked;
-
 using LabExtended.Commands.Interfaces;
-
-using LabExtended.Core.Commands;
-using LabExtended.Core.Commands.Attributes;
-using LabExtended.Core.Commands.Interfaces;
-
 using LabExtended.Extensions;
 
 using System.ComponentModel;
@@ -27,14 +21,14 @@ namespace LabExtended.Commands.Arguments
 
         public ArgumentFlags Flags { get; private set; } = ArgumentFlags.None;
 
-        public ICommandParser Parser { get; private set; }
+        public Interfaces.ICommandParser Parser { get; private set; }
         public IReadOnlyList<ICommandValidator> Validators => _validators;
 
         public bool IsRemainder => Flags != ArgumentFlags.None && (Flags & ArgumentFlags.Optional) != 0;
         public bool IsOptional => Flags != ArgumentFlags.None && (Flags & ArgumentFlags.Optional) != 0;
 
         public ArgumentDefinition() { }
-        public ArgumentDefinition(Type type, string name, string description = "No description", ICommandParser parser = null, object defaultValue = null, ArgumentFlags flags = ArgumentFlags.None)
+        public ArgumentDefinition(Type type, string name, string description = "No description", Interfaces.ICommandParser parser = null, object defaultValue = null, ArgumentFlags flags = ArgumentFlags.None)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -48,10 +42,10 @@ namespace LabExtended.Commands.Arguments
             Default = defaultValue;
             Description = description;
 
-            Parser = parser ?? CommandParser.FromType(type);
+            Parser = parser ?? Commands.CommandParser.FromType(type);
         }
 
-        public ArgumentDefinition WithType(Type type, ICommandParser parser = null)
+        public ArgumentDefinition WithType(Type type, Interfaces.ICommandParser parser = null)
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
@@ -61,12 +55,12 @@ namespace LabExtended.Commands.Arguments
             if (parser != null)
                 Parser = parser;
             else if (Parser is null)
-                Parser = CommandParser.FromType(type);
+                Parser = Commands.CommandParser.FromType(type);
 
             return this;
         }
 
-        public ArgumentDefinition WithType<T>(ICommandParser parser = null)
+        public ArgumentDefinition WithType<T>(Interfaces.ICommandParser parser = null)
             => WithType(typeof(T), parser);
 
         public ArgumentDefinition WithName(string name)
@@ -138,7 +132,7 @@ namespace LabExtended.Commands.Arguments
                 throw new Exception($"Argument's parser cannot be null.");
         }
 
-        public static ArgumentDefinition FromType<T>(string name, string description = "No description", ArgumentFlags flags = ArgumentFlags.None, T defaultValue = default, ICommandParser parser = null)
+        public static ArgumentDefinition FromType<T>(string name, string description = "No description", ArgumentFlags flags = ArgumentFlags.None, T defaultValue = default, Interfaces.ICommandParser parser = null)
             => new ArgumentDefinition(typeof(T), name, description, parser, defaultValue, flags);
 
         public static ArgumentDefinition FromParameter(ParameterInfo parameter)
@@ -146,8 +140,8 @@ namespace LabExtended.Commands.Arguments
             var definition = new ArgumentDefinition() { _bindParameter = parameter };
 
             var descAttribute = parameter.GetCustomAttribute<DescriptionAttribute>();
-            var remainderAttribute = parameter.GetCustomAttribute<RemainderAttribute>();
-            var optionalAttribute = parameter.GetCustomAttribute<OptionalAttribute>();
+            var remainderAttribute = parameter.GetCustomAttribute<Attributes.RemainderAttribute>();
+            var optionalAttribute = parameter.GetCustomAttribute<Attributes.OptionalAttribute>();
 
             definition.WithName(parameter.Name);
             definition.WithType(parameter.ParameterType);

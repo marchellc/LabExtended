@@ -9,8 +9,6 @@ using LabExtended.API;
 
 using Mirror;
 
-using System.Collections.Frozen;
-
 using UnityEngine;
 
 namespace LabExtended.Extensions
@@ -20,7 +18,7 @@ namespace LabExtended.Extensions
     /// </summary>
     public static class ItemExtensions
     {
-        public static FrozenDictionary<ItemType, ItemBase> Prefabs { get; private set; }
+        public static Dictionary<ItemType, ItemBase> Prefabs { get; private set; }
 
         public static bool PrefabsLoaded => Prefabs != null && Prefabs.Count > 0;
 
@@ -28,7 +26,7 @@ namespace LabExtended.Extensions
         {
             InventoryItemLoader.ForceReload();
 
-            Prefabs = InventoryItemLoader.AvailableItems.ToFrozenDictionary();
+            Prefabs = InventoryItemLoader.AvailableItems;
         }
 
         public static byte GetInventorySlot(this ItemBase item)

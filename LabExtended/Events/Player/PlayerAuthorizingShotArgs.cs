@@ -5,7 +5,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerAuthorizingShotArgs : HookBooleanCancellableEventBase
+    public class PlayerAuthorizingShotArgs : BoolCancellableEvent
     {
         public ExPlayer Player { get; }
 

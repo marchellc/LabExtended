@@ -1,4 +1,7 @@
-﻿namespace UnityEngine.AI
+﻿using UnityEngine;
+using UnityEngine.AI;
+
+namespace LabExtended.API.Npcs.Navigation.API
 {
     public enum CollectObjects
     {
@@ -217,7 +220,7 @@
 
             foreach (var m in modifiers)
             {
-                if ((m_LayerMask & (1 << m.gameObject.layer)) == 0)
+                if ((m_LayerMask & 1 << m.gameObject.layer) == 0)
                     continue;
                 if (!m.AffectsAgentType(m_AgentTypeID))
                     continue;
@@ -252,7 +255,7 @@
 
             foreach (var m in modifiers)
             {
-                if ((m_LayerMask & (1 << m.gameObject.layer)) == 0)
+                if ((m_LayerMask & 1 << m.gameObject.layer) == 0)
                     continue;
                 if (!m.AffectsAgentType(m_AgentTypeID))
                     continue;
@@ -282,10 +285,10 @@
             }
 
             if (m_IgnoreNavMeshAgent)
-                sources.RemoveAll((x) => (x.component != null && x.component.gameObject.GetComponent<NavMeshAgent>() != null));
+                sources.RemoveAll((x) => x.component != null && x.component.gameObject.GetComponent<NavMeshAgent>() != null);
 
             if (m_IgnoreNavMeshObstacle)
-                sources.RemoveAll((x) => (x.component != null && x.component.gameObject.GetComponent<NavMeshObstacle>() != null));
+                sources.RemoveAll((x) => x.component != null && x.component.gameObject.GetComponent<NavMeshObstacle>() != null);
 
             AppendModifierVolumes(ref sources);
 

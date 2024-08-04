@@ -9,6 +9,9 @@ using UnityEngine;
 
 namespace LabExtended.Core.Ticking
 {
+    /// <summary>
+    /// A class that distributes method ticks based on a custom configuration.
+    /// </summary>
     public static class TickManager
     {
         internal static readonly LockedHashSet<TickInfo> _activeTicks = new LockedHashSet<TickInfo>();
@@ -21,6 +24,9 @@ namespace LabExtended.Core.Ticking
 
         private static bool _wasKilled = false;
 
+        /// <summary>
+        /// Gets invoked every frame.
+        /// </summary>
         public static event Action OnTick;
 
         internal static void Init()

@@ -1,9 +1,8 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Extensions;
+﻿using LabExtended.Extensions;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class NumericParser : ICommandParser
+    public class NumericParser : Interfaces.ICommandParser
     {
         public static IReadOnlyDictionary<Type, Func<string, object>> Parsers { get; } = new Dictionary<Type, Func<string, object>>()
         {

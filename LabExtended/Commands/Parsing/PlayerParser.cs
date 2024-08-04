@@ -1,9 +1,8 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Commands.Interfaces;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class PlayerParser : ICommandParser
+    public class PlayerParser : Interfaces.ICommandParser
     {
         public string Name => "Player";
         public string Description => "A player (you can specify a player's user ID, player ID, name, network ID or IP).";

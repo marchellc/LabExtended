@@ -1,8 +1,6 @@
 ﻿using LabExtended.API.Enums;
 using LabExtended.API;
 
-using LabExtended.Core.Hooking.Interfaces;
-
 using PlayerRoles.PlayableScps.Scp079.Pinging;
 using PlayerRoles.PlayableScps.Scp079;
 
@@ -13,7 +11,7 @@ namespace LabExtended.Events.Scp079
     /// <summary>
     /// An event that gets called when SCP-079 spawns a ping indicator.
     /// </summary>
-    public class Scp079SpawnedPingArgs : IHookEvent
+    public class Scp079SpawnedPingArgs
     {
         /// <summary>
         /// The player playing as SCP-079.

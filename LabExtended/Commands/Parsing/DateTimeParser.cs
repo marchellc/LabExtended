@@ -1,8 +1,6 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-
-namespace LabExtended.Core.Commands.Parsing
+﻿namespace LabExtended.Commands.Parsing
 {
-    public class DateTimeParser : ICommandParser
+    public class DateTimeParser : Interfaces.ICommandParser
     {
         public string Name => "Date";
         public string Description => "A date. Look at 'https://learn.microsoft.com/en-us/dotnet/api/system.datetime.parse?view=net-8.0#system-datetime-parse(system-string)' for a list of valid formats.";

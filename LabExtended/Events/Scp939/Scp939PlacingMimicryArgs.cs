@@ -8,7 +8,7 @@ using RelativePositioning;
 
 namespace LabExtended.Events.Scp939
 {
-    public class Scp939PlacingMimicryArgs : HookBooleanCancellableEventBase
+    public class Scp939PlacingMimicryArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
 

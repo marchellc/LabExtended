@@ -1,21 +1,20 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Extensions;
+﻿using LabExtended.Extensions;
 
 using System.Collections;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class ListParser : ICommandParser
+    public class ListParser : Interfaces.ICommandParser
     {
         public string Name => $"A list of items ({ElementParser.Name})";
         public string Description => $"A list of items (string separated by a comma (item1,item2,item3))";
 
-        public ICommandParser ElementParser { get; }
+        public Interfaces.ICommandParser ElementParser { get; }
 
         public Type ElementType { get; }
         public Type GenericType { get; }
 
-        internal ListParser(ICommandParser elementParser, Type elementType)
+        internal ListParser(Interfaces.ICommandParser elementParser, Type elementType)
         {
             ElementParser = elementParser;
             ElementType = elementType;

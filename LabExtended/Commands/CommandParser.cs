@@ -1,20 +1,19 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Core.Commands.Parsing;
-
-using LabExtended.API;
+﻿using LabExtended.API;
 using LabExtended.API.CustomCommands.Formatting;
 using LabExtended.API.Collections.Locked;
+
+using LabExtended.Commands.Arguments;
+using LabExtended.Commands.Interfaces;
+using LabExtended.Commands.Parsing;
+using LabExtended.Commands.CustomData;
 
 using UnityEngine;
 
 using NorthwoodLib.Pools;
 
 using System.Reflection;
-using LabExtended.Commands;
-using LabExtended.Commands.Arguments;
-using static HarmonyLib.Code;
 
-namespace LabExtended.Core.Commands
+namespace LabExtended.Commands
 {
     public static class CommandParser
     {
@@ -48,7 +47,8 @@ namespace LabExtended.Core.Commands
             [typeof(Quaternion)] = new QuaternionParser(),
 
             [typeof(ExPlayer)] = new PlayerParser(),
-            [typeof(PlayerList)] = new PlayerListParser()
+
+            [typeof(PlayerListData)] = new PlayerListParser()
         };
 
         private static readonly LockedDictionary<char, char> _definedQuotes = new LockedDictionary<char, char>()
@@ -178,9 +178,9 @@ namespace LabExtended.Core.Commands
             failedArg = null;
             failedReason = null;
 
-            if (command.Arguments.Length == 1 && command.Arguments[0].Type == typeof(string))
+            if (command._args.Length == 1 && command._args[0].Type == typeof(string))
             {
-                setArgumentValue(command.Arguments[0], arg.Trim());
+                setArgumentValue(command._args[0], arg.Trim());
                 return true;
             }
 
@@ -203,7 +203,7 @@ namespace LabExtended.Core.Commands
                 else
                     curChar = '\0';
 
-                if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)) && i != endIndex)
+                if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)) && i != endIndex)
                 {
                     curBuilder.Append(curChar);
                     continue;
@@ -223,7 +223,7 @@ namespace LabExtended.Core.Commands
                     }
                 }
 
-                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length))))
+                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length))))
                 {
                     isEscaping = true;
                     continue;
@@ -247,9 +247,9 @@ namespace LabExtended.Core.Commands
                     else
                     {
                         if (curArg is null)
-                            curArg = command.Arguments.Length > countArgs() ? command.Arguments[countArgs()] : null;
+                            curArg = command._args.Length > countArgs() ? command._args[countArgs()] : null;
 
-                        if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)))
+                        if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)))
                         {
                             curBuilder.Append(curChar);
                             continue;
@@ -319,7 +319,7 @@ namespace LabExtended.Core.Commands
                 }
             }
 
-            if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command.Arguments.Length)))
+            if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)))
             {
                 if (!curArg.Parser.TryParse(curBuilder.ToString(), out var failureMessage, out var remainderResult))
                 {
@@ -355,9 +355,9 @@ namespace LabExtended.Core.Commands
                 return false;
             }
 
-            for (int i = countArgs(); i < command.Arguments.Length; i++)
+            for (int i = countArgs(); i < command._args.Length; i++)
             {
-                curArg = command.Arguments[i];
+                curArg = command._args[i];
 
                 if (!curArg.IsOptional)
                 {

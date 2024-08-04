@@ -4,32 +4,23 @@ namespace LabExtended.Commands
 {
     public class VanillaParentCommandBase : ParentCommand
     {
-        public VanillaParentCommandBase(string name, string description, params string[] aliases)
-        {
-            Command = name;
-            Aliases = aliases;
-            Description = description;
+        public VanillaParentCommandBase()
+            => LoadGeneratedCommands();
 
-            LoadGeneratedCommands();
-        }
+        public override string Command { get; } = string.Empty;
+        public override string Description { get; } = string.Empty;
 
-        public override string Command { get; }
-        public override string Description { get; }
+        public override string[] Aliases { get; } = Array.Empty<string>();
 
-        public override string[] Aliases { get; }
+        public virtual bool AllowParentCall { get; } = false;
 
-        public virtual bool AllowParentCall { get; }
-
-        public virtual void OnInitialized() { }
+        public override void LoadGeneratedCommands() { }
 
         public virtual bool OnParentCalled(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {
             response = null;
             return false;
         }
-
-        public override void LoadGeneratedCommands()
-            => OnInitialized();
 
         protected override bool ExecuteParent(ArraySegment<string> arguments, ICommandSender sender, out string response)
         {

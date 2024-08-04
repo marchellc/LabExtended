@@ -3,7 +3,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerSendingAdminChatMessageArgs : HookBooleanCancellableEventBase
+    public class PlayerSendingAdminChatMessageArgs : BoolCancellableEvent
     {
         public ExPlayer Player { get; }
 

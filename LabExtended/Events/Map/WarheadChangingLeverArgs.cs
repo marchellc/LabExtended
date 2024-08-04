@@ -6,7 +6,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets called when a player interacts with the Warhead lever.
     /// </summary>
-    public class WarheadChangingLeverArgs : HookBooleanCancellableEventBase
+    public class WarheadChangingLeverArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The lever's current state.

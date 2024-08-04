@@ -1,6 +1,6 @@
 ﻿using NorthwoodLib.Pools;
 
-namespace LabExtended.Core.Commands.Parsing.PlayerList
+namespace LabExtended.Commands.Parsing.PlayerList
 {
     public static class PlayerListLexer
     {

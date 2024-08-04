@@ -13,7 +13,7 @@ namespace LabExtended.Events.Scp079
     /// <summary>
     /// Gets called <b>BEFORE</b> SCP-079 spawns a ping indicator.
     /// </summary>
-    public class Scp079SpawningPingArgs : HookBooleanCancellableEventBase
+    public class Scp079SpawningPingArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The player playing as SCP-079.

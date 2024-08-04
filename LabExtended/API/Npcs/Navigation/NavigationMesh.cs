@@ -1,4 +1,5 @@
-﻿using LabExtended.Core;
+﻿using LabExtended.API.Npcs.Navigation.API;
+using LabExtended.Core;
 using LabExtended.Extensions;
 
 using UnityEngine;

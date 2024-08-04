@@ -8,7 +8,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when the player's position is about to get overriden.
     /// </summary>
-    public class PlayerTeleportingArgs : HookBooleanCancellableEventBase
+    public class PlayerTeleportingArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the teleporting player.

@@ -1,4 +1,4 @@
-﻿namespace LabExtended.Core.Commands.Parsing.PlayerList.Nodes
+﻿namespace LabExtended.Commands.Parsing.PlayerList.Nodes
 {
     public enum TextNodeType
     {

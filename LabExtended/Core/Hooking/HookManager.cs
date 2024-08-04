@@ -18,6 +18,7 @@ using LabExtended.Core.Hooking.Executors;
 using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Hooking.Objects;
 using LabExtended.Core.Events;
+using LabExtended.Core.Performance;
 
 using MEC;
 
@@ -25,7 +26,6 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
-using LabExtended.Core.Performance;
 
 namespace LabExtended.Core.Hooking
 {
@@ -72,8 +72,8 @@ namespace LabExtended.Core.Hooking
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
-                _ => PerformanceWatcher.SubmitReport(),
                 _ => InternalEvents.InternalHandleRoundWaiting(),
+                _ => PerformanceWatcher.SubmitReport(),
                 _ => CustomItem.InternalHandleWaiting(),
                 _ => RoundEvents.InvokeWaiting(),
                 _ => InputHandler.OnWaiting()
@@ -413,6 +413,6 @@ namespace LabExtended.Core.Hooking
         }
 
         private static bool TryValidateEventType(Type type)
-            => type != null && type != typeof(HookCancellableEventBase<>) && type != typeof(HookBooleanCancellableEventBase) && ((type.InheritsType<IHookEvent>() && type != typeof(IHookEvent)) || type.InheritsType<IEventArguments>() && type != typeof(IEventArguments));
+            => type != null && type != typeof(CancellableEvent<>) && type != typeof(BoolCancellableEvent) && (type.InheritsType<IEventArguments>() && type != typeof(IEventArguments));
     }
 }

@@ -3,7 +3,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Scp3114
 {
-    public class Scp3114StranglingArgs : HookBooleanCancellableEventBase
+    public class Scp3114StranglingArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; set; }

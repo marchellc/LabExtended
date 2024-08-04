@@ -8,7 +8,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player tries to drop an item.
     /// </summary>
-    public class PlayerDroppingItemArgs : HookBooleanCancellableEventBase
+    public class PlayerDroppingItemArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the player who's dropping the item.

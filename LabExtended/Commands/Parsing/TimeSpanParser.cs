@@ -1,8 +1,6 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-
-namespace LabExtended.Core.Commands.Parsing
+﻿namespace LabExtended.Commands.Parsing
 {
-    public class TimeSpanParser : ICommandParser
+    public class TimeSpanParser : Interfaces.ICommandParser
     {
         public string Name => "Duration";
         public string Description => "Duration (specifies a span of time. Use 'formatting duration' to learn more).";

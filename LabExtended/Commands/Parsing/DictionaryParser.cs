@@ -1,23 +1,22 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Extensions;
+﻿using LabExtended.Extensions;
 
 using System.Collections;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class DictionaryParser : ICommandParser
+    public class DictionaryParser : Interfaces.ICommandParser
     {
         public string Name => $"Dictionary (a list of key [{KeyParser.Name}] and value [{ValueParser.Name}] pairs)";
         public string Description => $"A list of key and value pairs (formatting: key=value,key2=value2,key3=value3)";
 
-        public ICommandParser KeyParser { get; }
-        public ICommandParser ValueParser { get; }
+        public Interfaces.ICommandParser KeyParser { get; }
+        public Interfaces.ICommandParser ValueParser { get; }
 
         public Type KeyType { get; }
         public Type ValueType { get; }
         public Type GenericType { get; }
 
-        public DictionaryParser(ICommandParser keyParser, ICommandParser valueParser, Type keyType, Type valueType)
+        public DictionaryParser(Interfaces.ICommandParser keyParser, Interfaces.ICommandParser valueParser, Type keyType, Type valueType)
         {
             KeyParser = keyParser;
             ValueParser = valueParser;

@@ -2,14 +2,13 @@
 
 using LabExtended.API;
 using LabExtended.API.Collections.Locked;
+
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Contexts;
+using LabExtended.Commands.Interfaces;
+using LabExtended.Commands.Responses;
 
-using LabExtended.Core.Commands;
-using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Core.Commands.Responses;
 using LabExtended.Extensions;
-using LabExtended.Utilities;
 
 using NorthwoodLib.Pools;
 
@@ -19,26 +18,29 @@ using System.Reflection;
 
 namespace LabExtended.Commands
 {
-    public class CustomCommand : ICommand, IUsageProvider
+    public abstract class CustomCommand : ICommand, IUsageProvider
     {
         internal static readonly LockedDictionary<uint, ContinuedContext> _continuedContexts = new LockedDictionary<uint, ContinuedContext>();
 
-        private bool _isInitialized;
+        private bool _isInitialized = false;
 
-        private string _builtUsage;
+        private string _builtUsage = string.Empty;
         private string[] _usage;
 
-        private ArgumentDefinition[] _customArgs;
+        internal ArgumentDefinition[] _args;
+
         private ParameterInfo[] _customParams;
         private MethodInfo _customMethod;
 
-        public virtual string Command { get; }
-        public virtual string Description { get; }
+        public abstract string Command { get; }
+
+        public virtual string Description { get; } = "No description.";
 
         public virtual string[] Aliases { get; } = Array.Empty<string>();
         public virtual string[] Usage => _usage;
 
-        public virtual ArgumentDefinition[] Arguments => _customArgs;
+        public virtual ArgumentDefinition[] BuildArgs()
+            => Array.Empty<ArgumentDefinition>();
 
         public virtual ICommandResponse CheckPreconditions(ExPlayer sender)
             => null;
@@ -53,7 +55,7 @@ namespace LabExtended.Commands
                 if (!_isInitialized)
                     InitializeCommand();
 
-                if (arguments.Count < Arguments.Count(a => !a.IsOptional))
+                if (arguments.Count < _args.Count(a => !a.IsOptional))
                 {
                     response = $"Missing command parameters.\n{GetUsage()}";
                     return false;
@@ -121,6 +123,8 @@ namespace LabExtended.Commands
 
                     if (cmdResponse is ContinuedResponse continuedResponse)
                         _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, context, context.RawInput, context.RawArgs);
+                    else
+                        collection.Dispose();
 
                     response = cmdResponse.Response;
                     return cmdResponse.IsSuccess;
@@ -145,25 +149,25 @@ namespace LabExtended.Commands
 
             if (Usage is null)
             {
-                _usage = new string[Arguments.Length];
+                _usage = new string[_args.Length];
 
-                for (int i = 0; i < Arguments.Length; i++)
-                    _usage[i] = $"[{Arguments[i].Name}]";
+                for (int i = 0; i < _args.Length; i++)
+                    _usage[i] = $"[{_args[i].Name}]";
             }
 
-            if (Arguments.Length < 1)
+            if (_args.Length < 1)
                 return "";
 
             var builder = StringBuilderPool.Shared.Rent();
 
-            for (int i = 0; i < Arguments.Length; i++)
+            for (int i = 0; i < _args.Length; i++)
             {
-                var arg = Arguments[i];
+                var arg = _args[i];
 
                 builder.Append($"[{i}] {arg.Name} [{arg.Description}]");
 
                 if (arg.IsOptional)
-                    builder.Append($"(optional, default value: {arg.Default?.ToString() ?? "null!"}");
+                    builder.Append($" (optional, default value: {arg.Default?.ToString() ?? "null!"})");
 
                 builder.Append("\n");
             }
@@ -192,13 +196,14 @@ namespace LabExtended.Commands
 
             if (method != null)
             {
-                if (Arguments is null)
+                if (_args is null)
                 {
                     var validParams = method.GetAllParameters().Skip(1).ToArray();
-                    _customArgs = new ArgumentDefinition[validParams.Length];
+
+                    _args = new ArgumentDefinition[validParams.Length];
 
                     for (int i = 0; i < validParams.Length; i++)
-                        _customArgs[i] = ArgumentDefinition.FromParameter(validParams[i]);
+                        _args[i] = ArgumentDefinition.FromParameter(validParams[i]);
 
                     ValidateArguments();
                 }
@@ -209,7 +214,8 @@ namespace LabExtended.Commands
             }
             else
             {
-                _customArgs ??= Array.Empty<ArgumentDefinition>();
+                _args ??= BuildArgs();
+
                 ValidateArguments();
             }
 
@@ -218,12 +224,27 @@ namespace LabExtended.Commands
 
         private void ValidateArguments()
         {
-            if (Arguments is null)
+            if (_args is null)
                 throw new Exception($"Command arguments were not defined.");
 
-            for (int i = 0; i < Arguments.Length; i++)
-                Arguments[i].ValidateArgument();
+            for (int i = 0; i < _args.Length; i++)
+                _args[i].ValidateArgument();
         }
+
+        public static ArgumentDefinition[] GetArg<T>(string name, string description, ICommandParser parser = null)
+            => ArgumentBuilder.Get(x => x.WithArg<T>(name, description, parser));
+
+        public static ArgumentDefinition[] GetArg<T>(string name, ICommandParser parser = null)
+            => ArgumentBuilder.Get(x => x.WithArg<T>(name, parser));
+
+        public static ArgumentDefinition[] GetOptionalArg<T>(string name, string description, T defaultValue = default, ICommandParser parser = null)
+            => ArgumentBuilder.Get(x => x.WithOptional<T>(name, description, defaultValue, parser));
+
+        public static ArgumentDefinition[] GetOptionalArg<T>(string name, T defaultValue = default, ICommandParser parser = null)
+            => ArgumentBuilder.Get(x => x.WithOptional<T>(name, defaultValue, parser));
+
+        public static ArgumentDefinition[] GetArgs(Action<ArgumentBuilder> builder)
+            => ArgumentBuilder.Get(builder);
 
         internal static bool InternalHandleGameConsoleCommand(PlayerGameConsoleCommandEvent ev)
         {

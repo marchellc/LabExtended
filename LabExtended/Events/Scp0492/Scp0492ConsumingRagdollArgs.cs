@@ -5,7 +5,7 @@ using PlayerRoles.Ragdolls;
 
 namespace LabExtended.Events.Scp0492
 {
-    public class Scp0492ConsumingRagdollArgs : HookBooleanCancellableEventBase
+    public class Scp0492ConsumingRagdollArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; }

@@ -9,7 +9,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player tries to pick up an ammo item.
     /// </summary>
-    public class PlayerPickingUpAmmoArgs : HookBooleanCancellableEventBase
+    public class PlayerPickingUpAmmoArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the player who's picking the ammo pickup up.

@@ -1,4 +1,7 @@
-﻿namespace UnityEngine.AI
+﻿using UnityEngine;
+using UnityEngine.AI;
+
+namespace LabExtended.API.Npcs.Navigation.API
 {
     [ExecuteInEditMode]
     [DefaultExecutionOrder(-101)]

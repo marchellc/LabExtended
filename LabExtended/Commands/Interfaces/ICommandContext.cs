@@ -1,9 +1,9 @@
 ﻿using LabExtended.API;
-using LabExtended.Commands;
+
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Contexts;
 
-namespace LabExtended.Core.Commands.Interfaces
+namespace LabExtended.Commands.Interfaces
 {
     public interface ICommandContext
     {

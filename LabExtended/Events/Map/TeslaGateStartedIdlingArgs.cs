@@ -1,12 +1,9 @@
-﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
-
-namespace LabExtended.Events.Map
+﻿namespace LabExtended.Events.Map
 {
     /// <summary>
     /// Gets called when a tesla gate starts idling.
     /// </summary>
-    public class TeslaGateStartedIdlingArgs : IHookEvent
+    public class TeslaGateStartedIdlingArgs
     {
         /// <summary>
         /// Gets the tesla gate that started idling.

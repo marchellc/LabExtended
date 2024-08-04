@@ -1,7 +1,9 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Npcs;
 using LabExtended.API.Wrappers;
+
 using LabExtended.Core;
+
 using MapGeneration;
 
 using PlayerRoles;
@@ -144,8 +146,6 @@ namespace LabExtended.API
             ["TUNNEL ENTRANCE"] = CameraType.TunnelEntrance,
         };
         #endregion
-        internal static NpcHandler _camNpc;
-
         internal static Scp079CameraRotationSync _rotSync;
         internal static Scp079CurrentCameraSync _camSync;
 
@@ -281,7 +281,7 @@ namespace LabExtended.API
         internal static void OnRestart()
         {
             _rotSync = null;
-            _camNpc = null;
+            _camSync = null;
         }
 
         internal static void OnRoundStart()
@@ -289,9 +289,8 @@ namespace LabExtended.API
             if (!ExLoader.Loader.Config.Api.EnableCameraNpc)
                 return;
 
-            NpcHandler.Spawn("Camera NPC", RoleTypeId.Scp079, null, null, null, npc =>
+            NpcHandler.Spawn("Camera API NPC", RoleTypeId.Scp079, null, null, null, npc =>
             {
-                _camNpc = npc;
                 _rotSync = npc.Player.Subroutines.Scp079CameraRotationSync;
                 _camSync = npc.Player.Subroutines.Scp079CurrentCameraSync;
             });

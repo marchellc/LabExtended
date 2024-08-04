@@ -1,12 +1,10 @@
 ﻿using InventorySystem.Items.Pickups;
 
-using LabExtended.Core.Hooking.Interfaces;
-
 using MapGeneration.Distributors;
 
 namespace LabExtended.Events.Map
 {
-    public class DistributedPickupArgs : IHookEvent
+    public class DistributedPickupArgs
     {
         public ItemSpawnpoint SpawnPoint { get; }
 

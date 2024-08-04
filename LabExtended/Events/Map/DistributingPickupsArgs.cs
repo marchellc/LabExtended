@@ -7,7 +7,7 @@ namespace LabExtended.Events.Map
     /// <summary>
     /// Gets called when a spawnable item is distributed.
     /// </summary>
-    public class DistributingPickupsArgs : HookBooleanCancellableEventBase
+    public class DistributingPickupsArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The spawnable item.

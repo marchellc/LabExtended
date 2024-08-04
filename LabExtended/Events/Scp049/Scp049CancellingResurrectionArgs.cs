@@ -3,7 +3,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Scp049
 {
-    public class Scp049CancellingResurrectionArgs : HookBooleanCancellableEventBase
+    public class Scp049CancellingResurrectionArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; }

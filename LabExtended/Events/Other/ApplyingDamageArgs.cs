@@ -8,7 +8,7 @@ namespace LabExtended.Events.Other
     /// <summary>
     /// Gets called when before <see cref="StandardDamageHandler.ApplyDamage(ReferenceHub)"/> gets called.
     /// </summary>
-    public class ApplyingDamageArgs : HookBooleanCancellableEventBase
+    public class ApplyingDamageArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The damage being applied.

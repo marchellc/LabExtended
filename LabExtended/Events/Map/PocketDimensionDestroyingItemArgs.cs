@@ -4,7 +4,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Map
 {
-    public class PocketDimensionDestroyingItemArgs : HookBooleanCancellableEventBase
+    public class PocketDimensionDestroyingItemArgs : BoolCancellableEvent
     {
         public ItemPickupBase Item { get; }
 

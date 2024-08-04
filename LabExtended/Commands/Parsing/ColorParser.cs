@@ -1,12 +1,10 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-
-using System.Drawing;
+﻿using System.Drawing;
 
 using Color = UnityEngine.Color;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class ColorParser : ICommandParser
+    public class ColorParser : Interfaces.ICommandParser
     {
         public string Name => "Color";
         public string Description => "Color can be specified by it's hex value (ex. #ff0000 for red) or by it's RGB values (ex. 1r 2g 3b - at least one of these has to be specified).";

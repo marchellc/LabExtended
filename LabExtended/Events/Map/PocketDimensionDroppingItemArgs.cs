@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace LabExtended.Events.Map
 {
-    public class PocketDimensionDroppingItemArgs : HookBooleanCancellableEventBase
+    public class PocketDimensionDroppingItemArgs : BoolCancellableEvent
     {
         public ItemPickupBase Item { get; }
 

@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 using LiteNetLib;
 
@@ -8,7 +7,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Occurs when a player is about to leave. <b>This event is called BEFORE any Mirror logic is processed, so you can use all Unity stuff.</b>
     /// </summary>
-    public class PlayerLeavingArgs : IHookEvent
+    public class PlayerLeavingArgs
     {
         /// <summary>
         /// Gets the player who's about to leave.

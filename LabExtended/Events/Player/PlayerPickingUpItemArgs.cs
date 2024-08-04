@@ -9,7 +9,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player finishes picking up an item.
     /// </summary>
-    public class PlayerPickingUpItemArgs : HookBooleanCancellableEventBase
+    public class PlayerPickingUpItemArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the player who's picking the item up.

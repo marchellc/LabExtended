@@ -1,14 +1,13 @@
 ﻿using InventorySystem.Items;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Player
 {
     /// <summary>
     /// Gets called after a player selects a new item to hold.
     /// </summary>
-    public class PlayerSelectedItemArgs : IHookEvent
+    public class PlayerSelectedItemArgs
     {
         /// <summary>
         /// The player who selected a new item.

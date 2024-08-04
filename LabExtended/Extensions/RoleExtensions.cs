@@ -7,21 +7,19 @@ using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
 
-using System.Collections.Frozen;
-
 namespace LabExtended.Extensions
 {
     public static class RoleExtensions
     {
-        public static FrozenDictionary<RoleTypeId, PlayerRoleBase> Prefabs { get; }
-        public static FrozenDictionary<RoleTypeId, string> Names { get; }
+        public static Dictionary<RoleTypeId, PlayerRoleBase> Prefabs { get; }
+        public static Dictionary<RoleTypeId, string> Names { get; }
 
         static RoleExtensions()
         {
             PlayerRoleLoader.LoadRoles();
 
-            Prefabs = PlayerRoleLoader.AllRoles.ToFrozenDictionary();
-            Names = PlayerRoleLoader.AllRoles.ToFrozenDictionary(
+            Prefabs = PlayerRoleLoader.AllRoles;
+            Names = PlayerRoleLoader.AllRoles.ToDictionary(
                 keyPair => keyPair.Key,
                 valuePair => valuePair.Value.RoleName ?? valuePair.Value.RoleTypeId.ToString().SpaceByUpperCase());
         }

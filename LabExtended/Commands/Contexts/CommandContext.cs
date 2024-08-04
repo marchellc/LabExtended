@@ -3,12 +3,9 @@
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Responses;
 
-using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Core.Commands.Responses;
-
 namespace LabExtended.Commands.Contexts
 {
-    public class CommandContext : ICommandContext
+    public class CommandContext : Interfaces.ICommandContext
     {
         public string RawInput { get; }
         public string[] RawArgs { get; }
@@ -19,7 +16,7 @@ namespace LabExtended.Commands.Contexts
 
         public bool IsHost { get; }
 
-        public ICommandResponse Response { get; private set; }
+        public Interfaces.ICommandResponse Response { get; private set; }
 
         public CommandContext(string arg, string[] args, ArgumentCollection collection, CustomCommand cmd, ExPlayer sender)
         {
@@ -83,7 +80,7 @@ namespace LabExtended.Commands.Contexts
             if (onContinued is null)
                 throw new ArgumentNullException(nameof(onContinued));
 
-            Response = new ContinuedResponse(response.ToString(), onContinued);
+            Response = new Responses.ContinuedResponse(response.ToString(), onContinued);
         }
 
         public void RespondContinued(IEnumerable<object> lines, Action<ContinuedContext> onContinued)
@@ -102,7 +99,7 @@ namespace LabExtended.Commands.Contexts
             foreach (var line in lines)
                 str += $"{line}\n";
 
-            Response = new ContinuedResponse(str, onContinued);
+            Response = new Responses.ContinuedResponse(str, onContinued);
         }
     }
 }

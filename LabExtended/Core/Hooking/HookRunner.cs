@@ -2,6 +2,7 @@
 using LabExtended.Core.Profiling;
 
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Core.Hooking
 {
@@ -11,15 +12,19 @@ namespace LabExtended.Core.Hooking
 
         public static T RunCancellable<T>(object eventObject, T cancellation)
         {
-            var cancellableEvent = eventObject as ICancellableEvent<T>;
+            ArgumentUtils.Null(eventObject, "eventObject");
 
-            cancellableEvent!.IsAllowed = cancellation;
-            cancellation = RunEvent(eventObject, cancellation);
+            if (eventObject is ICancellableEvent<T> cancellableEvent)
+            {
+                cancellableEvent.IsAllowed = cancellation;
 
-            if (cancellableEvent != null)
+                RunEvent(eventObject, cancellation);
                 return cancellableEvent.IsAllowed;
-
-            return cancellation;
+            }
+            else
+            {
+                return RunEvent(eventObject, cancellation);
+            }
         }
 
         public static void RunEvent(object eventObject)
@@ -27,6 +32,8 @@ namespace LabExtended.Core.Hooking
 
         public static T RunEvent<T>(object eventObject, T returnValue = default)
         {
+            ArgumentUtils.Null(eventObject, "eventObject");
+
             var type = eventObject.GetType();
 
             _marker.MarkStart(type.Name);
@@ -107,20 +114,20 @@ namespace LabExtended.Core.Hooking
             return returnValue;
         }
 
-        private static T RunInternal<T>(object eventObject, IEnumerable<HookInfo> hooks, T returnValue)
+        private static T RunInternal<T>(object eventObject, List<HookInfo> hooks, T returnValue)
         {
-            foreach (var hook in hooks)
+            for (int i = 0; i < hooks.Count; i++)
             {
                 try
                 {
-                    var hookResult = hook.Run(eventObject);
+                    var hookResult = hooks[i].Run(eventObject);
 
                     if (hookResult != null && hookResult is T castValue)
                         returnValue = castValue;
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hook.Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
+                    ExLoader.Error("Hooking API", $"Failed to run hook &3{hooks[i].Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
                 }
             }
 

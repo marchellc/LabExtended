@@ -231,6 +231,16 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool HasUnlimitedAmmo { get; set; } = false;
 
+        /// <summary>
+        /// Whether or not this player should receive position messages.
+        /// </summary>
+        public bool ShouldReceivePositions { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not this player should send position messages to other players.
+        /// </summary>
+        public bool ShouldSendPosition { get; set; } = true;
+
         public void Copy(SwitchContainer other)
         {
             if (other is null)

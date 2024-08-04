@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 using PlayerStatsSystem;
 
@@ -8,7 +7,7 @@ namespace LabExtended.Events.Other
     /// <summary>
     /// Gets called when after <see cref="StandardDamageHandler.ApplyDamage(ReferenceHub)"/> gets called.
     /// </summary>
-    public class AppliedDamageArgs : IHookEvent
+    public class AppliedDamageArgs
     {
         /// <summary>
         /// The damage being applied.

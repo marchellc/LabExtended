@@ -37,6 +37,11 @@ namespace LabExtended.API.Npcs.Navigation
         public bool AllowInteractions { get; set; } = true;
 
         /// <summary>
+        /// Whether or not this module was initialized yet.
+        /// </summary>
+        public bool IsInitialized { get; private set; }
+
+        /// <summary>
         /// Gets or sets the NPC's target position. This overrides <see cref="PlayerTarget"/>.
         /// </summary>
         public Vector3? TargetPosition { get; set; }
@@ -129,19 +134,28 @@ namespace LabExtended.API.Npcs.Navigation
 
         internal void Initialize(NpcHandler npcHandler)
         {
-            if (Npc != null)
-                return;
+            try
+            {
+                if (Npc != null)
+                    return;
 
-            Npc = npcHandler;
+                Npc = npcHandler;
 
-            NavAgent = npcHandler.Hub.gameObject.AddComponent<NavMeshAgent>();
-            NavAgent.baseOffset = 0.98f;
-            NavAgent.updateRotation = true;
-            NavAgent.angularSpeed = 360;
-            NavAgent.acceleration = 600;
-            NavAgent.radius = 0.1f;
-            NavAgent.areaMask = 1;
-            NavAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+                NavAgent = npcHandler.Hub.gameObject.AddComponent<NavMeshAgent>();
+                NavAgent.baseOffset = 0.98f;
+                NavAgent.updateRotation = true;
+                NavAgent.angularSpeed = 360;
+                NavAgent.acceleration = 600;
+                NavAgent.radius = 0.1f;
+                NavAgent.areaMask = 1;
+                NavAgent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+
+                IsInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                ExLoader.Error("Navigation API", ex);
+            }
         }
     }
 }

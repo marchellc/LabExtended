@@ -1,12 +1,14 @@
 ﻿using LabExtended.API;
 using LabExtended.API.Npcs;
 using LabExtended.API.Npcs.Navigation;
+
 using LabExtended.API.Enums;
 using LabExtended.API.Voice;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Collections;
+using LabExtended.API.CustomModules;
 
 using LabExtended.Events.Player;
 
@@ -15,7 +17,6 @@ using LabExtended.Core.Ticking;
 using LabExtended.Core.Profiling;
 
 using LabExtended.Commands;
-using LabExtended.Patches.Functions;
 
 using NorthwoodLib.Pools;
 
@@ -36,11 +37,10 @@ namespace LabExtended.Events
             else
                 ExLoader.Warn("Player API", $"Failed to fetch the host player.");
 
-            GhostModePatch.GhostedPlayers.Clear();
-            GhostModePatch.GhostedTo.Clear();
-
             ExRound.RoundNumber++;
+
             ExRound.IsScp079Recontained = false;
+
             ExRound.StartedAt = DateTime.MinValue;
             ExRound.State = RoundState.WaitingForPlayers;
 
@@ -49,12 +49,6 @@ namespace LabExtended.Events
 
             if (ExLoader.Loader.Config.Api.EnableProfilerLogs)
                 ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
-
-            foreach (var marker in ProfilerMarker.AllMarkers)
-            {
-                if (marker.Frames.Count() >= 50)
-                    marker.Clear();
-            }
         }
 
         internal static void InternalHandleRoundRestart()
@@ -139,13 +133,23 @@ namespace LabExtended.Events
                 }
             }
 
-            GhostModePatch.GhostedPlayers.Remove(player.NetId);
-            GhostModePatch.GhostedTo.Remove(player.NetId);
+            player._newSyncData.Clear();
+            player._prevSyncData.Clear();
+
+            player._sentRoles.Clear();
+
+            player._droppedItems.Clear();
+            player._invisibility.Clear();
 
             CustomCommand._continuedContexts.Remove(player.NetId);
 
-            foreach (var pair in GhostModePatch.GhostedTo)
-                pair.Value.Remove(player.NetId);
+            foreach (var other in ExPlayer._allPlayers)
+            {
+                other._prevSyncData.Remove(player.PlayerId);
+                other._newSyncData.Remove(player.PlayerId);
+                other._sentRoles.Remove(player.PlayerId);
+                other._invisibility.Remove(player);
+            }
 
             foreach (var helper in PlayerCollection._handlers)
                 helper.Remove(player.NetId);

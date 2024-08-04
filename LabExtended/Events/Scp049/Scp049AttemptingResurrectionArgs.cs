@@ -5,7 +5,7 @@ using PlayerRoles.PlayableScps.Scp049;
 
 namespace LabExtended.Events.Scp049
 {
-    public class Scp049AttemptingResurrectionArgs : HookBooleanCancellableEventBase
+    public class Scp049AttemptingResurrectionArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; }

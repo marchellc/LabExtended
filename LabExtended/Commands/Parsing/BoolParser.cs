@@ -1,8 +1,6 @@
-﻿using LabExtended.Core.Commands.Interfaces;
-
-namespace LabExtended.Core.Commands.Parsing
+﻿namespace LabExtended.Commands.Parsing
 {
-    public class BoolParser : ICommandParser
+    public class BoolParser : Interfaces.ICommandParser
     {
         public static Dictionary<bool, List<string>> AcceptedValues { get; } = new Dictionary<bool, List<string>>()
         {

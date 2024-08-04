@@ -1,12 +1,11 @@
 ﻿using LabExtended.API;
 
-using LabExtended.Core.Commands.Interfaces;
-using LabExtended.Core.Commands.Parsing.PlayerList;
-using LabExtended.Core.Commands.Parsing.PlayerList.Nodes;
+using LabExtended.Commands.Parsing.PlayerList;
+using LabExtended.Commands.Parsing.PlayerList.Nodes;
 
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class PlayerListParser : ICommandParser
+    public class PlayerListParser : Interfaces.ICommandParser
     {
         public string Name => "A list of players.";
         public string Description => "A list of players, to view the full usage use the 'formatting playerlist' command.";
@@ -31,7 +30,7 @@ namespace LabExtended.Core.Commands.Parsing
                                                         ServerStatic.PermissionsHandler._members.TryGetValue(p.UserId, out var playerTag) &&
                                                             !string.IsNullOrWhiteSpace(playerTag) && playerTag == tag));
 
-                var list = new CustomData.PlayerList(players.ToList());
+                var list = new CustomData.PlayerListData(players.ToList());
 
                 result = list;
                 return true;

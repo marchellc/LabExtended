@@ -6,7 +6,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player is about to receive their starting inventory.
     /// </summary>
-    public class PlayerGrantingInventoryArgs : HookBooleanCancellableEventBase
+    public class PlayerGrantingInventoryArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The player receiving the inventory.

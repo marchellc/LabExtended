@@ -1,9 +1,8 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerOpenedRemoteAdminArgs : IHookEvent
+    public class PlayerOpenedRemoteAdminArgs
     {
         public ExPlayer Player { get; }
 

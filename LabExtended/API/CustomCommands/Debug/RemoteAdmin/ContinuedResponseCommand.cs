@@ -1,6 +1,7 @@
 ﻿using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
-using LabExtended.Core.Commands.Interfaces;
+using LabExtended.Commands.Contexts;
+using LabExtended.Commands.Interfaces;
 
 namespace LabExtended.API.CustomCommands.Debug.RemoteAdmin
 {
@@ -13,10 +14,10 @@ namespace LabExtended.API.CustomCommands.Debug.RemoteAdmin
         {
             base.OnCommand(sender, ctx, args);
 
-            ctx.RespondContinued($"Type something", onCtx =>
-            {
-                onCtx.RespondOk($"Received: {onCtx.RawInput}");
-            });
+            void Continue(ContinuedContext context)
+                => context.RespondContinued($"Received: {context.RawInput}", Continue);
+
+            ctx.RespondContinued($"Type something", Continue);
         }
     }
 }

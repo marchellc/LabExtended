@@ -6,7 +6,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player toggles their no-clip state.
     /// </summary>
-    public class PlayerTogglingNoClipArgs : HookBooleanCancellableEventBase
+    public class PlayerTogglingNoClipArgs : BoolCancellableEvent
     {
         /// <summary>
         /// The player toggling their noclip state.

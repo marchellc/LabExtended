@@ -1,4 +1,6 @@
-﻿namespace UnityEngine.AI
+﻿using UnityEngine;
+
+namespace LabExtended.API.Npcs.Navigation.API
 {
     [ExecuteInEditMode]
     [AddComponentMenu("Navigation/NavMeshModifierVolume", 31)]

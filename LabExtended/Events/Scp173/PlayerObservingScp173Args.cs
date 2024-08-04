@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 using PlayerRoles.PlayableScps;
 using PlayerRoles.PlayableScps.Scp173;
@@ -9,7 +8,7 @@ namespace LabExtended.Events.Scp173
     /// <summary>
     /// Occurs when a player looks at SCP-173.
     /// </summary>
-    public class PlayerObservingScp173Args : IHookEvent
+    public class PlayerObservingScp173Args
     {
         /// <summary>
         /// The player playing as SCP-173.

@@ -1,8 +1,7 @@
 ﻿using InventorySystem.Items.Pickups;
-
 using UnityEngine;
 
-namespace LabExtended.API.Modules.PositionTracking
+namespace LabExtended.API.CustomModules.PositionTracking
 {
     /// <summary>
     /// An entry for the positional tracking module.

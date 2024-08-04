@@ -1,8 +1,9 @@
 ﻿using LabExtended.API;
 using LabExtended.Extensions;
+
 using PlayerRoles;
 
-namespace LabExtended.Core.Commands.Parsing.PlayerList.Nodes
+namespace LabExtended.Commands.Parsing.PlayerList.Nodes
 {
     public static class TokenParser
     {

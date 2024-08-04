@@ -2,7 +2,6 @@
 
 using CustomRendering;
 
-using InventorySystem.Items.MarshmallowMan;
 using InventorySystem.Items.Usables.Scp244.Hypothermia;
 
 using LabExtended.API.Pooling;
@@ -11,7 +10,6 @@ using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
 
-using System.Collections.Frozen;
 using System.Reflection;
 
 using UnityEngine;
@@ -25,7 +23,7 @@ namespace LabExtended.API.Containers
         static EffectContainer()
             => _properties = typeof(EffectContainer).FindProperties(x => (x.GetSetMethod(true)?.IsPrivate ?? false));
 
-        public FrozenDictionary<Type, StatusEffectBase> Effects { get; }
+        public Dictionary<Type, StatusEffectBase> Effects { get; }
 
         public PlayerEffectsController Controller { get; }
 
@@ -139,7 +137,7 @@ namespace LabExtended.API.Containers
                     }
                 }
 
-                Effects = dict.ToFrozenDictionary();
+                Effects = dict;
                 Controller = controller;
 
                 if (props.Count != _properties.Count())
@@ -155,7 +153,6 @@ namespace LabExtended.API.Containers
                     }
                 }
 
-                DictionaryPool<Type, StatusEffectBase>.Return(dict);
                 ListPool<PropertyInfo>.Shared.Return(props);
             }
             catch (Exception ex)

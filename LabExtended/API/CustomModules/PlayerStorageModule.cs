@@ -1,4 +1,6 @@
-﻿namespace LabExtended.API.Modules
+﻿using LabExtended.API.Modules;
+
+namespace LabExtended.API.CustomModules
 {
     /// <summary>
     /// A transient module used for data storage between sessions.

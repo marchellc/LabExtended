@@ -8,7 +8,7 @@ namespace LabExtended.Events.Round
     /// <summary>
     /// Gets called when the server starts assigning roles when the round starts.
     /// </summary>
-    public class AssigningRolesArgs : HookBooleanCancellableEventBase
+    public class AssigningRolesArgs : BoolCancellableEvent
     {
         /// <summary>
         /// A dictionary of player's and their decided role.

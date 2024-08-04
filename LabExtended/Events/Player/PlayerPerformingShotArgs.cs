@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerPerformingShotArgs : HookBooleanCancellableEventBase
+    public class PlayerPerformingShotArgs : BoolCancellableEvent
     {
         public ExPlayer Player { get; }
         public ExPlayer Target { get; }

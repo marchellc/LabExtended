@@ -4,8 +4,9 @@ using LabExtended.Extensions;
 using LabExtended.Core.Ticking;
 
 using UnityEngine;
+using LabExtended.API.Modules;
 
-namespace LabExtended.API.Modules.PositionTracking
+namespace LabExtended.API.CustomModules.PositionTracking
 {
     /// <summary>
     /// A module used to set custom object's positions to the player's position.

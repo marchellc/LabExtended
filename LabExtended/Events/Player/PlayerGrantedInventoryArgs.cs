@@ -2,14 +2,13 @@
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Player
 {
     /// <summary>
     /// Called when a player's starting inventory is granted.
     /// </summary>
-    public class PlayerGrantedInventoryArgs : IHookEvent
+    public class PlayerGrantedInventoryArgs
     {
         /// <summary>
         /// The player who's starting inventory has been granted.

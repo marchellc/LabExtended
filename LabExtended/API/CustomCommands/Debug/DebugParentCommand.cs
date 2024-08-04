@@ -2,38 +2,23 @@
 
 using LabExtended.Commands;
 
-using LabExtended.API.CustomCommands.Debug.CustomItems;
 using LabExtended.API.CustomCommands.Debug.RemoteAdmin;
 using LabExtended.API.CustomCommands.Debug.Hints;
-using LabExtended.API.CustomCommands.Debug.API;
 
 namespace LabExtended.API.CustomCommands.Debug
 {
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     public class DebugParentCommand : VanillaParentCommandBase
     {
-        public DebugParentCommand() : base("debug", "Debug utilities for LabExtended.") { }
+        public override string Command => "debug";
+        public override string Description => "Debug commands for the LabExtended API.";
 
-        public override void OnInitialized()
+        public override void LoadGeneratedCommands()
         {
-            base.OnInitialized();
-
-            RegisterCommand(new AddDebugObjectCommand());
-            RegisterCommand(new SendObjectHelpCommand());
             RegisterCommand(new ContinuedResponseCommand());
 
-            RegisterCommand(new HintDisableDebugHintCommand());
-            RegisterCommand(new HintSetDebugContentCommand());
             RegisterCommand(new HintShowTemporaryCommand());
             RegisterCommand(new HintToggleDebugCommand());
-
-            RegisterCommand(new GiveDebugItemCommand());
-            RegisterCommand(new PrintDebugItemCommand());
-            RegisterCommand(new SpawnDebugItemCommand());
-            RegisterCommand(new SelectDebugItemCommand());
-
-            RegisterCommand(new CameraLookCommand());
-            RegisterCommand(new LogPerformanceReportCommand());
         }
     }
 }

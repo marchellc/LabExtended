@@ -8,7 +8,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player starts changing their role.
     /// </summary>
-    public class PlayerSpawningArgs : HookBooleanCancellableEventBase
+    public class PlayerSpawningArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the player who's changing their role.

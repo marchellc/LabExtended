@@ -8,7 +8,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player tries changing tries currently held item.
     /// </summary>
-    public class PlayerSelectingItemArgs : HookBooleanCancellableEventBase
+    public class PlayerSelectingItemArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the player who's attempting to switch their item.

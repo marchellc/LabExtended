@@ -5,7 +5,7 @@ using PlayerRoles.PlayableScps.Scp939;
 
 namespace LabExtended.Events.Scp939
 {
-    public class Scp939LungingArgs : HookBooleanCancellableEventBase
+    public class Scp939LungingArgs : BoolCancellableEvent
     {
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; set; }

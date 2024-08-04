@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 using Mirror;
 
@@ -10,7 +9,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a new role gets initialized.
     /// </summary>
-    public class PlayerChangedRoleArgs : IHookEvent
+    public class PlayerChangedRoleArgs
     {
         /// <summary>
         /// Gets the player changing their role.

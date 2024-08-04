@@ -1,4 +1,4 @@
-﻿namespace LabExtended.Core.Commands.Interfaces
+﻿namespace LabExtended.Commands.Interfaces
 {
     public interface ICommandResponse
     {

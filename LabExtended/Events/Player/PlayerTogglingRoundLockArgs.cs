@@ -3,7 +3,7 @@ using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerTogglingRoundLockArgs : HookBooleanCancellableEventBase
+    public class PlayerTogglingRoundLockArgs : BoolCancellableEvent
     {
         public ExPlayer Player { get; }
 

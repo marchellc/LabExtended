@@ -1,10 +1,8 @@
-﻿using LabExtended.Core.Commands.Interfaces;
+﻿using UnityEngine;
 
-using UnityEngine;
-
-namespace LabExtended.Core.Commands.Parsing
+namespace LabExtended.Commands.Parsing
 {
-    public class Vector3Parser : ICommandParser
+    public class Vector3Parser : Interfaces.ICommandParser
     {
         public string Name => "3-axis vector";
         public string Description => "A 3-axis vector. Formatted as follows: 'numX numY numZ' (replace num with a real number)";
@@ -28,7 +26,7 @@ namespace LabExtended.Core.Commands.Parsing
 
             foreach (var arg in args)
             {
-                if (arg.Length < 2)
+                if (arg.Length != 2)
                 {
                     failureMessage = $"Encountered an invalid item: {arg}";
                     return false;
@@ -36,8 +34,11 @@ namespace LabExtended.Core.Commands.Parsing
 
                 try
                 {
-                    var number = float.Parse(new string(arg.Where(a => char.IsNumber(a)).ToArray()));
-                    var axis = arg.Last();
+                    var lastArg = arg[1];
+                    var firstArg = arg[0];
+
+                    var number = char.IsNumber(lastArg) ? float.Parse(lastArg.ToString()) : float.Parse(firstArg.ToString());
+                    var axis = char.IsNumber(lastArg) ? firstArg : lastArg;
 
                     if (axis is 'x' || axis is 'X')
                         xAxis = number;

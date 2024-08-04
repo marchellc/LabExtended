@@ -1,7 +1,6 @@
 ﻿using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
-
-using LabExtended.Core.Commands.Interfaces;
+using LabExtended.Commands.Interfaces;
 
 namespace LabExtended.API.CustomCommands.Debug.Hints
 {
@@ -10,18 +9,21 @@ namespace LabExtended.API.CustomCommands.Debug.Hints
         public override string Command => "hintshow";
         public override string Description => "Shows a temporary hint";
 
-        public override ArgumentDefinition[] Arguments { get; } = new ArgumentDefinition[]
+        public override ArgumentDefinition[] BuildArgs()
         {
-            ArgumentDefinition.FromType<ushort>("duration", "The hint's duration"),
-            ArgumentDefinition.FromType<string>("content", "The hint's content")
-        };
+            return ArgumentBuilder.Get(x =>
+            {
+                x.WithArg<ushort>("Duration", "Hint's duration.")
+                 .WithArg<string>("Content", "Hint's content.");
+            });
+        }
 
         public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
         {
             base.OnCommand(sender, ctx, args);
 
-            var duration = args.Get<ushort>("duration");
-            var content = args.Get<string>("content");
+            var duration = args.Get<ushort>("Duration");
+            var content = args.Get<string>("Content");
 
             sender.Hints.Show(content, duration);
 

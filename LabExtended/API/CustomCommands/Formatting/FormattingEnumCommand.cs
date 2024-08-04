@@ -1,7 +1,7 @@
 ﻿using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
 
-using LabExtended.Core.Commands.Interfaces;
+
 
 using LabExtended.Extensions;
 
@@ -16,13 +16,19 @@ namespace LabExtended.API.CustomCommands.Formatting
         public override string Command => "enum";
         public override string Description => "Displays all values of an enum.";
 
-        public override ArgumentDefinition[] Arguments { get; } = new ArgumentDefinition[] { ArgumentDefinition.FromType<string>("name", "Name of the enum") };
+        public override ArgumentDefinition[] BuildArgs()
+        {
+            return ArgumentBuilder.Get(x =>
+            {
+                x.WithArg<string>("Name", "Name of the enum.");
+            });
+        }
 
-        public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
+        public override void OnCommand(ExPlayer sender, Commands.Interfaces.ICommandContext ctx, ArgumentCollection args)
         {
             base.OnCommand(sender, ctx, args);
 
-            var enumName = args.Get<string>("name");
+            var enumName = args.Get<string>("Name");
 
             if (!EnumTypes.TryGetFirst<Type>(t => t.Name.ToLower() == enumName.ToLower(), out var foundEnum))
             {

@@ -13,7 +13,7 @@ namespace LabExtended.API.Collections
     {
         internal static readonly LockedHashSet<PlayerCollection> _handlers = new LockedHashSet<PlayerCollection>(); // A list of all handlers, used for player leave.
 
-        internal PlayerCollection()
+        public PlayerCollection()
         {
             _netIdList = new LockedHashSet<uint>(20);
             _handlers.Add(this);

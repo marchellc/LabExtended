@@ -5,7 +5,7 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using Mirror;
-using PluginAPI.Events;
+
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -102,6 +102,23 @@ namespace LabExtended.Utilities
             }
         }
         #endregion
+
+        public static NetworkWriter PackMessage<T>(Action<NetworkWriter> action) where T : struct, NetworkMessage
+        {
+            var writer = NetworkWriterPool.Get();
+
+            writer.WriteUShort(NetworkMessageId<T>.Id);
+
+            action(writer);
+            return writer;
+        }
+
+        public static void PackMessage<T>(this NetworkWriter writer, Action action) where T : struct, NetworkMessage
+        {
+            writer.WriteUShort(NetworkMessageId<T>.Id);
+
+            action();
+        }
 
         public static void SendRpc(this NetworkBehaviour behaviour, string functionName, int hashCode, NetworkWriter writer, int channelId, bool includeOwner, bool checkObservers, IEnumerable<ExPlayer> players)
         {

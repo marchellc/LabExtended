@@ -1,12 +1,14 @@
-﻿using LabExtended.API.Collections.Locked;
+﻿using LabExtended.API.Pooling;
 
 namespace LabExtended.Commands.Arguments
 {
-    public class ArgumentCollection
+    public class ArgumentCollection : IDisposable
     {
-        private readonly LockedDictionary<string, object> _args = new LockedDictionary<string, object>();
+        private Dictionary<string, object> _args = DictionaryPool<string, object>.Rent();
 
         public int Size => _args.Count;
+
+        public bool IsDisposed => _args is null;
 
         public void Add(string name, object value)
             => _args[name.ToLower()] = value;
@@ -25,5 +27,15 @@ namespace LabExtended.Commands.Arguments
 
         public void ClearCollection()
             => _args.Clear();
+
+        public void Dispose()
+        {
+            if (_args is null)
+                return;
+
+            DictionaryPool<string, object>.Return(_args);
+
+            _args = null;
+        }
     }
 }

@@ -50,6 +50,8 @@ namespace LabExtended.API.Npcs
 
             IsVisibleInRemoteAdmin = false,
             IsVisibleInSpectatorList = false,
+
+            ShouldReceivePositions = false
         };
 
         /// <summary>
@@ -401,9 +403,6 @@ namespace LabExtended.API.Npcs
             _player = player;
             _connection = connection;
 
-            _navModule = player.AddModule<NavigationModule>();
-            _navModule.IsActive = false;
-
             _player.NpcHandler = this;
 
             Id = connection.connectionId;
@@ -516,6 +515,7 @@ namespace LabExtended.API.Npcs
                 if (position.HasValue)
                 {
                     Player.Position = position.Value;
+
                     callback();
                 }
 
@@ -529,6 +529,7 @@ namespace LabExtended.API.Npcs
                 if (position.HasValue)
                 {
                     Player.Position = position.Value;
+
                     callback();
                 }
                 else
@@ -536,6 +537,17 @@ namespace LabExtended.API.Npcs
                     callback();
                 }
             });
+        }
+
+        /// <summary>
+        /// Adds the <see cref="NavigationModule"/> to this NPC.
+        /// </summary>
+        public void UseNavigation()
+        {
+            _navModule = Player.AddModule<NavigationModule>();
+
+            if (!_navModule.IsInitialized)
+                _navModule.Initialize(this);
         }
 
         /// <summary>
@@ -684,19 +696,16 @@ namespace LabExtended.API.Npcs
                         Timing.CallDelayed(0.2f, () =>
                         {
                             hubComponent.TryOverridePosition(position.Value, Vector3.zero);
-                            npc._navModule.Initialize(npc);
                             callback(npc);
                         });
                     }
                     else
                     {
-                        npc._navModule.Initialize(npc);
                         callback(npc);
                     }
                 }
                 else
                 {
-                    npc._navModule.Initialize(npc);
                     callback(npc);
                 }
             });

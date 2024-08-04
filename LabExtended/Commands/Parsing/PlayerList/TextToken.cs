@@ -1,4 +1,4 @@
-﻿namespace LabExtended.Core.Commands.Parsing.PlayerList
+﻿namespace LabExtended.Commands.Parsing.PlayerList
 {
     public class TextToken
     {

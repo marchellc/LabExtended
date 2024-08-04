@@ -11,7 +11,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player tries to throw an item.
     /// </summary>
-    public class PlayerThrowingItemArgs : HookBooleanCancellableEventBase
+    public class PlayerThrowingItemArgs : BoolCancellableEvent
     {
         /// <summary>
         /// Gets the throwing player.

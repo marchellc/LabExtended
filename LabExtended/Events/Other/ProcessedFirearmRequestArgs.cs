@@ -1,11 +1,10 @@
 ﻿using InventorySystem.Items.Firearms.BasicMessages;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking.Interfaces;
 
 namespace LabExtended.Events.Other
 {
-    public class ProcessedFirearmRequestArgs : IHookEvent
+    public class ProcessedFirearmRequestArgs
     {
         public ExPlayer Player { get; }
 
