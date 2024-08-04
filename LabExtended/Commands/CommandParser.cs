@@ -42,8 +42,10 @@ namespace LabExtended.Commands
             [typeof(DateTime)] = new DateTimeParser(),
 
             [typeof(Color)] = new ColorParser(),
+
             [typeof(Vector2)] = new Vector2Parser(),
             [typeof(Vector3)] = new Vector3Parser(),
+
             [typeof(Quaternion)] = new QuaternionParser(),
 
             [typeof(ExPlayer)] = new PlayerParser(),
@@ -145,13 +147,13 @@ namespace LabExtended.Commands
         public static bool TryGetParser(Type type, out ICommandParser parser)
             => Parsers.TryGetValue(type, out parser);
 
-        public static bool TryParseDefaultArgs(string arg, CustomCommand command, ArgumentCollection collection, out ArgumentDefinition failedArg, out string failedReason)
-            => InternalParseArgs(arg, command, (parsedArg, parsedValue) => collection.Add(parsedArg.Name, parsedValue), () => collection.Size, out failedArg, out failedReason);
+        public static bool TryParseDefaultArgs(string arg, ArgumentDefinition[] args, ArgumentCollection collection, out ArgumentDefinition failedArg, out string failedReason)
+            => InternalParseArgs(arg, args, (parsedArg, parsedValue) => collection.Add(parsedArg.Name, parsedValue), () => collection.Size, out failedArg, out failedReason);
 
-        public static bool TryParseCustomArgs(string arg, CustomCommand command, object[] parsedArgs, out ArgumentDefinition failedArg, out string failedReason)
+        public static bool TryParseCustomArgs(string arg, ArgumentDefinition[] args, object[] parsedArgs, out ArgumentDefinition failedArg, out string failedReason)
         {
             var list = ListPool<object>.Shared.Rent();
-            var success = InternalParseArgs(arg, command, (parsedArg, parsedValue) => list.Add(parsedValue), () => list.Count, out failedArg, out failedReason);
+            var success = InternalParseArgs(arg, args, (parsedArg, parsedValue) => list.Add(parsedValue), () => list.Count, out failedArg, out failedReason);
 
             for (int i = 0; i < list.Count; i++)
                 parsedArgs[i + 1] = list[i];
@@ -173,14 +175,14 @@ namespace LabExtended.Commands
         internal static char GetMatch(char character)
             => Quotes.TryGetValue(character, out var match) ? match : '\"';
 
-        internal static bool InternalParseArgs(string arg, CustomCommand command, Action<ArgumentDefinition, object> setArgumentValue, Func<int> countArgs, out ArgumentDefinition failedArg, out string failedReason)
+        internal static bool InternalParseArgs(string arg, ArgumentDefinition[] args, Action<ArgumentDefinition, object> setArgumentValue, Func<int> countArgs, out ArgumentDefinition failedArg, out string failedReason)
         {
             failedArg = null;
             failedReason = null;
 
-            if (command._args.Length == 1 && command._args[0].Type == typeof(string))
+            if (args.Length == 1 && args[0].Type == typeof(string))
             {
-                setArgumentValue(command._args[0], arg.Trim());
+                setArgumentValue(args[0], arg.Trim());
                 return true;
             }
 
@@ -203,7 +205,7 @@ namespace LabExtended.Commands
                 else
                     curChar = '\0';
 
-                if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)) && i != endIndex)
+                if (curArg != null && ((countArgs() + 1) >= args.Length) && i != endIndex)
                 {
                     curBuilder.Append(curChar);
                     continue;
@@ -223,7 +225,7 @@ namespace LabExtended.Commands
                     }
                 }
 
-                if (curChar == '\\' && (curArg is null || !(curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length))))
+                if (curChar == '\\' && (curArg is null || !((countArgs() + 1) >= args.Length)))
                 {
                     isEscaping = true;
                     continue;
@@ -247,9 +249,9 @@ namespace LabExtended.Commands
                     else
                     {
                         if (curArg is null)
-                            curArg = command._args.Length > countArgs() ? command._args[countArgs()] : null;
+                            curArg = args.Length > countArgs() ? args[countArgs()] : null;
 
-                        if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)))
+                        if (curArg != null && ((countArgs() + 1) >= args.Length))
                         {
                             curBuilder.Append(curChar);
                             continue;
@@ -319,7 +321,7 @@ namespace LabExtended.Commands
                 }
             }
 
-            if (curArg != null && (curArg.IsRemainder || ((countArgs() + 1) >= command._args.Length)))
+            if (curArg != null && ((countArgs() + 1) >= args.Length))
             {
                 if (!curArg.Parser.TryParse(curBuilder.ToString(), out var failureMessage, out var remainderResult))
                 {
@@ -355,9 +357,9 @@ namespace LabExtended.Commands
                 return false;
             }
 
-            for (int i = countArgs(); i < command._args.Length; i++)
+            for (int i = countArgs(); i < args.Length; i++)
             {
-                curArg = command._args[i];
+                curArg = args[i];
 
                 if (!curArg.IsOptional)
                 {

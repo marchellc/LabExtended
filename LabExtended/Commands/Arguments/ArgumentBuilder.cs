@@ -17,25 +17,25 @@ namespace LabExtended.Commands.Arguments
 
         public ArgumentBuilder WithArg<T>(string name, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType<T>(name, "No description.", ArgumentFlags.None, default, parser));
+            _build.Add(ArgumentDefinition.FromType<T>(name, "No description.", default, false, parser));
             return this;
         }
 
         public ArgumentBuilder WithArg<T>(string name, string description, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType<T>(name, description, ArgumentFlags.None, default, parser));
+            _build.Add(ArgumentDefinition.FromType<T>(name, description, default, false, parser));
             return this;
         }
 
         public ArgumentBuilder WithOptional<T>(string name, T defaultValue = default, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType(name, "No description.", ArgumentFlags.Optional, defaultValue, parser));
+            _build.Add(ArgumentDefinition.FromType(name, "No description.", defaultValue, false, parser));
             return this;
         }
 
         public ArgumentBuilder WithOptional<T>(string name, string description, T defaultValue = default, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType(name, description, ArgumentFlags.Optional, defaultValue, parser));
+            _build.Add(ArgumentDefinition.FromType(name, description, defaultValue, false, parser));
             return this;
         }
 

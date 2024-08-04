@@ -92,7 +92,7 @@ namespace LabExtended.Commands
                 {
                     var args = new object[_customParams.Length];
 
-                    if (!CommandParser.TryParseCustomArgs(arg, this, args, out var failedArg, out var failedReason))
+                    if (!CommandParser.TryParseCustomArgs(arg, _args, args, out var failedArg, out var failedReason))
                     {
                         response = $"Failed while parsing command parameter '{failedArg.Name}': {failedReason}";
                         return false;
@@ -108,7 +108,7 @@ namespace LabExtended.Commands
                     var collection = new ArgumentCollection();
                     var context = new CommandContext(arg, arguments.Array, collection, this, player);
 
-                    if (!CommandParser.TryParseDefaultArgs(arg, this, collection, out var failedArg, out var failedReason))
+                    if (!CommandParser.TryParseDefaultArgs(arg, _args, collection, out var failedArg, out var failedReason))
                     {
                         response = $"Failed while parsing command parameter '{failedArg.Name}': {failedReason}";
                         return false;
@@ -231,6 +231,7 @@ namespace LabExtended.Commands
                 _args[i].ValidateArgument();
         }
 
+        #region Argument Building
         public static ArgumentDefinition[] GetArg<T>(string name, string description, ICommandParser parser = null)
             => ArgumentBuilder.Get(x => x.WithArg<T>(name, description, parser));
 
@@ -245,89 +246,45 @@ namespace LabExtended.Commands
 
         public static ArgumentDefinition[] GetArgs(Action<ArgumentBuilder> builder)
             => ArgumentBuilder.Get(builder);
+        #endregion
+
+        #region Continued Response Handling
+        internal static bool HandleCommand(ExPlayer player, string cmd, string[] args)
+        {
+            if (player is null)
+                return true;
+
+            if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
+                return true;
+
+            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext, cmd, args);
+
+            try
+            {
+                continuedContext.PreviousResponse._onContinued(ctx);
+            }
+            catch (Exception ex)
+            {
+                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
+            }
+
+            if (ctx.Response is ContinuedResponse continuedResponse)
+                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, cmd, args);
+            else
+                _continuedContexts.Remove(player.NetId);
+
+            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
+            return false;
+        }
 
         internal static bool InternalHandleGameConsoleCommand(PlayerGameConsoleCommandEvent ev)
-        {
-            if (!ExPlayer.TryGet(ev.Player, out var player))
-                return true;
-
-            if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
-                return true;
-
-            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext, ev.Command, ev.Arguments);
-
-            try
-            {
-                continuedContext.PreviousResponse._onContinued(ctx);
-            }
-            catch (Exception ex)
-            {
-                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
-            }
-
-            if (ctx.Response is ContinuedResponse continuedResponse)
-                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, ev.Command, ev.Arguments);
-            else
-                _continuedContexts.Remove(player.NetId);
-
-            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
-            return false;
-        }
+            => HandleCommand(ev.Player.ReferenceHub, ev.Command, ev.Arguments);
 
         internal static bool InternalHandleConsoleCommand(ConsoleCommandEvent ev)
-        {
-            if (!ExPlayer.TryGet(ev.Sender, out var player))
-                return true;
-
-            if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
-                return true;
-
-            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext, ev.Command, ev.Arguments);
-
-            try
-            {
-                continuedContext.PreviousResponse._onContinued(ctx);
-            }
-            catch (Exception ex)
-            {
-                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
-            }
-
-            if (ctx.Response is ContinuedResponse continuedResponse)
-                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, ev.Command, ev.Arguments);
-            else
-                _continuedContexts.Remove(player.NetId);
-
-            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
-            return false;
-        }
+            => HandleCommand(ExPlayer.Get(ev.Sender), ev.Command, ev.Arguments);
 
         internal static bool InternalHandleRemoteAdminCommand(RemoteAdminCommandEvent ev)
-        {
-            if (!ExPlayer.TryGet(ev.Sender, out var player))
-                return true;
-
-            if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
-                return true;
-
-            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext, ev.Command, ev.Arguments);
-
-            try
-            {
-                continuedContext.PreviousResponse._onContinued(ctx);
-            }
-            catch (Exception ex)
-            {
-                player.SendRemoteAdminMessage($"Command execution failed: {ex}", false);
-            }
-
-            if (ctx.Response is ContinuedResponse continuedResponse)
-                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, ev.Command, ev.Arguments);
-            else
-                _continuedContexts.Remove(player.NetId);
-
-            player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
-            return false;
-        }
+            => HandleCommand(ExPlayer.Get(ev.Sender), ev.Command, ev.Arguments);
+        #endregion
     }
 }
