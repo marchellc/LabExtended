@@ -78,6 +78,7 @@ namespace LabExtended.API
             _players = new LockedHashSet<ExPlayer>();
             _npcPlayers = new LockedHashSet<ExPlayer>();
             _allPlayers = new LockedHashSet<ExPlayer>();
+            _ghostedPlayers = new LockedHashSet<ExPlayer>();
 
             TickManager.SubscribeTick(SynchronizeRoles, TickTimer.NoneProfiled, "Role Synchronization", true);
             TickManager.SubscribeTick(SynchronizePositions, TickTimer.NoneProfiled, "Position Synchronization", true);
