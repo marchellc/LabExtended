@@ -119,7 +119,16 @@ namespace LabExtended.API.Containers
             => Role is T;
 
         public bool Is<T>(out T role)
-            => (role = (T)(object)Role) != null;
+        {
+            if (Role is null || Role is not T castRole)
+            {
+                role = default;
+                return false;
+            }
+
+            role = castRole;
+            return true;
+        }
 
         public bool IfRole<T>(Action<T> action)
         {
