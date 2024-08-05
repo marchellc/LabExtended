@@ -11,16 +11,19 @@ using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
+using PluginAPI.Helpers;
 using PluginAPI.Loader;
 
 using Serialization;
+
+using System.Reflection;
 
 namespace LabExtended.Core
 {
     /// <summary>
     /// The main class, used as a loader. Can also be used for modules.
     /// </summary>
-    public class ExLoader : Module
+    public class ExLoader : API.Modules.Module
     {
         /// <summary>
         /// Gets the server's version.
@@ -31,6 +34,11 @@ namespace LabExtended.Core
         /// Gets the API version.
         /// </summary>
         public static Version ApiVersion { get; } = new Version(1, 0, 0);
+
+        /// <summary>
+        /// Gets the API's Assembly.
+        /// </summary>
+        public static Assembly Assembly { get; private set; }
 
         /// <summary>
         /// Gets the active <see cref="ExLoader"/> instance.
@@ -143,11 +151,15 @@ namespace LabExtended.Core
                     return;
                 }
 
-                Folder = $"{Directory.GetParent(Directory.GetCurrentDirectory())}/LabExtended";
+                Assembly = Assembly.GetExecutingAssembly();
+
+                Folder = $"{Paths.PluginAPI}/LabExtended-{ServerStatic.ServerPort}";
                 ConfigPath = $"{Folder}/config.yml";
 
                 if (!Directory.Exists(Folder))
                     Directory.CreateDirectory(Folder);
+
+                Info("Extended Loader", $"Loading config file from &3{ConfigPath}&r");
 
                 LoadConfig();
 
@@ -156,6 +168,8 @@ namespace LabExtended.Core
                     Error("Extended Loader", $"Failed to load the configuration file.");
                     return;
                 }
+
+                Info("Extended Loader", "Config file loaded.");
 
                 Loader = new ExLoader();
 
@@ -248,7 +262,7 @@ namespace LabExtended.Core
             if (message is Exception ex)
                 message = ex.ToColoredString();
 
-            Log.Debug(message.ToString(), source);
+            ServerConsole.AddLog(Log.FormatText($"&7[&b&5Debug&B&7] &7[&b&2{source}&B&7]&r {message}", "7", false), ConsoleColor.Magenta);
         }
 
         private static bool CanDebug(string source)
