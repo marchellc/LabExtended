@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Functions
         /// <summary>
         /// Gets the <see cref="HarmonyLib.Harmony"/> instance.
         /// </summary>
-        public static Harmony Harmony => ExLoader.Loader.Harmony;
+        public static Harmony Harmony => ExLoader.Harmony;
 
         /// <summary>
         /// Enables the hooking patch.

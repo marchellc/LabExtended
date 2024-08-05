@@ -54,7 +54,7 @@ namespace LabExtended.Core.Performance
 
         public static void SubmitReport()
         {
-            if (!ExLoader.Loader.Config.Api.EnablePerformanceWatcher)
+            if (!ExLoader.Config.Api.EnablePerformanceWatcher)
                 return;
 
             PrevReport = CurReport;
@@ -69,7 +69,7 @@ namespace LabExtended.Core.Performance
 
         private static void UpdateStats()
         {
-            if (!ExLoader.Loader.Config.Api.EnablePerformanceWatcher)
+            if (!ExLoader.Config.Api.EnablePerformanceWatcher)
                 return;
 
             var curMem = _curProcess.WorkingSet64;

@@ -46,7 +46,7 @@ namespace LabExtended.Core.Performance
 
             if (OverallValue.MinValue == -1 || curValue < OverallValue.MinValue)
             {
-                if (OverallValue.MinValue != -1 && OverallValue.MinValueStr != strValue && ExLoader.Loader.Config.Api.EnablePerformanceWatcher && !ExLoader.Loader.Config.Api.NoLogPerformance.Contains(Id))
+                if (OverallValue.MinValue != -1 && OverallValue.MinValueStr != strValue && ExLoader.Config.Api.EnablePerformanceWatcher && !ExLoader.Config.Api.NoLogPerformance.Contains(Id))
                 {
                     if (IsDecreaseGood)
                         ExLoader.Info("Performance Statistics", $"Overall value of &4{Name}&r &2decreased&r to &6{strValue}&r");
@@ -63,7 +63,7 @@ namespace LabExtended.Core.Performance
 
             if (OverallValue.MaxValue == -1 || curValue > OverallValue.MaxValue)
             {
-                if (OverallValue.MaxValue != -1 && OverallValue.MaxValueStr != strValue && ExLoader.Loader.Config.Api.EnablePerformanceWatcher && !ExLoader.Loader.Config.Api.NoLogPerformance.Contains(Id))
+                if (OverallValue.MaxValue != -1 && OverallValue.MaxValueStr != strValue && ExLoader.Config.Api.EnablePerformanceWatcher && !ExLoader.Config.Api.NoLogPerformance.Contains(Id))
                 {
                     if (IsDecreaseGood)
                         ExLoader.Warn("Performance Statistics", $"Overall value of &4{Name}&r &1increased&r to &6{strValue}&r");

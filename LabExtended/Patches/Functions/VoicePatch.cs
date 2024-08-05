@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions
         {
             if (msg.SpeakerNull || msg.Speaker.netId != conn.identity.netId
                 || msg.Speaker.roleManager.CurrentRole is not IVoiceRole voiceRole
-                || (ExLoader.Loader.Config.Voice.CustomRateLimit > 0 && voiceRole.VoiceModule._sentPackets++ >= ExLoader.Loader.Config.Voice.CustomRateLimit)
+                || (ExLoader.Config.Voice.CustomRateLimit > 0 && voiceRole.VoiceModule._sentPackets++ >= ExLoader.Config.Voice.CustomRateLimit)
                 || VoiceChatMutes.IsMuted(msg.Speaker))
                 return false;
 
@@ -30,7 +30,7 @@ namespace LabExtended.Patches.Functions
             if (speaker is null)
                 return true;
 
-            if (!ExLoader.Loader.Config.Voice.DisableCustomVoice)
+            if (!ExLoader.Config.Voice.DisableCustomVoice)
             {
                 speaker._voice.ReceiveMessage(ref msg);
                 return false;

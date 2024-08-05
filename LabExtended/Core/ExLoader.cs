@@ -3,16 +3,17 @@ using HarmonyLib;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.Attributes;
+
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Ticking;
 
 using LabExtended.Extensions;
+using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
 using PluginAPI.Core;
-using PluginAPI.Core.Attributes;
-using PluginAPI.Enums;
 using PluginAPI.Loader;
+
+using Serialization;
 
 namespace LabExtended.Core
 {
@@ -32,91 +33,65 @@ namespace LabExtended.Core
         public static Version ApiVersion { get; } = new Version(1, 0, 0);
 
         /// <summary>
-        /// Gets the active <see cref="ExLoaderConfig"/> instance.
-        /// </summary>
-        public static ExLoaderConfig LoaderConfig => Loader?.Config;
-
-        /// <summary>
         /// Gets the active <see cref="ExLoader"/> instance.
         /// </summary>
         public static ExLoader Loader { get; private set; }
 
         /// <summary>
-        /// Gets the loader's plugin folder.
+        /// Gets the API's plugin folder.
         /// </summary>
-        public static string Folder => Loader.Handler.PluginDirectoryPath;
+        public static string Folder { get; private set; }
 
         /// <summary>
-        /// Creates a new <see cref="ExLoader"/> instance. This is included only to implement the base constructor of <see cref="ModuleParent"/>.
+        /// Gets the API's config file path.
         /// </summary>
-        public ExLoader() : base() { }
-
-        /// <summary>
-        /// The plugin's config instance.
-        /// </summary>
-        [PluginConfig]
-        public ExLoaderConfig Config;
-
-        /// <summary>
-        /// The plugin's handler instance.
-        /// </summary>
-        public PluginHandler Handler;
+        public static string ConfigPath { get; private set; }
 
         /// <summary>
         /// The <see cref="HarmonyLib.Harmony"/> instance.
         /// </summary>
-        public Harmony Harmony;
+        public static Harmony Harmony;
 
         /// <summary>
-        /// Gets the loader's server version compatibility.
+        /// The <see cref="ExLoaderConfig"/> instance.
         /// </summary>
-        public readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 1));
+        public static ExLoaderConfig Config;
 
         /// <summary>
-        /// Loads the plugin.
+        /// Gets the API's server version compatibility.
         /// </summary>
-        [PluginEntryPoint("LabExtended", "1.0.0", "An extension to NW's Plugin API.", "marchellc")]
-        [PluginPriority(LoadPriority.Lowest)]
-        public void Load()
+        public static readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 1));
+
+        private bool _pluginsLoaded = false;
+
+        /// <summary>
+        /// Creates a new <see cref="ExLoader"/> instance. This is included only to implement the base constructor of <see cref="Module"/>.
+        /// </summary>
+        public ExLoader() : base() { }
+
+        /// <summary>
+        /// Loads all plugins.
+        /// </summary>
+        public void LoadPlugins()
         {
+            if (_pluginsLoaded)
+                return;
+
             try
             {
-                Handler = PluginHandler.Get(this);
-                Loader = this;
-
-                Info("Extended Loader", $"Loading version &2{ApiVersion}&r ..");
-
-                if (GameCompatibility.HasValue && !GameCompatibility.Value.InRange(GameVersion))
-                {
-                    Error("Extended Loader", $"Attempted to load for an unsupported game version (&1{GameVersion}&r) - supported: &2{GameCompatibility.Value}&r");
-                    return;
-                }
-
-                if (Config is null)
-                {
-                    Error("Extended Loader", "The plugin's config is missing! Seems like you made an error. Delete it and restart the server.");
-                    return;
-                }
-
-                Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
-                Harmony.PatchAll();
-
                 typeof(ExLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
 
                 HookManager.RegisterAll();
 
-                StartModule();
+                Loader.StartModule();
 
-                AddCachedModules();
-                AddModule<GlobalHintModule>(false);
+                Loader.AddCachedModules();
+                Loader.AddModule<GlobalHintModule>(false);
 
                 foreach (var plugin in AssemblyLoader.InstalledPlugins)
                 {
                     var pluginType = plugin._pluginType;
                     var pluginObj = plugin._plugin;
-
-                    if (pluginObj != null && pluginObj == this)
-                        continue;
 
                     Info("Extended Loader", $"Loading plugin '&2{plugin.PluginName}&r' by &1{plugin.PluginAuthor}&r ..");
 
@@ -140,36 +115,85 @@ namespace LabExtended.Core
                 foreach (var plugin in AssemblyLoader.Plugins.Keys)
                     plugin.InvokeStaticMethods(m => m.HasAttribute<LoaderCallbackAttribute>());
 
-                Info("Extended Loader", $"Finished loading!");
+                _pluginsLoaded = true;
+
+                LogPatch.OnLogging -= InternalHandleLog;
             }
             catch (Exception ex)
             {
-                Error("Extended Loader", $"A general loading error has occured!\n{ex.ToColoredString()}");
+                Error("Extended Loader", $"Failed to load plugin(s)!\n{ex.ToColoredString()}");
             }
         }
 
         /// <summary>
-        /// Unloads the plugin.
+        /// Loads the API.
         /// </summary>
-        [PluginUnload]
-        public void Unload()
+        public static void Load()
         {
-            Info("Extended Loader", "Unloading ..");
+            if (Loader != null)
+                throw new Exception($"API has already been loaded.");
 
-            Harmony.UnpatchAll();
-            Harmony = null;
+            try
+            {
+                Info("Extended Loader", $"Loading version &2{ApiVersion}&r ..");
 
-            StopModule();
+                if (GameCompatibility.HasValue && !GameCompatibility.Value.InRange(GameVersion))
+                {
+                    Error("Extended Loader", $"Attempted to load for an unsupported game version (&1{GameVersion}&r) - supported: &2{GameCompatibility.Value}&r");
+                    return;
+                }
 
-            TickManager.Kill();
+                Folder = $"{Directory.GetParent(Directory.GetCurrentDirectory())}/LabExtended";
+                ConfigPath = $"{Folder}/config.yml";
 
-            HookManager._activeDelegates.Clear();
-            HookManager._activeHooks.Clear();
+                if (!Directory.Exists(Folder))
+                    Directory.CreateDirectory(Folder);
 
-            Loader = null;
-            Handler = null;
+                LoadConfig();
 
-            Info("Extended Loader", $"Unloaded.");
+                if (Config is null)
+                {
+                    Error("Extended Loader", $"Failed to load the configuration file.");
+                    return;
+                }
+
+                Loader = new ExLoader();
+
+                Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
+                Harmony.PatchAll();
+
+                LogPatch.OnLogging += InternalHandleLog;
+
+                Info("Extended Loader", "Loader finished, waiting for plugin load to finish.");
+            }
+            catch (Exception ex)
+            {
+                Error("Extended Loader", $"A general loading error has occurred!\n{ex.ToColoredString()}");
+            }
+        }
+
+        /// <summary>
+        /// Loads config from the config file.
+        /// </summary>
+        public static void LoadConfig()
+        {
+            if (!File.Exists(ConfigPath))
+            {
+                SaveConfig();
+                return;
+            }
+
+            Config = YamlParser.Deserializer.Deserialize<ExLoaderConfig>(File.ReadAllText(ConfigPath));
+        }
+
+        /// <summary>
+        /// Saves the config file.
+        /// </summary>
+        public static void SaveConfig()
+        {
+            Config ??= new ExLoaderConfig();
+
+            File.WriteAllText(ConfigPath, YamlParser.Serializer.Serialize(Config));
         }
 
         /// <summary>
@@ -229,19 +253,29 @@ namespace LabExtended.Core
 
         private static bool CanDebug(string source)
         {
-            if (Loader is null || Loader.Config is null)
+            if (Config is null)
                 return true;
 
             if (!string.IsNullOrWhiteSpace(source))
             {
-                if (Loader.Config.Logging.DisabledSources.Contains(source))
+                if (Config.Logging.DisabledSources.Contains(source))
                     return false;
 
-                if (Loader.Config.Logging.EnabledSources.Contains(source))
+                if (Config.Logging.EnabledSources.Contains(source))
                     return true;
             }
 
-            return Loader.Config.Logging.DebugEnabled;
+            return Config.Logging.DebugEnabled;
+        }
+
+        private static void InternalHandleLog(string log)
+        {
+            if (Loader is null || Loader._pluginsLoaded || !log.EndsWith("<---<    Plugin system is ready !    <---<"))
+                return;
+
+            Info("Extended Loader", "Plugin loading has finished, initializing API");
+
+            Loader.LoadPlugins();
         }
     }
 }

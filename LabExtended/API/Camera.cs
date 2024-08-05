@@ -286,7 +286,7 @@ namespace LabExtended.API
 
         internal static void OnRoundStart()
         {
-            if (!ExLoader.Loader.Config.Api.EnableCameraNpc)
+            if (!ExLoader.Config.Api.EnableCameraNpc)
                 return;
 
             NpcHandler.Spawn("Camera API NPC", RoleTypeId.Scp079, null, null, null, npc =>

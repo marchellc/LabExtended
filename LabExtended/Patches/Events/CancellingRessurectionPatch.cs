@@ -23,7 +23,7 @@ namespace LabExtended.Patches.Events
         public static readonly MethodInfo ReplacementMethod = typeof(CancellingRessurectionPatch).FindMethod("Prefix");
         public static readonly MethodInfo TargetMethod = typeof(RagdollAbilityBase<>).MakeGenericType(typeof(Scp049Role)).FindMethod("ServerProcessCmd");
 
-        public static Harmony Harmony => ExLoader.Loader.Harmony;
+        public static Harmony Harmony => ExLoader.Harmony;
 
         [OnLoad]
         public static void Enable()

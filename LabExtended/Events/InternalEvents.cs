@@ -47,8 +47,8 @@ namespace LabExtended.Events
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
 
-            if (ExLoader.Loader.Config.Api.EnableProfilerLogs)
-                ProfilerMarker.LogAllMarkers(ExLoader.Loader.Config.Logging.ProfilingAsDebug);
+            if (ExLoader.Config.Api.EnableProfilerLogs)
+                ProfilerMarker.LogAllMarkers(ExLoader.Config.Logging.ProfilingAsDebug);
         }
 
         internal static void InternalHandleRoundRestart()
@@ -120,13 +120,13 @@ namespace LabExtended.Events
         {
             if (ExRound.State is RoundState.InProgress || ExRound.State is RoundState.WaitingForPlayers)
             {
-                if (ExLoader.Loader.Config.Api.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
+                if (ExLoader.Config.Api.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
                 {
                     ExRound.IsRoundLocked = false;
                     ExLoader.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
                 }
 
-                if (ExLoader.Loader.Config.Api.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
+                if (ExLoader.Config.Api.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
                 {
                     ExRound.IsLobbyLocked = false;
                     ExLoader.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
