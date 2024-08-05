@@ -28,12 +28,6 @@ namespace LabExtended.Patches.Events
 
             list.AddRange(ExPlayer.Get(x => x.Role.Is(RoleTypeId.Scp079) && x.Switches.CanBeRecontainedAs079));
 
-            if (list.Count < 1)
-            {
-                ListPool<ExPlayer>.Shared.Return(list);
-                return false;
-            }
-
             var recontainingArgs = new Scp079RecontainingArgs(ExPlayer.Get(__instance._activatorGlass.LastAttacker), list);
 
             if (!HookRunner.RunCancellable(recontainingArgs, true))
@@ -46,7 +40,7 @@ namespace LabExtended.Patches.Events
 
             foreach (var player in list)
             {
-                if (recontainingArgs.Activator is null)
+                if (recontainingArgs.Activator is not null)
                     player.Hub.playerStats.DealDamage(new RecontainmentDamageHandler(recontainingArgs.Activator.Footprint));
                 else
                     player.Hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
