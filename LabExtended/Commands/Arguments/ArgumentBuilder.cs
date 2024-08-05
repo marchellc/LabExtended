@@ -29,13 +29,13 @@ namespace LabExtended.Commands.Arguments
 
         public ArgumentBuilder WithOptional<T>(string name, T defaultValue = default, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType(name, "No description.", defaultValue, false, parser));
+            _build.Add(ArgumentDefinition.FromType(name, "No description.", defaultValue, true, parser));
             return this;
         }
 
         public ArgumentBuilder WithOptional<T>(string name, string description, T defaultValue = default, ICommandParser parser = null)
         {
-            _build.Add(ArgumentDefinition.FromType(name, description, defaultValue, false, parser));
+            _build.Add(ArgumentDefinition.FromType(name, description, defaultValue, true, parser));
             return this;
         }
 
