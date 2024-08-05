@@ -1345,31 +1345,8 @@ namespace LabExtended.API
         #endregion
 
         #region Operators
-        public override bool Equals(object obj)
-        {
-            if (obj != null)
-            {
-                if (obj is Player player)
-                    return player.NetworkId == NetId;
-
-                if (obj is ReferenceHub hub)
-                    return hub.netId == NetId;
-
-                if (obj is ExPlayer ply)
-                    return ply.NetId == NetId;
-
-                if (obj is NetworkBehaviour behaviour)
-                    return behaviour.netId == NetId;
-            }
-
-            return false;
-        }
-
         public override string ToString()
             => $"{Role.Name} {Name} ({UserId})";
-
-        public override int GetHashCode()
-            => GameObject != null ? GameObject.GetHashCode() : base.GetHashCode();
 
         public static implicit operator ExPlayer(ReferenceHub hub)
             => Get(hub);
