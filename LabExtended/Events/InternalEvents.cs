@@ -145,8 +145,8 @@ namespace LabExtended.Events
 
             foreach (var other in ExPlayer._allPlayers)
             {
-                other._prevSyncData.Remove(player.PlayerId);
-                other._newSyncData.Remove(player.PlayerId);
+                other._prevSyncData.Remove(player);
+                other._newSyncData.Remove(player);
                 other._sentRoles.Remove(player.PlayerId);
                 other._invisibility.Remove(player);
             }

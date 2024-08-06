@@ -452,6 +452,7 @@ namespace LabExtended.API
         private ReferenceHub _hub;
 
         private RemoteAdminIconType _forcedIcons;
+        private CompressedRotation? _forcedRot;
 
         internal RemoteAdminModule _raModule;
         internal PlayerStorageModule _storage;
@@ -460,8 +461,8 @@ namespace LabExtended.API
 
         internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
 
-        internal readonly LockedDictionary<int, FpcSyncData> _newSyncData;
-        internal readonly LockedDictionary<int, FpcSyncData> _prevSyncData;
+        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _newSyncData;
+        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _prevSyncData;
 
         internal readonly LockedHashSet<ExPlayer> _invisibility;
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
@@ -478,8 +479,8 @@ namespace LabExtended.API
 
             _sentRoles = new LockedDictionary<int, RoleTypeId>();
 
-            _newSyncData = new LockedDictionary<int, FpcSyncData>();
-            _prevSyncData = new LockedDictionary<int, FpcSyncData>();
+            _newSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
+            _prevSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
 
             _invisibility = new LockedHashSet<ExPlayer>();
             _droppedItems = new LockedHashSet<ItemPickupBase>();
@@ -576,6 +577,8 @@ namespace LabExtended.API
 
         public Footprint Footprint => new Footprint(Hub);
 
+        public CompressedRotation? ForcedRotation { get; set; }
+
         public uint NetId => _hub.netId;
 
         public int Ping => _peer?.Ping ?? -1;
@@ -607,6 +610,8 @@ namespace LabExtended.API
         public bool HasAdminChatAccess => _hub.serverRoles.AdminChatPerms;
 
         public bool DoNotTrack => _hub.authManager.DoNotTrack;
+
+        public bool RemoveForcedRotation { get; set; } = true;
 
         public string Address => _hub.connectionToClient.address;
 
@@ -1533,7 +1538,7 @@ namespace LabExtended.API
                             if (!isInvisible && (isGhosted || other._invisibility.Contains(player)))
                                 isInvisible = true;
 
-                            if (!player._prevSyncData.TryGetValue(other.PlayerId, out var prevSyncData))
+                            if (!player._prevSyncData.TryGetValue(other, out var prevSyncData))
                                 prevSyncData = default;
 
                             var position = other.Transform.position;
@@ -1541,17 +1546,14 @@ namespace LabExtended.API
                             if (other.FakePosition.TryGetValue(player, out var fakePosition))
                                 position = fakePosition;
 
-                            player._newSyncData[other.PlayerId] = prevSyncData = isInvisible ? default : new FpcSyncData(prevSyncData, module.SyncMovementState, module.IsGrounded, new RelativePosition(position), module.MouseLook);
-                            player._prevSyncData[other.PlayerId] = prevSyncData;
+                            player._newSyncData[other] = prevSyncData = isInvisible ? default : player.InternalGetNewSyncData(prevSyncData, module.SyncMovementState, position, module.IsGrounded, module.MouseLook);
+                            player._prevSyncData[other] = prevSyncData;
                         }
 
-                        writer.WriteUShort((ushort)player._newSyncData.Count);
+                        var countWritten = false;
 
                         foreach (var pair in player._newSyncData)
-                        {
-                            writer.WriteRecyclablePlayerId(new RecyclablePlayerId(pair.Key));
-                            pair.Value.Write(writer);
-                        }
+                            pair.Key.InternalWriteSyncData(pair.Value, player, writer, ref countWritten, (ushort)player._newSyncData.Count);
                     });
 
                     player.Connection.Send(writer.ToArraySegment());
@@ -1561,13 +1563,67 @@ namespace LabExtended.API
         #endregion
 
         #region Internal Methods
-        internal RoleTypeId? GetRoleForJoinedPlayer(ExPlayer joinedPlayer)
+        internal RoleTypeId? InternalGetRoleForJoinedPlayer(ExPlayer joinedPlayer)
         {
             if (!Switches.IsVisibleInSpectatorList)
                 return RoleTypeId.Spectator;
 
             return null;
         }
+
+        internal void InternalWriteSyncData(FpcSyncData data, ExPlayer receiver, NetworkWriter writer, ref bool countWritten, ushort count)
+        {
+            if (!_forcedRot.HasValue)
+            {
+                if (!countWritten)
+                {
+                    writer.Write(count);
+                    countWritten = true;
+                }
+
+                writer.WriteRecyclablePlayerId(Hub.Network_playerId);
+                data.Write(writer);
+
+                return;
+            }
+
+            var vertical = _forcedRot.Value.VerticalAxis;
+            var horizontal = _forcedRot.Value.HorizontalAxis;
+
+            var b = (byte)(((byte)data._state) | 0x20u);
+
+            if (data._bitPosition)
+                b |= (byte)(0x40u);
+
+            if (data._bitCustom)
+                b |= (byte)(0x80u);
+
+            writer.WriteUShort(2);
+
+            writer.Write(receiver.Hub.Network_playerId);
+            writer.Write(b);
+
+            if (data._bitPosition)
+                writer.WriteRelativePosition(default);
+
+            writer.WriteUShort(++horizontal);
+            writer.WriteUShort(++vertical);
+
+            writer.Write(receiver.Hub.Network_playerId);
+            writer.Write(b);
+
+            if (data._bitPosition)
+                writer.WriteRelativePosition(default);
+
+            writer.WriteUShort(--horizontal);
+            writer.WriteUShort(--vertical);
+
+            if (RemoveForcedRotation)
+                _forcedRot = null;
+        }
+
+        internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
+            => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
         #endregion
     }
 }
