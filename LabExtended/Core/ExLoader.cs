@@ -1,3 +1,5 @@
+using CommandSystem;
+
 using HarmonyLib;
 
 using LabExtended.API.Hints;
@@ -13,6 +15,8 @@ using LabExtended.Utilities;
 using PluginAPI.Core;
 using PluginAPI.Helpers;
 using PluginAPI.Loader;
+
+using RemoteAdmin;
 
 using Serialization;
 
@@ -89,6 +93,24 @@ namespace LabExtended.Core
             {
                 typeof(ExLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
 
+                foreach (var type in typeof(ExLoader).Assembly.GetTypes())
+                {
+                    if (type.IsClass && typeof(ICommand).IsAssignableFrom(type))
+                    {
+                        ICommand command = null;
+
+                        foreach (var commandAttribute in type.GetCustomAttributesData())
+                        {
+                            if (commandAttribute.AttributeType != typeof(CommandHandlerAttribute))
+                                continue;
+
+                            command ??= (ICommand)Activator.CreateInstance(type);
+
+                            InternalRegisterCommand(type, (Type)commandAttribute.ConstructorArguments[0].Value, command);
+                        }
+                    }
+                }
+
                 HookManager.RegisterAll();
 
                 Loader.StartModule();
@@ -159,8 +181,6 @@ namespace LabExtended.Core
                 if (!Directory.Exists(Folder))
                     Directory.CreateDirectory(Folder);
 
-                Info("Extended Loader", $"Loading config file from &3{ConfigPath}&r");
-
                 LoadConfig();
 
                 if (Config is null)
@@ -169,16 +189,15 @@ namespace LabExtended.Core
                     return;
                 }
 
-                Info("Extended Loader", "Config file loaded.");
-
                 Loader = new ExLoader();
 
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
                 Harmony.PatchAll();
 
-                LogPatch.OnLogging += InternalHandleLog;
+                if (Config.Logging.DebugEnabled)
+                    ServerConsole.AddLog("\n" + YamlParser.Serializer.Serialize(Config), ConsoleColor.Cyan);
 
-                Info("Extended Loader", "Loader finished, waiting for plugin load to finish.");
+                LogPatch.OnLogging += InternalHandleLog;
             }
             catch (Exception ex)
             {
@@ -287,9 +306,17 @@ namespace LabExtended.Core
             if (Loader is null || Loader._pluginsLoaded || !log.EndsWith("<---<    Plugin system is ready !    <---<"))
                 return;
 
-            Info("Extended Loader", "Plugin loading has finished, initializing API");
-
             Loader.LoadPlugins();
+        }
+
+        private static void InternalRegisterCommand(Type type, Type cmdType, ICommand command)
+        {
+            if (cmdType == typeof(GameConsoleCommandHandler))
+                GameCore.Console.singleton.ConsoleCommandHandler.RegisterCommand(command);
+            else if (cmdType == typeof(RemoteAdminCommandHandler))
+                CommandProcessor.RemoteAdminCommandHandler.RegisterCommand(command);
+            else if (cmdType == typeof(ClientCommandHandler))
+                QueryProcessor.DotCommandHandler.RegisterCommand(command);
         }
     }
 }

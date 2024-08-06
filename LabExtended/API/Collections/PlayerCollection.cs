@@ -121,8 +121,6 @@ namespace LabExtended.API.Collections
         public void Dispose()
         {
             _netIdList.Clear();
-            _netIdList = null;
-
             _handlers.Remove(this);
         }
     }
