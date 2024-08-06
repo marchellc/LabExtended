@@ -1536,7 +1536,12 @@ namespace LabExtended.API
                             if (!player._prevSyncData.TryGetValue(other.PlayerId, out var prevSyncData))
                                 prevSyncData = default;
 
-                            player._newSyncData[other.PlayerId] = prevSyncData = isInvisible ? default : new FpcSyncData(prevSyncData, module.SyncMovementState, module.IsGrounded, new RelativePosition(other.Transform.position), module.MouseLook);
+                            var position = other.Transform.position;
+
+                            if (other.FakePosition.TryGetValue(player, out var fakePosition))
+                                position = fakePosition;
+
+                            player._newSyncData[other.PlayerId] = prevSyncData = isInvisible ? default : new FpcSyncData(prevSyncData, module.SyncMovementState, module.IsGrounded, new RelativePosition(position), module.MouseLook);
                             player._prevSyncData[other.PlayerId] = prevSyncData;
                         }
 
