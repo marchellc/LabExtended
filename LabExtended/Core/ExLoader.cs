@@ -153,7 +153,7 @@ namespace LabExtended.Core
 
                 Assembly = Assembly.GetExecutingAssembly();
 
-                Folder = $"{Paths.PluginAPI}/LabExtended-{ServerStatic.ServerPort}";
+                Folder = $"{Paths.LocalPlugins}/LabExtended";
                 ConfigPath = $"{Folder}/config.yml";
 
                 if (!Directory.Exists(Folder))
