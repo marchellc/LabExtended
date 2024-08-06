@@ -49,6 +49,24 @@ namespace LabExtended.Utilities
             return primitiveObject;
         }
 
+        public static void UpdateTraceLine(PrimitiveObjectToy startCube, PrimitiveObjectToy endCube, PrimitiveObjectToy line,
+           Vector3 startPosition,
+            Vector3 endPosition,
+
+            Vector3 startCubeScale,
+            Vector3 endCubeScale,
+
+            float lineSize = 0.01f)
+        {
+            startCube.transform.position = startPosition;
+            startCube.transform.localScale = startCubeScale;
+
+            endCube.transform.position = endPosition;
+            endCube.transform.localScale = endCubeScale;
+
+            UpdateLine(line, startPosition, endPosition, lineSize);
+        }
+
         public static (PrimitiveObjectToy startCube, PrimitiveObjectToy line, PrimitiveObjectToy endCube) SpawnTraceLine(
             Vector3 startPosition,
             Vector3 endPosition,
@@ -63,11 +81,7 @@ namespace LabExtended.Utilities
 
             Color? startCubeColor = null,
             Color? endCubeColor = null,
-            Color? lineColor = null,
-
-            bool isLineStatic = true,
-            bool isStartCubeStatic = true,
-            bool isEndCubeStatic = true)
+            Color? lineColor = null)
         {
             var startColor = startCubeColor.HasValue ? startCubeColor.Value : Color.blue;
             var lineCol = lineColor.HasValue ? lineColor.Value : Color.blue;
@@ -75,15 +89,12 @@ namespace LabExtended.Utilities
 
             var startCube = SpawnPrimitive(startPosition, Quaternion.identity, startCubeScale, PrimitiveType.Cube, flags, startColor);
             var endCube = SpawnPrimitive(endPosition, Quaternion.identity, endCubeScale, PrimitiveType.Cube, flags, endColor);
-            var line = SpawnLine(startPosition, endPosition, lineSize, lineCol, flags, lineType, true);
-
-            startCube.NetworkIsStatic = true;
-            endCube.NetworkIsStatic = true;
+            var line = SpawnLine(startPosition, endPosition, lineSize, lineCol, flags, lineType);
 
             return (startCube, endCube, line);
         }
 
-        public static PrimitiveObjectToy SpawnLine(Vector3 startPosition, Vector3 endPosition, float size = 0.01f, Color? color = null, PrimitiveFlags flags = PrimitiveFlags.Visible, PrimitiveType type = PrimitiveType.Cylinder, bool isStatic = true)
+        public static PrimitiveObjectToy SpawnLine(Vector3 startPosition, Vector3 endPosition, float size = 0.01f, Color? color = null, PrimitiveFlags flags = PrimitiveFlags.Visible, PrimitiveType type = PrimitiveType.Cylinder)
         {
             var scale = new Vector3(size, Vector3.Distance(startPosition, endPosition) * (type is PrimitiveType.Cube ? 1f : 0.5f), size);
             var position = startPosition + (endPosition - startPosition) * 0.5f;
@@ -92,8 +103,26 @@ namespace LabExtended.Utilities
             return SpawnPrimitive(position, rotation, scale, type, flags, color);
         }
 
+        public static void UpdateLine(PrimitiveObjectToy toy, Vector3 startPosition, Vector3 endPosition, float size = 0.01f)
+        {
+            var scale = new Vector3(size, Vector3.Distance(startPosition, endPosition) * (toy.NetworkPrimitiveType is PrimitiveType.Cube ? 1f : 0.5f), size);
+            var position = startPosition + (endPosition - startPosition) * 0.5f;
+            var rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90f, 0f, 0f);
+
+            toy.transform.rotation = rotation;
+            toy.transform.position = position;
+
+            toy.transform.localScale = scale;
+        }
+
         public static Color GlowColor(this Color color)
             => new Color(color.r * 50f, color.g * 50f, color.b * 50f, 0.1f);
+
+        public static Color FixColor(this Color color)
+        {
+            FixColor(ref color);
+            return color;
+        }
 
         public static void FixColor(ref Color color)
         {

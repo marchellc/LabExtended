@@ -1550,10 +1550,20 @@ namespace LabExtended.API
                             player._prevSyncData[other] = prevSyncData;
                         }
 
+                        writer.WriteUShort((ushort)player._newSyncData.Count);
+
+                        foreach (var pair in player._newSyncData)
+                        {
+                            writer.WriteRecyclablePlayerId(pair.Key.Hub.Network_playerId);
+                            pair.Value.Write(writer);
+                        }
+
+                        /* broken for now
                         var countWritten = false;
 
                         foreach (var pair in player._newSyncData)
                             pair.Key.InternalWriteSyncData(pair.Value, player, writer, ref countWritten, (ushort)player._newSyncData.Count);
+                        */
                     });
 
                     player.Connection.Send(writer.ToArraySegment());
@@ -1577,7 +1587,7 @@ namespace LabExtended.API
             {
                 if (!countWritten)
                 {
-                    writer.Write(count);
+                    writer.WriteUShort(count);
                     countWritten = true;
                 }
 
