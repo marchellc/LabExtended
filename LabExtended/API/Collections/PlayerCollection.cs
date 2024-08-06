@@ -2,20 +2,83 @@
 
 using Mirror;
 
+using NorthwoodLib.Pools;
+
 using PluginAPI.Core;
+
+using System.Collections;
 
 namespace LabExtended.API.Collections
 {
     /// <summary>
     /// A class that helps with managing a list of players.
     /// </summary>
-    public class PlayerCollection : IDisposable
+    public class PlayerCollection : IDisposable, IEnumerable<ExPlayer>
     {
+        public struct PlayerEnumerator : IEnumerator<ExPlayer>
+        {
+            private int _index;
+            private IEnumerable<uint> _netIds;
+            private List<ExPlayer> _players;
+
+            public PlayerEnumerator(IEnumerable<uint> networkIds)
+            {
+                _index = 0;
+                _netIds = networkIds;
+                _players = null;
+            }
+
+            public ExPlayer Current
+            {
+                get
+                {
+                    if (_index < 0 || _index >= _players.Count)
+                        return null;
+
+                    return _players[_index];
+                }
+            }
+
+            object IEnumerator.Current => Current;
+
+            public void Reset()
+                => _index = 0;
+
+            public void Dispose()
+            {
+                ListPool<ExPlayer>.Shared.Return(_players);
+
+                _players = null;
+                _netIds = null;
+
+                _index = 0;
+            }
+
+            public bool MoveNext()
+            {
+                if (_players is null)
+                {
+                    var netIds = _netIds;
+
+                    _players = ListPool<ExPlayer>.Shared.Rent(ExPlayer.Players.Where(x => netIds.Contains(x.NetId)));
+                    _index = 0;
+
+                    return true;
+                }
+
+                if (_index + 1 >= _players.Count)
+                    return false;
+
+                _index++;
+                return true;
+            }
+        }
+
         internal static readonly LockedHashSet<PlayerCollection> _handlers = new LockedHashSet<PlayerCollection>(); // A list of all handlers, used for player leave.
 
         public PlayerCollection()
         {
-            _netIdList = new LockedHashSet<uint>(20);
+            _netIdList = new LockedHashSet<uint>(50);
             _handlers.Add(this);
         }
 
@@ -115,6 +178,43 @@ namespace LabExtended.API.Collections
         public bool Contains(NetworkIdentity identity)
             => identity != null && _netIdList.Contains(identity.netId);
 
+        public void ForEach(Action<ExPlayer> action)
+        {
+            if (action is null)
+                return;
+
+            if (_netIdList.Count < 1)
+                return;
+
+            foreach (var player in ExPlayer.Players)
+            {
+                if (!_netIdList.Contains(player.NetId))
+                    continue;
+
+                action(player);
+            }
+        }
+
+        public void ForEach(Predicate<ExPlayer> predicate, Action<ExPlayer> action)
+        {
+            if (action is null || predicate is null)
+                return;
+
+            if (_netIdList.Count < 1)
+                return;
+
+            foreach (var player in ExPlayer.Players)
+            {
+                if (!_netIdList.Contains(player.NetId))
+                    continue;
+
+                if (!predicate(player))
+                    continue;
+
+                action(player);
+            }
+        }
+
         public void Clear()
             => _netIdList.Clear();
 
@@ -123,5 +223,11 @@ namespace LabExtended.API.Collections
             _netIdList.Clear();
             _handlers.Remove(this);
         }
+
+        public IEnumerator<ExPlayer> GetEnumerator()
+            => new PlayerEnumerator(_netIdList);
+
+        IEnumerator IEnumerable.GetEnumerator()
+            => new PlayerEnumerator(_netIdList);
     }
 }
