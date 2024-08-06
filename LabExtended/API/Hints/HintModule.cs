@@ -37,7 +37,6 @@ namespace LabExtended.API.Hints
         private int _idClock = 0;
 
         internal string _globalText;
-        internal bool _paused;
 
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
@@ -213,7 +212,7 @@ namespace LabExtended.API.Hints
 
         internal void InternalTick()
         {
-            if (_paused)
+            if (IsPaused)
                 return;
 
             _temporaryElement.CheckDuration();

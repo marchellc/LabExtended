@@ -1,6 +1,5 @@
-﻿using LabExtended.Core;
+﻿using LabExtended.Core.Ticking;
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 
 namespace LabExtended.API.Modules
 {
@@ -28,6 +27,11 @@ namespace LabExtended.API.Modules
         /// Gets or sets a value indicating whether or not this module is active.
         /// </summary>
         public bool IsActive { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this module's tick method is paused.
+        /// </summary>
+        public bool IsPaused { get; set; }
 
         /// <summary>
         /// Gets the module's parent.
@@ -243,7 +247,7 @@ namespace LabExtended.API.Modules
 
         internal void TickModule()
         {
-            if (TickTimer is null || TickInfo is null || !IsActive)
+            if (TickTimer is null || TickInfo is null || !IsActive || IsPaused)
                 return;
 
             OnTick();

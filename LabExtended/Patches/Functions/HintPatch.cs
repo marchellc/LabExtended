@@ -19,13 +19,13 @@ namespace LabExtended.Patches.Functions
             if (HintDisplay.SuppressedReceivers.Contains(__instance.connectionToClient))
                 return false;
 
-            if (!ExPlayer.TryGet(__instance.connectionToClient, out var player) || player.Hints._paused)
+            if (!ExPlayer.TryGet(__instance.connectionToClient, out var player) || player.Hints.IsPaused)
                 return true;
 
-            player.Hints._paused = true;
+            player.Hints.IsPaused = true;
             player.Connection.Send(new HintMessage(hint));
 
-            Timing.CallDelayed(hint.DurationScalar + (player.Ping * 10), () => player.Hints._paused = false);
+            Timing.CallDelayed(hint.DurationScalar + 0.1f, () => player.Hints.IsPaused = false);
             return false;
         }
     }
