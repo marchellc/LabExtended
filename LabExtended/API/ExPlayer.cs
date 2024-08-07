@@ -15,7 +15,7 @@ using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
-
+using InventorySystem.Items.Usables.Scp330;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
 using LabExtended.API.CustomModules;
@@ -93,12 +93,12 @@ namespace LabExtended.API
 
         internal static ExPlayer _hostPlayer;
 
-        private static float _sendTime = 0f;
+        private static float _posTime = 0f;
 
         /// <summary>
         /// Gets the current position synchronization rate based on the server's TPS. Used in <see cref="SynchronizePositions"/>.
         /// </summary>
-        public static float PositionSendRate => 1f / Mathf.Clamp(ServerStatic.ServerTickrate, 10, 60);
+        public static float SyncRate => 1f / Mathf.Clamp(ServerStatic.ServerTickrate, 10, 60);
 
         /// <summary>
         /// Gets a list of all players on the server.
@@ -573,6 +573,8 @@ namespace LabExtended.API
         public Transform Transform => _hub.transform;
         public Transform CameraTransform => _hub.PlayerCameraReference;
 
+        public Scp330Bag Scp330 => Items.TryGetFirst(x => x is Scp330Bag, out var bagItem) ? (Scp330Bag)bagItem : null;
+
         public Vector3 Velocity => _hub.GetVelocity();
 
         public Footprint Footprint => new Footprint(Hub);
@@ -835,6 +837,19 @@ namespace LabExtended.API
             set => SetItemList(value);
         }
 
+        public IEnumerable<CandyKindID> Candies
+        {
+            get
+            {
+                var bag = Scp330;
+
+                if (bag != null)
+                    return bag.Candies;
+
+                return Array.Empty<CandyKindID>();
+            }
+        }
+
         public IEnumerable<ItemType> ItemTypes
         {
             get => _hub.inventory.UserInventory.Items.Values.Select(p => p.ItemTypeId);
@@ -1045,6 +1060,20 @@ namespace LabExtended.API
         #endregion
 
         #region Inventory Methods
+        public Scp330Bag GetOrAddScp330()
+        {
+            if (Scp330Bag.TryGetBag(Hub, out var bag))
+                return bag;
+
+            return AddItem<Scp330Bag>(ItemType.SCP330);
+        }
+
+        public int CountCandies(CandyKindID candyKind)
+            => Candies.Count(x => x == candyKind);
+
+        public T AddItem<T>(ItemType type) where T : ItemBase
+            => (T)AddItem(type);
+
         public ItemBase AddItem(ItemType type)
            => Hub.inventory.ServerAddItem(type);
 
@@ -1498,12 +1527,12 @@ namespace LabExtended.API
 
         private static void SynchronizePositions()
         {
-            _sendTime += Time.deltaTime;
+            _posTime += Time.deltaTime;
 
-            if (_sendTime < PositionSendRate)
+            if (_posTime < SyncRate)
                 return;
 
-            _sendTime -= PositionSendRate;
+            _posTime -= SyncRate;
 
             foreach (var player in _allPlayers)
             {
@@ -1557,13 +1586,6 @@ namespace LabExtended.API
                             writer.WriteRecyclablePlayerId(pair.Key.Hub.Network_playerId);
                             pair.Value.Write(writer);
                         }
-
-                        /* broken for now
-                        var countWritten = false;
-
-                        foreach (var pair in player._newSyncData)
-                            pair.Key.InternalWriteSyncData(pair.Value, player, writer, ref countWritten, (ushort)player._newSyncData.Count);
-                        */
                     });
 
                     player.Connection.Send(writer.ToArraySegment());
@@ -1579,57 +1601,6 @@ namespace LabExtended.API
                 return RoleTypeId.Spectator;
 
             return null;
-        }
-
-        internal void InternalWriteSyncData(FpcSyncData data, ExPlayer receiver, NetworkWriter writer, ref bool countWritten, ushort count)
-        {
-            if (!_forcedRot.HasValue)
-            {
-                if (!countWritten)
-                {
-                    writer.WriteUShort(count);
-                    countWritten = true;
-                }
-
-                writer.WriteRecyclablePlayerId(Hub.Network_playerId);
-                data.Write(writer);
-
-                return;
-            }
-
-            var vertical = _forcedRot.Value.VerticalAxis;
-            var horizontal = _forcedRot.Value.HorizontalAxis;
-
-            var b = (byte)(((byte)data._state) | 0x20u);
-
-            if (data._bitPosition)
-                b |= (byte)(0x40u);
-
-            if (data._bitCustom)
-                b |= (byte)(0x80u);
-
-            writer.WriteUShort(2);
-
-            writer.Write(receiver.Hub.Network_playerId);
-            writer.Write(b);
-
-            if (data._bitPosition)
-                writer.WriteRelativePosition(default);
-
-            writer.WriteUShort(++horizontal);
-            writer.WriteUShort(++vertical);
-
-            writer.Write(receiver.Hub.Network_playerId);
-            writer.Write(b);
-
-            if (data._bitPosition)
-                writer.WriteRelativePosition(default);
-
-            writer.WriteUShort(--horizontal);
-            writer.WriteUShort(--vertical);
-
-            if (RemoveForcedRotation)
-                _forcedRot = null;
         }
 
         internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)

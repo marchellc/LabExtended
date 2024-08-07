@@ -43,17 +43,9 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            var pickingUpItemEv = new PlayerPickingUpItemArgs(player, scp330Pickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, scp330Pickup.StoredCandies.Count - (Scp330Bag.TryGetBag(player.Hub, out var playerBag) ? 6 - playerBag.Candies.Count : 0) <= 0);
+            var pickingUpItemEv = new PlayerPickingUpItemArgs(player, scp330Pickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
 
-            pickingUpItemEv.IsAllowed = true;
-
-            if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
-            {
-                customItem.IsSelected = false;
-                customItem.OnPickingUp(pickingUpItemEv);
-            }
-
-            if (!HookRunner.RunCancellable(pickingUpItemEv, pickingUpItemEv.IsAllowed))
+            if (!HookRunner.RunCancellable(pickingUpItemEv, true))
             {
                 if (pickingUpItemEv.DestroyPickup)
                 {
@@ -63,6 +55,24 @@ namespace LabExtended.Patches.Functions.Items
 
                 __instance.TargetPickup.UnlockPickup();
                 return false;
+            }
+
+            if (CustomItem.TryGetItem(__instance.TargetPickup, out var customItem))
+            {
+                customItem.IsSelected = false;
+                customItem.OnPickingUp(pickingUpItemEv);
+
+                if (!pickingUpItemEv.IsAllowed)
+                {
+                    if (pickingUpItemEv.DestroyPickup)
+                    {
+                        __instance.TargetPickup.DestroySelf();
+                        return false;
+                    }
+
+                    __instance.TargetPickup.UnlockPickup();
+                    return false;
+                }
             }
 
             Scp330Bag.ServerProcessPickup(__instance.Hub, scp330Pickup, out var bag);
@@ -79,9 +89,14 @@ namespace LabExtended.Patches.Functions.Items
                     customItem.Select();
             }
 
-            if (pickingUpItemEv.DestroyPickup)
+            if (pickingUpItemEv.DestroyPickup || scp330Pickup.StoredCandies.Count == 0)
             {
                 scp330Pickup.DestroySelf();
+                return false;
+            }
+            else
+            {
+                scp330Pickup.UnlockPickup();
                 return false;
             }
 

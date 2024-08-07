@@ -83,8 +83,8 @@ namespace LabExtended.Patches.Functions
 
                 if (isPlayer && WaypointBase.TryGetWaypoint(msg.TargetPosition.WaypointId, out var targetWaypoint))
                 {
-                    transform = player.Transform;
-                    rotation = player.Transform.rotation;
+                    transform = targetPlayer.Transform;
+                    rotation = targetPlayer.Transform.rotation;
 
                     tracker = new FpcBacktracker(targetPlayer.Hub, targetWaypoint.GetWorldspacePosition(msg.TargetPosition.Relative));
 
@@ -291,9 +291,14 @@ namespace LabExtended.Patches.Functions
             if (!EventManager.ExecuteEvent(new PlayerShotWeaponEvent(player.Hub, firearm)))
                 return;
 
+            var rot = player.CameraTransform.rotation;
+
             ray = multiShotHitreg.ServerRandomizeRay(ray);
+
             multiShotHitreg._offsets.ForEach(offset =>
             {
+                offset = rot * offset;
+
                 var newRay = new Ray(ray.origin + offset, ray.direction);
 
                 if (!Physics.Raycast(newRay, out var hit, firearm.BaseStats.MaxDistance(), StandardHitregBase.HitregMask))
