@@ -32,21 +32,18 @@ namespace LabExtended.Utilities
 
         public static bool TryGetPixelSize(string tag, out int size)
         {
-            if (tag.EndsWith("%") && float.TryParse(tag.Substring(0, tag.Length - 1), out var result))
-            {
-                size = (int)(result * PixelsPerEm / 100f);
-                return true;
-            }
-            else if (tag.EndsWith("em") && float.TryParse(tag.Substring(0, tag.Length - 2), out result))
-            {
-                size = (int)(result * PixelsPerEm);
-                return true;
-            }
-            else if (char.IsDigit(tag[tag.Length - 1]) && int.TryParse(tag, out size))
-                return true;
-            else if (tag.EndsWith("px") && int.TryParse(tag.Substring(0, tag.Length - 2), out size))
-                return true;
-
+            try {
+                if (tag.EndsWith("%") && float.TryParse(tag.Substring(0, tag.Length - 1), out var result)) {
+                    size = (int)(result * PixelsPerEm / 100f);
+                    return true;
+                } else if (tag.EndsWith("em") && float.TryParse(tag.Substring(0, tag.Length - 2), out result)) {
+                    size = (int)(result * PixelsPerEm);
+                    return true;
+                } else if (char.IsDigit(tag[tag.Length - 1]) && int.TryParse(tag, out size))
+                    return true;
+                else if (tag.EndsWith("px") && int.TryParse(tag.Substring(0, tag.Length - 2), out size))
+                    return true;
+            } catch { }
             size = PixelsPerEm;
             return false;
         }
