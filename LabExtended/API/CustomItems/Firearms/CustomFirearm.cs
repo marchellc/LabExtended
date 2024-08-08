@@ -122,7 +122,7 @@ namespace LabExtended.API.CustomItems.Firearms
         }
 
         internal bool InternalCanReload()
-            => AmmoType != ItemType.None && (!FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) ? Owner.GetAmmo(AmmoType) > 0 : Owner.CountItems(AmmoType) > 0);
+            => AmmoType != ItemType.None && (!FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) ? Owner.Ammo.GetAmmo(AmmoType) > 0 : Owner.Inventory.CountItems(AmmoType) > 0);
 
         internal void InternalReload(byte ammoToReload)
         {
@@ -134,7 +134,7 @@ namespace LabExtended.API.CustomItems.Firearms
 
             if (FirearmInfo.FirearmFlags.Any(CustomFirearmFlags.AmmoAsInventoryItems) && !AmmoType.IsAmmo())
             {
-                var availableAmmo = (byte)Owner.CountItems(AmmoType);
+                var availableAmmo = (byte)Owner.Inventory.CountItems(AmmoType);
 
                 if (availableAmmo < 1)
                     return;
@@ -145,7 +145,7 @@ namespace LabExtended.API.CustomItems.Firearms
                 if (!OnReloading(ref availableAmmo))
                     return;
 
-                Owner.RemoveItems(AmmoType, availableAmmo);
+                Owner.Inventory.RemoveItems(AmmoType, availableAmmo);
                 CurrentAmmo += availableAmmo;
 
                 new RequestMessage(Serial, RequestType.Reload).SendToAuthenticated();
@@ -154,7 +154,7 @@ namespace LabExtended.API.CustomItems.Firearms
             }
             else
             {
-                var availableAmmo = (byte)Mathf.Clamp(Owner.GetAmmo(AmmoType), 0f, ammoToReload);
+                var availableAmmo = (byte)Mathf.Clamp(Owner.Ammo.GetAmmo(AmmoType), 0f, ammoToReload);
 
                 if (availableAmmo < 1)
                     return;
@@ -165,7 +165,7 @@ namespace LabExtended.API.CustomItems.Firearms
                 if (!OnReloading(ref availableAmmo))
                     return;
 
-                Owner.SubstractAmmo(AmmoType, availableAmmo);
+                Owner.Ammo.SubstractAmmo(AmmoType, availableAmmo);
                 CurrentAmmo += availableAmmo;
 
                 new RequestMessage(Serial, RequestType.Reload).SendToAuthenticated();

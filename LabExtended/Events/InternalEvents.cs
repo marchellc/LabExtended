@@ -138,7 +138,8 @@ namespace LabExtended.Events
 
             player._sentRoles.Clear();
 
-            player._droppedItems.Clear();
+            player.Inventory._droppedItems.Clear();
+
             player._invisibility.Clear();
 
             CustomCommand._continuedContexts.Remove(player.NetId);

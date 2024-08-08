@@ -283,13 +283,13 @@ namespace LabExtended.Extensions
         }
 
         public static IEnumerable<ExPlayer> GetPlayers(ItemType item)
-            => ExPlayer.Players.Where(p => p.HasItem(item));
+            => ExPlayer.Players.Where(p => p.Inventory.HasItem(item));
 
         public static void ForEach(ItemType item, Action<ExPlayer> action)
         {
             foreach (var player in ExPlayer.Players)
             {
-                if (!player.HasItem(item))
+                if (!player.Inventory.HasItem(item))
                     continue;
 
                 action(player);
@@ -300,7 +300,7 @@ namespace LabExtended.Extensions
         {
             foreach (var player in ExPlayer.Players)
             {
-                foreach (var item in player.GetItems<T>(type))
+                foreach (var item in player.Inventory.GetItems<T>(type))
                 {
                     action(player, item);
                 }

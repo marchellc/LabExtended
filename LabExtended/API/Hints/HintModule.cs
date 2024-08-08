@@ -323,10 +323,10 @@ namespace LabExtended.API.Hints
 
         private void InternalRefreshAspectRatio(bool isInitial)
         {
-            if (isInitial || _aspectRatio != CastParent.AspectRatio)
+            if (isInitial || _aspectRatio != CastParent.ScreenAspectRatio)
             {
-                _aspectRatio = CastParent.AspectRatio;
-                _leftOffset = (int)Math.Round(45.3448f * CastParent.AspectRatio - 51.527f);
+                _aspectRatio = CastParent.ScreenAspectRatio;
+                _leftOffset = (int)Math.Round(45.3448f * CastParent.ScreenAspectRatio - 51.527f);
             }
         }
     }

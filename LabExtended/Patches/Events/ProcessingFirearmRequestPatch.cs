@@ -33,14 +33,14 @@ namespace LabExtended.Patches.Events
             {
                 foreach (var other in ExPlayer.Players)
                 {
-                    if (other.CurrentItem != null && other.CurrentItem is Firearm firearm)
+                    if (other.Inventory.CurrentItem != null && other.Inventory.CurrentItem is Firearm firearm)
                         conn.Send(new StatusMessage(firearm.ItemSerial, firearm.Status));
                 }
 
                 ReflexSightDatabase.HandleNewClient(player.Hub);
             }
 
-            if (msg.Serial != player.CurrentItemIdentifier.SerialNumber || player.CurrentItem is not Firearm curFirearm)
+            if (msg.Serial != player.Inventory.CurrentItemIdentifier.SerialNumber || player.Inventory.CurrentItem is not Firearm curFirearm)
                 return false;
 
             var primaryBlocked = player.Hub.HasBlock(BlockedInteraction.ItemPrimaryAction);

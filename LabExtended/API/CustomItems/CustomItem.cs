@@ -282,7 +282,7 @@ namespace LabExtended.API.CustomItems
 
         public static TItem GetItem<TItem>(ExPlayer player) where TItem : CustomItem
         {
-            foreach (var item in player.Items)
+            foreach (var item in player.Inventory.Items)
             {
                 if (_items.TryGetValue(item.ItemSerial, out var customItem) && customItem is TItem castItem)
                     return castItem;
@@ -327,7 +327,7 @@ namespace LabExtended.API.CustomItems
                 throw new Exception($"Item '{typeof(TItem).FullName}' cannot be added to inventory.");
 
             var customItem = itemInfo.Type.Construct<TItem>();
-            var gameItem = player.AddItem(itemInfo.InventoryType);
+            var gameItem = player.Inventory.AddItem(itemInfo.InventoryType);
 
             customItem.Info = itemInfo;
             customItem.OnAdding();

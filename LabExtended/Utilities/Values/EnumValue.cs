@@ -43,28 +43,34 @@ namespace LabExtended.Utilities.Values
         /// Adds a flag.
         /// </summary>
         /// <param name="flag">The flag to add.</param>
-        /// <returns>true if the flag was added, otherwise false.</returns>
-        public bool AddFlag(TEnum flag)
+        public EnumValue<TEnum> AddFlag(TEnum flag)
         {
             if (Value.Any(flag))
-                return false;
+                return this;
 
             Value = Value.Combine(flag);
-            return true;
+            return this;
         }
 
         /// <summary>
         /// Removes a flag.
         /// </summary>
         /// <param name="flag">The flag to remove.</param>
-        /// <returns>true if the flag was removed, otherwise false.</returns>
-        public bool RemoveFlag(TEnum flag)
+        public EnumValue<TEnum> RemoveFlag(TEnum flag)
         {
             if (!Value.Any(flag))
-                return false;
+                return this;
 
             Value = Value.Remove(flag);
-            return true;
+            return this;
         }
+
+        /// <summary>
+        /// Sets a status of a flag.
+        /// </summary>
+        /// <param name="flag">The flag to set.</param>
+        /// <param name="value">Whether to add or remove it.</param>
+        public EnumValue<TEnum> SetFlag(TEnum flag, bool value)
+            => (value ? AddFlag(flag) : RemoveFlag(flag));
     }
 }

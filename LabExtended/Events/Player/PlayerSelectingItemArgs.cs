@@ -30,7 +30,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public ItemBase NextItem
         {
-            get => Player.Items.FirstOrDefault(item => item.ItemSerial == NextSerial);
+            get => Player.Inventory.Items.FirstOrDefault(item => item.ItemSerial == NextSerial);
             set => NextSerial = value?.ItemSerial ?? 0;
         }
 

@@ -347,7 +347,7 @@ namespace LabExtended.API
                 _doors.RemoveWhere(x => x.NetId == identity.netId);
 
                 foreach (var player in ExPlayer.Players)
-                    player._droppedItems.RemoveWhere(x => x.netId == identity.netId);
+                    player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
             }
             catch (Exception ex)
             {

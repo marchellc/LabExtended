@@ -4,18 +4,11 @@ using CommandSystem;
 
 using Footprinting;
 
-using Interactables.Interobjects.DoorUtils;
-
-using InventorySystem;
 using InventorySystem.Disarming;
 
 using InventorySystem.Items;
-using InventorySystem.Items.Firearms;
-using InventorySystem.Items.Firearms.Ammo;
-using InventorySystem.Items.Firearms.BasicMessages;
-using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
-using InventorySystem.Items.Usables.Scp330;
+
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
 using LabExtended.API.CustomModules;
@@ -26,10 +19,8 @@ using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
 
-using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
-using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
@@ -42,8 +33,6 @@ using MapGeneration;
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
 
-using NorthwoodLib.Pools;
-
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
@@ -53,7 +42,6 @@ using PlayerRoles.Visibility;
 using PlayerStatsSystem;
 
 using PluginAPI.Core;
-using PluginAPI.Events;
 
 using RelativePositioning;
 
@@ -465,17 +453,29 @@ namespace LabExtended.API
         internal readonly LockedDictionary<ExPlayer, FpcSyncData> _prevSyncData;
 
         internal readonly LockedHashSet<ExPlayer> _invisibility;
-        internal readonly LockedHashSet<ItemPickupBase> _droppedItems;
 
-        public ExPlayer(ReferenceHub hub) : this(hub, new SwitchContainer()) { }
+        /// <summary>
+        /// Creates a new <see cref="ExPlayer"/> instance with default switches.
+        /// </summary>
+        /// <param name="hub"></param>
+        public ExPlayer(ReferenceHub hub)
+            : this(hub, new SwitchContainer()) { }
 
+        /// <summary>
+        /// Creates a new <see cref="ExPlayer"/> instance with the specified switches.
+        /// </summary>
+        /// <param name="component">The <see cref="ReferenceHub"/> component instance.</param>
+        /// <param name="switches">The <see cref="SwitchContainer"/> instance.</param>
+        /// <exception cref="ArgumentNullException"></exception>
         public ExPlayer(ReferenceHub component, SwitchContainer switches) : base()
         {
             if (component is null)
                 throw new ArgumentNullException(nameof(component));
 
             _hub = component;
+
             _forcedIcons = RemoteAdminIconType.None;
+            _forcedRot = null;
 
             _sentRoles = new LockedDictionary<int, RoleTypeId>();
 
@@ -483,7 +483,6 @@ namespace LabExtended.API
             _prevSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
 
             _invisibility = new LockedHashSet<ExPlayer>();
-            _droppedItems = new LockedHashSet<ItemPickupBase>();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
 
@@ -496,8 +495,10 @@ namespace LabExtended.API
             FakeRole = new FakeValue<RoleTypeId>();
 
             Role = new RoleContainer(component.roleManager);
+            Ammo = new AmmoContainer(component.inventory);
             Stats = new StatsContainer(component.playerStats);
             Effects = new EffectContainer(component.playerEffectsController);
+            Inventory = new InventoryContainer(component.inventory);
             Subroutines = new SubroutineContainer(Role);
 
             Switches = switches;
@@ -517,106 +518,321 @@ namespace LabExtended.API
         /// Gets or sets the player's info area.
         /// </summary>
         public EnumValue<PlayerInfoArea> InfoArea { get; }
+
+        /// <summary>
+        /// Gets or sets the player's voice mute flags.
+        /// </summary>
         public EnumValue<VcMuteFlags> MuteFlags { get; }
 
+        /// <summary>
+        /// Gets the player's fake position list.
+        /// </summary>
         public FakeValue<Vector3> FakePosition { get; }
+
+        /// <summary>
+        /// Gets the player's fake role list.
+        /// </summary>
         public FakeValue<RoleTypeId> FakeRole { get; }
 
+        /// <summary>
+        /// Gets the player's <see cref="Npcs.NpcHandler"/> if the player is an NPC spawned via <see cref="Npcs.NpcHandler.Spawn(string?, RoleTypeId, int?, string?, Vector3?, Action{NpcHandler})"/>, otherwise <see langword="null"/>.
+        /// </summary>
         public NpcHandler NpcHandler { get; internal set; }
 
+        /// <summary>
+        /// Gets the player's <see cref="RoleContainer"/>.
+        /// </summary>
         public RoleContainer Role { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="AmmoContainer"/>.
+        /// </summary>
+        public AmmoContainer Ammo { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="StatsContainer"/>.
+        /// </summary>
         public StatsContainer Stats { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="EffectContainer"/>.
+        /// </summary>
         public EffectContainer Effects { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="SwitchContainer"/>.
+        /// </summary>
         public SwitchContainer Switches { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="InventoryContainer"/>.
+        /// </summary>
+        public InventoryContainer Inventory { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="SubroutineContainer"/>.
+        /// </summary>
         public SubroutineContainer Subroutines { get; }
 
+        /// <summary>
+        /// Gets the player's <see cref="ReferenceHub"/> component.
+        /// </summary>
         public ReferenceHub Hub => _hub;
+
+        /// <summary>
+        /// Gets the player's <see cref="UnityEngine.GameObject"/>.
+        /// </summary>
         public GameObject GameObject => _hub.gameObject;
 
+        /// <summary>
+        /// Gets the player's <see cref="NetPeer"/> (<see langword="null"/> if the player is an NPC).
+        /// </summary>
         public NetPeer Peer => _peer;
+
+        /// <summary>
+        /// Gets the player's <see cref="NetworkIdentity"/>.
+        /// </summary>
         public NetworkIdentity Identity => _hub.netIdentity;
+
+        /// <summary>
+        /// Gets the player's <see cref="NetworkConnection"/>.
+        /// </summary>
         public NetworkConnectionToClient Connection => _hub.connectionToClient;
 
+        /// <summary>
+        /// Gets the player's <see cref="RemoteAdminModule"/>.
+        /// </summary>
         public RemoteAdminModule RemoteAdmin => _raModule;
+
+        /// <summary>
+        /// Gets the player's <see cref="PlayerStorageModule"/>.
+        /// </summary>
         public PlayerStorageModule Storage => _storage;
+
+        /// <summary>
+        /// Gets the player's <see cref="VoiceModule"/>.
+        /// </summary>
         public VoiceModule Voice => _voice;
+
+        /// <summary>
+        /// Gets the player's <see cref="HintModule"/>.
+        /// </summary>
         public HintModule Hints => _hints;
 
+        /// <summary>
+        /// Gets the currently spectated player.
+        /// </summary>
         public ExPlayer SpectatedPlayer => _players.FirstOrDefault(p => p.IsSpectatedBy(this));
+
+        /// <summary>
+        /// Gets the player that this player is currently looking at.
+        /// </summary>
         public ExPlayer LookingAtPlayer => _players.FirstOrDefault(p => IsLookingAt(p));
 
-        public ExPlayer ClosestPlayer => _players.Where(p => p.NetId != NetId).OrderBy(DistanceTo).FirstOrDefault();
+        /// <summary>
+        /// Gets the closest player.
+        /// </summary>
+        public ExPlayer ClosestPlayer => _players.Where(p => p.NetId != NetId && p.Role.IsAlive).OrderBy(DistanceTo).FirstOrDefault();
+
+        /// <summary>
+        /// Gets the closest SCP player.
+        /// </summary>
         public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
 
+        /// <summary>
+        /// Gets the closest door.
+        /// </summary>
         public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
+
+        /// <summary>
+        /// Gets the closest SCP-079 camera.
+        /// </summary>
         public Camera ClosestCamera => ExMap.Cameras.OrderBy(x => Vector3.Distance(x.Position, Position)).First();
 
+        /// <summary>
+        /// Gets the player's current room.
+        /// </summary>
         public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
+
+        /// <summary>
+        /// Gets the elevator this player is currently in.
+        /// </summary>
         public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(this));
+
+        /// <summary>
+        /// Gets the SCP-079 camera this player is currently using.
+        /// </summary>
         public Camera Camera => ExMap.GetCamera(Subroutines.Scp079CurrentCameraSync?.CurrentCamera);
 
+        /// <summary>
+        /// Gets the player's connection state <i>(always <see cref="ConnectionState.Disconnected"/> for NPC players)</i>.
+        /// </summary>
         public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
 
-        public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem ? keycardItem.Permissions : KeycardPermissions.None;
-
+        /// <summary>
+        /// Gets a list of players that are currently spectating this player.
+        /// </summary>
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
+
+        /// <summary>
+        /// Gets a list of players that are currently in the line of sight of this player.
+        /// </summary>
         public IEnumerable<ExPlayer> PlayersInSight => _players.Where(p => p.IsInLineOfSight(this));
 
-        public IEnumerable<Firearm> Firearms => _hub.inventory.UserInventory.Items.Values.Where<Firearm>();
-        public IEnumerable<KeycardItem> Keycards => _hub.inventory.UserInventory.Items.Values.Where<KeycardItem>();
-
+        /// <summary>
+        /// Gets a list of active <see cref="VoiceModifier"/>s.
+        /// </summary>
         public IEnumerable<VoiceModifier> VoiceModifiers => _voice.Modifiers;
+
+        /// <summary>
+        /// Gets a list of active <see cref="VoiceProfile"/>s.
+        /// </summary>
         public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
 
+        /// <summary>
+        /// Gets a list of players that this player will be invisible to.
+        /// </summary>
         public LockedHashSet<ExPlayer> InvisibleToTargets => _invisibility;
 
+        /// <summary>
+        /// Gets the player's <see cref="UnityEngine.Transform"/>.
+        /// </summary>
         public Transform Transform => _hub.transform;
+
+        /// <summary>
+        /// Gets the player's camera's <see cref="UnityEngine.Transform"/>.
+        /// </summary>
         public Transform CameraTransform => _hub.PlayerCameraReference;
 
-        public Scp330Bag Scp330 => Items.TryGetFirst(x => x is Scp330Bag, out var bagItem) ? (Scp330Bag)bagItem : null;
-
+        /// <summary>
+        /// Gets the player's current velocity.
+        /// </summary>
         public Vector3 Velocity => _hub.GetVelocity();
 
+        /// <summary>
+        /// Gets the player's <see cref="Footprinting.Footprint"/>.
+        /// </summary>
         public Footprint Footprint => new Footprint(Hub);
 
-        public CompressedRotation? ForcedRotation { get; set; }
-
+        /// <summary>
+        /// Gets the player's network ID.
+        /// </summary>
         public uint NetId => _hub.netId;
 
+        /// <summary>
+        /// Gets the player's network latency. <i>(-1 for NPCs)</i>
+        /// </summary>
         public int Ping => _peer?.Ping ?? -1;
+
+        /// <summary>
+        /// Gets the player's network trip time. <i>(-1 for NPCs)</i>
+        /// </summary>
         public int TripTime => _peer?._avgRtt ?? -1;
+
+        /// <summary>
+        /// Gets the player's player ID.
+        /// <para>You should <b>never</b> change this unless you know what you are doing.</para>
+        /// </summary>
+        public int PlayerId => _hub.Network_playerId.Value;
+
+        /// <summary>
+        /// Gets the player's network connection ID.
+        /// </summary>
         public int ConnectionId => _hub.connectionToClient.connectionId;
 
-        public int ItemCount => _hub.inventory.UserInventory.Items.Count;
+        /// <summary>
+        /// Gets the player's screen's aspect ratio.
+        /// </summary>
+        public float ScreenAspectRatio => _hub.aspectRatioSync.AspectRatio;
 
-        public float AspectRatio => _hub.aspectRatioSync.AspectRatio;
+        /// <summary>
+        /// Gets the player's X axis screen edge.
+        /// </summary>
+        public float ScreenEdgeX => _hub.aspectRatioSync.XScreenEdge;
 
+        /// <summary>
+        /// Gets the player's screen's X and Y axis.
+        /// </summary>
+        public float ScreenXPlusY => _hub.aspectRatioSync.XplusY;
+
+        /// <summary>
+        /// Whether or not the player is connected.
+        /// </summary>
         public bool IsOnline => _peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
+
+        /// <summary>
+        /// Whether or not the player is disconnected.
+        /// </summary>
         public bool IsOffline => _peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
 
+        /// <summary>
+        /// Whether or not the player is the server player.
+        /// </summary>
         public bool IsServer => InstanceMode is ClientInstanceMode.DedicatedServer || InstanceMode is ClientInstanceMode.Host;
+
+        /// <summary>
+        /// Whether or not the player has fully connected.
+        /// </summary>
         public bool IsVerified => InstanceMode is ClientInstanceMode.ReadyClient;
+
+        /// <summary>
+        /// Whether or not the player is still connecting.
+        /// </summary>
         public bool IsUnverified => InstanceMode is ClientInstanceMode.Unverified;
 
+        /// <summary>
+        /// Whether or not the player is an NPC.
+        /// </summary>
         public bool IsNpc => NpcHandler != null;
+
+        /// <summary>
+        /// Whether or not the player is currently speaking.
+        /// </summary>
         public bool IsSpeaking => Role.VoiceModule?.ServerIsSending ?? false;
 
+        /// <summary>
+        /// Whether or not the player is a Northwood Staff member.
+        /// </summary>
         public bool IsNorthwoodStaff => _hub.authManager.NorthwoodStaff;
+
+        /// <summary>
+        /// Whether or not the player is a Northwood Global Moderator.
+        /// </summary>
         public bool IsNorthwoodModerator => _hub.authManager.RemoteAdminGlobalAccess;
 
+        /// <summary>
+        /// Whether or not the player has a custom name applied.
+        /// </summary>
         public bool HasCustomName => _hub.nicknameSync.HasCustomName;
-        public bool HasAnyItems => _hub.inventory.UserInventory.Items.Count > 0;
-        public bool HasAnyAmmo => _hub.inventory.UserInventory.ReserveAmmo.Any(p => p.Value > 0);
+
+        /// <summary>
+        /// Whether or not the player has access to the Remote Admin panel.
+        /// </summary>
         public bool HasRemoteAdminAccess => _hub.serverRoles.RemoteAdmin;
+
+        /// <summary>
+        /// Whether or not the player has the Remote Admin panel open.
+        /// </summary>
         public bool HasRemoteAdminOpened => _raModule.IsRemoteAdminOpen;
+
+        /// <summary>
+        /// Whether or not the player has access to Admin Chat.
+        /// </summary>
         public bool HasAdminChatAccess => _hub.serverRoles.AdminChatPerms;
 
+        /// <summary>
+        /// Whether or not the player has sent the Do Not Track flag.
+        /// </summary>
         public bool DoNotTrack => _hub.authManager.DoNotTrack;
 
-        public bool RemoveForcedRotation { get; set; } = true;
-
+        /// <summary>
+        /// Gets the player's IP address.
+        /// </summary>
         public string Address => _hub.connectionToClient.address;
 
+        /// <summary>
+        /// Gets the player's user ID without it's identificator (<i>@steam, @discord etc.</i>)
+        /// </summary>
         public string ClearUserId
         {
             get
@@ -631,6 +847,9 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Gets the player's user ID type (<i>steam, discord, northwood etc.</i>)
+        /// </summary>
         public string UserIdType
         {
             get
@@ -645,6 +864,9 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Whether or not the player is currently disarmed.
+        /// </summary>
         public bool IsDisarmed
         {
             get => _hub.inventory.IsDisarmed();
@@ -657,6 +879,9 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Whether or not the player is invisible to all players.
+        /// </summary>
         public bool IsInvisible
         {
             get => _ghostedPlayers.Contains(this);
@@ -669,24 +894,36 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Whether or not the player is locally or globally muted.
+        /// </summary>
         public bool IsMuted
         {
-            get => VoiceMutes.HasFlag(VcMuteFlags.LocalRegular) || VoiceMutes.HasFlag(VcMuteFlags.GlobalRegular);
-            set => VoiceMutes = value ? VoiceMutes.Combine(VcMuteFlags.LocalRegular) : VoiceMutes.Remove(VcMuteFlags.LocalRegular);
+            get => MuteFlags.HasFlag(VcMuteFlags.LocalRegular) || MuteFlags.HasFlag(VcMuteFlags.GlobalRegular);
+            set => MuteFlags.SetFlag(VcMuteFlags.LocalRegular, value);
         }
 
+        /// <summary>
+        /// Whether or not the player is Intercom muted.
+        /// </summary>
         public bool IsIntercomMuted
         {
-            get => VoiceMutes.HasFlag(VcMuteFlags.LocalIntercom) || VoiceMutes.HasFlag(VcMuteFlags.GlobalIntercom);
-            set => VoiceMutes = value ? VoiceMutes.Combine(VcMuteFlags.LocalIntercom) : VoiceMutes.Remove(VcMuteFlags.LocalIntercom);
+            get => MuteFlags.HasFlag(VcMuteFlags.LocalIntercom) || MuteFlags.HasFlag(VcMuteFlags.GlobalIntercom);
+            set => MuteFlags.SetFlag(VcMuteFlags.LocalIntercom, value);
         }
 
+        /// <summary>
+        /// Whether or not the player is in the Overwatch mode.
+        /// </summary>
         public bool IsInOverwatch
         {
             get => _hub.serverRoles.IsInOverwatch;
             set => _hub.serverRoles.IsInOverwatch = value;
         }
 
+        /// <summary>
+        /// Whether or not the player has NoClip permissions.
+        /// </summary>
         public bool IsNoclipPermitted
         {
             get => FpcNoclip.IsPermitted(_hub);
@@ -699,54 +936,72 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Whether or not the player has Bypass Mode active.
+        /// </summary>
         public bool HasBypassMode
         {
             get => _hub.serverRoles.BypassMode;
             set => _hub.serverRoles.BypassMode = value;
         }
 
+        /// <summary>
+        /// Whether or not the player has God Mode active.
+        /// </summary>
         public bool HasGodMode
         {
             get => _hub.characterClassManager.GodMode;
             set => _hub.characterClassManager.GodMode = value;
         }
 
-        public int PlayerId
-        {
-            get => _hub.PlayerId;
-            set => _hub.Network_playerId = new RecyclablePlayerId(value);
-        }
-
+        /// <summary>
+        /// Gets or sets the player's info area view range.
+        /// </summary>
         public float InfoViewRange
         {
             get => _hub.nicknameSync.NetworkViewRange;
             set => _hub.nicknameSync.NetworkViewRange = value;
         }
 
+        /// <summary>
+        /// Gets or sets the player's kick power.
+        /// </summary>
         public byte KickPower
         {
             get => _hub.serverRoles.Group?.KickPower ?? 0;
             set => _hub.serverRoles.Group!.KickPower = value;
         }
 
+        /// <summary>
+        /// Gets or sets the player's user ID.
+        /// </summary>
         public string UserId
         {
             get => _hub.authManager.UserId;
             set => _hub.authManager.UserId = value;
         }
 
+        /// <summary>
+        /// Gets or sets the player's nickname.
+        /// </summary>
         public string Name
         {
             get => _hub.nicknameSync.Network_myNickSync;
             set => _hub.nicknameSync.Network_myNickSync = value;
         }
 
+        /// <summary>
+        /// Gets or sets the name that is displayed to other players.
+        /// </summary>
         public string DisplayName
         {
             get => _hub.nicknameSync.Network_displayName;
             set => _hub.nicknameSync.Network_displayName = value;
         }
 
+        /// <summary>
+        /// Gets or sets the player's custom info.
+        /// </summary>
         public string CustomInfo
         {
             get => _hub.nicknameSync.Network_customPlayerInfoString;
@@ -767,30 +1022,36 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Gets or sets 
+        /// </summary>
         public PlayerInfoArea InfoToShow
         {
             get => _hub.nicknameSync.Network_playerInfoToShow;
             set => _hub.nicknameSync.Network_playerInfoToShow = value;
         }
 
+        /// <summary>
+        /// Gets or sets the player's instance mode.
+        /// </summary>
         public ClientInstanceMode InstanceMode
         {
             get => _hub.authManager.InstanceMode;
             set => _hub.authManager.InstanceMode = value;
         }
 
-        public VcMuteFlags VoiceMutes
-        {
-            get => VoiceChatMutes.GetFlags(Hub);
-            set => VoiceChatMutes.SetFlags(Hub, value);
-        }
-
+        /// <summary>
+        /// Gets or sets the player's last voice channel.
+        /// </summary>
         public VoiceChatChannel VoiceChannel
         {
             get => Role.VoiceModule?.CurrentChannel ?? VoiceChatChannel.None;
             set => Role.VoiceModule!.CurrentChannel = value;
         }
 
+        /// <summary>
+        /// Gets the player's Remote Admin panel icons.
+        /// </summary>
         public RemoteAdminIconType RaIcons
         {
             get
@@ -810,161 +1071,138 @@ namespace LabExtended.API
             }
         }
 
-        public KeycardPermissions AllKeycardPermissions
-        {
-            get
-            {
-                var perms = KeycardPermissions.None;
-
-                foreach (var keycard in Keycards)
-                {
-                    var cardPerms = keycard.Permissions.GetFlags();
-
-                    foreach (var cardPerm in cardPerms)
-                    {
-                        if (!perms.HasFlagFast(cardPerm))
-                            perms |= cardPerm;
-                    }
-                }
-
-                return perms;
-            }
-        }
-
-        public IEnumerable<ItemBase> Items
-        {
-            get => _hub.inventory.UserInventory.Items.Values;
-            set => SetItemList(value);
-        }
-
-        public IEnumerable<CandyKindID> Candies
-        {
-            get
-            {
-                var bag = Scp330;
-
-                if (bag != null)
-                    return bag.Candies;
-
-                return Array.Empty<CandyKindID>();
-            }
-        }
-
-        public IEnumerable<ItemType> ItemTypes
-        {
-            get => _hub.inventory.UserInventory.Items.Values.Select(p => p.ItemTypeId);
-            set => ClearInventory(value);
-        }
-
+        /// <summary>
+        /// Gets or sets the player's model scale.
+        /// </summary>
         public Vector3 Scale
         {
             get => _hub.transform.localScale;
             set => SetScale(value);
         }
 
+        /// <summary>
+        /// Gets or sets the player's position.
+        /// </summary>
         public Vector3 Position
         {
             get => _hub.transform.position;
             set => _hub.TryOverridePosition(value, Vector3.zero);
         }
 
+        /// <summary>
+        /// Gets or sets the player's rotation.
+        /// </summary>
         public Quaternion Rotation
         {
             get => _hub.transform.rotation;
             set => _hub.TryOverridePosition(Position, value.eulerAngles);
         }
 
+        /// <summary>
+        /// Gets or sets the player's relative position.
+        /// </summary>
         public RelativePosition RelativePosition
         {
             get => Role.Motor?.ReceivedPosition ?? new RelativePosition(Position);
             set => Position = value.Position;
         }
 
-        public ItemBase CurrentItem
-        {
-            get => _hub.inventory.CurInstance;
-            set => _hub.inventory.CurInstance = value;
-        }
-
-        public ItemType CurrentItemType
-        {
-            get => CurrentItem?.ItemTypeId ?? ItemType.None;
-            set
-            {
-                if (value is ItemType.None)
-                {
-                    CurrentItemIdentifier = ItemIdentifier.None;
-                    return;
-                }
-
-                var instance = value.GetItemInstance<ItemBase>();
-
-                instance.SetupItem(Hub);
-
-                CurrentItemIdentifier = new ItemIdentifier(instance.ItemTypeId, instance.ItemSerial);
-            }
-        }
-
-        public ItemIdentifier CurrentItemIdentifier
-        {
-            get => _hub.inventory.NetworkCurItem;
-            set => _hub.inventory.NetworkCurItem = value;
-        }
-
-        public Dictionary<ItemType, ushort> Ammo
-        {
-            get => _hub.inventory.UserInventory.ReserveAmmo;
-            set
-            {
-                if (value is null)
-                    _hub.inventory.UserInventory.ReserveAmmo.Clear();
-                else
-                    _hub.inventory.UserInventory.ReserveAmmo = value;
-
-                _hub.inventory.SendAmmoNextFrame = true;
-            }
-        }
-
+        /// <summary>
+        /// Gets or sets the player that this player was disarmed by.
+        /// </summary>
         public ExPlayer Disarmer
         {
             get => Get(DisarmedPlayers.Entries.FirstOrDefault(e => e.DisarmedPlayer == NetId).Disarmer);
             set => Hub.inventory.SetDisarmedStatus(value?.Hub.inventory ?? null);
         }
 
+        /// <summary>
+        /// Opens the player's Remote Admin panel.
+        /// </summary>
         public void OpenRemoteAdmin()
             => Hub.serverRoles.TargetSetRemoteAdmin(true);
 
+        /// <summary>
+        /// Closes the player's Remote Admin Panel.
+        /// </summary>
         public void CloseRemoteAdmin()
             => Hub.serverRoles.TargetSetRemoteAdmin(false);
 
+        /// <summary>
+        /// Whether or not this player is spectated by the specified player.
+        /// </summary>
+        /// <param name="player">The player to check.</param>
+        /// <returns><see langword="true"/> if this player is spectated by <paramref name="player"/>.</returns>
         public bool IsSpectatedBy(ExPlayer player)
-            => Hub.IsSpectatedBy(player.Hub);
+            => player != null && Hub.IsSpectatedBy(player.Hub);
 
+        /// <summary>
+        /// Whether or not this player is currently spectating the specified player.
+        /// </summary>
+        /// <param name="player">The player to check.</param>
+        /// <returns><see langword="true"/> if <paramref name="player"/> is being spectated by this player.</returns>
         public bool IsSpectating(ExPlayer player)
-            => player.Hub.IsSpectatedBy(Hub);
+            => player != null && player.Hub.IsSpectatedBy(Hub);
 
+        /// <summary>
+        /// Deals damage to the player. <i>Use -1 to kill the player.</i>
+        /// </summary>
+        /// <param name="damageAmount">The amount of damage to deal.</param>
+        /// <param name="reason">The reason of this damage.</param>
+        /// <returns><see langword="true"/> if any damage was dealt.</returns>
         public bool Damage(float damageAmount, string reason = null)
             => Hub.playerStats.DealDamage(!string.IsNullOrWhiteSpace(reason) ? new CustomReasonDamageHandler(reason, damageAmount) : new UniversalDamageHandler(damageAmount, DeathTranslations.Bleeding));
 
+        /// <summary>
+        /// Kills the player.
+        /// </summary>
+        /// <param name="reason">The reason that will be displayed to the player.</param>
         public void Kill(string reason = null)
             => Hub.playerStats.DealDamage(!string.IsNullOrWhiteSpace(reason) ? new CustomReasonDamageHandler(reason, -1f) : new WarheadDamageHandler());
 
+        /// <summary>
+        /// "Disintegrates" the player (Disruptor effect).
+        /// </summary>
+        /// <param name="attacker">The attacking player.</param>
         public void Disintegrate(ExPlayer attacker = null)
             => Hub.playerStats.DealDamage(new DisruptorDamageHandler(attacker?.Footprint ?? Footprint, -1f));
 
+        /// <summary>
+        /// "Explodes" the player (spawns a live grenade).
+        /// </summary>
+        /// <param name="attacker">The attacking player.</param>
         public void Explode(ExPlayer attacker = null)
             => ExplosionUtils.ServerExplode(Position, attacker?.Footprint ?? Footprint);
 
         #region Messaging Methods
+        /// <summary>
+        /// Clears all broadcasts.
+        /// </summary>
         public void ClearBroadcasts()
             => global::Broadcast.Singleton?.TargetClearElements(Connection);
 
+        /// <summary>
+        /// Clears all hints.
+        /// </summary>
         public void ClearHints()
             => Connection.Send(Hints.EmptyMessage);
 
+        /// <summary>
+        /// Sends a new hint.
+        /// </summary>
+        /// <param name="content">Text of the hint.</param>
+        /// <param name="duration">Duration of the hint.</param>
+        /// <param name="isPriority">Whether or not to show the hint immediately.</param>
         public void SendHint(object content, ushort duration, bool isPriority = false)
             => Hints.Show(content.ToString(), duration, isPriority);
 
+        /// <summary>
+        /// Sends a new broadcast-
+        /// </summary>
+        /// <param name="content">Text of the broadcast.</param>
+        /// <param name="duration">Duration of the broadcast.</param>
+        /// <param name="clearPrevious">Whether or not to clear previous broadcasts.</param>
+        /// <param name="broadcastFlags">Broadcast options.</param>
         public void SendBroadcast(object content, ushort duration, bool clearPrevious = true, global::Broadcast.BroadcastFlags broadcastFlags = global::Broadcast.BroadcastFlags.Normal)
         {
             if (clearPrevious)
@@ -973,18 +1211,44 @@ namespace LabExtended.API
             global::Broadcast.Singleton?.TargetAddElement(Connection, content.ToString(), duration, broadcastFlags);
         }
 
+        /// <summary>
+        /// Sends a console message.
+        /// </summary>
+        /// <param name="content">Text of the message.</param>
+        /// <param name="color">Color of the message (used in a color tag).</param>
         public void SendConsoleMessage(object content, string color = "red")
             => _hub.gameConsoleTransmission.SendToClient(content.ToString(), color);
 
+        /// <summary>
+        /// Sends a message into the "Request Data" section of the Remote Admin panel.
+        /// </summary>
+        /// <param name="content"></param>
         public void SendRemoteAdminInfo(object content)
             => SendRemoteAdminMessage($"$1 {content}", true, false);
 
+        /// <summary>
+        /// Sends a QR code to the player.
+        /// </summary>
+        /// <param name="data">Data of the QR code.</param>
+        /// <param name="isBig">Whether or not to show the QR code fullscreen.</param>
         public void SendRemoteAdminQR(string data, bool isBig = false)
             => SendRemoteAdminMessage($"$2 {(isBig ? 1 : 0)} {data}", true, false);
 
+        /// <summary>
+        /// Sends text to the player's clipboard.
+        /// </summary>
+        /// <param name="data">The data to send.</param>
+        /// <param name="type">Type of the data.</param>
         public void SendRemoteAdminClipboard(string data, RaClipboard.RaClipBoardType type = RaClipboard.RaClipBoardType.UserId)
             => SendRemoteAdminMessage($"$6 {(int)type} {data}", true, false);
 
+        /// <summary>
+        /// Sends a message to the player's text console part of the Remote Admin panel.
+        /// </summary>
+        /// <param name="content">The text of the message.</param>
+        /// <param name="success">Whether or not to show the message as a warning.</param>
+        /// <param name="show">Whether or not to show the message.</param>
+        /// <param name="tag">The tag that will be shown in command name.</param>
         public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
         {
             if (!HasRemoteAdminAccess)
@@ -993,30 +1257,71 @@ namespace LabExtended.API
             _hub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
         }
 
+        /// <summary>
+        /// Sends a keybind to the player. Must have synchronized keybinds active for this to work.
+        /// </summary>
+        /// <param name="command">The command to bind to the key.</param>
+        /// <param name="key">The key to bind the command to.</param>
         public void SendKeyBind(string command, KeyCode key)
             => _hub.characterClassManager.TargetChangeCmdBinding(key, command);
         #endregion
 
         #region Positional Methods
+        /// <summary>
+        /// Gets a list of players in a specified range.
+        /// </summary>
+        /// <param name="range">The maximum range.</param>
+        /// <returns>A list of players that are in range.</returns>
         public IEnumerable<ExPlayer> GetPlayersInRange(float range)
             => _players.Where(p => p.NetId != NetId && p.Role.IsAlive && p.DistanceTo(this) <= range);
 
+        /// <summary>
+        /// Gets the distance to a specified position.
+        /// </summary>
+        /// <param name="position">The position.</param>
+        /// <returns>The distance.</returns>
         public float DistanceTo(Vector3 position)
             => Vector3.Distance(Position, position);
 
+        /// <summary>
+        /// Gets the distance to a specified player.
+        /// </summary>
+        /// <param name="player">The player.</param>
+        /// <returns>The distance.</returns>
         public float DistanceTo(ExPlayer player)
             => Vector3.Distance(player.Position, Position);
 
+        /// <summary>
+        /// Gets the distance to a specified transform.
+        /// </summary>
+        /// <param name="transform">The transform.</param>
+        /// <returns>The distance.</returns>
         public float DistanceTo(Transform transform)
             => Vector3.Distance(transform.position, Position);
 
+        /// <summary>
+        /// Gets the distance to a specified gameObject.
+        /// </summary>
+        /// <param name="gameObject">The gameObject.</param>
+        /// <returns>The distance.</returns>
         public float DistanceTo(GameObject gameObject)
             => Vector3.Distance(gameObject.transform.position, Position);
         #endregion
 
         #region Vision Methods
+        /// <summary>
+        /// Whether or not a specific player is in this player's line of sight.
+        /// </summary>
+        /// <param name="player">The player to check for.</param>
+        /// <param name="radius">The maximum radius.</param>
+        /// <param name="distance">The maximum distance.</param>
+        /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
+        /// <returns><see langword="true"/> if the player is in line of sight.</returns>
         public bool IsInLineOfSight(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
         {
+            if (player is null)
+                return false;
+
             if (countSpectating && player.IsSpectatedBy(this))
                 return true;
 
@@ -1028,6 +1333,14 @@ namespace LabExtended.API
             return false;
         }
 
+        /// <summary>
+        /// Whether or not a specific player is being looked at by this player.
+        /// </summary>
+        /// <param name="player">The player to check for.</param>
+        /// <param name="radius">The maximum radius.</param>
+        /// <param name="distance">The maximum distance.</param>
+        /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
+        /// <returns><see langword="true"/> if the player is being looked at.</returns>
         public bool IsLookingAt(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
         {
             if (countSpectating && player.IsSpectatedBy(this))
@@ -1041,6 +1354,11 @@ namespace LabExtended.API
             return false;
         }
 
+        /// <summary>
+        /// Whether or not the target player is invisible to ther player.
+        /// </summary>
+        /// <param name="otherPlayer">The player to check.</param>
+        /// <returns><see langword="true"/> if the this player is invisible to the targeted player.</returns>
         public bool IsInvisibleTo(ExPlayer otherPlayer)
         {
             if (IsInvisible)
@@ -1052,264 +1370,29 @@ namespace LabExtended.API
             return false;
         }
 
+        /// <summary>
+        /// Makes this player invisible to the targeted player.
+        /// </summary>
+        /// <param name="player">The player to make this player invisible for.</param>
         public void MakeInvisibleFor(ExPlayer player)
             => _invisibility.Add(player);
 
+        /// <summary>
+        /// Makes this player visible to the targeted player.
+        /// </summary>
+        /// <param name="player">The player to make this player visible for.</param>
         public void MakeVisibleFor(ExPlayer player)
             => _invisibility.Remove(player);
         #endregion
 
-        #region Inventory Methods
-        public Scp330Bag GetOrAddScp330()
-        {
-            if (Scp330Bag.TryGetBag(Hub, out var bag))
-                return bag;
-
-            return AddItem<Scp330Bag>(ItemType.SCP330);
-        }
-
-        public int CountCandies(CandyKindID candyKind)
-            => Candies.Count(x => x == candyKind);
-
-        public T AddItem<T>(ItemType type) where T : ItemBase
-            => (T)AddItem(type);
-
-        public ItemBase AddItem(ItemType type)
-           => Hub.inventory.ServerAddItem(type);
-
-        public ItemPickupBase DropItem(ushort serial)
-            => Hub.inventory.ServerDropItem(serial);
-
-        public ItemPickupBase DropItem(ItemBase item)
-            => Hub.inventory.ServerDropItem(item.ItemSerial);
-
-        public ItemPickupBase DropHeldItem()
-            => Hub.inventory.ServerDropItem(CurrentItemIdentifier.SerialNumber);
-
-        public List<ItemPickupBase> DropItems(Predicate<ItemBase> predicate = null)
-        {
-            var list = new List<ItemPickupBase>();
-            var items = ListPool<ItemBase>.Shared.Rent(Items);
-
-            foreach (var item in items)
-            {
-                if (predicate != null && !predicate(item))
-                    continue;
-
-                var pickup = _hub.inventory.ServerDropItem(item.ItemSerial);
-
-                if (pickup is null)
-                    continue;
-
-                list.Add(pickup);
-            }
-
-            ListPool<ItemBase>.Shared.Return(items);
-            return list;
-        }
-
-        public List<ItemPickupBase> DropItems(params ItemType[] types)
-            => DropItems(item => types.Contains(item.ItemTypeId));
-
-        public IEnumerable<T> DropItems<T>(params ItemType[] types) where T : ItemPickupBase
-            => DropItems(item => item.PickupDropModel != null && item.PickupDropModel is T).Where<T>(item => types.Length < 1 || types.Contains(item.Info.ItemId));
-
-        public IEnumerable<ItemBase> GetItems(params ItemType[] types)
-            => Items.Where(item => types.Contains(item.ItemTypeId));
-
-        public IEnumerable<T> GetItems<T>() where T : ItemBase
-            => Items.Where<T>();
-
-        public IEnumerable<T> GetItems<T>(ItemType type) where T : ItemBase
-            => Items.Where<T>(item => item.ItemTypeId == type);
-
-        public bool HasItem(ItemType type)
-            => Items.Any(it => it.ItemTypeId == type);
-
-        public bool HasItems(ItemType type, int count)
-            => Items.Count(it => it.ItemTypeId == type) >= count;
-
-        public bool HasKeycardPermission(KeycardPermissions keycardPermissions)
-            => Keycards.Any(card => card.Permissions.HasFlagFast(keycardPermissions));
-
-        public int CountItems(ItemType type)
-            => Items.Count(it => it.ItemTypeId == type);
-
-        public void RemoveItem(ushort serial)
-            => _hub.inventory.ServerRemoveItem(serial, null);
-
-        public void RemoveItem(ItemBase item, ItemPickupBase pickup = null)
-            => _hub.inventory.ServerRemoveItem(item.ItemSerial, pickup);
-
-        public void RemoveHeldItem()
-            => _hub.inventory.ServerRemoveItem(CurrentItemIdentifier.SerialNumber, CurrentItem?.PickupDropModel ?? null);
-
-        public void RemoveItems(Predicate<ItemBase> predicate = null)
-        {
-            var items = ListPool<ItemBase>.Shared.Rent(Items);
-
-            foreach (var item in items)
-            {
-                if (predicate != null && !predicate(item))
-                    continue;
-
-                _hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-            }
-
-            ListPool<ItemBase>.Shared.Return(items);
-        }
-
-        public void RemoveItems(ItemType type, int count = -1)
-        {
-            var items = ListPool<ItemBase>.Shared.Rent(Items);
-            var removed = 0;
-
-            foreach (var item in items)
-            {
-                if (item.ItemTypeId != type)
-                    continue;
-
-                if (count > 0 && removed >= count)
-                    break;
-
-                removed++;
-
-                _hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-            }
-
-            ListPool<ItemBase>.Shared.Return(items);
-        }
-
-        public void ClearInventory(IEnumerable<ItemType> newInventory = null)
-        {
-            while (_hub.inventory.UserInventory.Items.Count > 0)
-                _hub.inventory.ServerRemoveItem(_hub.inventory.UserInventory.Items.ElementAt(0).Key, null);
-
-            if (newInventory != null)
-            {
-                foreach (var item in newInventory)
-                {
-                    if (item != ItemType.None)
-                        AddItem(item);
-                }
-            }
-
-            _hub.inventory.SendItemsNextFrame = true;
-        }
-
-        public bool AddOrSpawnItem(ItemType type)
-        {
-            if (_hub.inventory.UserInventory.Items.Count > 7)
-            {
-                if (type.TryGetItemPrefab(out var itemPrefab))
-                {
-                    _hub.inventory.ServerCreatePickup(itemPrefab, new PickupSyncInfo(type, itemPrefab.Weight));
-                    return false;
-                }
-
-                return false;
-            }
-
-            return _hub.inventory.ServerAddItem(type);
-        }
-
-        public T ThrowItem<T>(ItemBase item) where T : ItemPickupBase
-        {
-            if (item is null)
-                throw new ArgumentNullException(nameof(item));
-
-            Hub.inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-            return ThrowItem<T>(item.ItemTypeId, item.ItemSerial);
-        }
-
-        public T ThrowItem<T>(ItemType itemType, ushort? itemSerial = null) where T : ItemPickupBase
-        {
-            var itemPrefab = itemType.GetItemPrefab<ItemBase>();
-            var pickupInstance = itemType.GetPickupInstance<T>(null, null, null, itemSerial, true);
-            var pickupRigidbody = pickupInstance?.GetRigidbody();
-
-            if (pickupRigidbody is null)
-                return null;
-
-            if (!EventManager.ExecuteEvent(new PlayerThrowItemEvent(Hub, itemPrefab, pickupRigidbody)))
-                return pickupInstance;
-
-            var velocity = Velocity;
-            var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
-
-            velocity = velocity / 3f + CameraTransform.forward * 6f * (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, pickupRigidbody.mass)) + 0.3f);
-
-            velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
-            velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
-            velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
-
-            var throwingEv = new PlayerThrowingItemArgs(this, itemPrefab, pickupInstance, pickupRigidbody, CameraTransform.position, velocity, angular);
-
-            if (!HookRunner.RunCancellable(throwingEv, true))
-                return pickupInstance;
-
-            pickupRigidbody.position = throwingEv.Position;
-            pickupRigidbody.velocity = throwingEv.Velocity;
-            pickupRigidbody.angularVelocity = throwingEv.AngularVelocity;
-
-            if (pickupRigidbody.angularVelocity.magnitude > pickupRigidbody.maxAngularVelocity)
-                pickupRigidbody.maxAngularVelocity = pickupRigidbody.angularVelocity.magnitude;
-
-            return pickupInstance;
-        }
-        #endregion
-
-        #region Ammo Methods
-        public ushort GetAmmo(ItemType ammoType)
-            => Ammo.TryGetValue(ammoType, out var amount) ? amount : (ushort)0;
-
-        public void SetAmmo(ItemType ammoType, ushort amount)
-        {
-            Ammo[ammoType] = amount;
-            _hub.inventory.SendAmmoNextFrame = true;
-        }
-
-        public void AddAmmo(ItemType ammoType, ushort amount)
-        {
-            Ammo[ammoType] = (ushort)Mathf.Clamp(GetAmmo(ammoType) + amount, 0f, ushort.MaxValue);
-            _hub.inventory.SendAmmoNextFrame = true;
-        }
-        public void SubstractAmmo(ItemType ammoType, ushort amount)
-        {
-            Ammo[ammoType] = (ushort)Mathf.Clamp(GetAmmo(ammoType) - amount, 0f, ushort.MaxValue);
-            _hub.inventory.SendAmmoNextFrame = true;
-        }
-
-        public bool HasAmmo(ItemType itemType, ushort minAmount = 1)
-            => GetAmmo(itemType) >= minAmount;
-
-        public void ClearAmmo()
-        {
-            Ammo.Clear();
-            _hub.inventory.SendAmmoNextFrame = true;
-        }
-
-        public void ClearAmmo(ItemType ammoType)
-        {
-            Ammo.Remove(ammoType);
-            _hub.inventory.SendAmmoNextFrame = true;
-        }
-
-        public List<AmmoPickup> DropAllAmmo()
-        {
-            var droppedAmmo = new List<AmmoPickup>();
-
-            foreach (var ammo in Ammo.Keys)
-                droppedAmmo.AddRange(_hub.inventory.ServerDropAmmo(ammo, ushort.MaxValue));
-
-            return droppedAmmo;
-        }
-
-        public List<AmmoPickup> DropAllAmmo(ItemType ammoType, ushort amount = ushort.MaxValue)
-            => _hub.inventory.ServerDropAmmo(ammoType, amount);
-        #endregion
-
         #region Network Methods
+        /// <summary>
+        /// Sends a fake SyncVar message.
+        /// </summary>
+        /// <param name="behaviorOwner">Identity of the behaviour's owner.</param>
+        /// <param name="targetType">Type of the behaviour.</param>
+        /// <param name="propertyName">Name of the network property.</param>
+        /// <param name="value">The fake value.</param>
         public void SendFakeSyncVar(NetworkIdentity behaviorOwner, Type targetType, string propertyName, object value)
         {
             if (!IsOnline)
@@ -1336,6 +1419,13 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Sends a fake Rpc message.
+        /// </summary>
+        /// <param name="behaviorOwner">Identity of the behaviour's owner.</param>
+        /// <param name="targetType">Type of the behaviour.</param>
+        /// <param name="rpcName">Name of the network property.</param>
+        /// <param name="values">The method arguments.</param>
         public void SendFakeTargetRpc(NetworkIdentity behaviorOwner, Type targetType, string rpcName, params object[] values)
         {
             if (!IsOnline)
@@ -1361,6 +1451,12 @@ namespace LabExtended.API
             NetworkWriterPool.Return(writer);
         }
 
+        /// <summary>
+        /// Sends a fake SyncObject.
+        /// </summary>
+        /// <param name="behaviorOwner">Identity of the behaviour's owner.</param>
+        /// <param name="targetType">Type of the behaviour.</param>
+        /// <param name="customAction">The method used to write custom data.</param>
         public void SendFakeSyncObject(NetworkIdentity behaviorOwner, Type targetType, Action<NetworkWriter> customAction)
         {
             if (!IsOnline)
@@ -1379,63 +1475,103 @@ namespace LabExtended.API
         #endregion
 
         #region Operators
+        /// <inheritdoc/>
         public override string ToString()
             => $"{Role.Name} {Name} ({UserId})";
 
+        /// <summary>
+        /// Converts the <see cref="ReferenceHub"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="hub">The instance to convert.</param>
         public static implicit operator ExPlayer(ReferenceHub hub)
             => Get(hub);
 
+        /// <summary>
+        /// Converts the <see cref="UnityEngine.GameObject"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="gameObject">The instance to convert.</param>
         public static implicit operator ExPlayer(GameObject gameObject)
             => Get(gameObject);
 
+        /// <summary>
+        /// Converts the <see cref="Player"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="player">The instance to convert.</param>
         public static implicit operator ExPlayer(Player player)
             => Get(player);
 
+        /// <summary>
+        /// Converts the <see cref="Collider"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="collider">The instance to convert.</param>
         public static implicit operator ExPlayer(Collider collider)
             => Get(collider);
 
+        /// <summary>
+        /// Converts the <see cref="NetworkIdentity"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="identity">The instance to convert.</param>
         public static implicit operator ExPlayer(NetworkIdentity identity)
             => Get(identity);
 
+        /// <summary>
+        /// Converts the <see cref="NetworkConnection"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="connection">The instance to convert.</param>
         public static implicit operator ExPlayer(NetworkConnection connection)
             => Get(connection);
 
+        /// <summary>
+        /// Converts the <see cref="NetPeer"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="peer">The instance to convert.</param>
         public static implicit operator ExPlayer(NetPeer peer)
             => Get(peer);
 
+        /// <summary>
+        /// Converts the <see cref="ItemBase"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="item">The instance to convert.</param>
         public static implicit operator ExPlayer(ItemBase item)
             => Get(item);
 
+        /// <summary>
+        /// Converts the <see cref="ItemPickupBase"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="pickup">The instance to convert.</param>
         public static implicit operator ExPlayer(ItemPickupBase pickup)
             => Get(pickup);
 
+        /// <summary>
+        /// Converts the <see cref="CommandSender"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="sender">The instance to convert.</param>
         public static implicit operator ExPlayer(CommandSender sender)
             => Get(sender);
 
+        /// <summary>
+        /// Converts the <see cref="PlayerRoleBase"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="role">The instance to convert.</param>
         public static implicit operator ExPlayer(PlayerRoleBase role)
             => (role is null || !role.TryGetOwner(out var owner) ? null : Get(owner));
 
+        /// <summary>
+        /// Converts the <see cref="Footprint"/> instance to it's corresponding <see cref="ExPlayer"/>.
+        /// </summary>
+        /// <param name="footprint">The instance to convert.</param>
         public static implicit operator ExPlayer(Footprint footprint)
             => Get(footprint);
 
+        /// <summary>
+        /// Checks whether or not a specific player is valid.
+        /// </summary>
+        /// <param name="player">The player to check.</param>
         public static implicit operator bool(ExPlayer player)
             => player != null && player.IsVerified;
         #endregion
 
         #region Helper Methods
-        private void SetItemList(IEnumerable<ItemBase> items)
-        {
-            ClearInventory();
-
-            if (items != null)
-            {
-                foreach (var item in items)
-                    item?.SetupItem(Hub, false);
-            }
-
-            _hub.inventory.SendItemsNextFrame = true;
-        }
-
         private void SetScale(Vector3 scale)
         {
             if (scale == _hub.transform.localScale)

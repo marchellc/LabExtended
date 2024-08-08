@@ -37,10 +37,10 @@ namespace LabExtended.Patches.Functions
             if (!ExPlayer.TryGet(conn, out var player))
                 return false;
 
-            if (msg.ShooterWeaponSerial != player.CurrentItemIdentifier.SerialNumber)
+            if (msg.ShooterWeaponSerial != player.Inventory.CurrentItemIdentifier.SerialNumber)
                 return false;
 
-            if (player.CurrentItem is null || player.CurrentItem is not Firearm firearm)
+            if (player.Inventory.CurrentItem is null || player.Inventory.CurrentItem is not Firearm firearm)
                 return false;
 
             var shootingArgs = new PlayerShootingArgs(player, firearm, msg);
