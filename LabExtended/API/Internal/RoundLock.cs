@@ -37,7 +37,7 @@ namespace LabExtended.API.Internal
         /// <summary>
         /// Gets a value indicating whether or not the player who enabled the round lock has left the server.
         /// </summary>
-        public bool HasLeft => EnabledBy?.GameObject is null;
+        public bool HasLeft => !EnabledBy;
 
         /// <summary>
         /// Creates a new <see cref="RoundLock"/> instance.
@@ -47,6 +47,7 @@ namespace LabExtended.API.Internal
         {
             EnabledBy = enabledBy;
             EnabledByFootprint = enabledBy.Footprint;
+
             EnabledAt = DateTime.Now;
         }
     }

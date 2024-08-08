@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using LabExtended.API.Pooling;
+using System.Drawing;
 
 using Color = UnityEngine.Color;
 
@@ -26,48 +27,28 @@ namespace LabExtended.Commands.Parsing
                 {
                     var htmlColor = ColorTranslator.FromHtml(value);
 
-                    result = new Color(htmlColor.A, htmlColor.B, htmlColor.G);
+                    result = new Color(htmlColor.A, htmlColor.B, htmlColor.G, htmlColor.A);
                     return true;
                 }
                 else
                 {
                     var args = value.Split(' ');
+                    var axis = DictionaryPool<char, float>.Rent();
 
-                    var rValue = 0f;
-                    var gValue = 0f;
-                    var bValue = 0f;
+                    axis['a'] = 0f;
+                    axis['r'] = 0f;
+                    axis['g'] = 0f;
+                    axis['b'] = 0f;
 
-                    if (args.Length < 1)
+                    if (!AxisParser.ParseAxis(args, axis, out _, out failureMessage))
                     {
-                        failureMessage = "At least one value is required.";
+                        DictionaryPool<char, float>.Return(axis);
                         return false;
                     }
 
-                    foreach (var arg in args)
-                    {
-                        if (!arg.Any(char.IsNumber) || !arg.Any(char.IsLetter))
-                        {
-                            failureMessage = $"Encountered an invalid value ({arg})";
-                            return false;
-                        }
+                    result = new Color(axis['r'], axis['g'], axis['b'], axis['a']);
 
-                        var number = float.Parse(new string(arg.Where(char.IsNumber).ToArray()));
-                        var type = arg.First(char.IsLetter);
-
-                        if (type is 'r' || type is 'R')
-                            rValue = number;
-                        else if (type is 'g' || type is 'G')
-                            gValue = number;
-                        else if (type is 'b' || type is 'B')
-                            bValue = number;
-                        else
-                        {
-                            failureMessage = $"Unknown color ({arg}): {type}";
-                            return false;
-                        }
-                    }
-
-                    result = new Color(rValue, gValue, bValue);
+                    DictionaryPool<char, float>.Return(axis);
                     return true;
                 }
             }

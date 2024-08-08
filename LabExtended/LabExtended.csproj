@@ -42,7 +42,7 @@
         <HintPath>$(SL_REFERENCES)\NorthwoodLib.dll</HintPath>
       </Reference>
       <Reference Include="PluginAPI">
-        <HintPath>$(SL_REFERENCES)\PluginAPI-publicized.dll</HintPath>
+        <HintPath>..\..\References\PluginAPI-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Pooling">
         <HintPath>$(SL_REFERENCES)\Pooling.dll</HintPath>

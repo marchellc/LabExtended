@@ -217,9 +217,6 @@ namespace LabExtended.Core.Hooking
                     if (attrType is null)
                         continue;
 
-                    if (!TryValidateEventType(attrType))
-                        continue;
-
                     eventType = attrType;
                     eventPriority = hookDescriptorAttribute?.Priority ?? HookPriority.Normal;
                 }
@@ -230,9 +227,6 @@ namespace LabExtended.Core.Hooking
                         var genericArgs = eventInfo.EventHandlerType.GetGenericArguments();
 
                         if (genericArgs.Length != 1)
-                            continue;
-
-                        if (!TryValidateEventType(genericArgs[0]))
                             continue;
 
                         eventType = genericArgs[0];
@@ -390,13 +384,13 @@ namespace LabExtended.Core.Hooking
 
         private static bool TryGetEventType(HookDescriptorAttribute hookDescriptorAttribute, PluginEvent pluginEvent, ParameterInfo[] methodArgs, out Type eventType)
         {
-            if (hookDescriptorAttribute?.EventOverride != null && TryValidateEventType(hookDescriptorAttribute.EventOverride))
+            if (hookDescriptorAttribute?.EventOverride != null)
             {
                 eventType = hookDescriptorAttribute.EventOverride;
                 return true;
             }
 
-            if (methodArgs.Length == 1 && TryValidateEventType(methodArgs[0].ParameterType))
+            if (methodArgs.Length == 1)
             {
                 eventType = methodArgs[0].ParameterType;
                 return true;
@@ -411,8 +405,5 @@ namespace LabExtended.Core.Hooking
             eventType = null;
             return false;
         }
-
-        private static bool TryValidateEventType(Type type)
-            => type != null && type != typeof(CancellableEvent<>) && type != typeof(BoolCancellableEvent) && (type.InheritsType<IEventArguments>() && type != typeof(IEventArguments));
     }
 }

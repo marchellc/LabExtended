@@ -9,7 +9,7 @@ using LabExtended.API.Enums;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
-
+using LabExtended.Patches.Fixes;
 using MapGeneration;
 
 using Mirror;
@@ -17,14 +17,18 @@ using Mirror;
 using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp173;
 using PlayerRoles.PlayableScps.Scp939;
-using PluginAPI.Core;
 
+using PluginAPI.Core;
+using PluginAPI.Core.Zones;
+using RelativePositioning;
 using UnityEngine;
 
 namespace LabExtended.API
 {
     public static class Prefabs
     {
+        internal static readonly LockedHashSet<DoorVariant> _spawnedDoors = new LockedHashSet<DoorVariant>();
+
         private static readonly LockedDictionary<PrefabType, GameObject> _prefabObjects = new LockedDictionary<PrefabType, GameObject>();
         private static readonly LockedDictionary<PrefabType, DoorVariant> _prefabDoors = new LockedDictionary<PrefabType, DoorVariant>();
         private static readonly LockedDictionary<PrefabType, string> _prefabNames = new LockedDictionary<PrefabType, string>();
@@ -81,6 +85,50 @@ namespace LabExtended.API
         public static ReferenceHub GetNewPlayer()
             => UnityEngine.Object.Instantiate(PlayerPrefab).GetComponent<ReferenceHub>();
 
+        public static DoorVariant ReplaceDoor(DoorVariant door, PrefabType newDoorType, string name = null)
+        {
+            if (!door)
+                throw new ArgumentNullException(nameof(door));
+
+            if (string.IsNullOrWhiteSpace(name) && door.TryGetComponent<DoorNametagExtension>(out var nameTag) && !string.IsNullOrWhiteSpace(nameTag.GetName))
+                name = nameTag.GetName;
+
+            DestroyDoor(door, false, out var waypoint);
+
+            var spawnedDoor = SpawnDoor(newDoorType, door.transform.position, door.transform.localScale, door.transform.rotation, name);
+
+            waypoint!._targetNetId = spawnedDoor.netIdentity;
+            return spawnedDoor;
+        }
+
+        public static void DestroyDoor(DoorVariant door, bool disableWaypoint = true)
+        {
+            if (!door)
+                return;
+
+            if (disableWaypoint && NetIdWaypoint.AllNetWaypoints.TryGetFirst(x => x._targetNetId != null && x._targetNetId.netId == door.netId, out var doorWaypoint))
+                NetIdWaypointIgnoreDoorsPatch.DisabledWaypoints.Add(doorWaypoint);
+
+            Facility.Rooms.ForEach(x => x._doors.Remove(door));
+
+            NetworkServer.Destroy(door.gameObject);
+        }
+
+        public static void DestroyDoor(DoorVariant door, bool disableWaypoint, out NetIdWaypoint doorWaypoint)
+        {
+            doorWaypoint = null;
+
+            if (!door)
+                return;
+
+            if (NetIdWaypoint.AllNetWaypoints.TryGetFirst(x => x._targetNetId != null && x._targetNetId.netId == door.netId, out doorWaypoint) && disableWaypoint)
+                NetIdWaypointIgnoreDoorsPatch.DisabledWaypoints.Add(doorWaypoint);
+
+            Facility.Rooms.ForEach(x => x._doors.Remove(door));
+
+            NetworkServer.Destroy(door.gameObject);
+        }
+
         /// <summary>
         /// Spawns a new door.
         /// </summary>
@@ -110,6 +158,10 @@ namespace LabExtended.API
 
             if (!string.IsNullOrWhiteSpace(name))
                 (doorInstance.GetComponent<DoorNametagExtension>() ?? doorInstance.gameObject.AddComponent<DoorNametagExtension>()).UpdateName(name);
+
+            _spawnedDoors.Add(doorInstance);
+
+            _ = ExMap.GetDoor(doorInstance);
 
             if (shouldSpawn)
                 NetworkServer.Spawn(doorInstance.gameObject);
@@ -180,6 +232,17 @@ namespace LabExtended.API
             }
 
             ExLoader.Info("Prefab API", $"Loaded &3{_prefabObjects.Count} / {_prefabNames.Count}&r prefabs!");
+        }
+
+        internal static void DestroySpawnedDoors()
+        {
+            foreach (var door in _spawnedDoors)
+            {
+                if (!door) continue;
+                NetworkServer.Destroy(door.gameObject);
+            }
+
+            _spawnedDoors.Clear();
         }
 
         #region Prefab Names

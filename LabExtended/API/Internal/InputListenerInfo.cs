@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.Enums;
 using LabExtended.API.Input.Interfaces;
+
 using UnityEngine;
 
 namespace LabExtended.API.Internal

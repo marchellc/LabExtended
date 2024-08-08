@@ -7,7 +7,9 @@ using LabExtended.API.Internal;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
+
 using LightContainmentZoneDecontamination;
+
 using NorthwoodLib.Pools;
 
 using PlayerRoles;
@@ -390,13 +392,21 @@ namespace LabExtended.API
                 }
 
                 ExLoader.Debug($"RoleGeneration", $"players={players.Count} scps={scps}");
-                ExLoader.Debug($"RoleGeneration", $"Assigning SCPs");
 
-                DecideScps(players, roles, scps);
+                if (scps > 0)
+                {
+                    ExLoader.Debug($"RoleGeneration", $"Assigning SCPs");
 
-                ExLoader.Debug($"RoleGeneration", $"Assigning humans");
+                    DecideScps(players, roles, scps);
 
-                DecideHumans(players, roles, RoleAssigner._humanQueue, humanIndex);
+                    players.RemoveAll(roles.ContainsKey);
+                }
+
+                if (players.Count > 0)
+                {
+                    ExLoader.Debug($"RoleGeneration", $"Assigning humans");
+                    DecideHumans(players, roles, RoleAssigner._humanQueue, humanIndex);
+                }
 
                 ExLoader.Debug($"RoleGeneration", $"Finished role assignment");
             }

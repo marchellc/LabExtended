@@ -62,6 +62,7 @@ namespace LabExtended.Events
             catch { }
 
             NpcHandler.DestroyNpcs();
+            Prefabs.DestroySpawnedDoors();
 
             ExRound.State = RoundState.Restarting;
         }

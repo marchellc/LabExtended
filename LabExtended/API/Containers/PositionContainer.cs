@@ -83,7 +83,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         public Vector3 Position
         {
-            get => Player.Role.MovementModule?.Position ?? Player.Transform.position;
+            get => Player.Transform.position;
             set => Set(value);
         }
 
@@ -92,7 +92,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         public RelativePosition Relative
         {
-            get => Player.Role.MovementModule?.Motor.ReceivedPosition ?? new RelativePosition(Position);
+            get => new RelativePosition(Position);
             set => Set(value.Position);
         }
 
