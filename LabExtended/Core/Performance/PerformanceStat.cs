@@ -26,6 +26,12 @@ namespace LabExtended.Core.Performance
         {
             var strValue = AsString(curValue);
 
+            RoundValue.LastValue = curValue;
+            RoundValue.LastValueStr = strValue;
+
+            OverallValue.LastValue = curValue;
+            OverallValue.LastValueStr = strValue;
+
             if (RoundValue.MinValue == -1 || curValue < RoundValue.MinValue)
             {
                 RoundValue.MinValue = curValue;

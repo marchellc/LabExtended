@@ -17,7 +17,7 @@ using LabExtended.Core.Hooking.Enums;
 using LabExtended.Core.Hooking.Executors;
 using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Hooking.Objects;
-using LabExtended.Core.Events;
+
 using LabExtended.Core.Performance;
 
 using MEC;
@@ -26,6 +26,7 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
+using LabExtended.Core.Synchronization.Position;
 
 namespace LabExtended.Core.Hooking
 {
@@ -65,6 +66,7 @@ namespace LabExtended.Core.Hooking
 
             [typeof(RoundRestartEvent)] = new List<Action<object>>()
             {
+                _ => PositionSynchronizer.InternalHandleRoundRestart(),
                 _ => InternalEvents.InternalHandleRoundRestart(),
                 _ => Camera.OnRestart(),
                 _ => RoundEvents.InvokeRestarted()
@@ -72,6 +74,7 @@ namespace LabExtended.Core.Hooking
 
             [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
             {
+                _ => PositionSynchronizer.InternalHandleWaiting(),
                 _ => InternalEvents.InternalHandleRoundWaiting(),
                 _ => PerformanceWatcher.SubmitReport(),
                 _ => CustomItem.InternalHandleWaiting(),

@@ -241,6 +241,11 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool ShouldSendPosition { get; set; } = true;
 
+        /// <summary>
+        /// Whether or not to send this player's own position to the player.
+        /// </summary>
+        public bool ShouldReceiveOwnPosition { get; set; } = false;
+
         public void Copy(SwitchContainer other)
         {
             if (other is null)

@@ -18,6 +18,7 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
+
 using LabExtended.Core;
 using LabExtended.Core.Ticking;
 
@@ -67,8 +68,6 @@ namespace LabExtended.API
             _ghostedPlayers = new LockedHashSet<ExPlayer>();
 
             TickManager.SubscribeTick(SynchronizeRoles, TickTimer.NoneProfiled, "Role Synchronization", true);
-            TickManager.SubscribeTick(SynchronizePositions, TickTimer.NoneProfiled, "Position Synchronization", true);
-
             TickManager.Init();
         }
 
@@ -80,6 +79,7 @@ namespace LabExtended.API
         internal static ExPlayer _hostPlayer;
 
         private static float _posTime = 0f;
+        private static DateTime _nextDebug = DateTime.MinValue;
 
         /// <summary>
         /// Gets the current position synchronization rate based on the server's TPS. Used in <see cref="SynchronizePositions"/>.
@@ -1404,88 +1404,6 @@ namespace LabExtended.API
 
                     player._sentRoles[other.PlayerId] = curRoleId;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
-                }
-            }
-        }
-
-        private static void SynchronizePositions()
-        {
-            _posTime += Time.deltaTime;
-
-            if (_posTime < SyncRate)
-                return;
-
-            _posTime -= SyncRate;
-
-            foreach (var player in _allPlayers)
-            {
-                if (!player.Switches.ShouldReceivePositions)
-                    continue;
-
-                try
-                {
-                    using (var writer = NetworkWriterPool.Get())
-                    {
-                        writer.Pack<FpcPositionMessage>(() =>
-                        {
-                            player._newSyncData.Clear();
-
-                            var isGhosted = _ghostedPlayers.Contains(player);
-
-                            var customVisibilityRole = player.Role.Role as ICustomVisibilityRole;
-                            var customVisibilityController = customVisibilityRole?.VisibilityController ?? null;
-
-                            foreach (var other in _allPlayers)
-                            {
-                                try
-                                {
-                                    if (!other.Switches.ShouldSendPosition)
-                                        continue;
-
-                                    if (other.NetId == player.NetId)
-                                        continue;
-
-                                    if (!other.Role.Is<IFpcRole>(out var fpcRole))
-                                        continue;
-
-                                    var module = other.Role.MovementModule;
-                                    var isInvisible = customVisibilityRole != null && !customVisibilityController.ValidateVisibility(other.Hub);
-
-                                    if (!isInvisible && (isGhosted || other._invisibility.Contains(player)))
-                                        isInvisible = true;
-
-                                    if (!player._prevSyncData.TryGetValue(other, out var prevSyncData))
-                                        prevSyncData = default;
-
-                                    var position = other.Transform.position;
-
-                                    if (other.Position.FakedList.TryGetValue(player, out var fakePosition))
-                                        position = fakePosition;
-
-                                    player._newSyncData[other] = prevSyncData = isInvisible ? default : player.InternalGetNewSyncData(prevSyncData, module.SyncMovementState, position, module.IsGrounded, module.MouseLook);
-                                    player._prevSyncData[other] = prevSyncData;
-                                }
-                                catch (Exception ex)
-                                {
-                                    ExLoader.Error("Position Sync", $"Failed to write position of player &3{other.Name}&r (&6{other.UserId}&r) while synchronizing position with &3{player.Name}&r (&6{player.UserId}&r):\n{ex.ToColoredString()}");
-                                }
-                            }
-
-                            writer.WriteUShort((ushort)player._newSyncData.Count);
-
-                            foreach (var pair in player._newSyncData)
-                            {
-                                writer.WriteRecyclablePlayerId(pair.Key.Hub.Network_playerId);
-                                pair.Value.Write(writer);
-                            }
-                        });
-
-                        player.Connection.Send(writer.ToArraySegment());
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ExLoader.Error("Position Sync", $"Failed to send position message to player &3{player.Name}&r (&6{player.UserId}&r)!\n{ex.ToColoredString()}");
                 }
             }
         }

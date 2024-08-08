@@ -30,6 +30,8 @@ namespace LabExtended.Core.Performance
 
         public static LockedHashSet<PerformanceReport> AllReports { get; } = new LockedHashSet<PerformanceReport>();
 
+        public static Process CurProcess => _curProcess;
+
         public static event Action<PerformanceReport> OnSubmitted;
 
         [OnLoad]
@@ -72,24 +74,17 @@ namespace LabExtended.Core.Performance
             if (!ExLoader.Config.Api.EnablePerformanceWatcher)
                 return;
 
-            var curMem = _curProcess.WorkingSet64;
-            var curPing = (long)(ExPlayer.Count > 0 ? ExPlayer.Players.Average(x => x.Ping) : 0);
+            if (ExPlayer.Count > 0)
+                CurReport.PingWatcher.Update((long)(ExPlayer._players.Average(x => x.TripTime)));
 
-            CurReport.MemoryWatcher.Update(curMem);
-            CurReport.PingWatcher.Update(curPing);
+            CurReport.MemoryWatcher.Update(_curProcess.WorkingSet64);
 
             if (!ExServer.IsIdleModeActive)
             {
-                var curTps = (long)ExServer.Tps;
-                var curTime = (long)Time.deltaTime * 1000;
-
-                var curLoop = _playerLoop.LastValue;
-                var curThread = _mainThread.LastValue;
-
-                CurReport.TpsWatcher.Update(curTps);
-                CurReport.FrameTimeWatcher.Update(curTime);
-                CurReport.LoopWatcher.Update(curLoop);
-                CurReport.ThreadWatcher.Update(curThread);
+                CurReport.TpsWatcher.Update((long)ExServer.Tps);
+                CurReport.FrameTimeWatcher.Update((long)(Time.deltaTime * 1000));
+                CurReport.LoopWatcher.Update(_playerLoop.LastValue);
+                CurReport.ThreadWatcher.Update(_mainThread.LastValue);
             }
         }
     }

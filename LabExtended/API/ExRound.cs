@@ -451,6 +451,9 @@ namespace LabExtended.API
 
                     foreach (var player in players)
                     {
+                        if (roles.ContainsKey(player))
+                            continue;
+
                         var roleHistory = HumanSpawner.History.GetOrAdd(player.UserId, () => new HumanSpawner.RoleHistory());
                         var num2 = 0;
 
@@ -485,7 +488,6 @@ namespace LabExtended.API
                         var random = candidates.RandomItem();
 
                         roles[random] = role;
-                        players.Remove(random);
 
                         ExLoader.Debug($"RoleGeneration.DecideHumans", $"Set role of player {random.Name} to {role}");
                     }
