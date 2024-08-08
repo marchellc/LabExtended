@@ -145,7 +145,7 @@ namespace LabExtended.API.CustomItems
             Item.OwnerInventory.ServerRemoveItem(Serial, Item.PickupDropModel);
             Item = null;
 
-            var pickup = Info.PickupInfo.Type.GetPickupInstance<ItemPickupBase>(Owner.Position, Info.PickupInfo.Scale, Owner.Rotation, Serial, true);
+            var pickup = Info.PickupInfo.Type.GetPickupInstance<ItemPickupBase>(Owner.Position.Position, Info.PickupInfo.Scale, Owner.Rotation, Serial, true);
 
             Pickup = pickup;
 

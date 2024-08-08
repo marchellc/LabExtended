@@ -74,6 +74,7 @@ namespace LabExtended.API.Npcs
         /// </summary>
         public static int Count => _spawnedNpcs.Count;
 
+        #region Get
         /// <summary>
         /// Gets a value indicating whether or not a given <see cref="ReferenceHub"/> is that of an NPC.
         /// </summary>
@@ -387,6 +388,7 @@ namespace LabExtended.API.Npcs
         /// <returns><see langword="true"/> if the <see cref="NpcHandler"/> instance was found, otherwise <see langword="false"/>.</returns>
         public static bool TryGetById(int npcId, out NpcHandler npcHandler)
             => _spawnedNpcs.TryGetFirst(npc => npc.Id == npcId, out npcHandler);
+        #endregion
 
         private ExPlayer _player;
         private ReferenceHub _hub;
@@ -514,7 +516,7 @@ namespace LabExtended.API.Npcs
             {
                 if (position.HasValue)
                 {
-                    Player.Position = position.Value;
+                    Player.Position.Position = position.Value;
 
                     callback();
                 }
@@ -528,7 +530,7 @@ namespace LabExtended.API.Npcs
             {
                 if (position.HasValue)
                 {
-                    Player.Position = position.Value;
+                    Player.Position.Position = position.Value;
 
                     callback();
                 }

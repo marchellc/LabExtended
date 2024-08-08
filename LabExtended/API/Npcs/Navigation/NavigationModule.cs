@@ -78,7 +78,7 @@ namespace LabExtended.API.Npcs.Navigation
             }
             else
             {
-                NavAgent.destination = TargetPosition.HasValue ? TargetPosition.Value : PlayerTarget.Position;
+                NavAgent.destination = TargetPosition.HasValue ? TargetPosition.Value : PlayerTarget.Position.Position;
 
                 if (!NavAgent.isOnNavMesh)
                 {

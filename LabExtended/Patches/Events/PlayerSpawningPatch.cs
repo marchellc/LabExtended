@@ -47,11 +47,11 @@ namespace LabExtended.Patches.Events
                     if (!player.Stats.KeepMaxHealthOnRoleChange)
                         player.Stats._maxHealthOverride.ClearValue();
 
-                    if (!player.FakePosition.KeepOnRoleChange || (!player.FakePosition.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
-                        player.FakePosition.ClearValues();
+                    if (!player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
+                        player.Position.FakedList.ClearValues();
 
-                    if (!player.FakeRole.KeepOnRoleChange || (!player.FakeRole.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
-                        player.FakeRole.ClearValues();
+                    if (!player.Role.FakedList.KeepOnRoleChange || (!player.Role.FakedList.KeepOnDeath && newRole is RoleTypeId.Spectator && reason is RoleChangeReason.Died))
+                        player.Role.FakedList.ClearValues();
 
                     newRole = spawningEv.NewRole;
                     reason = spawningEv.ChangeReason;

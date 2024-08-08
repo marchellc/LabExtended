@@ -16,7 +16,9 @@ using LabExtended.API.Collections.Locked;
 using PluginAPI.Events;
 
 using UnityEngine;
+
 using NorthwoodLib.Pools;
+
 using PlayerRoles.FirstPersonControl;
 
 namespace LabExtended.API.Containers
@@ -84,6 +86,15 @@ namespace LabExtended.API.Containers
         /// Gets permissions of the currently held keycard. <i>(<see cref="KeycardPermissions.None"/> if the player isn't holding a keycard)</i>.
         /// </summary>
         public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem ? keycardItem.Permissions : KeycardPermissions.None;
+
+        /// <summary>
+        /// Whether or not to synchronize items with the player on the next frame.
+        /// </summary>
+        public bool IsSending
+        {
+            get => Inventory.SendItemsNextFrame;
+            set => Inventory.SendItemsNextFrame = value;
+        }
 
         /// <summary>
         /// Gets or sets the currently held item instance.
@@ -417,5 +428,8 @@ namespace LabExtended.API.Containers
 
             return pickupInstance;
         }
+
+        public void Synchronize()
+            => Inventory.ServerSendItems();
     }
 }

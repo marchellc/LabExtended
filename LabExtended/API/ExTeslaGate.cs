@@ -76,12 +76,12 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the closest player.
         /// </summary>
-        public ExPlayer ClosestPlayer => ExPlayer.Players.Where(p => p.Role.IsAlive).OrderBy(p => p.DistanceTo(Position)).FirstOrDefault();
+        public ExPlayer ClosestPlayer => ExPlayer.Players.Where(p => p.Role.IsAlive).OrderBy(p => p.Position.DistanceTo(Position)).FirstOrDefault();
 
         /// <summary>
         /// Gets the closest SCP player.
         /// </summary>
-        public ExPlayer ClosestScp => ExPlayer.Players.Where(p => p.Role.IsScp).OrderBy(p => p.DistanceTo(Position)).FirstOrDefault();
+        public ExPlayer ClosestScp => ExPlayer.Players.Where(p => p.Role.IsScp).OrderBy(p => p.Position.DistanceTo(Position)).FirstOrDefault();
 
         /// <summary>
         /// Gets the tesla's position.
@@ -206,7 +206,7 @@ namespace LabExtended.API
         /// <param name="player">The player to check.</param>
         /// <returns><see langword="true"/> if the player is in hurt range, otherwise <see langword="false"/>.</returns>
         public bool IsInHurtRange(ExPlayer player)
-            => player != null && player.Role.IsAlive && player.DistanceTo(Position) <= TriggerRange * 2.2f;
+            => player != null && player.Role.IsAlive && player.Position.DistanceTo(Position) <= TriggerRange * 2.2f;
 
         /// <summary>
         /// Gets a value indicating whether or not a specific player is in idle range.

@@ -32,12 +32,12 @@ namespace LabExtended.API.CustomModules.PositionTracking
         /// <summary>
         /// Gets the player's position.
         /// </summary>
-        public Vector3 Position => CastParent.Position;
+        public Vector3 Position => CastParent.Position.Position;
 
         /// <summary>
         /// Gets the player's rotation.
         /// </summary>
-        public Quaternion Rotation => CastParent.Rotation;
+        public Quaternion Rotation => CastParent.Rotation.Rotation;
 
         /// <summary>
         /// Gets a value indicating whether the player is alive or not.

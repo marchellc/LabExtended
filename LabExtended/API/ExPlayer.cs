@@ -18,7 +18,7 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
-
+using LabExtended.Core;
 using LabExtended.Core.Ticking;
 
 using LabExtended.Extensions;
@@ -28,17 +28,15 @@ using LabExtended.Utilities.Values;
 
 using LiteNetLib;
 
-using MapGeneration;
-
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
 
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
-using PlayerRoles.PlayableScps;
 using PlayerRoles.Spectating;
 using PlayerRoles.Visibility;
+
 using PlayerStatsSystem;
 
 using PluginAPI.Core;
@@ -491,14 +489,16 @@ namespace LabExtended.API
 
             ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => _forcedIcons, value => _forcedIcons = value);
 
-            FakePosition = new FakeValue<Vector3>();
-            FakeRole = new FakeValue<RoleTypeId>();
-
             Role = new RoleContainer(component.roleManager);
             Ammo = new AmmoContainer(component.inventory);
             Stats = new StatsContainer(component.playerStats);
             Effects = new EffectContainer(component.playerEffectsController);
+
+            Position = new PositionContainer(this);
+            Rotation = new RotationContainer(this);
+
             Inventory = new InventoryContainer(component.inventory);
+
             Subroutines = new SubroutineContainer(Role);
 
             Switches = switches;
@@ -523,16 +523,6 @@ namespace LabExtended.API
         /// Gets or sets the player's voice mute flags.
         /// </summary>
         public EnumValue<VcMuteFlags> MuteFlags { get; }
-
-        /// <summary>
-        /// Gets the player's fake position list.
-        /// </summary>
-        public FakeValue<Vector3> FakePosition { get; }
-
-        /// <summary>
-        /// Gets the player's fake role list.
-        /// </summary>
-        public FakeValue<RoleTypeId> FakeRole { get; }
 
         /// <summary>
         /// Gets the player's <see cref="Npcs.NpcHandler"/> if the player is an NPC spawned via <see cref="Npcs.NpcHandler.Spawn(string?, RoleTypeId, int?, string?, Vector3?, Action{NpcHandler})"/>, otherwise <see langword="null"/>.
@@ -563,6 +553,16 @@ namespace LabExtended.API
         /// Gets the player's <see cref="SwitchContainer"/>.
         /// </summary>
         public SwitchContainer Switches { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="PositionContainer"/>.
+        /// </summary>
+        public PositionContainer Position { get; }
+
+        /// <summary>
+        /// Gets the player's <see cref="RotationContainer"/>.
+        /// </summary>
+        public RotationContainer Rotation { get; }
 
         /// <summary>
         /// Gets the player's <see cref="InventoryContainer"/>.
@@ -625,41 +625,6 @@ namespace LabExtended.API
         public ExPlayer SpectatedPlayer => _players.FirstOrDefault(p => p.IsSpectatedBy(this));
 
         /// <summary>
-        /// Gets the player that this player is currently looking at.
-        /// </summary>
-        public ExPlayer LookingAtPlayer => _players.FirstOrDefault(p => IsLookingAt(p));
-
-        /// <summary>
-        /// Gets the closest player.
-        /// </summary>
-        public ExPlayer ClosestPlayer => _players.Where(p => p.NetId != NetId && p.Role.IsAlive).OrderBy(DistanceTo).FirstOrDefault();
-
-        /// <summary>
-        /// Gets the closest SCP player.
-        /// </summary>
-        public ExPlayer ClosestScp => _players.Where(p => p.NetId != NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
-
-        /// <summary>
-        /// Gets the closest door.
-        /// </summary>
-        public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
-
-        /// <summary>
-        /// Gets the closest SCP-079 camera.
-        /// </summary>
-        public Camera ClosestCamera => ExMap.Cameras.OrderBy(x => Vector3.Distance(x.Position, Position)).First();
-
-        /// <summary>
-        /// Gets the player's current room.
-        /// </summary>
-        public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
-
-        /// <summary>
-        /// Gets the elevator this player is currently in.
-        /// </summary>
-        public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(this));
-
-        /// <summary>
         /// Gets the SCP-079 camera this player is currently using.
         /// </summary>
         public Camera Camera => ExMap.GetCamera(Subroutines.Scp079CurrentCameraSync?.CurrentCamera);
@@ -673,11 +638,6 @@ namespace LabExtended.API
         /// Gets a list of players that are currently spectating this player.
         /// </summary>
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
-
-        /// <summary>
-        /// Gets a list of players that are currently in the line of sight of this player.
-        /// </summary>
-        public IEnumerable<ExPlayer> PlayersInSight => _players.Where(p => p.IsInLineOfSight(this));
 
         /// <summary>
         /// Gets a list of active <see cref="VoiceModifier"/>s.
@@ -1023,15 +983,6 @@ namespace LabExtended.API
         }
 
         /// <summary>
-        /// Gets or sets 
-        /// </summary>
-        public PlayerInfoArea InfoToShow
-        {
-            get => _hub.nicknameSync.Network_playerInfoToShow;
-            set => _hub.nicknameSync.Network_playerInfoToShow = value;
-        }
-
-        /// <summary>
         /// Gets or sets the player's instance mode.
         /// </summary>
         public ClientInstanceMode InstanceMode
@@ -1078,33 +1029,6 @@ namespace LabExtended.API
         {
             get => _hub.transform.localScale;
             set => SetScale(value);
-        }
-
-        /// <summary>
-        /// Gets or sets the player's position.
-        /// </summary>
-        public Vector3 Position
-        {
-            get => _hub.transform.position;
-            set => _hub.TryOverridePosition(value, Vector3.zero);
-        }
-
-        /// <summary>
-        /// Gets or sets the player's rotation.
-        /// </summary>
-        public Quaternion Rotation
-        {
-            get => _hub.transform.rotation;
-            set => _hub.TryOverridePosition(Position, value.eulerAngles);
-        }
-
-        /// <summary>
-        /// Gets or sets the player's relative position.
-        /// </summary>
-        public RelativePosition RelativePosition
-        {
-            get => Role.Motor?.ReceivedPosition ?? new RelativePosition(Position);
-            set => Position = value.Position;
         }
 
         /// <summary>
@@ -1172,9 +1096,8 @@ namespace LabExtended.API
         /// </summary>
         /// <param name="attacker">The attacking player.</param>
         public void Explode(ExPlayer attacker = null)
-            => ExplosionUtils.ServerExplode(Position, attacker?.Footprint ?? Footprint);
+            => ExplosionUtils.ServerExplode(Position.Position, attacker?.Footprint ?? Footprint);
 
-        #region Messaging Methods
         /// <summary>
         /// Clears all broadcasts.
         /// </summary>
@@ -1264,95 +1187,6 @@ namespace LabExtended.API
         /// <param name="key">The key to bind the command to.</param>
         public void SendKeyBind(string command, KeyCode key)
             => _hub.characterClassManager.TargetChangeCmdBinding(key, command);
-        #endregion
-
-        #region Positional Methods
-        /// <summary>
-        /// Gets a list of players in a specified range.
-        /// </summary>
-        /// <param name="range">The maximum range.</param>
-        /// <returns>A list of players that are in range.</returns>
-        public IEnumerable<ExPlayer> GetPlayersInRange(float range)
-            => _players.Where(p => p.NetId != NetId && p.Role.IsAlive && p.DistanceTo(this) <= range);
-
-        /// <summary>
-        /// Gets the distance to a specified position.
-        /// </summary>
-        /// <param name="position">The position.</param>
-        /// <returns>The distance.</returns>
-        public float DistanceTo(Vector3 position)
-            => Vector3.Distance(Position, position);
-
-        /// <summary>
-        /// Gets the distance to a specified player.
-        /// </summary>
-        /// <param name="player">The player.</param>
-        /// <returns>The distance.</returns>
-        public float DistanceTo(ExPlayer player)
-            => Vector3.Distance(player.Position, Position);
-
-        /// <summary>
-        /// Gets the distance to a specified transform.
-        /// </summary>
-        /// <param name="transform">The transform.</param>
-        /// <returns>The distance.</returns>
-        public float DistanceTo(Transform transform)
-            => Vector3.Distance(transform.position, Position);
-
-        /// <summary>
-        /// Gets the distance to a specified gameObject.
-        /// </summary>
-        /// <param name="gameObject">The gameObject.</param>
-        /// <returns>The distance.</returns>
-        public float DistanceTo(GameObject gameObject)
-            => Vector3.Distance(gameObject.transform.position, Position);
-        #endregion
-
-        #region Vision Methods
-        /// <summary>
-        /// Whether or not a specific player is in this player's line of sight.
-        /// </summary>
-        /// <param name="player">The player to check for.</param>
-        /// <param name="radius">The maximum radius.</param>
-        /// <param name="distance">The maximum distance.</param>
-        /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
-        /// <returns><see langword="true"/> if the player is in line of sight.</returns>
-        public bool IsInLineOfSight(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
-        {
-            if (player is null)
-                return false;
-
-            if (countSpectating && player.IsSpectatedBy(this))
-                return true;
-
-            var vision = VisionInformation.GetVisionInformation(Hub, CameraTransform, player.CameraTransform.position, radius, distance);
-
-            if (vision.IsInLineOfSight || vision.IsLooking)
-                return true;
-
-            return false;
-        }
-
-        /// <summary>
-        /// Whether or not a specific player is being looked at by this player.
-        /// </summary>
-        /// <param name="player">The player to check for.</param>
-        /// <param name="radius">The maximum radius.</param>
-        /// <param name="distance">The maximum distance.</param>
-        /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
-        /// <returns><see langword="true"/> if the player is being looked at.</returns>
-        public bool IsLookingAt(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
-        {
-            if (countSpectating && player.IsSpectatedBy(this))
-                return true;
-
-            var vision = VisionInformation.GetVisionInformation(Hub, CameraTransform, player.CameraTransform.position, radius, distance);
-
-            if (vision.IsLooking)
-                return true;
-
-            return false;
-        }
 
         /// <summary>
         /// Whether or not the target player is invisible to ther player.
@@ -1383,9 +1217,7 @@ namespace LabExtended.API
         /// <param name="player">The player to make this player visible for.</param>
         public void MakeVisibleFor(ExPlayer player)
             => _invisibility.Remove(player);
-        #endregion
 
-        #region Network Methods
         /// <summary>
         /// Sends a fake SyncVar message.
         /// </summary>
@@ -1471,6 +1303,191 @@ namespace LabExtended.API
 
             NetworkWriterPool.Return(writer);
             NetworkWriterPool.Return(writer2);
+        }
+
+        #region Helper Methods
+        private void SetScale(Vector3 scale)
+        {
+            if (scale == _hub.transform.localScale)
+                return;
+
+            _hub.transform.localScale = scale;
+
+            foreach (var target in _players)
+                NetworkServer.SendSpawnMessage(_hub.netIdentity, target.Connection);
+        }
+
+        private static bool ValidateCustomInfo(string customInfo)
+        {
+            if (customInfo.Contains('<'))
+            {
+                foreach (var token in customInfo.Split('<'))
+                {
+                    if (token.StartsWith("/", StringComparison.Ordinal) ||
+                        token.StartsWith("b>", StringComparison.Ordinal) ||
+                        token.StartsWith("i>", StringComparison.Ordinal) ||
+                        token.StartsWith("size=", StringComparison.Ordinal) ||
+                        token.Length is 0)
+                        continue;
+
+                    if (token.StartsWith("color=", StringComparison.Ordinal))
+                    {
+                        if (token.Length < 14 || token[13] != '>')
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(6, 7)))
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                    }
+                    else if (token.StartsWith("#", StringComparison.Ordinal))
+                    {
+                        if (token.Length < 8 || token[7] != '>')
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(0, 7)))
+                        {
+                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+        #endregion
+
+        #region Internal Methods
+        internal RoleTypeId? InternalGetRoleForJoinedPlayer(ExPlayer joinedPlayer)
+        {
+            if (!Switches.IsVisibleInSpectatorList)
+                return RoleTypeId.Spectator;
+
+            return null;
+        }
+
+        internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
+            => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
+        #endregion
+
+        #region Synchronization
+        private static void SynchronizeRoles()
+        {
+            foreach (var player in _allPlayers)
+            {
+                var curRoleId = player.Role.Type;
+
+                if (player.Role.Role is IObfuscatedRole obfuscatedRole)
+                    curRoleId = obfuscatedRole.GetRoleForUser(player.Hub);
+
+                foreach (var other in _allPlayers)
+                {
+                    if (player.Role.FakedList.TryGetValue(other, out var fakedRole))
+                        curRoleId = fakedRole;
+
+                    if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
+                        curRoleId = RoleTypeId.Spectator;
+
+                    if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == curRoleId)
+                        continue;
+
+                    player._sentRoles[other.PlayerId] = curRoleId;
+                    other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
+                }
+            }
+        }
+
+        private static void SynchronizePositions()
+        {
+            _posTime += Time.deltaTime;
+
+            if (_posTime < SyncRate)
+                return;
+
+            _posTime -= SyncRate;
+
+            foreach (var player in _allPlayers)
+            {
+                if (!player.Switches.ShouldReceivePositions)
+                    continue;
+
+                try
+                {
+                    using (var writer = NetworkWriterPool.Get())
+                    {
+                        writer.Pack<FpcPositionMessage>(() =>
+                        {
+                            player._newSyncData.Clear();
+
+                            var isGhosted = _ghostedPlayers.Contains(player);
+
+                            var customVisibilityRole = player.Role.Role as ICustomVisibilityRole;
+                            var customVisibilityController = customVisibilityRole?.VisibilityController ?? null;
+
+                            foreach (var other in _allPlayers)
+                            {
+                                try
+                                {
+                                    if (!other.Switches.ShouldSendPosition)
+                                        continue;
+
+                                    if (other.NetId == player.NetId)
+                                        continue;
+
+                                    if (!other.Role.Is<IFpcRole>(out var fpcRole))
+                                        continue;
+
+                                    var module = other.Role.MovementModule;
+                                    var isInvisible = customVisibilityRole != null && !customVisibilityController.ValidateVisibility(other.Hub);
+
+                                    if (!isInvisible && (isGhosted || other._invisibility.Contains(player)))
+                                        isInvisible = true;
+
+                                    if (!player._prevSyncData.TryGetValue(other, out var prevSyncData))
+                                        prevSyncData = default;
+
+                                    var position = other.Transform.position;
+
+                                    if (other.Position.FakedList.TryGetValue(player, out var fakePosition))
+                                        position = fakePosition;
+
+                                    player._newSyncData[other] = prevSyncData = isInvisible ? default : player.InternalGetNewSyncData(prevSyncData, module.SyncMovementState, position, module.IsGrounded, module.MouseLook);
+                                    player._prevSyncData[other] = prevSyncData;
+                                }
+                                catch (Exception ex)
+                                {
+                                    ExLoader.Error("Position Sync", $"Failed to write position of player &3{other.Name}&r (&6{other.UserId}&r) while synchronizing position with &3{player.Name}&r (&6{player.UserId}&r):\n{ex.ToColoredString()}");
+                                }
+                            }
+
+                            writer.WriteUShort((ushort)player._newSyncData.Count);
+
+                            foreach (var pair in player._newSyncData)
+                            {
+                                writer.WriteRecyclablePlayerId(pair.Key.Hub.Network_playerId);
+                                pair.Value.Write(writer);
+                            }
+                        });
+
+                        player.Connection.Send(writer.ToArraySegment());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ExLoader.Error("Position Sync", $"Failed to send position message to player &3{player.Name}&r (&6{player.UserId}&r)!\n{ex.ToColoredString()}");
+                }
+            }
         }
         #endregion
 
@@ -1569,178 +1586,6 @@ namespace LabExtended.API
         /// <param name="player">The player to check.</param>
         public static implicit operator bool(ExPlayer player)
             => player != null && player.IsVerified;
-        #endregion
-
-        #region Helper Methods
-        private void SetScale(Vector3 scale)
-        {
-            if (scale == _hub.transform.localScale)
-                return;
-
-            _hub.transform.localScale = scale;
-
-            foreach (var target in _players)
-                NetworkServer.SendSpawnMessage(_hub.netIdentity, target.Connection);
-        }
-
-        private static bool ValidateCustomInfo(string customInfo)
-        {
-            if (customInfo.Contains('<'))
-            {
-                foreach (var token in customInfo.Split('<'))
-                {
-                    if (token.StartsWith("/", StringComparison.Ordinal) ||
-                        token.StartsWith("b>", StringComparison.Ordinal) ||
-                        token.StartsWith("i>", StringComparison.Ordinal) ||
-                        token.StartsWith("size=", StringComparison.Ordinal) ||
-                        token.Length is 0)
-                        continue;
-
-                    if (token.StartsWith("color=", StringComparison.Ordinal))
-                    {
-                        if (token.Length < 14 || token[13] != '>')
-                        {
-                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
-                            return false;
-                        }
-                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(6, 7)))
-                        {
-                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
-                            return false;
-                        }
-                    }
-                    else if (token.StartsWith("#", StringComparison.Ordinal))
-                    {
-                        if (token.Length < 8 || token[7] != '>')
-                        {
-                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad text reject) \ntoken: {token} \nInfo: {customInfo}");
-                            return false;
-                        }
-                        else if (!Misc.AllowedColors.ContainsValue(token.Substring(0, 7)))
-                        {
-                            Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        Log.Error($"Custom info has been REJECTED. \nreason: (Bad color reject) \ntoken: {token} \nInfo: {customInfo}");
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-        #endregion
-
-        #region Synchronization
-        private static void SynchronizeRoles()
-        {
-            foreach (var player in _allPlayers)
-            {
-                var curRoleId = player.Role.Type;
-
-                if (player.Role.Role is IObfuscatedRole obfuscatedRole)
-                    curRoleId = obfuscatedRole.GetRoleForUser(player.Hub);
-
-                foreach (var other in _allPlayers)
-                {
-                    if (player.FakeRole.TryGetValue(other, out var fakedRole))
-                        curRoleId = fakedRole;
-
-                    if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
-                        curRoleId = RoleTypeId.Spectator;
-
-                    if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == curRoleId)
-                        continue;
-
-                    player._sentRoles[other.PlayerId] = curRoleId;
-                    other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
-                }
-            }
-        }
-
-        private static void SynchronizePositions()
-        {
-            _posTime += Time.deltaTime;
-
-            if (_posTime < SyncRate)
-                return;
-
-            _posTime -= SyncRate;
-
-            foreach (var player in _allPlayers)
-            {
-                if (!player.Switches.ShouldReceivePositions)
-                    continue;
-
-                using (var writer = NetworkWriterPool.Get())
-                {
-                    writer.PackMessage<FpcPositionMessage>(() =>
-                    {
-                        player._newSyncData.Clear();
-
-                        var isGhosted = _ghostedPlayers.Contains(player);
-
-                        var customVisibilityRole = player.Role.Role as ICustomVisibilityRole;
-                        var customVisibilityController = customVisibilityRole?.VisibilityController ?? null;
-
-                        foreach (var other in _allPlayers)
-                        {
-                            if (!other.Switches.ShouldSendPosition)
-                                continue;
-
-                            if (other.NetId == player.NetId)
-                                continue;
-
-                            if (!other.Role.Is<IFpcRole>(out var fpcRole))
-                                continue;
-
-                            var module = other.Role.MovementModule;
-                            var isInvisible = customVisibilityRole != null && !customVisibilityController.ValidateVisibility(other.Hub);
-
-                            if (!isInvisible && (isGhosted || other._invisibility.Contains(player)))
-                                isInvisible = true;
-
-                            if (!player._prevSyncData.TryGetValue(other, out var prevSyncData))
-                                prevSyncData = default;
-
-                            var position = other.Transform.position;
-
-                            if (other.FakePosition.TryGetValue(player, out var fakePosition))
-                                position = fakePosition;
-
-                            player._newSyncData[other] = prevSyncData = isInvisible ? default : player.InternalGetNewSyncData(prevSyncData, module.SyncMovementState, position, module.IsGrounded, module.MouseLook);
-                            player._prevSyncData[other] = prevSyncData;
-                        }
-
-                        writer.WriteUShort((ushort)player._newSyncData.Count);
-
-                        foreach (var pair in player._newSyncData)
-                        {
-                            writer.WriteRecyclablePlayerId(pair.Key.Hub.Network_playerId);
-                            pair.Value.Write(writer);
-                        }
-                    });
-
-                    player.Connection.Send(writer.ToArraySegment());
-                }
-            }
-        }
-        #endregion
-
-        #region Internal Methods
-        internal RoleTypeId? InternalGetRoleForJoinedPlayer(ExPlayer joinedPlayer)
-        {
-            if (!Switches.IsVisibleInSpectatorList)
-                return RoleTypeId.Spectator;
-
-            return null;
-        }
-
-        internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
-            => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
         #endregion
     }
 }

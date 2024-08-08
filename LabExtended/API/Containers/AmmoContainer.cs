@@ -16,6 +16,15 @@ namespace LabExtended.API.Containers
 
         public bool HasAnyAmmo => Inventory.UserInventory.ReserveAmmo.Any(p => p.Value > 0);
 
+        /// <summary>
+        /// Whether or not to synchronize ammo with the player on the next frame.
+        /// </summary>
+        public bool IsSending
+        {
+            get => Inventory.SendAmmoNextFrame;
+            set => Inventory.SendAmmoNextFrame = value;
+        }
+
         public ushort Ammo12Gauge
         {
             get => GetAmmo(ItemType.Ammo12gauge);
@@ -93,5 +102,8 @@ namespace LabExtended.API.Containers
 
         public List<AmmoPickup> DropAllAmmo(ItemType ammoType, ushort amount = ushort.MaxValue)
             => Inventory.ServerDropAmmo(ammoType, amount);
+
+        public void Synchronize()
+            => Inventory.ServerSendAmmo();
     }
 }

@@ -17,6 +17,8 @@ using PlayerRoles.PlayableScps.Scp049.Zombies;
 
 using UnityEngine;
 
+using LabExtended.Utilities.Values;
+
 namespace LabExtended.API.Containers
 {
     public class RoleContainer
@@ -25,6 +27,8 @@ namespace LabExtended.API.Containers
             => Manager = manager;
 
         public PlayerRoleManager Manager { get; }
+
+        public FakeValue<RoleTypeId> FakedList { get; } = new FakeValue<RoleTypeId>();
 
         public PlayerRoleBase Role => Manager.CurrentRole;
         public Type Class => Role.GetType();
