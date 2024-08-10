@@ -141,9 +141,9 @@ namespace LabExtended.API
                 RoundSummary.RoundLock = _roundLockTracking.HasValue;
 
                 if (_roundLockTracking.HasValue)
-                    ExLoader.Debug("Round API", $"Round Lock enabled by &3{RoundLockEnabledBy?.Name ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? null}&r)");
+                    ApiLoader.Debug("Round API", $"Round Lock enabled by &3{RoundLockEnabledBy?.Name ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? null}&r)");
                 else
-                    ExLoader.Debug("Round API", $"Round Lock disabled.");
+                    ApiLoader.Debug("Round API", $"Round Lock disabled.");
             }
         }
 
@@ -169,9 +169,9 @@ namespace LabExtended.API
                 RoundStart.LobbyLock = _lobbyLockTracking.HasValue;
 
                 if (_lobbyLockTracking.HasValue)
-                    ExLoader.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Name ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
+                    ApiLoader.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Name ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
                 else
-                    ExLoader.Debug("Round API", $"Lobby Lock disabled.");
+                    ApiLoader.Debug("Round API", $"Lobby Lock disabled.");
             }
         }
 
@@ -353,7 +353,7 @@ namespace LabExtended.API
             {
                 var respawnQueue = ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414");
 
-                ExLoader.Debug($"RoleGeneration", $"respawnQueue={respawnQueue}");
+                ApiLoader.Debug($"RoleGeneration", $"respawnQueue={respawnQueue}");
 
                 if (respawnQueue.Length != RoleAssigner._prevQueueSize)
                 {
@@ -391,11 +391,11 @@ namespace LabExtended.API
                         scps++;
                 }
 
-                ExLoader.Debug($"RoleGeneration", $"players={players.Count} scps={scps}");
+                ApiLoader.Debug($"RoleGeneration", $"players={players.Count} scps={scps}");
 
                 if (scps > 0)
                 {
-                    ExLoader.Debug($"RoleGeneration", $"Assigning SCPs");
+                    ApiLoader.Debug($"RoleGeneration", $"Assigning SCPs");
 
                     DecideScps(players, roles, scps);
 
@@ -404,15 +404,15 @@ namespace LabExtended.API
 
                 if (players.Count > 0)
                 {
-                    ExLoader.Debug($"RoleGeneration", $"Assigning humans");
+                    ApiLoader.Debug($"RoleGeneration", $"Assigning humans");
                     DecideHumans(players, roles, RoleAssigner._humanQueue, humanIndex);
                 }
 
-                ExLoader.Debug($"RoleGeneration", $"Finished role assignment");
+                ApiLoader.Debug($"RoleGeneration", $"Finished role assignment");
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Round API", $"Failed to generate roles!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Round API", $"Failed to generate roles!\n{ex.ToColoredString()}");
             }
 
             return roles;
@@ -420,7 +420,7 @@ namespace LabExtended.API
             #region Helper Methods
             void DecideHumans(List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, Team[] queue, int size)
             {
-                ExLoader.Debug($"RoleGeneration.DecideHumans", $"players={players.Count} roles={roles.Count} queue={queue.Length} size={size}");
+                ApiLoader.Debug($"RoleGeneration.DecideHumans", $"players={players.Count} roles={roles.Count} queue={queue.Length} size={size}");
 
                 HumanSpawner._humanQueue = queue;
 
@@ -430,12 +430,12 @@ namespace LabExtended.API
                 var candidates = ListPool<ExPlayer>.Shared.Rent();
                 var array = new RoleTypeId[players.Count];
 
-                ExLoader.Debug($"RoleGeneration.DecideHumans", $"Choosing {array.Length} roles");
+                ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Choosing {array.Length} roles");
 
                 for (int i = 0; i < players.Count; i++)
                 {
                     array[i] = HumanSpawner.NextHumanRoleToSpawn;
-                    ExLoader.Debug($"RoleGeneration.DecideHumans", $"Chosen role i={i} role={array[i]}");
+                    ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Chosen role i={i} role={array[i]}");
                 }
 
                 array.ShuffleList();
@@ -447,7 +447,7 @@ namespace LabExtended.API
                     var num = int.MaxValue;
                     var role = array[i];
 
-                    ExLoader.Debug($"RoleGeneration.DecideHumans", $"Choosing player for role i={i} role={role}");
+                    ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Choosing player for role i={i} role={role}");
 
                     foreach (var player in players)
                     {
@@ -462,24 +462,24 @@ namespace LabExtended.API
                             if (roleHistory.History[x] == role)
                             {
                                 num2++;
-                                ExLoader.Debug($"RoleGeneration.DecideHumans", $"Found role in player {player.Name} history, num2={num2}");
+                                ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Found role in player {player.Name} history, num2={num2}");
                             }
                         }
 
                         if (num2 <= num)
                         {
-                            ExLoader.Debug($"RoleGeneration.DecideHumans", $"num2={num2} num={num}");
+                            ApiLoader.Debug($"RoleGeneration.DecideHumans", $"num2={num2} num={num}");
 
                             if (num2 < num)
                             {
                                 candidates.Clear();
-                                ExLoader.Debug($"RoleGeneration.DecideHumans", $"Cleared candidates");
+                                ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Cleared candidates");
                             }
 
                             candidates.Add(player);
                             num = num2;
 
-                            ExLoader.Debug($"RoleGeneration.DecideHumans", $"Added candidate {player.Name} num={num}");
+                            ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Added candidate {player.Name} num={num}");
                         }
                     }
 
@@ -489,11 +489,11 @@ namespace LabExtended.API
 
                         roles[random] = role;
 
-                        ExLoader.Debug($"RoleGeneration.DecideHumans", $"Set role of player {random.Name} to {role}");
+                        ApiLoader.Debug($"RoleGeneration.DecideHumans", $"Set role of player {random.Name} to {role}");
                     }
                     else
                     {
-                        ExLoader.Warn($"RoleGeneration.DecideHumans", $"No human role candidates were found.");
+                        ApiLoader.Warn($"RoleGeneration.DecideHumans", $"No human role candidates were found.");
                     }
                 }
 
@@ -502,11 +502,11 @@ namespace LabExtended.API
 
             void DecideScps(List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, int scps)
             {
-                ExLoader.Debug($"RoleGeneration.DecideScps", $"players={players.Count} roles={roles.Count} scps={scps}");
+                ApiLoader.Debug($"RoleGeneration.DecideScps", $"players={players.Count} roles={roles.Count} scps={scps}");
 
                 var candidates = ListPool<ExPlayer>.Shared.Rent();
 
-                ExLoader.Debug($"RoleGeneration.DecideScps", $"Generating candidates");
+                ApiLoader.Debug($"RoleGeneration.DecideScps", $"Generating candidates");
 
                 GenerateScpList(candidates, roles, players, scps);
 
@@ -518,16 +518,16 @@ namespace LabExtended.API
 
                     if (!scpQueue.Contains(nextScp))
                     {
-                        ExLoader.Debug($"RoleGeneration.DecideScps", $"i={i} nextScp={nextScp}");
+                        ApiLoader.Debug($"RoleGeneration.DecideScps", $"i={i} nextScp={nextScp}");
                         scpQueue.Enqueue(nextScp);
                     }
                     else
                     {
-                        ExLoader.Warn($"RoleGeneration.DecideScps", $"Attempted to add a duplicate SCP role! (i={i} nextScp={nextScp})");
+                        ApiLoader.Warn($"RoleGeneration.DecideScps", $"Attempted to add a duplicate SCP role! (i={i} nextScp={nextScp})");
                     }
                 }
 
-                ExLoader.Debug($"RoleGeneration.DecideScps", $"candidates={candidates.Count}");
+                ApiLoader.Debug($"RoleGeneration.DecideScps", $"candidates={candidates.Count}");
 
                 using (var ticketLoader = new ScpTicketsLoader())
                 {
@@ -548,14 +548,14 @@ namespace LabExtended.API
                 while (scpQueue.TryDequeue(out var scpRole))
                     ChooseScps(candidates, players, roles, scpRole, scpQueue);
 
-                ExLoader.Debug($"RoleGeneration.DecideScps", $"Finished, players={players.Count}");
+                ApiLoader.Debug($"RoleGeneration.DecideScps", $"Finished, players={players.Count}");
 
                 ListPool<ExPlayer>.Shared.Return(candidates);
             }
 
             void GenerateScpList(List<ExPlayer> candidates, Dictionary<ExPlayer, RoleTypeId> roles, List<ExPlayer> players, int scps)
             {
-                ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Generating candidates");
+                ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Generating candidates");
 
                 if (scps <= 0)
                     return;
@@ -568,20 +568,20 @@ namespace LabExtended.API
                     {
                         var tickets = ticketLoader.GetTickets(player.Hub, 10);
 
-                        ExLoader.Debug($"RoleGeneration.GenerateScpList", $"player={player.Name} tickets={tickets}");
+                        ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"player={player.Name} tickets={tickets}");
 
                         if (tickets >= num)
                         {
                             if (tickets > num)
                             {
                                 candidates.Clear();
-                                ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Found new max tickets, cleared candidates");
+                                ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Found new max tickets, cleared candidates");
                             }
 
                             num = tickets;
                             candidates.Add(player);
 
-                            ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Added candidate {player.Name}");
+                            ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Added candidate {player.Name}");
                         }
                     }
 
@@ -593,12 +593,12 @@ namespace LabExtended.API
                         candidates.Clear();
                         candidates.Add(randomPlayer);
 
-                        ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Chosen random candidate {randomPlayer.Name} from {count} candidates");
+                        ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Chosen random candidate {randomPlayer.Name} from {count} candidates");
                     }
 
                     scps -= candidates.Count;
 
-                    ExLoader.Debug($"RoleGeneration.GenerateScpList", $"scps={scps}");
+                    ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"scps={scps}");
 
                     if (scps <= 0)
                         return;
@@ -616,12 +616,12 @@ namespace LabExtended.API
                             for (int i = 0; i < scps; i++)
                                 num3 *= tickets;
 
-                            ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Found potential candidate {player.Name}, weight {num3}");
+                            ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Found potential candidate {player.Name}, weight {num3}");
 
                             potential.Add(new ScpPlayerPicker.PotentialScp { Player = player.Hub, Weight = num3 });
                             num2 += num3;
 
-                            ExLoader.Debug($"RoleGeneration.GenerateScpList", $"num2={num2} num3={num3}");
+                            ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"num2={num2} num3={num3}");
                         }
                     }
 
@@ -653,7 +653,7 @@ namespace LabExtended.API
 
             void ChooseScps(List<ExPlayer> candidates, List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, RoleTypeId scpRole, Queue<RoleTypeId> scpQueue)
             {
-                ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Choosing scps, candidates={candidates.Count} players={players.Count} roles={roles.Count} scpRole={scpRole}");
+                ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Choosing scps, candidates={candidates.Count} players={players.Count} roles={roles.Count} scpRole={scpRole}");
 
                 ScpSpawner.ChancesBuffer.Clear();
 
@@ -664,12 +664,12 @@ namespace LabExtended.API
                 {
                     var num3 = ScpSpawner.GetPreferenceOfPlayer(player.Hub, scpRole);
 
-                    ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Preference of {player.Name}: {num3}");
+                    ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Preference of {player.Name}: {num3}");
 
                     foreach (var otherScp in scpQueue)
                     {
                         num3 -= ScpSpawner.GetPreferenceOfPlayer(player.Hub, otherScp);
-                        ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Preference now {num3}");
+                        ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Preference now {num3}");
                     }
 
                     num2++;
@@ -677,7 +677,7 @@ namespace LabExtended.API
                     ScpSpawner.ChancesBuffer[player.Hub] = num3;
                     num = Mathf.Min(num3, num);
 
-                    ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Chance of {player.Name} is {num3} (num2={num2}, num={num})");
+                    ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Chance of {player.Name} is {num3} (num2={num2}, num={num})");
                 }
 
                 var num4 = 0f;
@@ -692,30 +692,30 @@ namespace LabExtended.API
 
                     num4 += num5;
 
-                    ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Spawn chance of {pair.Key.nicknameSync.MyNick} is now {num5} (num4={num4})");
+                    ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Spawn chance of {pair.Key.nicknameSync.MyNick} is now {num5} (num4={num4})");
                 }
 
                 var num6 = num4 * UnityEngine.Random.value;
                 var num7 = 0f;
 
-                ExLoader.Debug($"RoleGeneration.GenerateScpList", $"num6={num6}");
+                ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"num6={num6}");
 
                 foreach (var pair in ScpSpawner.SelectedSpawnChances)
                 {
                     num7 += pair.Value;
 
-                    ExLoader.Debug($"RoleGeneration.GenerateScpList", $"num7={num7} pair={pair.Key.nicknameSync.MyNick} / {pair.Value}");
+                    ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"num7={num7} pair={pair.Key.nicknameSync.MyNick} / {pair.Value}");
 
                     if (num7 >= num6)
                     {
-                        ExLoader.Debug($"RoleGeneration.GenerateScpList", $"Chance success (num7={num7} num6={num6})");
+                        ApiLoader.Debug($"RoleGeneration.GenerateScpList", $"Chance success (num7={num7} num6={num6})");
 
                         candidates.RemoveAll(p => p.Hub == pair.Key);
                         players.RemoveAll(p => p.Hub == pair.Key);
 
                         roles[ExPlayer.Get(pair.Key)] = scpRole;
 
-                        ExLoader.Debug($"RoleGeneration.ChooseScps", $"Chosen SCP {pair.Key.nicknameSync.MyNick} as {scpRole}");
+                        ApiLoader.Debug($"RoleGeneration.ChooseScps", $"Chosen SCP {pair.Key.nicknameSync.MyNick} as {scpRole}");
                     }
                 }
             }

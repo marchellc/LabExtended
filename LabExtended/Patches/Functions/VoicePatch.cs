@@ -1,4 +1,6 @@
-﻿using LabExtended.API;
+﻿using LabExtended.API.Voice.Threading;
+using LabExtended.API;
+
 using LabExtended.Core;
 
 using Mirror;
@@ -21,7 +23,7 @@ namespace LabExtended.Patches.Functions
         {
             if (msg.SpeakerNull || msg.Speaker.netId != conn.identity.netId
                 || msg.Speaker.roleManager.CurrentRole is not IVoiceRole voiceRole
-                || (ExLoader.Config.Voice.CustomRateLimit > 0 && voiceRole.VoiceModule._sentPackets++ >= ExLoader.Config.Voice.CustomRateLimit)
+                || (ApiLoader.Config.VoiceOptions.CustomRateLimit > 0 && voiceRole.VoiceModule._sentPackets++ >= ApiLoader.Config.VoiceOptions.CustomRateLimit)
                 || VoiceChatMutes.IsMuted(msg.Speaker))
                 return false;
 
@@ -30,8 +32,14 @@ namespace LabExtended.Patches.Functions
             if (speaker is null)
                 return true;
 
-            if (!ExLoader.Config.Voice.DisableCustomVoice)
+            if (!ApiLoader.Config.VoiceOptions.DisableCustomVoice)
             {
+                if (ThreadedVoiceChat.IsActive)
+                {
+                    ThreadedVoiceChat.Receive(speaker, ref msg);
+                    return false;
+                }
+
                 speaker._voice.ReceiveMessage(ref msg);
                 return false;
             }

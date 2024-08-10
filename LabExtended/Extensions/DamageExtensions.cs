@@ -112,7 +112,7 @@ namespace LabExtended.Extensions
                 if (scp049DamageHandler.DamageSubType is Scp049DamageHandler.AttackType.Scp0492)
                     return DamageType.Zombie;
 
-                ExLoader.Warn("Damage API", $"Unknown SCP-049 damage handler: {scp049DamageHandler.DamageSubType}");
+                ApiLoader.Warn("Damage API", $"Unknown SCP-049 damage handler: {scp049DamageHandler.DamageSubType}");
                 return DamageType.Scp049;
             }
 
@@ -130,7 +130,7 @@ namespace LabExtended.Extensions
                 if (scp096DamageHandler._attackType is Scp096DamageHandler.AttackType.Charge)
                     return DamageType.Scp096Charge;
 
-                ExLoader.Warn("Damage API", $"Unknown SCP-096 damage handler: {scp096DamageHandler._attackType}");
+                ApiLoader.Warn("Damage API", $"Unknown SCP-096 damage handler: {scp096DamageHandler._attackType}");
                 return DamageType.Scp096;
             }
 
@@ -145,7 +145,7 @@ namespace LabExtended.Extensions
                 if (scp939DamageHandler._damageType is Scp939DamageType.None)
                     return DamageType.Scp939;
 
-                ExLoader.Warn("Damage API", $"Unknown SCP-939 damage handler: {scp939DamageHandler._damageType}");
+                ApiLoader.Warn("Damage API", $"Unknown SCP-939 damage handler: {scp939DamageHandler._damageType}");
                 return DamageType.Scp939;
             }
 
@@ -160,7 +160,7 @@ namespace LabExtended.Extensions
                 if (scp3114DamageHandler.Subtype is Scp3114DamageHandler.HandlerType.Strangulation)
                     return DamageType.Scp3114Strangulation;
 
-                ExLoader.Warn("Damage API", $"Unknown SCP-3114 damage handler: {scp3114DamageHandler.Subtype}");
+                ApiLoader.Warn("Damage API", $"Unknown SCP-3114 damage handler: {scp3114DamageHandler.Subtype}");
                 return DamageType.Scp3114;
             }
 
@@ -184,14 +184,14 @@ namespace LabExtended.Extensions
                 if (scpDamageHandler.Attacker.Role is RoleTypeId.Scp939)
                     return DamageType.Scp939;
 
-                ExLoader.Warn("Damage API", $"Unknown SCP damage handler: {scpDamageHandler.Attacker.Role}");
+                ApiLoader.Warn("Damage API", $"Unknown SCP damage handler: {scpDamageHandler.Attacker.Role}");
                 return DamageType.Unknown;
             }
 
             if (damageHandlerBase is UniversalDamageHandler universalDamageHandler && DeathTranslations.TranslationsById.TryGetValue(universalDamageHandler.TranslationId, out var deathTranslation))
                 return deathTranslation.GetDamageType();
 
-            ExLoader.Warn("Damage API", $"Unknown damage handler: {damageHandlerBase.GetType().FullName}");
+            ApiLoader.Warn("Damage API", $"Unknown damage handler: {damageHandlerBase.GetType().FullName}");
             return DamageType.Unknown;
         }
 
@@ -200,7 +200,7 @@ namespace LabExtended.Extensions
             if (translation.Id < Translations.Length)
                 return Translations[translation.Id];
 
-            ExLoader.Warn("Damage API", $"Out-of-range translation ID: {translation.Id} ({translation.LogLabel} | {translation._deathTranId} | {translation._ragdollTranId})");
+            ApiLoader.Warn("Damage API", $"Out-of-range translation ID: {translation.Id} ({translation.LogLabel} | {translation._deathTranId} | {translation._ragdollTranId})");
             return DamageType.Unknown;
         }
 

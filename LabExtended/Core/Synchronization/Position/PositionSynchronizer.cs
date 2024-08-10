@@ -41,9 +41,9 @@ namespace LabExtended.Core.Synchronization.Position
         public static bool ForceSendNextFrame { get; set; }
 
         public static bool IsSending => _sending;
-        public static bool IsDebug => ExLoader.Config.Api.EnablePositionSyncDebug && _debug;
+        public static bool IsDebug => ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.EnablePositionSyncDebug && _debug;
 
-        public static float SendRate => ExLoader.Config.Api.PositionSyncRate > 0f ? ExLoader.Config.Api.PositionSyncRate : FpcServerPositionDistributor.SendRate;
+        public static float SendRate => ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.PositionSyncRate > 0f ? ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.PositionSyncRate : FpcServerPositionDistributor.SendRate;
 
         public static void Synchronize()
         {
@@ -55,7 +55,7 @@ namespace LabExtended.Core.Synchronization.Position
             _marker.MarkStart();
 
             if (IsDebug)
-                ExLoader.Debug("Position Synchronizer", $"Synchronizing positions for {ExPlayer._allPlayers.Count} players.");
+                ApiLoader.Debug("Position Synchronizer", $"Synchronizing positions for {ExPlayer._allPlayers.Count} players.");
 
             try
             {
@@ -64,12 +64,12 @@ namespace LabExtended.Core.Synchronization.Position
                     var player = ExPlayer._allPlayers[i];
 
                     if (IsDebug)
-                        ExLoader.Debug("Position Synchronizer", $"Synchronizing position for {player.Name} {player.UserId}");
+                        ApiLoader.Debug("Position Synchronizer", $"Synchronizing position for {player.Name} {player.UserId}");
 
                     if (!player.Switches.ShouldReceivePositions)
                     {
                         if (IsDebug)
-                            ExLoader.Debug("Position Synchronizer", $"ShouldReceivePositions=false");
+                            ApiLoader.Debug("Position Synchronizer", $"ShouldReceivePositions=false");
 
                         continue;
                     }
@@ -84,12 +84,12 @@ namespace LabExtended.Core.Synchronization.Position
                         var other = ExPlayer._allPlayers[x];
 
                         if (IsDebug)
-                            ExLoader.Debug("Position Synchronizer", $"Checking player {other.Name} {other.UserId} {other.Role.Type}");
+                            ApiLoader.Debug("Position Synchronizer", $"Checking player {other.Name} {other.UserId} {other.Role.Type}");
 
                         if (!other.Switches.ShouldSendPosition)
                         {
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"ShouldSendPosition=false");
+                                ApiLoader.Debug("Position Synchronizer", $"ShouldSendPosition=false");
 
                             continue;
                         }
@@ -97,7 +97,7 @@ namespace LabExtended.Core.Synchronization.Position
                         if (!other.Role.Is<IFpcRole>(out _))
                         {
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Not an IFpcRole");
+                                ApiLoader.Debug("Position Synchronizer", $"Not an IFpcRole");
 
                             continue;
                         }
@@ -105,7 +105,7 @@ namespace LabExtended.Core.Synchronization.Position
                         if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition)
                         {
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Same player (ShouldReceiveOwnPosition=false)");
+                                ApiLoader.Debug("Position Synchronizer", $"Same player (ShouldReceiveOwnPosition=false)");
 
                             continue;
                         }
@@ -113,7 +113,7 @@ namespace LabExtended.Core.Synchronization.Position
                         _validBuffer.Add(other);
 
                         if (IsDebug)
-                            ExLoader.Debug("Position Synchronizer", $"Validated player {other.Name} {other.UserId} {other.Name}");
+                            ApiLoader.Debug("Position Synchronizer", $"Validated player {other.Name} {other.UserId} {other.Name}");
                     }
 
                     if (_validBuffer.Count < 1)
@@ -127,7 +127,7 @@ namespace LabExtended.Core.Synchronization.Position
                         writer.WriteUShort((ushort)_validBuffer.Count);
 
                         if (IsDebug)
-                            ExLoader.Debug("Position Synchronizer", $"Written count ({_validBuffer.Count}), {writer.buffer.Length} bytes");
+                            ApiLoader.Debug("Position Synchronizer", $"Written count ({_validBuffer.Count}), {writer.buffer.Length} bytes");
 
                         for (int y = 0; y < _validBuffer.Count; y++)
                         {
@@ -135,7 +135,7 @@ namespace LabExtended.Core.Synchronization.Position
                             var fpcRole = (IFpcRole)other.Role.Role;
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Writing player {other.Name} {other.UserId} {other.Role.Type}");
+                                ApiLoader.Debug("Position Synchronizer", $"Writing player {other.Name} {other.UserId} {other.Role.Type}");
 
                             var mouseLook = fpcRole.FpcModule.MouseLook;
                             var module = fpcRole.FpcModule;
@@ -143,13 +143,13 @@ namespace LabExtended.Core.Synchronization.Position
                             var isInvisible = hasRole && customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"1 isInvisible={isInvisible}");
+                                ApiLoader.Debug("Position Synchronizer", $"1 isInvisible={isInvisible}");
 
                             if (!isInvisible && (ghosted || other._invisibility.Contains(player)))
                                 isInvisible = true;
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"2 isInvisible={isInvisible}");
+                                ApiLoader.Debug("Position Synchronizer", $"2 isInvisible={isInvisible}");
 
                             if (!syncCache.TryGetValue(other, out var prevData))
                                 prevData = syncCache[other] = new PositionData();
@@ -174,7 +174,7 @@ namespace LabExtended.Core.Synchronization.Position
                             var customBit = module.IsGrounded;
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"relative={relative.Position} real={position} prev={prevData.Position.Position} syncH=({syncH} / {prevData.SyncH}) syncV=({syncV} / {prevData.SyncV}) posBit={posBit} lookBit={lookBit} customBit={customBit}");
+                                ApiLoader.Debug("Position Synchronizer", $"relative={relative.Position} real={position} prev={prevData.Position.Position} syncH=({syncH} / {prevData.SyncH}) syncV=({syncV} / {prevData.SyncV}) posBit={posBit} lookBit={lookBit} customBit={customBit}");
 
                             prevData.Position = relative;
 
@@ -184,29 +184,29 @@ namespace LabExtended.Core.Synchronization.Position
                             Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7, out _);
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"b1={b1} b2={b2} b3={b3} b4={b4} b5={b5}");
+                                ApiLoader.Debug("Position Synchronizer", $"b1={b1} b2={b2} b3={b3} b4={b4} b5={b5}");
 
                             writer.WriteRecyclablePlayerId(other.Hub.Network_playerId);
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Written ID, {writer.buffer.Length} bytes");
+                                ApiLoader.Debug("Position Synchronizer", $"Written ID, {writer.buffer.Length} bytes");
 
                             writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Written flags, {writer.buffer.Length} bytes");
+                                ApiLoader.Debug("Position Synchronizer", $"Written flags, {writer.buffer.Length} bytes");
 
                             if (posBit)
                             {
                                 writer.WriteRelativePosition(relative);
 
                                 if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"Written position, {writer.buffer.Length} bytes");
+                                    ApiLoader.Debug("Position Synchronizer", $"Written position, {writer.buffer.Length} bytes");
                             }
                             else
                             {
                                 if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"posBit is false, not writing position");
+                                    ApiLoader.Debug("Position Synchronizer", $"posBit is false, not writing position");
                             }
 
                             if (lookBit)
@@ -215,23 +215,23 @@ namespace LabExtended.Core.Synchronization.Position
                                 writer.WriteUShort(syncV);
 
                                 if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"Written rotation, {writer.buffer.Length} bytes");
+                                    ApiLoader.Debug("Position Synchronizer", $"Written rotation, {writer.buffer.Length} bytes");
                             }
                             else
                             {
                                 if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"lookBit is false, not writing rotation");
+                                    ApiLoader.Debug("Position Synchronizer", $"lookBit is false, not writing rotation");
                             }
 
                             if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Finished writing data for {other.Name} {other.UserId} {other.Role.Type} ({writer.buffer.Length})");
+                                ApiLoader.Debug("Position Synchronizer", $"Finished writing data for {other.Name} {other.UserId} {other.Role.Type} ({writer.buffer.Length})");
                         }
                     });
                 }
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Position Synchronizer", $"Caught an error while synchronizing player positions:\n{ex.ToColoredString()}");
+                ApiLoader.Error("Position Synchronizer", $"Caught an error while synchronizing player positions:\n{ex.ToColoredString()}");
             }
 
             _sending = false;
@@ -264,7 +264,7 @@ namespace LabExtended.Core.Synchronization.Position
             Synchronize();
 
             if (_debugTime <= 0f)
-                _debugTime = ExLoader.Config.Api.PositionDebugRate;
+                _debugTime = ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.PositionDebugRate;
         }
 
         internal static void InternalHandleRoleChange(PlayerChangedRoleArgs args)

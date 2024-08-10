@@ -68,7 +68,7 @@ namespace LabExtended.Patches.Events
             }
             catch (Exception ex)
             {
-                ExLoader.Error("PlayerSpawningPatch", ex);
+                ApiLoader.Error("PlayerSpawningPatch", ex);
                 return true;
             }
         }

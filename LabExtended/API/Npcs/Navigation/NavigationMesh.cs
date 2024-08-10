@@ -74,7 +74,7 @@ namespace LabExtended.API.Npcs.Navigation
 
                 var start = DateTime.Now;
 
-                ExLoader.Info("Navigation API", $"Baking navigation meshes ..");
+                ApiLoader.Info("Navigation API", $"Baking navigation meshes ..");
 
                 _lightZone = BakeMesh(LightRoomsObject);
                 _heavyZone = BakeMesh(HeavyRoomsObject);
@@ -83,11 +83,11 @@ namespace LabExtended.API.Npcs.Navigation
 
                 IsBaked = true;
 
-                ExLoader.Info("Navigation API", $"Finished baking meshes in &3{(DateTime.Now - start).TotalMilliseconds} ms&r!");
+                ApiLoader.Info("Navigation API", $"Finished baking meshes in &3{(DateTime.Now - start).TotalMilliseconds} ms&r!");
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Navigation API", $"An error ocurred while baking navigation meshes!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Navigation API", $"An error ocurred while baking navigation meshes!\n{ex.ToColoredString()}");
             }
         }
 

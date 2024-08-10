@@ -135,7 +135,7 @@ namespace LabExtended.API.Input
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle Keybind trigger:\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle Keybind trigger:\n{ex.ToColoredString()}");
                 }
             }
         }
@@ -158,7 +158,7 @@ namespace LabExtended.API.Input
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle Voice trigger:\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle Voice trigger:\n{ex.ToColoredString()}");
                 }
             }
         }
@@ -181,7 +181,7 @@ namespace LabExtended.API.Input
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle NoClip trigger:\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Input API", $"Listener &3{listener.Value.Listener.GetType().FullName}&r failed to handle NoClip trigger:\n{ex.ToColoredString()}");
                 }
             }
         }

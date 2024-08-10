@@ -118,7 +118,7 @@ namespace LabExtended.Patches.Events
             }
             catch (Exception ex)
             {
-                ExLoader.Error("PlayerGrantingInventoryPatch", ex);
+                ApiLoader.Error("PlayerGrantingInventoryPatch", ex);
                 return true;
             }
         }

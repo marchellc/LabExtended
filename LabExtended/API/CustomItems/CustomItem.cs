@@ -209,37 +209,37 @@ namespace LabExtended.API.CustomItems
 
             if (TryGetRegistered(customItemInfo.Type, out _))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register a duplicate custom item: &3{customItemInfo.Type.FullName}&r");
+                ApiLoader.Warn("Custom Items", $"Tried to register a duplicate custom item: &3{customItemInfo.Type.FullName}&r");
                 return false;
             }
 
             if (string.IsNullOrEmpty(customItemInfo.Id))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register an item with an empty ID: &3{customItemInfo.Type.FullName}&r");
+                ApiLoader.Warn("Custom Items", $"Tried to register an item with an empty ID: &3{customItemInfo.Type.FullName}&r");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(customItemInfo.Name))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register an item with an empty name: &3{customItemInfo.Type.FullName}&r");
+                ApiLoader.Warn("Custom Items", $"Tried to register an item with an empty name: &3{customItemInfo.Type.FullName}&r");
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(customItemInfo.Description))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register an item with an empty description: &3{customItemInfo.Type.FullName}");
+                ApiLoader.Warn("Custom Items", $"Tried to register an item with an empty description: &3{customItemInfo.Type.FullName}");
                 return false;
             }
 
             if (TryGetRegistered(customItemInfo.Id, out _))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register a duplicate item ID: &3{customItemInfo.Id}&r (&6{customItemInfo.Type.FullName}&r)");
+                ApiLoader.Warn("Custom Items", $"Tried to register a duplicate item ID: &3{customItemInfo.Id}&r (&6{customItemInfo.Type.FullName}&r)");
                 return false;
             }
 
             if (TryGetRegistered(customItemInfo.Name, out _))
             {
-                ExLoader.Warn("Custom Items", $"Tried to register a duplicate item name: &3{customItemInfo.Name}&r (&6{customItemInfo.Type.FullName}&r)");
+                ApiLoader.Warn("Custom Items", $"Tried to register a duplicate item name: &3{customItemInfo.Name}&r (&6{customItemInfo.Type.FullName}&r)");
                 return false;
             }
 
@@ -394,7 +394,7 @@ namespace LabExtended.API.CustomItems
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Custom Items", $"Failed to tick custom item &3{pair.Value.Info.Id}&r (&6{pair.Value.Serial}&r):\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Custom Items", $"Failed to tick custom item &3{pair.Value.Info.Id}&r (&6{pair.Value.Serial}&r):\n{ex.ToColoredString()}");
                 }
             }
         }

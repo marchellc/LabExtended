@@ -192,7 +192,7 @@ namespace LabExtended.API.Modules
                     }
                     catch (Exception ex)
                     {
-                        ExLoader.Error("Transient Modules", $"Module &3{type.Name}&r (&6{module.ModuleId}&r) failed to tick!\n{ex.ToColoredString()}");
+                        ApiLoader.Error("Transient Modules", $"Module &3{type.Name}&r (&6{module.ModuleId}&r) failed to tick!\n{ex.ToColoredString()}");
                     }
                 }
             }

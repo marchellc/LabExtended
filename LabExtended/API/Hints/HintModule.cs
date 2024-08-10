@@ -239,11 +239,11 @@ namespace LabExtended.API.Hints
                 return;
 
             if (ShowDebug)
-                File.WriteAllText($"{ExLoader.Folder}/hint_debug.txt", builtElements);
+                File.WriteAllText($"{ApiLoader.Folder}/hint_debug.txt", builtElements);
 
             if (builtElements.Length >= ushort.MaxValue)
             {
-                ExLoader.Warn("Hint API", $"The completed hint is too big! (current: {builtElements.Length}, max size: {ushort.MaxValue - 1})");
+                ApiLoader.Warn("Hint API", $"The completed hint is too big! (current: {builtElements.Length}, max size: {ushort.MaxValue - 1})");
                 return;
             }
 

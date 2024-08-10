@@ -66,13 +66,13 @@ namespace LabExtended.Core.Ticking
         {
             if (!TryGetHandler(action, out var tick))
             {
-                ExLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{action.Method.GetMemberName()}&r");
+                ApiLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{action.Method.GetMemberName()}&r");
                 return false;
             }
 
             if (tick.IsPaused)
             {
-                ExLoader.Warn("Tick API", $"Cannot pause tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's already paused.");
+                ApiLoader.Warn("Tick API", $"Cannot pause tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's already paused.");
                 return false;
             }
 
@@ -84,13 +84,13 @@ namespace LabExtended.Core.Ticking
         {
             if (!TryGetHandler(handlerId, out var tick))
             {
-                ExLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{handlerId}&r");
+                ApiLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{handlerId}&r");
                 return false;
             }
 
             if (tick.IsPaused)
             {
-                ExLoader.Warn("Tick API", $"Cannot pause tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's already paused.");
+                ApiLoader.Warn("Tick API", $"Cannot pause tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's already paused.");
                 return false;
             }
 
@@ -102,13 +102,13 @@ namespace LabExtended.Core.Ticking
         {
             if (!TryGetHandler(action, out var tick))
             {
-                ExLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{action.Method.GetMemberName()}&r");
+                ApiLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{action.Method.GetMemberName()}&r");
                 return false;
             }
 
             if (!tick.IsPaused)
             {
-                ExLoader.Warn("Tick API", $"Cannot resume tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's not paused.");
+                ApiLoader.Warn("Tick API", $"Cannot resume tick &3{action.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's not paused.");
                 return false;
             }
 
@@ -120,13 +120,13 @@ namespace LabExtended.Core.Ticking
         {
             if (!TryGetHandler(handlerId, out var tick))
             {
-                ExLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{handlerId}&r");
+                ApiLoader.Warn("Tick API", $"Tried to pause an unknown tick: &3{handlerId}&r");
                 return false;
             }
 
             if (!tick.IsPaused)
             {
-                ExLoader.Warn("Tick API", $"Cannot resume tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's not paused.");
+                ApiLoader.Warn("Tick API", $"Cannot resume tick &3{tick.Target.Method.GetMemberName()}&r (&6{tick.Id}&r) - it's not paused.");
                 return false;
             }
 
@@ -147,7 +147,7 @@ namespace LabExtended.Core.Ticking
 
             if (_activeTicks.TryGetFirst(p => p.Target.Method == action.Method && p.Target.Target.IsEqualTo(action.Target), out var activeTick))
             {
-                ExLoader.Warn("Tick API", $"Attempted to register a duplicate tick &3{activeTick.Id}&r (&6{activeTick.Target.Method.GetMemberName()}&r)");
+                ApiLoader.Warn("Tick API", $"Attempted to register a duplicate tick &3{activeTick.Id}&r (&6{activeTick.Target.Method.GetMemberName()}&r)");
                 return null;
             }
 
@@ -170,7 +170,7 @@ namespace LabExtended.Core.Ticking
         {
             if (!_activeTicks.TryGetFirst(p => p.Target.Method == action.Method && p.Target.Target.IsEqualTo(action.Target), out var activeTick))
             {
-                ExLoader.Warn("Tick API", $"Attempted to unregister an unknown tick (&6{action.Method.GetMemberName()}&r)");
+                ApiLoader.Warn("Tick API", $"Attempted to unregister an unknown tick (&6{action.Method.GetMemberName()}&r)");
                 return false;
             }
 
@@ -215,7 +215,7 @@ namespace LabExtended.Core.Ticking
                     }
                     catch (Exception ex)
                     {
-                        ExLoader.Error("Tick API", $"Failed to execute the global tick event:\n{ex.ToColoredString()}");
+                        ApiLoader.Error("Tick API", $"Failed to execute the global tick event:\n{ex.ToColoredString()}");
                     }
                 }
 
@@ -232,7 +232,7 @@ namespace LabExtended.Core.Ticking
                     }
                     catch (Exception ex)
                     {
-                        ExLoader.Error("Tick API", $"Failed to invoke tick &3{pair}&r (&6{pair.Target.Method.GetMemberName()}&r):\n{ex.ToColoredString()}");
+                        ApiLoader.Error("Tick API", $"Failed to invoke tick &3{pair}&r (&6{pair.Target.Method.GetMemberName()}&r):\n{ex.ToColoredString()}");
                     }
 
                     pair.RegisterTickEnd();
@@ -240,7 +240,7 @@ namespace LabExtended.Core.Ticking
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Tick API", $"The tick loop caught an exception:\n{ex.ToColoredString()}");
+                ApiLoader.Error("Tick API", $"The tick loop caught an exception:\n{ex.ToColoredString()}");
             }
         }
     }

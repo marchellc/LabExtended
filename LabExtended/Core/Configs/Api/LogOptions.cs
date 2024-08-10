@@ -1,8 +1,8 @@
 using System.ComponentModel;
 
-namespace LabExtended.Core.Configs
+namespace LabExtended.Core.Configs.Api
 {
-    public class LogConfig
+    public class LogOptions
     {
         [Description("Toggles logging of debug messages.")]
         public bool DebugEnabled { get; set; }

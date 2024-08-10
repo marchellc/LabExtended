@@ -335,7 +335,7 @@ namespace LabExtended.API
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Extended API", $"Failed to update tesla gates!\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Extended API", $"Failed to update tesla gates!\n{ex.ToColoredString()}");
                 }
             }
         }

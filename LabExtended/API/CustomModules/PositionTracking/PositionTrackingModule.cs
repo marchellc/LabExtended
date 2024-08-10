@@ -119,7 +119,7 @@ namespace LabExtended.API.CustomModules.PositionTracking
                 }
                 catch (Exception ex)
                 {
-                    ExLoader.Error("Position Tracking Module", $"Failed to update positional tracking for an object:\n{ex.ToColoredString()}");
+                    ApiLoader.Error("Position Tracking Module", $"Failed to update positional tracking for an object:\n{ex.ToColoredString()}");
                 }
             }
         }

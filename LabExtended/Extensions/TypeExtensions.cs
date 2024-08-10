@@ -158,7 +158,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Extended API", $"Failed to invoke static method &3{method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
+                ApiLoader.Error("Extended API", $"Failed to invoke static method &3{method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
             }
         }
     }

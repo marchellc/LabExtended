@@ -43,7 +43,7 @@ namespace LabExtended.Patches.Events
 
             var str = $"{player.NetId}!{q}";
 
-            ExLoader.Info("Admin Chat", $"Player &3{player.Name}&r (&6{player.UserId}&r) sent a message: &1{q}&r");
+            ApiLoader.Info("Admin Chat", $"Player &3{player.Name}&r (&6{player.UserId}&r) sent a message: &1{q}&r");
             ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"[{player.Name}] {q}", ServerLogs.ServerLogType.AdminChat);
 
             foreach (var ply in ExPlayer.Players)

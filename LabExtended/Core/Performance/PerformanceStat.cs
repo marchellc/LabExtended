@@ -52,12 +52,12 @@ namespace LabExtended.Core.Performance
 
             if (OverallValue.MinValue == -1 || curValue < OverallValue.MinValue)
             {
-                if (OverallValue.MinValue != -1 && OverallValue.MinValueStr != strValue && ExLoader.Config.Api.EnablePerformanceWatcher && !ExLoader.Config.Api.NoLogPerformance.Contains(Id))
+                if (OverallValue.MinValue != -1 && OverallValue.MinValueStr != strValue && ApiLoader.Config.ApiOptions.PerformanceOptions.EnablePerformanceWatcher && !ApiLoader.Config.ApiOptions.PerformanceOptions.NoLogPerformance.Contains(Id))
                 {
                     if (IsDecreaseGood)
-                        ExLoader.Info("Performance Statistics", $"Overall value of &4{Name}&r &2decreased&r to &6{strValue}&r");
+                        ApiLoader.Info("Performance Statistics", $"Overall value of &4{Name}&r &2decreased&r to &6{strValue}&r");
                     else
-                        ExLoader.Warn("Performance Statistics", $"Overall value of &4{Name}&r &1decreased&r to &6{strValue}&r");
+                        ApiLoader.Warn("Performance Statistics", $"Overall value of &4{Name}&r &1decreased&r to &6{strValue}&r");
                 }
 
                 OverallValue.MinValue = curValue;
@@ -69,12 +69,12 @@ namespace LabExtended.Core.Performance
 
             if (OverallValue.MaxValue == -1 || curValue > OverallValue.MaxValue)
             {
-                if (OverallValue.MaxValue != -1 && OverallValue.MaxValueStr != strValue && ExLoader.Config.Api.EnablePerformanceWatcher && !ExLoader.Config.Api.NoLogPerformance.Contains(Id))
+                if (OverallValue.MaxValue != -1 && OverallValue.MaxValueStr != strValue && ApiLoader.Config.ApiOptions.PerformanceOptions.EnablePerformanceWatcher && !ApiLoader.Config.ApiOptions.PerformanceOptions.NoLogPerformance.Contains(Id))
                 {
                     if (IsDecreaseGood)
-                        ExLoader.Warn("Performance Statistics", $"Overall value of &4{Name}&r &1increased&r to &6{strValue}&r");
+                        ApiLoader.Warn("Performance Statistics", $"Overall value of &4{Name}&r &1increased&r to &6{strValue}&r");
                     else
-                        ExLoader.Info("Performance Statistics", $"Overall value of &4{Name}&r &2increased&r to &6{strValue}&r");
+                        ApiLoader.Info("Performance Statistics", $"Overall value of &4{Name}&r &2increased&r to &6{strValue}&r");
                 }
 
                 OverallValue.MaxValue = curValue;

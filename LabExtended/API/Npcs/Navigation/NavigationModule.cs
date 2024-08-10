@@ -154,7 +154,7 @@ namespace LabExtended.API.Npcs.Navigation
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Navigation API", ex);
+                ApiLoader.Error("Navigation API", ex);
             }
         }
     }

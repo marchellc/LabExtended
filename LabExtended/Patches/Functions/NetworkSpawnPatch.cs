@@ -64,7 +64,7 @@ namespace LabExtended.Patches.Functions
             }
             catch (Exception ex)
             {
-                ExLoader.Debug("NetworkSpawnPatch", $"Failed to spawn network identity:\n{ex.ToColoredString()}");
+                ApiLoader.Debug("NetworkSpawnPatch", $"Failed to spawn network identity:\n{ex.ToColoredString()}");
             }
 
             return false;

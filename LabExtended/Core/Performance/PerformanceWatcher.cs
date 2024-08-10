@@ -46,17 +46,17 @@ namespace LabExtended.Core.Performance
 
                 TickManager.SubscribeTick(UpdateStats, TickTimer.GetStatic(1000f), "Performance Watcher");
 
-                ExLoader.Info("Performance API", "Performance Watcher enabled.");
+                ApiLoader.Info("Performance API", "Performance Watcher enabled.");
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Performance API", $"Failed to enable the performance watcher!");
+                ApiLoader.Error("Performance API", $"Failed to enable the performance watcher!");
             }
         }
 
         public static void SubmitReport()
         {
-            if (!ExLoader.Config.Api.EnablePerformanceWatcher)
+            if (!ApiLoader.Config.ApiOptions.PerformanceOptions.EnablePerformanceWatcher)
                 return;
 
             PrevReport = CurReport;
@@ -71,7 +71,7 @@ namespace LabExtended.Core.Performance
 
         private static void UpdateStats()
         {
-            if (!ExLoader.Config.Api.EnablePerformanceWatcher)
+            if (!ApiLoader.Config.ApiOptions.PerformanceOptions.EnablePerformanceWatcher)
                 return;
 
             if (ExPlayer.Count > 0)

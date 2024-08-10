@@ -1,11 +1,12 @@
 using CommandSystem;
 
 using HarmonyLib;
-
+using LabExtended.API;
 using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.Attributes;
-
+using LabExtended.Core.Configs;
+using LabExtended.Core.Configs.Api;
 using LabExtended.Core.Hooking;
 
 using LabExtended.Extensions;
@@ -27,8 +28,21 @@ namespace LabExtended.Core
     /// <summary>
     /// The main class, used as a loader. Can also be used for modules.
     /// </summary>
-    public class ExLoader : API.Modules.Module
+    public class ApiLoader : API.Modules.Module
     {
+        public static ApiOptions ApiOptions => Config?.ApiOptions;
+        public static LogOptions LogOptions => Config?.LogOptions;
+        public static VoiceOptions VoiceOptions => Config?.VoiceOptions;
+        public static RoundOptions RoundOptions => Config?.RoundOptions;
+        public static PerformanceOptions PerformanceOptions => Config?.ApiOptions?.PerformanceOptions;
+        public static ThreadedVoiceOptions ThreadedVoiceOptions => Config?.VoiceOptions?.ThreadedVoiceOptions;
+        public static PositionSynchronizerOptions PositionSynchronizerOptions => Config?.ApiOptions?.PositionSynchronizerOptions;
+
+        public const int ApiMajor = 1;
+        public const int ApiMinor = 0;
+        public const int ApiBuild = 0;
+        public const int ApiPatch = 0;
+
         /// <summary>
         /// Gets the server's version.
         /// </summary>
@@ -37,7 +51,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the API version.
         /// </summary>
-        public static Version ApiVersion { get; } = new Version(1, 0, 0);
+        public static Version ApiVersion { get; } = new Version(ApiMajor, ApiMinor, ApiBuild, ApiPatch);
 
         /// <summary>
         /// Gets the API's Assembly.
@@ -45,9 +59,9 @@ namespace LabExtended.Core
         public static Assembly Assembly { get; private set; }
 
         /// <summary>
-        /// Gets the active <see cref="ExLoader"/> instance.
+        /// Gets the active <see cref="ApiLoader"/> instance.
         /// </summary>
-        public static ExLoader Loader { get; private set; }
+        public static ApiLoader Loader { get; private set; }
 
         /// <summary>
         /// Gets the API's plugin folder.
@@ -62,12 +76,12 @@ namespace LabExtended.Core
         /// <summary>
         /// The <see cref="HarmonyLib.Harmony"/> instance.
         /// </summary>
-        public static Harmony Harmony;
+        public static volatile Harmony Harmony;
 
         /// <summary>
-        /// The <see cref="ExLoaderConfig"/> instance.
+        /// The <see cref="Configs.Config"/> instance.
         /// </summary>
-        public static ExLoaderConfig Config;
+        public static volatile Config Config;
 
         /// <summary>
         /// Gets the API's server version compatibility.
@@ -75,11 +89,6 @@ namespace LabExtended.Core
         public static readonly VersionRange? GameCompatibility = new VersionRange(new Version(13, 5, 1));
 
         private bool _pluginsLoaded = false;
-
-        /// <summary>
-        /// Creates a new <see cref="ExLoader"/> instance. This is included only to implement the base constructor of <see cref="Module"/>.
-        /// </summary>
-        public ExLoader() : base() { }
 
         /// <summary>
         /// Loads all plugins.
@@ -91,9 +100,9 @@ namespace LabExtended.Core
 
             try
             {
-                typeof(ExLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
+                typeof(ApiLoader).Assembly.InvokeStaticMethods(m => m.HasAttribute<OnLoadAttribute>());
 
-                foreach (var type in typeof(ExLoader).Assembly.GetTypes())
+                foreach (var type in typeof(ApiLoader).Assembly.GetTypes())
                 {
                     if (type.IsClass && typeof(ICommand).IsAssignableFrom(type))
                     {
@@ -189,12 +198,12 @@ namespace LabExtended.Core
                     return;
                 }
 
-                Loader = new ExLoader();
+                Loader = new ApiLoader();
 
                 Harmony = new Harmony($"com.extended.loader.{DateTime.Now.Ticks}");
                 Harmony.PatchAll();
 
-                if (Config.Logging.DebugEnabled)
+                if (LogOptions != null && LogOptions.DebugEnabled)
                     ServerConsole.AddLog("\n" + YamlParser.Serializer.Serialize(Config), ConsoleColor.Cyan);
 
                 LogPatch.OnLogging += InternalHandleLog;
@@ -203,6 +212,22 @@ namespace LabExtended.Core
             {
                 Error("Extended Loader", $"A general loading error has occurred!\n{ex.ToColoredString()}");
             }
+        }
+
+        public static void RequireCameraNpc()
+        {
+            if (!ApiOptions.EnableCameraNpc)
+            {
+                Warn("API", $"A plugin has requested to enable the camera NPC for SCP-079 cameras, but this feature is disabled in config! (&6enable_camera_npc&r)");
+                return;
+            }
+
+            if (Camera.m_Required)
+                return;
+
+            Camera.m_Required = true;
+
+            Debug("API", $"A plugin has enabled the camera NPC feature.");
         }
 
         /// <summary>
@@ -216,7 +241,7 @@ namespace LabExtended.Core
                 return;
             }
 
-            Config = YamlParser.Deserializer.Deserialize<ExLoaderConfig>(File.ReadAllText(ConfigPath));
+            Config = YamlParser.Deserializer.Deserialize<Config>(File.ReadAllText(ConfigPath));
         }
 
         /// <summary>
@@ -224,7 +249,7 @@ namespace LabExtended.Core
         /// </summary>
         public static void SaveConfig()
         {
-            Config ??= new ExLoaderConfig();
+            Config ??= new Config();
 
             File.WriteAllText(ConfigPath, YamlParser.Serializer.Serialize(Config));
         }
@@ -286,19 +311,19 @@ namespace LabExtended.Core
 
         private static bool CanDebug(string source)
         {
-            if (Config is null)
+            if (Config is null || Config.LogOptions is null)
                 return true;
 
             if (!string.IsNullOrWhiteSpace(source))
             {
-                if (Config.Logging.DisabledSources.Contains(source))
+                if (Config.LogOptions.DisabledSources.Contains(source))
                     return false;
 
-                if (Config.Logging.EnabledSources.Contains(source))
+                if (Config.LogOptions.EnabledSources.Contains(source))
                     return true;
             }
 
-            return Config.Logging.DebugEnabled;
+            return Config.LogOptions.DebugEnabled;
         }
 
         private static void InternalHandleLog(string log)

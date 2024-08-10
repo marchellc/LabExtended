@@ -9,6 +9,6 @@
         /// EntryPoint method for the ModuleInit package.
         /// </summary>
         public static void Initialize()
-            => ExLoader.Load();
+            => ApiLoader.Load();
     }
 }

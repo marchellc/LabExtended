@@ -17,72 +17,72 @@ namespace LabExtended.API.Collections
     {
         public struct PlayerEnumerator : IEnumerator<ExPlayer>
         {
-            private int _index;
-            private IEnumerable<uint> _netIds;
-            private List<ExPlayer> _players;
+            private int m_Index;
+            private List<ExPlayer> m_PlayerList;
+            private IEnumerable<uint> m_NetIdList;
 
             public PlayerEnumerator(IEnumerable<uint> networkIds)
             {
-                _index = 0;
-                _netIds = networkIds;
-                _players = null;
+                m_Index = 0;
+                m_NetIdList = networkIds;
+                m_PlayerList = null;
             }
 
             public ExPlayer Current
             {
                 get
                 {
-                    if (_index < 0 || _index >= _players.Count)
+                    if (m_Index < 0 || m_Index >= m_PlayerList.Count)
                         return null;
 
-                    return _players[_index];
+                    return m_PlayerList[m_Index];
                 }
             }
 
             object IEnumerator.Current => Current;
 
             public void Reset()
-                => _index = 0;
+                => m_Index = 0;
 
             public void Dispose()
             {
-                ListPool<ExPlayer>.Shared.Return(_players);
+                ListPool<ExPlayer>.Shared.Return(m_PlayerList);
 
-                _players = null;
-                _netIds = null;
+                m_PlayerList = null;
+                m_NetIdList = null;
 
-                _index = 0;
+                m_Index = 0;
             }
 
             public bool MoveNext()
             {
-                if (_players is null)
+                if (m_PlayerList is null)
                 {
-                    var netIds = _netIds;
+                    var netIds = m_NetIdList;
 
-                    _players = ListPool<ExPlayer>.Shared.Rent(ExPlayer.Players.Where(x => netIds.Contains(x.NetId)));
-                    _index = 0;
+                    m_PlayerList = ListPool<ExPlayer>.Shared.Rent(ExPlayer.Players.Where(x => netIds.Contains(x.NetId)));
+                    m_Index = 0;
 
                     return true;
                 }
 
-                if (_index + 1 >= _players.Count)
+                if (m_Index + 1 >= m_PlayerList.Count)
                     return false;
 
-                _index++;
+                m_Index++;
                 return true;
             }
         }
 
-        internal static readonly LockedHashSet<PlayerCollection> _handlers = new LockedHashSet<PlayerCollection>(); // A list of all handlers, used for player leave.
+        internal static readonly LockedHashSet<PlayerCollection> m_Handlers = new LockedHashSet<PlayerCollection>(); // A list of all handlers, used for player leave.
 
         public PlayerCollection()
         {
-            _netIdList = new LockedHashSet<uint>(50);
-            _handlers.Add(this);
+            m_List = new LockedHashSet<uint>(50);
+            m_Handlers.Add(this);
         }
 
-        internal LockedHashSet<uint> _netIdList;
+        internal LockedHashSet<uint> m_List;
 
         /// <summary>
         /// Adds a specific network ID.
@@ -90,25 +90,25 @@ namespace LabExtended.API.Collections
         /// <param name="netId">The network ID to add.</param>
         /// <returns><see langword="true"/> if it was succesfully added, otherwise <see langword="false"/>.</returns>
         public bool Add(uint netId)
-            => _netIdList.Add(netId);
+            => m_List.Add(netId);
 
         public bool Add(ReferenceHub hub)
-            => hub != null && _netIdList.Add(hub.netId);
+            => hub != null && m_List.Add(hub.netId);
 
         public bool Add(Player player)
-            => player != null && _netIdList.Add(player.NetworkId);
+            => player != null && m_List.Add(player.NetworkId);
 
         public bool Add(ExPlayer player)
-            => player != null && _netIdList.Add(player.NetId);
+            => player != null && m_List.Add(player.NetId);
 
         public bool Add(NetworkIdentity identity)
-            => identity != null && _netIdList.Add(identity.netId);
+            => identity != null && m_List.Add(identity.netId);
 
         public void AddAll()
-            => _netIdList.AddRange(ExPlayer.Players.Select(p => p.NetId));
+            => m_List.AddRange(ExPlayer.Players.Select(p => p.NetId));
 
         public void AddRange(IEnumerable<ExPlayer> players)
-            => _netIdList.AddRange(players.Select(p => p.NetId));
+            => m_List.AddRange(players.Select(p => p.NetId));
 
         public int AddWhere(Func<ExPlayer, bool> predicate)
         {
@@ -122,7 +122,7 @@ namespace LabExtended.API.Collections
                 if (!predicate(player))
                     continue;
 
-                if (_netIdList.Add(player.NetId))
+                if (m_List.Add(player.NetId))
                     count++;
             }
 
@@ -130,19 +130,19 @@ namespace LabExtended.API.Collections
         }
 
         public bool Remove(uint netId)
-            => _netIdList.Remove(netId);
+            => m_List.Remove(netId);
 
         public bool Remove(ReferenceHub hub)
-            => hub != null && _netIdList.Remove(hub.netId);
+            => hub != null && m_List.Remove(hub.netId);
 
         public bool Remove(Player player)
-            => player != null && _netIdList.Remove(player.NetworkId);
+            => player != null && m_List.Remove(player.NetworkId);
 
         public bool Remove(ExPlayer player)
-            => player != null && _netIdList.Remove(player.NetId);
+            => player != null && m_List.Remove(player.NetId);
 
         public bool Remove(NetworkIdentity identity)
-            => identity != null && _netIdList.Remove(identity.netId);
+            => identity != null && m_List.Remove(identity.netId);
 
         public int RemoveWhere(Func<ExPlayer, bool> predicate)
         {
@@ -156,7 +156,7 @@ namespace LabExtended.API.Collections
                 if (!predicate(player))
                     continue;
 
-                if (_netIdList.Remove(player.NetId))
+                if (m_List.Remove(player.NetId))
                     count++;
             }
 
@@ -164,31 +164,31 @@ namespace LabExtended.API.Collections
         }
 
         public bool Contains(uint netId)
-            => _netIdList.Contains(netId);
+            => m_List.Contains(netId);
 
         public bool Contains(ReferenceHub hub)
-            => hub != null && _netIdList.Contains(hub.netId);
+            => hub != null && m_List.Contains(hub.netId);
 
         public bool Contains(Player player)
-            => player != null && _netIdList.Contains(player.NetworkId);
+            => player != null && m_List.Contains(player.NetworkId);
 
         public bool Contains(ExPlayer player)
-            => player != null && _netIdList.Contains(player.NetId);
+            => player != null && m_List.Contains(player.NetId);
 
         public bool Contains(NetworkIdentity identity)
-            => identity != null && _netIdList.Contains(identity.netId);
+            => identity != null && m_List.Contains(identity.netId);
 
         public void ForEach(Action<ExPlayer> action)
         {
             if (action is null)
                 return;
 
-            if (_netIdList.Count < 1)
+            if (m_List.Count < 1)
                 return;
 
             foreach (var player in ExPlayer.Players)
             {
-                if (!_netIdList.Contains(player.NetId))
+                if (!m_List.Contains(player.NetId))
                     continue;
 
                 action(player);
@@ -200,12 +200,12 @@ namespace LabExtended.API.Collections
             if (action is null || predicate is null)
                 return;
 
-            if (_netIdList.Count < 1)
+            if (m_List.Count < 1)
                 return;
 
             foreach (var player in ExPlayer.Players)
             {
-                if (!_netIdList.Contains(player.NetId))
+                if (!m_List.Contains(player.NetId))
                     continue;
 
                 if (!predicate(player))
@@ -216,18 +216,18 @@ namespace LabExtended.API.Collections
         }
 
         public void Clear()
-            => _netIdList.Clear();
+            => m_List.Clear();
 
         public void Dispose()
         {
-            _netIdList.Clear();
-            _handlers.Remove(this);
+            m_List.Clear();
+            m_Handlers.Remove(this);
         }
 
         public IEnumerator<ExPlayer> GetEnumerator()
-            => new PlayerEnumerator(_netIdList);
+            => new PlayerEnumerator(m_List);
 
         IEnumerator IEnumerable.GetEnumerator()
-            => new PlayerEnumerator(_netIdList);
+            => new PlayerEnumerator(m_List);
     }
 }

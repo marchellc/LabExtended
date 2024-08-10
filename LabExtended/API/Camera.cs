@@ -18,6 +18,8 @@ namespace LabExtended.API
 {
     public class Camera : Wrapper<Scp079Camera>
     {
+        internal static bool m_Required;
+
         #region Types
         private static readonly LockedDictionary<string, CameraType> _cameraTypes = new LockedDictionary<string, CameraType>()
         {
@@ -286,7 +288,7 @@ namespace LabExtended.API
 
         internal static void OnRoundStart()
         {
-            if (!ExLoader.Config.Api.EnableCameraNpc)
+            if (!m_Required)
                 return;
 
             NpcHandler.Spawn("Camera API NPC", RoleTypeId.Scp079, null, null, null, npc =>

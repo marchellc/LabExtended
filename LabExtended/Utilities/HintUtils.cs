@@ -100,7 +100,7 @@ namespace LabExtended.Utilities
             bool tagEnded = true;
 
             if (HintModule.ShowDebug)
-                ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset}");
+                ApiLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset}");
 
             foreach (Match match in matches)
             {
@@ -110,14 +110,14 @@ namespace LabExtended.Utilities
                 var text = match.Value;
 
                 if (HintModule.ShowDebug)
-                    ExLoader.Debug("Hint API - GetMessages()", $"Regex Match: {match.Value} ({match.Index})");
+                    ApiLoader.Debug("Hint API - GetMessages()", $"Regex Match: {match.Value} ({match.Index})");
 
                 if (text == "\n")
                 {
                     ManageSize(ref line, out biggestPixelSize, out pixelSize, out tagEnded);
 
                     if (HintModule.ShowDebug)
-                        ExLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset} size={pixelSize}");
+                        ApiLoader.Debug("Hint API - GetMessages()", $"vOffset={vOffset} size={pixelSize}");
 
                     if (messages.Count > 0)
                     {
@@ -127,7 +127,7 @@ namespace LabExtended.Utilities
                     messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
                     if (HintModule.ShowDebug)
-                        ExLoader.Debug("Hint API - GetMessages()", $"[TEXT == NEW LINE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
+                        ApiLoader.Debug("Hint API - GetMessages()", $"[TEXT == NEW LINE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
 
                     line = tagEnded ? "" : $"<size={pixelSize}>";
                     avgCharWidth = AvgCharWidth(pixelSize);
@@ -157,7 +157,7 @@ namespace LabExtended.Utilities
                         messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
                         if (HintModule.ShowDebug)
-                            ExLoader.Debug("Hint API - GetMessages()", $"[ELSE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
+                            ApiLoader.Debug("Hint API - GetMessages()", $"[ELSE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
                     }
 
                     while (text.Length * avgCharWidth > 100f)
@@ -175,7 +175,7 @@ namespace LabExtended.Utilities
 
 
                         if (HintModule.ShowDebug)
-                            ExLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
+                            ApiLoader.Debug("Hint API - GetMessages()", $"[WHILE] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
 
                         text = text.Substring(cutIndex);
                     }
@@ -186,7 +186,7 @@ namespace LabExtended.Utilities
             }
 
             if (HintModule.ShowDebug)
-                ExLoader.Debug("Hint API - GetMessages()", $"Finish line={line} size={pixelSize}");
+                ApiLoader.Debug("Hint API - GetMessages()", $"Finish line={line} size={pixelSize}");
 
             if (!string.IsNullOrWhiteSpace(line))
             {
@@ -198,7 +198,7 @@ namespace LabExtended.Utilities
                 messages.Add(new HintData(line, biggestPixelSize, vOffset, ++clock));
 
                 if (HintModule.ShowDebug)
-                    ExLoader.Debug("Hint API - GetMessages()", $"[LAST IF] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
+                    ApiLoader.Debug("Hint API - GetMessages()", $"[LAST IF] Added data line={line} size={biggestPixelSize} vOffset={vOffset} id={clock}");
             }
         }
     }

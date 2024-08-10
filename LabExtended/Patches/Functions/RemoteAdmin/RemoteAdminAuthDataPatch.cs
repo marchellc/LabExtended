@@ -19,7 +19,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
         {
             try
             {
-                ExLoader.Debug("Remote Admin API", $"RA request: &1{data}&r");
+                ApiLoader.Debug("Remote Admin API", $"RA request: &1{data}&r");
 
                 if (!ExPlayer.TryGet(sender, out var player))
                     return true;
@@ -34,7 +34,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (array.Length != 1)
                 {
-                    ExLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
+                    ApiLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
                     return false;
                 }
 
@@ -58,7 +58,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Remote Admin API", $"An error occured while handling RA Player request:\n{ex.ToColoredString()}");
+                ApiLoader.Error("Remote Admin API", $"An error occured while handling RA Player request:\n{ex.ToColoredString()}");
                 return true;
             }
         }

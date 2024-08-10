@@ -259,20 +259,20 @@ namespace LabExtended.API.Containers
             if (module is null)
                 throw new Exception($"The player's movement module is null!");
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"Writing rotation for &3{Player.Name}&r (&6{Player.UserId}&r): {horizontal}H {vertical}V");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"Writing rotation for &3{Player.Name}&r (&6{Player.UserId}&r): {horizontal}H {vertical}V");
 
             Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7, out var b8);
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"syncState={module.SyncMovementState} b1={b1} b2={b2} b3={b3} b4={b4} b5={b5} bit={module.IsGrounded}");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"syncState={module.SyncMovementState} b1={b1} b2={b2} b3={b3} b4={b4} b5={b5} bit={module.IsGrounded}");
 
             var b = Misc.BoolsToByte(b1, b2, b3, b4, b5, true, writePosition, module.IsGrounded);
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"b={b}");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"b={b}");
 
             var pos = positionToSend.HasValue ? positionToSend.Value : Player.Position.Relative;
             var id = Player.Hub.Network_playerId;
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"Writing data, pos.WaypointId={pos.WaypointId} id={id.Value}");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"Writing data, pos.WaypointId={pos.WaypointId} id={id.Value}");
 
             writer.WriteUShort(2); // Data count
 
@@ -285,7 +285,7 @@ namespace LabExtended.API.Containers
             writer.WriteUShort(horizontal++);
             writer.WriteUShort(vertical++);
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"Written rotations, {horizontal}H {vertical}V");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written rotations, {horizontal}H {vertical}V");
 
             writer.WriteRecyclablePlayerId(id);
             writer.WriteByte(b);
@@ -296,8 +296,8 @@ namespace LabExtended.API.Containers
             writer.WriteUShort(--horizontal);
             writer.WriteUShort(--vertical);
 
-            ExLoader.Debug("RoleContainer.InternalWrite", $"Written rotations (2), {horizontal}H {vertical}V");
-            ExLoader.Debug("RoleContainer.InternalWrite", $"Written data, size={writer.buffer.Length}");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written rotations (2), {horizontal}H {vertical}V");
+            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written data, size={writer.buffer.Length}");
         }
 
         /// <summary>

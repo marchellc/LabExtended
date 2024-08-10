@@ -12,7 +12,7 @@ namespace LabExtended.Commands.Parsing
             error = string.Empty;
             blackbox = $"Parsing axis from {parts.Length} parts, {axis.Count} defined.";
 
-            ExLoader.Debug("AxisParser.ParseAxis", blackbox);
+            ApiLoader.Debug("AxisParser.ParseAxis", blackbox);
 
             if (parts.Length == 1 && !parts[0].Any(x => char.IsLetter(x) && x != ',' && x != '.' && !char.IsNumber(x)))
             {
@@ -20,7 +20,7 @@ namespace LabExtended.Commands.Parsing
 
                 blackbox = $"Detected singular part: {part}";
 
-                ExLoader.Debug("AxisParser.ParseAxis", blackbox);
+                ApiLoader.Debug("AxisParser.ParseAxis", blackbox);
 
                 if (!float.TryParse(part, out var axisValue))
                 {
@@ -45,7 +45,7 @@ namespace LabExtended.Commands.Parsing
 
                 blackbox = $"Attempting to parse index={i} ({part})";
 
-                ExLoader.Debug("AxisParser.ParseAxis", blackbox);
+                ApiLoader.Debug("AxisParser.ParseAxis", blackbox);
 
                 char? axisName = null;
 
@@ -71,7 +71,7 @@ namespace LabExtended.Commands.Parsing
 
                 blackbox = $"Selected numbers {numbersStr}";
 
-                ExLoader.Debug("AxisParser.ParseAxis", blackbox);
+                ApiLoader.Debug("AxisParser.ParseAxis", blackbox);
 
                 if (!float.TryParse(numbersStr, out var axisValue))
                 {
@@ -81,7 +81,7 @@ namespace LabExtended.Commands.Parsing
 
                 blackbox = $"Parsed axis {axisName.Value}: {axisValue}";
 
-                ExLoader.Debug("AxisParser.ParseAxis", blackbox);
+                ApiLoader.Debug("AxisParser.ParseAxis", blackbox);
 
                 axis[axisName.Value] = axisValue;
             }

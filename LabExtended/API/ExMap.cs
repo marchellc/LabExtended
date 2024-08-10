@@ -386,7 +386,7 @@ namespace LabExtended.API
                     _cams.Add(new Camera(cam));
                 }
 
-                ExLoader.Debug("Map API", $"Finished populating objects, cache state:\n" +
+                ApiLoader.Debug("Map API", $"Finished populating objects, cache state:\n" +
                     $"Tesla {_gates.Count}\n" +
                     $"Elevator {_elevators.Count}\n" +
                     $"Airlock {_airlocks.Count}\n" +
@@ -398,7 +398,7 @@ namespace LabExtended.API
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Map API", $"Map generation failed!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Map API", $"Map generation failed!\n{ex.ToColoredString()}");
             }
         }
 
@@ -419,7 +419,7 @@ namespace LabExtended.API
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Map API", ex);
+                ApiLoader.Error("Map API", ex);
             }
         }
     }

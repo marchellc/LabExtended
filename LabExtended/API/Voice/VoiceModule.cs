@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Modules;
+﻿using LabExtended.API.Modules;
 using LabExtended.API.Voice.Modifiers.Pitch;
 
 using LabExtended.Core.Hooking;
@@ -9,6 +8,10 @@ using LabExtended.Core.Ticking;
 
 using VoiceChat;
 using VoiceChat.Networking;
+using LabExtended.API.Voice.Threading;
+using LabExtended.Utilities;
+using Mirror;
+using LabExtended.Core;
 
 namespace LabExtended.API.Voice
 {
@@ -17,7 +20,7 @@ namespace LabExtended.API.Voice
         public static event Action<ExPlayer> OnStartedSpeaking;
         public static event Action<ExPlayer, DateTime, TimeSpan, IReadOnlyList<byte[]>> OnStoppedSpeaking;
 
-        private static readonly LockedHashSet<VoiceModifier> _globalModifiers = new LockedHashSet<VoiceModifier>();
+        private static volatile HashSet<VoiceModifier> _globalModifiers = new HashSet<VoiceModifier>();
 
         public static float GlobalVoicePitch { get; set; } = 1f;
 
@@ -30,6 +33,8 @@ namespace LabExtended.API.Voice
 
         public IReadOnlyList<VoiceModifier> Modifiers => _modifiers;
         public IReadOnlyList<VoiceProfile> Profiles => _profiles;
+
+        public static IReadOnlyCollection<VoiceModifier> GlobalModifiers => _globalModifiers;
 
         public override TickTimer TickTimer { get; } = TickTimer.None;
 
@@ -209,18 +214,18 @@ namespace LabExtended.API.Voice
 
             foreach (var modifier in _globalModifiers)
             {
-                if (!modifier.IsEnabled)
+                if (!modifier.IsEnabled || modifier.IsThreaded)
                     continue;
 
-                modifier.Modify(ref message, this);
+                modifier.ModifySafe(ref message, this);
             }
 
             foreach (var modifier in _modifiers)
             {
-                if (!modifier.IsEnabled)
+                if (!modifier.IsEnabled || modifier.IsThreaded)
                     continue;
 
-                modifier.Modify(ref message, this);
+                modifier.ModifySafe(ref message, this);
             }
 
             var sendChannel = CastParent.Role.VoiceModule.ValidateSend(message.Channel);
@@ -234,6 +239,46 @@ namespace LabExtended.API.Voice
 
                 message.Channel = channel;
                 player.Connection.Send(message);
+            }
+        }
+
+        internal void ReceiveThreaded(ThreadedVoicePacket threadedVoicePacket)
+        {
+            var channelPos = 0;
+            var sendChannel = CastParent.Role.VoiceModule.ValidateSend(threadedVoicePacket.Channel);
+
+            ApiLoader.Debug("Voice API", $"Writing threaded voice message sender={CastParent.Name} channel={threadedVoicePacket.Channel} size={threadedVoicePacket.Size} length={threadedVoicePacket.Data.Length}");
+
+            var msgBuffer = NetworkUtils.WriteSegment(writer => NetworkUtils.Pack<VoiceMessage>(writer, () =>
+            {
+                writer.WriteRecyclablePlayerId(CastParent.Hub.Network_playerId);
+                writer.WriteByte((byte)threadedVoicePacket.Channel);
+
+                channelPos = writer.Position;
+
+                writer.WriteUShort((ushort)threadedVoicePacket.Size);
+                writer.WriteBytes(threadedVoicePacket.Data, 0, threadedVoicePacket.Size);
+            }));
+
+            ApiLoader.Debug("Voice API", $"ReceiveThreaded | msgBuffer=({msgBuffer.Count} / {msgBuffer.Offset} / {msgBuffer.Array.Length}) channelPos={channelPos}");
+
+            var prevChannel = sendChannel;
+
+            for (int i = 0; i < ExPlayer._players.Count; i++)
+            {
+                var player = ExPlayer._players[i];
+                var channel = GetChannel(player, sendChannel);
+
+                if (channel is VoiceChatChannel.None)
+                    continue;
+
+                if (channel != prevChannel)
+                {
+                    prevChannel = channel;
+                    msgBuffer.SetIndex(channelPos, (byte)channel);
+                }
+
+                player.Connection.Send(msgBuffer);
             }
         }
 

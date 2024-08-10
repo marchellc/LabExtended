@@ -43,7 +43,7 @@ namespace LabExtended.Core.Performance
                 builder.AppendLine($" - &1Overall Max&r: &6{stat.OverallValue.MaxValueStr}&r (&3{stat.OverallValue.PlayerCountMax} player(s)&r | &3{stat.OverallValue.TimeMax}&r))");
             }
 
-            ExLoader.Info("Performance Log", StringBuilderPool.Shared.ToStringReturn(builder));
+            ApiLoader.Info("Performance Log", StringBuilderPool.Shared.ToStringReturn(builder));
         }
     }
 }

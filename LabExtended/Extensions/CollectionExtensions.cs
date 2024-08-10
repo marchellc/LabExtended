@@ -4,6 +4,9 @@ namespace LabExtended.Extensions
 {
     public static class CollectionExtensions
     {
+        public static void SetIndex<T>(this ArraySegment<T> segment, int index, T value)
+            => segment.Array[index] = value;
+
         public static int FindIndex<T>(this T[] array, Predicate<T> predicate)
             => Array.FindIndex(array, predicate);
 

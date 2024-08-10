@@ -133,7 +133,7 @@ namespace LabExtended.API.Containers
                     }
                     else
                     {
-                        ExLoader.Warn("Effect API", $"No properties are defined for effect: {type.FullName}");
+                        ApiLoader.Warn("Effect API", $"No properties are defined for effect: {type.FullName}");
                     }
                 }
 
@@ -142,14 +142,14 @@ namespace LabExtended.API.Containers
 
                 if (props.Count != _properties.Count())
                 {
-                    ExLoader.Warn("Effect API", $"Failed to set some effect properties (total={_properties.Count()} / set={props.Count})");
+                    ApiLoader.Warn("Effect API", $"Failed to set some effect properties (total={_properties.Count()} / set={props.Count})");
 
                     foreach (var prop in _properties)
                     {
                         if (props.Contains(prop))
                             continue;
 
-                        ExLoader.Warn("Effect API", $"Missing effect for property: {prop.GetMemberName()}");
+                        ApiLoader.Warn("Effect API", $"Missing effect for property: {prop.GetMemberName()}");
                     }
                 }
 
@@ -157,7 +157,7 @@ namespace LabExtended.API.Containers
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Effect API", $"An error occured while setting up the effect container!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Effect API", $"An error occured while setting up the effect container!\n{ex.ToColoredString()}");
             }
         }
 

@@ -679,7 +679,7 @@ namespace LabExtended.API.Npcs
                     }
                     else
                     {
-                        ExLoader.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to NPC &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
+                        ApiLoader.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to NPC &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
                     }
                 }
             }

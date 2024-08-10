@@ -40,7 +40,7 @@ namespace LabExtended.Patches.Npcs
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"An error ocurred in the game's verification processing loop!\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"An error ocurred in the game's verification processing loop!\n{ex.ToColoredString()}");
             }
 
             return false;

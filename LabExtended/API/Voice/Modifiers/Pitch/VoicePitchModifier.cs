@@ -2,6 +2,7 @@
 using VoiceChat.Codec;
 
 using VoiceChat.Networking;
+using LabExtended.API.Voice.Threading;
 
 namespace LabExtended.API.Voice.Modifiers.Pitch
 {
@@ -25,18 +26,19 @@ namespace LabExtended.API.Voice.Modifiers.Pitch
         #endregion
 
         public override bool IsEnabled => true;
+        public override bool IsThreaded => true;
 
         /// <summary>
         /// Gets the <see cref="OpusEncoder"/>.
         /// </summary>
-        public OpusEncoder Encoder { get; } = new OpusEncoder(OpusApplicationType.Voip);
+        public volatile OpusEncoder Encoder = new OpusEncoder(OpusApplicationType.Voip);
 
         /// <summary>
         /// Gets the <see cref="OpusDecoder"/>.
         /// </summary>
-        public OpusDecoder Decoder { get; } = new OpusDecoder();
+        public volatile OpusDecoder Decoder = new OpusDecoder();
 
-        public override void Modify(ref VoiceMessage message, VoiceModule module)
+        public override void ModifySafe(ref VoiceMessage message, VoiceModule module)
         {
             var pitch = VoiceModule.GlobalVoicePitch;
 
@@ -53,6 +55,25 @@ namespace LabExtended.API.Voice.Modifiers.Pitch
             PitchShift(pitch, 480U, 48000, data);
 
             message.DataLength = Encoder.Encode(data, message.Data, 480);
+        }
+
+        public override void ModifyThreaded(ref ThreadedVoicePacket packet)
+        {
+            var pitch = VoiceModule.GlobalVoicePitch;
+
+            if (pitch == 1f)
+                pitch = packet.Speaker.Voice.VoicePitch;
+
+            if (pitch == 1f)
+                return;
+
+            var data = new float[48000];
+
+            Decoder.Decode(packet.Data, packet.Size, data);
+
+            PitchShift(pitch, 480U, 48000, data);
+
+            packet.Size = Encoder.Encode(data, packet.Data, 480);
         }
 
         /// <summary>

@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
         {
             try
             {
-                ExLoader.Debug("Remote Admin API", $"RA request: &1{data}&r");
+                ApiLoader.Debug("Remote Admin API", $"RA request: &1{data}&r");
 
                 if (!ExPlayer.TryGet(sender, out var player))
                     return true;
@@ -32,13 +32,13 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 {
                     player.RemoteAdmin.SendObjectHelp();
 
-                    ExLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
+                    ApiLoader.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
                     return false;
                 }
 
                 if (result == 1 && !player.IsNorthwoodStaff && !player.Hub.authManager.BypassBansFlagSet && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
                 {
-                    ExLoader.Debug("Remote Admin API", $"Missing permissions");
+                    ApiLoader.Debug("Remote Admin API", $"Missing permissions");
                     return false;
                 }
 
@@ -46,13 +46,13 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 {
                     player.RemoteAdmin.SendObjectHelp();
 
-                    ExLoader.Debug("Remote Admin API", $"Failed to split {array[1]}");
+                    ApiLoader.Debug("Remote Admin API", $"Failed to split {array[1]}");
                     return false;
                 }
 
                 if (!RemoteAdminButtons.TryGetButton(result is 1 ? RemoteAdminButtonType.RequestIp : RemoteAdminButtonType.Request, out var dataButton))
                 {
-                    ExLoader.Debug("Remote Admin API", $"Unknown button");
+                    ApiLoader.Debug("Remote Admin API", $"Unknown button");
                     return true;
                 }
 
@@ -62,7 +62,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 {
                     if (!int.TryParse(arg.Remove("."), out var id))
                     {
-                        ExLoader.Debug("Remote Admin API", $"Failed to parse: {arg.Remove(".")}");
+                        ApiLoader.Debug("Remote Admin API", $"Failed to parse: {arg.Remove(".")}");
                         continue;
                     }
 
@@ -76,7 +76,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Remote Admin API", $"An error occured while handling RA Player request:\n{ex.ToColoredString()}");
+                ApiLoader.Error("Remote Admin API", $"An error occured while handling RA Player request:\n{ex.ToColoredString()}");
                 return true;
             }
         }

@@ -38,7 +38,7 @@ namespace LabExtended.Events
             if (ReferenceHub.TryGetHostHub(out var hostHub))
                 ExPlayer._hostPlayer = new ExPlayer(hostHub);
             else
-                ExLoader.Warn("Player API", $"Failed to fetch the host player.");
+                ApiLoader.Warn("Player API", $"Failed to fetch the host player.");
 
             ExRound.RoundNumber++;
 
@@ -50,8 +50,8 @@ namespace LabExtended.Events
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
 
-            if (ExLoader.Config.Api.EnableProfilerLogs)
-                ProfilerMarker.LogAllMarkers(ExLoader.Config.Logging.ProfilingAsDebug);
+            if (ApiLoader.Config.ApiOptions.PerformanceOptions.EnableProfilerLogs)
+                ProfilerMarker.LogAllMarkers(ApiLoader.Config.LogOptions.ProfilingAsDebug);
         }
 
         internal static void InternalHandleRoundRestart()
@@ -96,11 +96,11 @@ namespace LabExtended.Events
 
                         player.OnModuleAdded(module);
 
-                        ExLoader.Debug("Modules API", $"Re-added transient module &3{type.Name}&r (&6{module.ModuleId}&r) to player &3{player.Name}&r (&6{player.UserId}&r)!");
+                        ApiLoader.Debug("Modules API", $"Re-added transient module &3{type.Name}&r (&6{module.ModuleId}&r) to player &3{player.Name}&r (&6{player.UserId}&r)!");
                     }
                     else
                     {
-                        ExLoader.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to player &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
+                        ApiLoader.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to player &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
                     }
                 }
             }
@@ -117,23 +117,23 @@ namespace LabExtended.Events
             ExPlayer._players.Add(player);
             ExPlayer._allPlayers.Add(player);
 
-            ExLoader.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address}&r!");
+            ApiLoader.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address}&r!");
         }
 
         internal static void InternalHandlePlayerLeave(ExPlayer player)
         {
             if (ExRound.State is RoundState.InProgress || ExRound.State is RoundState.WaitingForPlayers)
             {
-                if (ExLoader.Config.Api.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
+                if (ApiLoader.Config.RoundOptions.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
                 {
                     ExRound.IsRoundLocked = false;
-                    ExLoader.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                    ApiLoader.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
                 }
 
-                if (ExLoader.Config.Api.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
+                if (ApiLoader.Config.RoundOptions.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
                 {
                     ExRound.IsLobbyLocked = false;
-                    ExLoader.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                    ApiLoader.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
                 }
             }
 
@@ -156,7 +156,7 @@ namespace LabExtended.Events
                 other._invisibility.Remove(player);
             }
 
-            foreach (var helper in PlayerCollection._handlers)
+            foreach (var helper in PlayerCollection.m_Handlers)
                 helper.Remove(player.NetId);
 
             ExPlayer._allPlayers.Remove(player);
@@ -166,7 +166,7 @@ namespace LabExtended.Events
             if (!player.IsNpc)
             {
                 ExPlayer._players.Remove(player);
-                ExLoader.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
+                ApiLoader.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
             }
             else
             {

@@ -29,7 +29,7 @@ namespace LabExtended.Patches.Functions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Extended API", $"An error occured while handling a player join!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Extended API", $"An error occured while handling a player join!\n{ex.ToColoredString()}");
             }
         }
     }

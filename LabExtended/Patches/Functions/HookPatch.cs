@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Functions
         /// <summary>
         /// Gets the <see cref="HarmonyLib.Harmony"/> instance.
         /// </summary>
-        public static Harmony Harmony => ExLoader.Harmony;
+        public static Harmony Harmony => ApiLoader.Harmony;
 
         /// <summary>
         /// Enables the hooking patch.
@@ -58,7 +58,7 @@ namespace LabExtended.Patches.Functions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("HookPatch", ex);
+                ApiLoader.Error("HookPatch", ex);
             }
         }
 

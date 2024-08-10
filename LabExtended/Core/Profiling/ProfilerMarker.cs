@@ -171,9 +171,9 @@ namespace LabExtended.Core.Profiling
                 $" &3-> Comment:&r &6{shortestFrame.Info ?? "none"}&r";
 
             if (isDebug)
-                ExLoader.Debug("Profiler", text);
+                ApiLoader.Debug("Profiler", text);
             else
-                ExLoader.Info("Profiler", text);
+                ApiLoader.Info("Profiler", text);
         }
 
         /// <summary>
@@ -227,9 +227,9 @@ namespace LabExtended.Core.Profiling
             }
 
             if (isDebug)
-                ExLoader.Debug("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
+                ApiLoader.Debug("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
             else
-                ExLoader.Info("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
+                ApiLoader.Info("Profiler", StringBuilderPool.Shared.ToStringReturn(builder));
         }
 
         /// <summary>

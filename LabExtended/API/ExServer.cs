@@ -19,7 +19,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the server's version.
         /// </summary>
-        public static System.Version Version => ExLoader.GameVersion;
+        public static System.Version Version => ApiLoader.GameVersion;
 
         /// <summary>
         /// Gets the time of the server starting.

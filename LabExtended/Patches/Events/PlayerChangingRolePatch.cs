@@ -102,7 +102,7 @@ namespace LabExtended.Patches.Events
             }
             catch (Exception ex)
             {
-                ExLoader.Error("PlayerChangingRolePatch", ex);
+                ApiLoader.Error("PlayerChangingRolePatch", ex);
                 return true;
             }
         }

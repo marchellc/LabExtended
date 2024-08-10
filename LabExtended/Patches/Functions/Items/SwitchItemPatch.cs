@@ -105,7 +105,7 @@ namespace LabExtended.Patches.Functions.Items
             }
             catch (Exception ex)
             {
-                ExLoader.Error("SwitchItemPatch", ex);
+                ApiLoader.Error("SwitchItemPatch", ex);
                 return true;
             }
         }

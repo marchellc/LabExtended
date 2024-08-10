@@ -58,7 +58,7 @@ namespace LabExtended.Utilities
                         }
                         catch (Exception ex)
                         {
-                            ExLoader.Error("Network API", $"Failed to invoke destruction handler &3{handler.Method.GetMemberName()}&r!\n{ex.ToColoredString()}");
+                            ApiLoader.Error("Network API", $"Failed to invoke destruction handler &3{handler.Method.GetMemberName()}&r!\n{ex.ToColoredString()}");
                         }
                     }
                 }
@@ -69,7 +69,7 @@ namespace LabExtended.Utilities
             }
             catch (Exception ex)
             {
-                ExLoader.Error("Network API", $"Failed to handle identity destruction!\n{ex.ToColoredString()}");
+                ApiLoader.Error("Network API", $"Failed to handle identity destruction!\n{ex.ToColoredString()}");
             }
         }
     }

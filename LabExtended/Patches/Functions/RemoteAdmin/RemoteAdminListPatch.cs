@@ -31,19 +31,19 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
             if (array.Length != 3)
             {
-                ExLoader.Debug("Remote Admin API", $"Array size false ({array.Length} / 3)");
+                ApiLoader.Debug("Remote Admin API", $"Array size false ({array.Length} / 3)");
                 return false;
             }
 
             if (!int.TryParse(array[0], out var num) || !int.TryParse(array[1], out var sortingType))
             {
-                ExLoader.Debug("Remote Admin API", $"Failed to parse sorting type");
+                ApiLoader.Debug("Remote Admin API", $"Failed to parse sorting type");
                 return false;
             }
 
             if (!Enum.IsDefined(typeof(RaPlayerList.PlayerSorting), sortingType))
             {
-                ExLoader.Debug("Remote Admin API", $"Sorting type is not defined");
+                ApiLoader.Debug("Remote Admin API", $"Sorting type is not defined");
                 return false;
             }
 

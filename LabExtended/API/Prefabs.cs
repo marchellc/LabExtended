@@ -237,12 +237,12 @@ namespace LabExtended.API
             if (RoleTypeId.Scp173.TryGetPrefab<Scp173Role>(out var scp173) && scp173.SubroutineModule.TryGetSubroutine<Scp173TantrumAbility>(out var tantrumAbility))
                 TantrumPrefab = tantrumAbility._tantrumPrefab;
             else
-                ExLoader.Warn("Prefab API", $"Failed to get the Tantrum prefab");
+                ApiLoader.Warn("Prefab API", $"Failed to get the Tantrum prefab");
 
             if (RoleTypeId.Scp939.TryGetPrefab<Scp939Role>(out var scp939) && scp939.SubroutineModule.TryGetSubroutine<Scp939AmnesticCloudAbility>(out var cloudAbility))
                 AmnesticCloudPrefab = cloudAbility._instancePrefab;
             else
-                ExLoader.Warn("Prefab API", $"Failed to get the Amnestic Cloud prefab");
+                ApiLoader.Warn("Prefab API", $"Failed to get the Amnestic Cloud prefab");
 
             foreach (var prefab in NetworkClient.prefabs.Values)
             {
@@ -254,7 +254,7 @@ namespace LabExtended.API
 
                 if (!_prefabNames.TryGetKey(prefab.name, out var prefabType))
                 {
-                    ExLoader.Warn("Prefab API", $"Encountered an unknown prefab: &1{prefab.name}&r");
+                    ApiLoader.Warn("Prefab API", $"Encountered an unknown prefab: &1{prefab.name}&r");
                     continue;
                 }
 
@@ -266,10 +266,10 @@ namespace LabExtended.API
                 if (_prefabObjects.ContainsKey(prefabName))
                     continue;
 
-                ExLoader.Warn("Prefab API", $"Prefab &1{prefabName}&r has either been renamed or is missing.");
+                ApiLoader.Warn("Prefab API", $"Prefab &1{prefabName}&r has either been renamed or is missing.");
             }
 
-            ExLoader.Info("Prefab API", $"Loaded &3{_prefabObjects.Count} / {_prefabNames.Count}&r prefabs!");
+            ApiLoader.Info("Prefab API", $"Loaded &3{_prefabObjects.Count} / {_prefabNames.Count}&r prefabs!");
         }
 
         internal static void DestroySpawnedDoors()

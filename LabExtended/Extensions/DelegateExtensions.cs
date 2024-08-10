@@ -15,7 +15,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
@@ -33,7 +33,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
@@ -51,7 +51,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
@@ -69,7 +69,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{action.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
@@ -87,7 +87,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{func.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{func.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
@@ -107,7 +107,7 @@ namespace LabExtended.Extensions
             }
             catch (Exception ex)
             {
-                ExLoader.Error("LabExtended", $"Caught an error while executing delegate &3{func.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
+                ApiLoader.Error("LabExtended", $"Caught an error while executing delegate &3{func.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
 
                 if (throwException)
                     throw ex;
