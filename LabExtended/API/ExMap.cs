@@ -1,4 +1,5 @@
-﻿using Decals;
+﻿using AdminToys;
+using Decals;
 
 using Hazards;
 
@@ -12,6 +13,8 @@ using InventorySystem.Items.Pickups;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Npcs.Navigation;
+using LabExtended.API.Toys;
+using LabExtended.API.Wrappers;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -44,6 +47,7 @@ namespace LabExtended.API
         internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
         internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
         internal static readonly LockedHashSet<Airlock> _airlocks = new LockedHashSet<Airlock>();
+        internal static readonly LockedHashSet<AdminToy> _toys = new LockedHashSet<AdminToy>();
         internal static readonly LockedHashSet<Locker> _lockers = new LockedHashSet<Locker>();
         internal static readonly LockedHashSet<Camera> _cams = new LockedHashSet<Camera>();
         internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
@@ -54,6 +58,7 @@ namespace LabExtended.API
         public static IReadOnlyList<Airlock> Airlocks => _airlocks;
         public static IReadOnlyList<Locker> Lockers => _lockers;
         public static IReadOnlyList<Camera> Cameras => _cams;
+        public static IReadOnlyList<AdminToy> Toys => _toys;
         public static IReadOnlyList<Door> Doors => _doors;
 
         public static IEnumerable<LockerChamber> LockerChambers => _lockers.SelectMany(x => x.Chambers);
@@ -61,12 +66,19 @@ namespace LabExtended.API
         public static IEnumerable<Elevator> MovingElevators => GetElevators(x => x.IsMoving);
         public static IEnumerable<Elevator> ReadyElevators => GetElevators(x => x.Base.IsReady);
 
-        public static IEnumerable<Door> OpenDoors => GetDoors(x => x.IsOpened);
+        public static IEnumerable<Door> OpenedDoors => GetDoors(x => x.IsOpened);
         public static IEnumerable<Door> ClosedDoors => GetDoors(x => !x.IsOpened);
         public static IEnumerable<Door> MovingDoors => GetDoors(x => x.IsMoving);
 
         public static IEnumerable<Camera> ActiveCameras => GetCameras(x => x.IsUsed);
         public static IEnumerable<Camera> InactiveCameras => GetCameras(x => !x.IsUsed);
+
+        public static IEnumerable<LightToy> LightToys => _toys.Where<LightToy>();
+        public static IEnumerable<TargetToy> TargetToys => _toys.Where<TargetToy>();
+        public static IEnumerable<PrimitiveToy> PrimitiveToys => _toys.Where<PrimitiveToy>();
+
+        public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
+        public static IEnumerable<NetIdWaypoint> NetIdWaypoints => NetIdWaypoint.AllNetWaypoints.Where(x => x != null);
 
         public static AmbientSoundPlayer AmbientSoundPlayer { get; private set; }
 
@@ -161,6 +173,42 @@ namespace LabExtended.API
             foreach (var light in RoomLightController.Instances)
                 light.NetworkOverrideColor = DefaultLightColor;
         }
+
+        #region Toys
+        public static IEnumerable<T> GetToys<T>(Predicate<T> predicate) where T : AdminToy
+            => _toys.Where<T>(toy => predicate(toy));
+
+        public static IEnumerable<AdminToy> GetToys(Predicate<AdminToy> predicate)
+            => _toys.Where(toy => predicate(toy));
+
+        public static T GetToy<T>(AdminToyBase adminToyBase) where T : AdminToy
+        {
+            if (adminToyBase is null)
+                return null;
+
+            if (_toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
+                return (T)toy;
+
+            toy = AdminToy.Create(adminToyBase);
+
+            _toys.Add(toy);
+            return (T)toy;
+        }
+
+        public static AdminToy GetToy(AdminToyBase adminToyBase)
+        {
+            if (adminToyBase is null)
+                return null;
+
+            if (_toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
+                return toy;
+
+            toy = AdminToy.Create(adminToyBase);
+
+            _toys.Add(toy);
+            return toy;
+        }
+        #endregion
 
         #region Cameras
         public static IEnumerable<Camera> GetCameras(RoomName room)
@@ -295,6 +343,7 @@ namespace LabExtended.API
                 _lockers.Clear();
                 _doors.Clear();
                 _gates.Clear();
+                _toys.Clear();
                 _cams.Clear();
 
                 NavigationMesh.Prepare();
@@ -313,6 +362,9 @@ namespace LabExtended.API
 
                 foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>())
                     _lockers.Add(locker);
+
+                foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>())
+                    _toys.Add(AdminToy.Create(toy));
 
                 foreach (var interactable in Scp079InteractableBase.AllInstances)
                 {
@@ -345,6 +397,7 @@ namespace LabExtended.API
                 _lockers.RemoveWhere(x => x.netId == identity.netId);
                 _gates.RemoveWhere(x => x.NetId == identity.netId);
                 _doors.RemoveWhere(x => x.NetId == identity.netId);
+                _toys.RemoveWhere(x => x.NetId == identity.netId);
 
                 foreach (var player in ExPlayer.Players)
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);

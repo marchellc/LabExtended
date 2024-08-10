@@ -2,6 +2,7 @@
 using LabExtended.API.Pooling;
 
 using LabExtended.Attributes;
+using LabExtended.Core.Profiling;
 using LabExtended.Core.Ticking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
@@ -25,6 +26,8 @@ namespace LabExtended.Core.Synchronization.Position
 {
     public static class PositionSynchronizer
     {
+        private static ProfilerMarker _marker = new ProfilerMarker("Position Synchronization", 1000);
+
         private static float _sendTime = 0f;
         private static float _debugTime = 0f;
 
@@ -49,6 +52,7 @@ namespace LabExtended.Core.Synchronization.Position
 
             _sending = true;
             _debug = _debugTime <= 0f;
+            _marker.MarkStart();
 
             if (IsDebug)
                 ExLoader.Debug("Position Synchronizer", $"Synchronizing positions for {ExPlayer._allPlayers.Count} players.");
@@ -73,50 +77,53 @@ namespace LabExtended.Core.Synchronization.Position
                     var ghosted = ExPlayer._ghostedPlayers.Contains(player);
                     var hasRole = player.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole);
 
+                    _validBuffer.Clear();
+
+                    for (int x = 0; x < ExPlayer._allPlayers.Count; x++)
+                    {
+                        var other = ExPlayer._allPlayers[x];
+
+                        if (IsDebug)
+                            ExLoader.Debug("Position Synchronizer", $"Checking player {other.Name} {other.UserId} {other.Role.Type}");
+
+                        if (!other.Switches.ShouldSendPosition)
+                        {
+                            if (IsDebug)
+                                ExLoader.Debug("Position Synchronizer", $"ShouldSendPosition=false");
+
+                            continue;
+                        }
+
+                        if (!other.Role.Is<IFpcRole>(out _))
+                        {
+                            if (IsDebug)
+                                ExLoader.Debug("Position Synchronizer", $"Not an IFpcRole");
+
+                            continue;
+                        }
+
+                        if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition)
+                        {
+                            if (IsDebug)
+                                ExLoader.Debug("Position Synchronizer", $"Same player (ShouldReceiveOwnPosition=false)");
+
+                            continue;
+                        }
+
+                        _validBuffer.Add(other);
+
+                        if (IsDebug)
+                            ExLoader.Debug("Position Synchronizer", $"Validated player {other.Name} {other.UserId} {other.Name}");
+                    }
+
+                    if (_validBuffer.Count < 1)
+                        continue;
+
                     if (!_syncCache.TryGetValue(player, out var syncCache))
                         _syncCache[player] = syncCache = DictionaryPool<ExPlayer, PositionData>.Rent();
 
                     player.Connection.Send<FpcPositionMessage>(writer =>
                     {
-                        _validBuffer.Clear();
-
-                        for (int x = 0; x < ExPlayer._allPlayers.Count; x++)
-                        {
-                            var other = ExPlayer._allPlayers[x];
-
-                            if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Checking player {other.Name} {other.UserId} {other.Role.Type}");
-
-                            if (!other.Switches.ShouldSendPosition)
-                            {
-                                if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"ShouldSendPosition=false");
-
-                                continue;
-                            }
-
-                            if (!other.Role.Is<IFpcRole>(out _))
-                            {
-                                if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"Not an IFpcRole");
-
-                                continue;
-                            }
-
-                            if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition)
-                            {
-                                if (IsDebug)
-                                    ExLoader.Debug("Position Synchronizer", $"Same player (ShouldReceiveOwnPosition=false)");
-
-                                continue;
-                            }
-
-                            _validBuffer.Add(other);
-
-                            if (IsDebug)
-                                ExLoader.Debug("Position Synchronizer", $"Validated player {other.Name} {other.UserId} {other.Name}");
-                        }
-
                         writer.WriteUShort((ushort)_validBuffer.Count);
 
                         if (IsDebug)
@@ -228,6 +235,7 @@ namespace LabExtended.Core.Synchronization.Position
             }
 
             _sending = false;
+            _marker.MarkEnd();
         }
 
         private static void Update()
@@ -263,6 +271,8 @@ namespace LabExtended.Core.Synchronization.Position
         {
             if (_restarting || args.PreviousRole is null || args.PreviousRole is not IFpcRole)
                 return;
+
+            _marker.Clear();
 
             _sending = true;
 

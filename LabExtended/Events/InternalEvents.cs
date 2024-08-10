@@ -10,12 +10,12 @@ using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Collections;
 using LabExtended.API.CustomModules;
 
-using LabExtended.Events.Player;
-
 using LabExtended.Core;
 using LabExtended.Core.Ticking;
 using LabExtended.Core.Profiling;
 
+using LabExtended.Events.Player;
+using LabExtended.Patches.Fixes;
 using LabExtended.Commands;
 
 using NorthwoodLib.Pools;
@@ -31,6 +31,9 @@ namespace LabExtended.Events
                 ExPlayer._hostPlayer.StopModule();
                 ExPlayer._hostPlayer = null;
             }
+
+            NetIdWaypointIgnoreDoorsPatch.CustomWaypoints.Clear();
+            NetIdWaypointIgnoreDoorsPatch.DisabledWaypoints.Clear();
 
             if (ReferenceHub.TryGetHostHub(out var hostHub))
                 ExPlayer._hostPlayer = new ExPlayer(hostHub);

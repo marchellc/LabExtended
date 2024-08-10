@@ -1,55 +1,14 @@
 ﻿using AdminToys;
 
-using Mirror;
+using LabExtended.API.Toys;
 
 using UnityEngine;
-
-using LabExtended.API;
 
 namespace LabExtended.Utilities
 {
     public static class PrimitiveUtils
     {
-        private static GameObject _lightSource;
-        private static GameObject _primitiveObject;
-
-        public static GameObject LightSourceToy => _lightSource ??= NetworkClient.prefabs.Values.First(p => p.TryGetComponent<AdminToyBase>(out var adminToyBase) && adminToyBase.CommandName is "LightSource");
-        public static GameObject PrimitiveObject => _primitiveObject ??= NetworkClient.prefabs.Values.First(p => p.TryGetComponent<AdminToyBase>(out var adminToyBase) && adminToyBase.CommandName is "PrimitiveObject");
-
-        public static LightSourceToy SpawnLight(Vector3 position, Vector3? scale = null)
-        {
-            var lightSource = UnityEngine.Object.Instantiate(LightSourceToy).GetComponent<LightSourceToy>();
-
-            lightSource.SpawnerFootprint = ExPlayer.Host.Footprint;
-
-            lightSource.transform.position = position;
-            lightSource.transform.localScale = scale.HasValue ? scale.Value : Vector3.one;
-
-            NetworkServer.Spawn(lightSource.gameObject);
-
-            return lightSource;
-        }
-
-        public static PrimitiveObjectToy SpawnPrimitive(Vector3 position, Quaternion? rotation = null, Vector3? scale = null, PrimitiveType type = PrimitiveType.Capsule, PrimitiveFlags flags = PrimitiveFlags.Collidable | PrimitiveFlags.Visible, Color? color = null)
-        {
-            var primitiveObject = UnityEngine.Object.Instantiate(PrimitiveObject).GetComponent<PrimitiveObjectToy>();
-
-            primitiveObject.SpawnerFootprint = ExPlayer.Host.Footprint;
-
-            primitiveObject.NetworkPrimitiveType = type;
-            primitiveObject.NetworkPrimitiveFlags = flags;
-            primitiveObject.NetworkMaterialColor = color.HasValue ? color.Value : Color.gray;
-
-            primitiveObject.transform.SetPositionAndRotation(position, rotation.HasValue ? rotation.Value : Quaternion.identity);
-            primitiveObject.transform.localScale = scale.HasValue ? scale.Value : Vector3.one;
-
-            primitiveObject.NetworkScale = primitiveObject.transform.localScale;
-
-            NetworkServer.Spawn(primitiveObject.gameObject);
-            return primitiveObject;
-        }
-
-        public static void UpdateTraceLine(PrimitiveObjectToy startCube, PrimitiveObjectToy endCube, PrimitiveObjectToy line,
+        public static void UpdateTraceLine(PrimitiveToy startCube, PrimitiveToy endCube, PrimitiveToy line,
            Vector3 startPosition,
             Vector3 endPosition,
 
@@ -58,16 +17,16 @@ namespace LabExtended.Utilities
 
             float lineSize = 0.01f)
         {
-            startCube.transform.position = startPosition;
-            startCube.transform.localScale = startCubeScale;
+            startCube.Position = startPosition;
+            startCube.Scale = startCubeScale;
 
-            endCube.transform.position = endPosition;
-            endCube.transform.localScale = endCubeScale;
+            endCube.Position = endPosition;
+            endCube.Scale = endCubeScale;
 
             UpdateLine(line, startPosition, endPosition, lineSize);
         }
 
-        public static (PrimitiveObjectToy startCube, PrimitiveObjectToy line, PrimitiveObjectToy endCube) SpawnTraceLine(
+        public static (PrimitiveToy startCube, PrimitiveToy line, PrimitiveToy endCube) SpawnTraceLine(
             Vector3 startPosition,
             Vector3 endPosition,
 
@@ -87,32 +46,33 @@ namespace LabExtended.Utilities
             var lineCol = lineColor.HasValue ? lineColor.Value : Color.blue;
             var endColor = endCubeColor.HasValue ? endCubeColor.Value : Color.blue;
 
-            var startCube = SpawnPrimitive(startPosition, Quaternion.identity, startCubeScale, PrimitiveType.Cube, flags, startColor);
-            var endCube = SpawnPrimitive(endPosition, Quaternion.identity, endCubeScale, PrimitiveType.Cube, flags, endColor);
+            var startCube = PrimitiveToy.Spawn(startPosition, Quaternion.identity, startCubeScale, PrimitiveType.Cube, flags, startColor);
+            var endCube = PrimitiveToy.Spawn(endPosition, Quaternion.identity, endCubeScale, PrimitiveType.Cube, flags, endColor);
+
             var line = SpawnLine(startPosition, endPosition, lineSize, lineCol, flags, lineType);
 
             return (startCube, endCube, line);
         }
 
-        public static PrimitiveObjectToy SpawnLine(Vector3 startPosition, Vector3 endPosition, float size = 0.01f, Color? color = null, PrimitiveFlags flags = PrimitiveFlags.Visible, PrimitiveType type = PrimitiveType.Cylinder)
+        public static PrimitiveToy SpawnLine(Vector3 startPosition, Vector3 endPosition, float size = 0.01f, Color? color = null, PrimitiveFlags flags = PrimitiveFlags.Visible, PrimitiveType type = PrimitiveType.Cylinder)
         {
             var scale = new Vector3(size, Vector3.Distance(startPosition, endPosition) * (type is PrimitiveType.Cube ? 1f : 0.5f), size);
             var position = startPosition + (endPosition - startPosition) * 0.5f;
             var rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90f, 0f, 0f);
 
-            return SpawnPrimitive(position, rotation, scale, type, flags, color);
+            return PrimitiveToy.Spawn(position, rotation, scale, type, flags, color);
         }
 
-        public static void UpdateLine(PrimitiveObjectToy toy, Vector3 startPosition, Vector3 endPosition, float size = 0.01f)
+        public static void UpdateLine(PrimitiveToy toy, Vector3 startPosition, Vector3 endPosition, float size = 0.01f)
         {
-            var scale = new Vector3(size, Vector3.Distance(startPosition, endPosition) * (toy.NetworkPrimitiveType is PrimitiveType.Cube ? 1f : 0.5f), size);
+            var scale = new Vector3(size, Vector3.Distance(startPosition, endPosition) * (toy.Type is PrimitiveType.Cube ? 1f : 0.5f), size);
             var position = startPosition + (endPosition - startPosition) * 0.5f;
             var rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90f, 0f, 0f);
 
-            toy.transform.rotation = rotation;
-            toy.transform.position = position;
+            toy.Rotation = rotation;
+            toy.Position = position;
 
-            toy.transform.localScale = scale;
+            toy.Scale = scale;
         }
 
         public static Color GlowColor(this Color color)

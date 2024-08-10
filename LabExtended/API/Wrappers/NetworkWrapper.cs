@@ -1,8 +1,12 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Interfaces;
+
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 using Mirror;
+
+using RelativePositioning;
 
 using UnityEngine;
 
@@ -23,7 +27,7 @@ namespace LabExtended.API.Wrappers
         public virtual NetworkIdentity Identity => Base.netIdentity;
         public virtual uint NetId => Base.netId;
 
-        public bool IsSpawned => Base != null && Base.netIdentity != null && NetworkServer.spawned.ContainsKey(NetId);
+        public bool IsSpawned => Base != null && Base && Base.netIdentity != null && NetworkServer.spawned.ContainsKey(NetId);
 
         public virtual Vector3 Scale
         {
@@ -67,7 +71,13 @@ namespace LabExtended.API.Wrappers
             }
         }
 
-        public void SetPositionAndRotation(Vector3 position, Quaternion rotation, Vector3? scale = null)
+        public NetIdWaypoint Waypoint
+        {
+            get => NetIdWaypoint.AllNetWaypoints.FirstOrDefault(x => x != null && x._targetNetId != null && x._targetNetId == Identity);
+            set => value!._targetNetId = Identity;
+        }
+
+        public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation, Vector3? scale = null)
         {
             Despawn();
 
@@ -120,7 +130,5 @@ namespace LabExtended.API.Wrappers
 
         public void Delete(IEnumerable<NetworkConnection> connections)
             => connections.ForEach(Delete);
-
-        public virtual void OnDestroyed() { }
     }
 }

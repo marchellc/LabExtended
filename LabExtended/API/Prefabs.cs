@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+﻿using AdminToys;
 
 using Hazards;
 
@@ -10,6 +10,8 @@ using LabExtended.API.Enums;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Patches.Fixes;
+using LabExtended.Utilities;
+
 using MapGeneration;
 
 using Mirror;
@@ -19,19 +21,36 @@ using PlayerRoles.PlayableScps.Scp173;
 using PlayerRoles.PlayableScps.Scp939;
 
 using PluginAPI.Core;
-using PluginAPI.Core.Zones;
+
 using RelativePositioning;
+
 using UnityEngine;
 
 namespace LabExtended.API
 {
     public static class Prefabs
     {
+        static Prefabs()
+            => NetworkDestroy.OnIdentityDestroyed += HandleNetIdDestroy;
+
         internal static readonly LockedHashSet<DoorVariant> _spawnedDoors = new LockedHashSet<DoorVariant>();
 
-        private static readonly LockedDictionary<PrefabType, GameObject> _prefabObjects = new LockedDictionary<PrefabType, GameObject>();
-        private static readonly LockedDictionary<PrefabType, DoorVariant> _prefabDoors = new LockedDictionary<PrefabType, DoorVariant>();
-        private static readonly LockedDictionary<PrefabType, string> _prefabNames = new LockedDictionary<PrefabType, string>();
+        internal static readonly LockedDictionary<PrefabType, GameObject> _prefabObjects = new LockedDictionary<PrefabType, GameObject>();
+        internal static readonly LockedDictionary<PrefabType, DoorVariant> _prefabDoors = new LockedDictionary<PrefabType, DoorVariant>();
+        internal static readonly LockedDictionary<PrefabType, string> _prefabNames = new LockedDictionary<PrefabType, string>();
+
+        private static GameObject _lightSource;
+        private static GameObject _primitiveObject;
+
+        /// <summary>
+        /// Gets the prefab for a light source toy.
+        /// </summary>
+        public static GameObject LightSourceToy => _lightSource ??= NetworkClient.prefabs.Values.First(p => p.TryGetComponent<AdminToyBase>(out var adminToyBase) && adminToyBase.CommandName is "LightSource");
+
+        /// <summary>
+        /// Gets the prefab for a primitive toy.
+        /// </summary>
+        public static GameObject PrimitiveObject => _primitiveObject ??= NetworkClient.prefabs.Values.First(p => p.TryGetComponent<AdminToyBase>(out var adminToyBase) && adminToyBase.CommandName is "PrimitiveObject");
 
         /// <summary>
         /// Gets a value indicating whether or not prefab names have been loaded.
@@ -85,6 +104,14 @@ namespace LabExtended.API
         public static ReferenceHub GetNewPlayer()
             => UnityEngine.Object.Instantiate(PlayerPrefab).GetComponent<ReferenceHub>();
 
+        /// <summary>
+        /// Replaces a specific door.
+        /// </summary>
+        /// <param name="door">The door to replace.</param>
+        /// <param name="newDoorType">The prefab type to replace the door with.</param>
+        /// <param name="name">The new name of the door.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
         public static DoorVariant ReplaceDoor(DoorVariant door, PrefabType newDoorType, string name = null)
         {
             if (!door)
@@ -101,6 +128,11 @@ namespace LabExtended.API
             return spawnedDoor;
         }
 
+        /// <summary>
+        /// Destroys a specific door.
+        /// </summary>
+        /// <param name="door">The door to destroy.</param>
+        /// <param name="disableWaypoint">Whether or not to disable the NetIdWaypoint that this door was associated with.</param>
         public static void DestroyDoor(DoorVariant door, bool disableWaypoint = true)
         {
             if (!door)
@@ -114,6 +146,12 @@ namespace LabExtended.API
             NetworkServer.Destroy(door.gameObject);
         }
 
+        /// <summary>
+        /// Destroys a specific door.
+        /// </summary>
+        /// <param name="door">The door to destroy.</param>
+        /// <param name="disableWaypoint">Whether or not to disable the NetIdWaypoint that this door was associated with.</param>
+        /// <param name="doorWaypoint">The NetIdWaypoint that this door was associated with.</param>
         public static void DestroyDoor(DoorVariant door, bool disableWaypoint, out NetIdWaypoint doorWaypoint)
         {
             doorWaypoint = null;
@@ -245,6 +283,12 @@ namespace LabExtended.API
             _spawnedDoors.Clear();
         }
 
+        private static void HandleNetIdDestroy(NetworkIdentity identity)
+        {
+            if (NetIdWaypoint.AllNetWaypoints.TryGetFirst(x => x != null && x._targetNetId != null && x._targetNetId == identity, out var waypoint))
+                UnityEngine.Object.Destroy(waypoint.gameObject);
+        }
+
         #region Prefab Names
         private static void SetPrefabNames()
         {
@@ -334,31 +378,5 @@ namespace LabExtended.API
             _prefabNames[PrefabType.TutorialRagdoll] = "Ragdoll_Tut";
         }
         #endregion
-
-        [HarmonyPatch(typeof(DoorSpawnpoint), nameof(DoorSpawnpoint.SetupAllDoors))]
-        private static bool Prefix()
-        {
-            _prefabDoors.Clear();
-
-            foreach (var spawnpoint in DoorSpawnpoint.AllInstances)
-            {
-                if (spawnpoint.TargetPrefab is null)
-                    continue;
-
-                var prefabType = spawnpoint.TargetPrefab.name switch
-                {
-                    "LCZ BreakableDoor" => PrefabType.LightContainmentZoneDoor,
-                    "HCZ BreakableDoor" => PrefabType.HeavyContainmentZoneDoor,
-                    "EZ BreakableDoor" => PrefabType.EntranceZoneDoor,
-
-                    _ => throw new ArgumentException($"Unknown door prefab: {spawnpoint.TargetPrefab.name}")
-                };
-
-                if (!_prefabDoors.ContainsKey(prefabType))
-                    _prefabDoors.Add(prefabType, spawnpoint.TargetPrefab);
-            }
-
-            return true;
-        }
     }
 }

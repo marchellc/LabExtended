@@ -4,6 +4,7 @@ using LabExtended.Commands;
 
 using LabExtended.API.CustomCommands.Debug.RemoteAdmin;
 using LabExtended.API.CustomCommands.Debug.Hints;
+using LabExtended.API.CustomCommands.Debug.Other;
 
 namespace LabExtended.API.CustomCommands.Debug
 {
@@ -19,6 +20,8 @@ namespace LabExtended.API.CustomCommands.Debug
 
             RegisterCommand(new HintShowTemporaryCommand());
             RegisterCommand(new HintToggleDebugCommand());
+
+            RegisterCommand(new SetSwitchCommand());
         }
     }
 }

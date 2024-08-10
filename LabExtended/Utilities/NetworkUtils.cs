@@ -103,6 +103,15 @@ namespace LabExtended.Utilities
         }
         #endregion
 
+        public static ArraySegment<byte> WriteSegment(Action<NetworkWriter> action)
+        {
+            using (var writer = NetworkWriterPool.Get())
+            {
+                action(writer);
+                return writer.ToArraySegment();
+            }
+        }
+
         public static void Send<T>(this NetworkConnection connection, Action<NetworkWriter> action) where T : struct, NetworkMessage
         {
             using (var writer = NetworkWriterPool.Get())
