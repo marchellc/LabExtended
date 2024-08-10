@@ -1,4 +1,5 @@
 ﻿using AdminToys;
+
 using Decals;
 
 using Hazards;
@@ -14,7 +15,7 @@ using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Npcs.Navigation;
 using LabExtended.API.Toys;
-using LabExtended.API.Wrappers;
+
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -44,6 +45,7 @@ namespace LabExtended.API
             => NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
 
         internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
+        internal static readonly LockedHashSet<Generator> _generators = new LockedHashSet<Generator>();
         internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
         internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
         internal static readonly LockedHashSet<Airlock> _airlocks = new LockedHashSet<Airlock>();
@@ -53,6 +55,7 @@ namespace LabExtended.API
         internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
 
         public static IReadOnlyList<ItemPickupBase> Pickups => _pickups;
+        public static IReadOnlyList<Generator> Generators => _generators;
         public static IReadOnlyList<ExTeslaGate> TeslaGates => _gates;
         public static IReadOnlyList<Elevator> Elevators => _elevators;
         public static IReadOnlyList<Airlock> Airlocks => _airlocks;
@@ -69,6 +72,12 @@ namespace LabExtended.API
         public static IEnumerable<Door> OpenedDoors => GetDoors(x => x.IsOpened);
         public static IEnumerable<Door> ClosedDoors => GetDoors(x => !x.IsOpened);
         public static IEnumerable<Door> MovingDoors => GetDoors(x => x.IsMoving);
+
+        public static IEnumerable<Generator> ActivatedGenerators => _generators.Where(x => x.IsEngaged);
+        public static IEnumerable<Generator> ActivatingGenerators => _generators.Where(x => x.IsActivating);
+
+        public static IEnumerable<Generator> OpenGenerators => _generators.Where(x => x.IsOpen);
+        public static IEnumerable<Generator> ClosedGenerators => _generators.Where(x => !x.IsOpen);
 
         public static IEnumerable<Camera> ActiveCameras => GetCameras(x => x.IsUsed);
         public static IEnumerable<Camera> InactiveCameras => GetCameras(x => !x.IsUsed);
@@ -133,7 +142,6 @@ namespace LabExtended.API
             instance._destroyed = !setActive;
 
             NetworkServer.Spawn(instance.gameObject);
-
             return instance;
         }
 
@@ -337,6 +345,7 @@ namespace LabExtended.API
             {
                 AmbientSoundPlayer = ReferenceHub.HostHub.GetComponent<AmbientSoundPlayer>();
 
+                _generators.Clear();
                 _elevators.Clear();
                 _airlocks.Clear();
                 _pickups.Clear();
@@ -366,6 +375,9 @@ namespace LabExtended.API
                 foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>())
                     _toys.Add(AdminToy.Create(toy));
 
+                foreach (var gen in Scp079Recontainer.AllGenerators)
+                    _generators.Add(new Generator(gen));
+
                 foreach (var interactable in Scp079InteractableBase.AllInstances)
                 {
                     if (interactable is null || interactable is not Scp079Camera cam)
@@ -380,7 +392,9 @@ namespace LabExtended.API
                     $"Airlock {_airlocks.Count}\n" +
                     $"Camera {_cams.Count}\n" +
                     $"Door {_doors.Count}\n" +
-                    $"Lockers {_lockers.Count}");
+                    $"Lockers {_lockers.Count}\n" +
+                    $"Toys {_toys.Count}\n" +
+                    $"Generators {_generators.Count}");
             }
             catch (Exception ex)
             {
@@ -392,6 +406,7 @@ namespace LabExtended.API
         {
             try
             {
+                _generators.RemoveWhere(x => x.NetId == identity.netId);
                 _airlocks.RemoveWhere(x => x.NetId == identity.netId);
                 _pickups.RemoveWhere(x => x.netId == identity.netId);
                 _lockers.RemoveWhere(x => x.netId == identity.netId);
