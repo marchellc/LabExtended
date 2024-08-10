@@ -14,7 +14,7 @@ namespace LabExtended.Patches.Functions
     {
         public static event Action<NetworkIdentity> OnSpawned;
 
-        public static bool Prefix(GameObject obj, NetworkConnection connection)
+        public static bool Prefix(GameObject obj, NetworkConnection ownerConnection)
         {
             try
             {
@@ -30,9 +30,9 @@ namespace LabExtended.Patches.Functions
                 if (NetworkServer.spawned.ContainsKey(identity.netId))
                     return false;
 
-                identity.connectionToClient = (NetworkConnectionToClient)connection;
+                identity.connectionToClient = (NetworkConnectionToClient)ownerConnection;
 
-                if (connection is LocalConnectionToClient)
+                if (ownerConnection is LocalConnectionToClient)
                     identity.isOwned = true;
 
                 if (!identity.isServer && identity.netId == 0)

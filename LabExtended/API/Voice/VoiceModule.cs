@@ -1,17 +1,16 @@
 ﻿using LabExtended.API.Modules;
 using LabExtended.API.Voice.Modifiers.Pitch;
+using LabExtended.API.Voice.Threading;
 
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Ticking;
+
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 
 using VoiceChat;
 using VoiceChat.Networking;
-using LabExtended.API.Voice.Threading;
-using LabExtended.Utilities;
-using Mirror;
-using LabExtended.Core;
 
 namespace LabExtended.API.Voice
 {
@@ -22,11 +21,11 @@ namespace LabExtended.API.Voice
 
         private static volatile HashSet<VoiceModifier> _globalModifiers = new HashSet<VoiceModifier>();
 
-        public static float GlobalVoicePitch { get; set; } = 1f;
+        public static volatile float GlobalVoicePitch = 1f;
 
-        private readonly List<VoiceModifier> _modifiers = new List<VoiceModifier>() { new VoicePitchModifier() };
-        private readonly List<VoiceProfile> _profiles = new List<VoiceProfile>();
-        private readonly List<byte[]> _capture = new List<byte[]>();
+        private volatile List<VoiceModifier> _modifiers = new List<VoiceModifier>() { new VoicePitchModifier() };
+        private volatile List<VoiceProfile> _profiles = new List<VoiceProfile>();
+        private volatile List<byte[]> _capture = new List<byte[]>();
 
         private bool _speaking;
         private DateTime _speakingStart;
@@ -38,7 +37,7 @@ namespace LabExtended.API.Voice
 
         public override TickTimer TickTimer { get; } = TickTimer.None;
 
-        public float VoicePitch { get; set; } = 1f;
+        public volatile float VoicePitch = 1f;
 
         public bool CanReceiveSelf { get; set; }
 
@@ -244,42 +243,30 @@ namespace LabExtended.API.Voice
 
         internal void ReceiveThreaded(ThreadedVoicePacket threadedVoicePacket)
         {
-            var channelPos = 0;
             var sendChannel = CastParent.Role.VoiceModule.ValidateSend(threadedVoicePacket.Channel);
+            var buffer = default(byte[]);
 
-            ApiLoader.Debug("Voice API", $"Writing threaded voice message sender={CastParent.Name} channel={threadedVoicePacket.Channel} size={threadedVoicePacket.Size} length={threadedVoicePacket.Data.Length}");
+            ThreadedVoiceChat.Copy(ref threadedVoicePacket.Size, ref threadedVoicePacket.Data, ref buffer);
 
-            var msgBuffer = NetworkUtils.WriteSegment(writer => NetworkUtils.Pack<VoiceMessage>(writer, () =>
-            {
-                writer.WriteRecyclablePlayerId(CastParent.Hub.Network_playerId);
-                writer.WriteByte((byte)threadedVoicePacket.Channel);
-
-                channelPos = writer.Position;
-
-                writer.WriteUShort((ushort)threadedVoicePacket.Size);
-                writer.WriteBytes(threadedVoicePacket.Data, 0, threadedVoicePacket.Size);
-            }));
-
-            ApiLoader.Debug("Voice API", $"ReceiveThreaded | msgBuffer=({msgBuffer.Count} / {msgBuffer.Offset} / {msgBuffer.Array.Length}) channelPos={channelPos}");
-
-            var prevChannel = sendChannel;
+            var msg = new VoiceMessage(CastParent.Hub, threadedVoicePacket.Channel, buffer, threadedVoicePacket.Size, false);
 
             for (int i = 0; i < ExPlayer._players.Count; i++)
             {
+                if (!ExPlayer._players[i])
+                    continue;
+
                 var player = ExPlayer._players[i];
                 var channel = GetChannel(player, sendChannel);
 
                 if (channel is VoiceChatChannel.None)
                     continue;
 
-                if (channel != prevChannel)
-                {
-                    prevChannel = channel;
-                    msgBuffer.SetIndex(channelPos, (byte)channel);
-                }
-
-                player.Connection.Send(msgBuffer);
+                msg.Channel = channel;
+                player.Connection.Send(msg);
             }
+
+            threadedVoicePacket.Dispose();
+            threadedVoicePacket = null;
         }
 
         private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)

@@ -3,8 +3,9 @@ using CommandSystem;
 using HarmonyLib;
 using LabExtended.API;
 using LabExtended.API.Hints;
-using LabExtended.API.Modules;
+
 using LabExtended.Attributes;
+
 using LabExtended.Core.Configs;
 using LabExtended.Core.Configs.Api;
 using LabExtended.Core.Hooking;
@@ -197,6 +198,8 @@ namespace LabExtended.Core
                     Error("Extended Loader", $"Failed to load the configuration file.");
                     return;
                 }
+
+                SaveConfig();
 
                 Loader = new ApiLoader();
 

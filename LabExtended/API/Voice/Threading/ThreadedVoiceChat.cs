@@ -113,7 +113,7 @@ namespace LabExtended.API.Voice.Threading
             }
 
             RoundEvents.OnWaitingForPlayers += InternalClean;
-            TickManager.OnTick += ProcessQueue;
+            TickManager.OnTick += ProcessOutput;
 
             m_WasActive = true;
             m_RunThread = true;
@@ -152,7 +152,15 @@ namespace LabExtended.API.Voice.Threading
 
             foreach (var modifier in VoiceModule.GlobalModifiers)
             {
-                if (!modifier.IsThreaded)
+                if (!modifier.IsEnabled || !modifier.IsThreaded)
+                    continue;
+
+                modifier.ModifyThreaded(ref threadedVoicePacket);
+            }
+
+            foreach (var modifier in threadedVoicePacket.Speaker.Voice.Modifiers)
+            {
+                if (!modifier.IsEnabled || !modifier.IsThreaded)
                     continue;
 
                 modifier.ModifyThreaded(ref threadedVoicePacket);
@@ -200,7 +208,7 @@ namespace LabExtended.API.Voice.Threading
             }
         }
 
-        private static void Copy(ref int length, ref byte[] origData, ref byte[] newData)
+        public static void Copy(ref int length, ref byte[] origData, ref byte[] newData)
         {
             newData = new byte[origData.Length];
 
