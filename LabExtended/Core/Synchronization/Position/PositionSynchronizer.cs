@@ -2,8 +2,10 @@
 using LabExtended.API.Pooling;
 
 using LabExtended.Attributes;
+
 using LabExtended.Core.Profiling;
 using LabExtended.Core.Ticking;
+
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions;
@@ -157,7 +159,7 @@ namespace LabExtended.Core.Synchronization.Position
                             var position = other.Transform.position;
                             var posBit = false;
 
-                            if (other.Position.FakedList.TryGetValue(player, out var fakedPos))
+                            if (player.Position.FakedList.TryGetValue(other, out var fakedPos))
                             {
                                 position = fakedPos;
                                 posBit = true;

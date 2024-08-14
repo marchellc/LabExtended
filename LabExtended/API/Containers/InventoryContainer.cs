@@ -20,6 +20,9 @@ using UnityEngine;
 using NorthwoodLib.Pools;
 
 using PlayerRoles.FirstPersonControl;
+using InventorySystem.Items.Usables;
+using LabExtended.API.Items.Candies;
+using LabExtended.Core.Ticking;
 
 namespace LabExtended.API.Containers
 {
@@ -29,18 +32,27 @@ namespace LabExtended.API.Containers
     public class InventoryContainer
     {
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems = new LockedHashSet<ItemPickupBase>();
+        internal CandyBag _bag;
 
         /// <summary>
         /// Creates a new <see cref="InventoryContainer"/> instance.
         /// </summary>
         /// <param name="inventory">The player <see cref="InventorySystem.Inventory"/> component.</param>
         public InventoryContainer(Inventory inventory)
-            => Inventory = inventory;
+        {
+            Inventory = inventory;
+            UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
+        }
 
         /// <summary>
         /// Gets the targeted player's <see cref="InventorySystem.Inventory"/> component.
         /// </summary>
         public Inventory Inventory { get; }
+
+        /// <summary>
+        /// Gets the targeted player's <see cref="PlayerHandler"/> usable item handler.
+        /// </summary>
+        public PlayerHandler UsableItemsHandler { get; }
 
         /// <summary>
         /// Gets the inventory item holder.
@@ -139,19 +151,12 @@ namespace LabExtended.API.Containers
         }
 
         /// <summary>
-        /// Gets a list of all candies in player's candy bag. (empty <see cref="CandyKindID"/> array if no bag is found).
+        /// Gets or sets the player's <see cref="InventorySystem.Items.Usables.CurrentlyUsedItem"/>.
         /// </summary>
-        public IEnumerable<CandyKindID> Candies
+        public CurrentlyUsedItem CurrentlyUsedItem
         {
-            get
-            {
-                var bag = CandyBag;
-
-                if (bag != null)
-                    return bag.Candies;
-
-                return Array.Empty<CandyKindID>();
-            }
+            get => UsableItemsHandler.CurrentUsable;
+            set => UsableItemsHandler.CurrentUsable = value;
         }
 
         /// <summary>
@@ -186,26 +191,6 @@ namespace LabExtended.API.Containers
                 return perms;
             }
         }
-
-        /// <summary>
-        /// Gets or adds a new SCP-330 candy bag to the player's inventory.
-        /// </summary>
-        /// <returns>The existing/added <see cref="Scp330Bag"/> instance.</returns>
-        public Scp330Bag GetOrAddCandyBag()
-        {
-            if (Scp330Bag.TryGetBag(Inventory._hub, out var bag))
-                return bag;
-
-            return AddItem<Scp330Bag>(ItemType.SCP330);
-        }
-
-        /// <summary>
-        /// Counts all matching candy types.
-        /// </summary>
-        /// <param name="candyKind">The candy type to count.</param>
-        /// <returns>The amount of matching candies.</returns>
-        public int CountCandies(CandyKindID candyKind)
-            => Candies.Count(x => x == candyKind);
 
         /// <summary>
         /// Adds a new item to the player's inventory.
@@ -428,6 +413,18 @@ namespace LabExtended.API.Containers
 
             return pickupInstance;
         }
+
+        public float GetPersonalUsableCooldown(ItemType usableItemType)
+            => UsableItemsHandler.PersonalCooldowns.TryGetValue(usableItemType, out var cooldown) ? cooldown : 0f;
+
+        public float GetGlobalUsableCooldown(ushort usableItemSerial)
+            => UsableItemsController.GlobalItemCooldowns.TryGetValue(usableItemSerial, out var cooldown) ? cooldown : 0f;
+
+        public void SetPersonalUsableCooldown(ItemType usableItemType, float cooldown)
+            => UsableItemsHandler.PersonalCooldowns[usableItemType] = Time.timeSinceLevelLoad + cooldown;
+
+        public void SetGlobalUsableCooldown(ushort usableItemSerial, float cooldown)
+            => UsableItemsController.GlobalItemCooldowns[usableItemSerial] = cooldown;
 
         public void Synchronize()
             => Inventory.ServerSendItems();

@@ -93,9 +93,9 @@ namespace LabExtended.API.Voice.Threading
             packet.Speaker = speaker;
 
             packet.Channel = msg.Channel;
-            packet.Size = msg.DataLength;
 
-            Copy(ref msg.DataLength, ref msg.Data, ref packet.Data);
+            packet.Size = msg.DataLength;
+            packet.Data = msg.Data;
 
             m_ProcessingQueue.Enqueue(packet);
             m_ReceiveMarker.MarkEnd();
@@ -118,7 +118,7 @@ namespace LabExtended.API.Voice.Threading
             m_WasActive = true;
             m_RunThread = true;
 
-            m_ProcessMarker = new ProfilerMarker("ThreadedVoice / Processing Thread", 200);
+            m_ProcessMarker = new ProfilerMarker("Threaded Voice / Processing Thread", 200);
 
             m_OutputMarker = new ProfilerMarker("Threaded Voice / Output Handler", 200);
             m_ReceiveMarker = new ProfilerMarker("Threaded Voice / Input Handler", 200);
@@ -152,7 +152,7 @@ namespace LabExtended.API.Voice.Threading
 
             foreach (var modifier in VoiceModule.GlobalModifiers)
             {
-                if (!modifier.IsEnabled || !modifier.IsThreaded)
+                if (!modifier.IsThreaded || !modifier.IsEnabled)
                     continue;
 
                 modifier.ModifyThreaded(ref threadedVoicePacket);
@@ -160,7 +160,7 @@ namespace LabExtended.API.Voice.Threading
 
             foreach (var modifier in threadedVoicePacket.Speaker.Voice.Modifiers)
             {
-                if (!modifier.IsEnabled || !modifier.IsThreaded)
+                if (!modifier.IsThreaded || !modifier.IsEnabled)
                     continue;
 
                 modifier.ModifyThreaded(ref threadedVoicePacket);
@@ -206,13 +206,6 @@ namespace LabExtended.API.Voice.Threading
 
                 m_ProcessMarker.MarkEnd();
             }
-        }
-
-        public static void Copy(ref int length, ref byte[] origData, ref byte[] newData)
-        {
-            newData = new byte[origData.Length];
-
-            Buffer.BlockCopy(origData, 0, newData, 0, length);
         }
 
         private static void InternalClean()

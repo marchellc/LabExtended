@@ -244,11 +244,23 @@ namespace LabExtended.API.Voice
         internal void ReceiveThreaded(ThreadedVoicePacket threadedVoicePacket)
         {
             var sendChannel = CastParent.Role.VoiceModule.ValidateSend(threadedVoicePacket.Channel);
-            var buffer = default(byte[]);
+            var msg = new VoiceMessage(CastParent.Hub, threadedVoicePacket.Channel, threadedVoicePacket.Data, threadedVoicePacket.Size, false);
 
-            ThreadedVoiceChat.Copy(ref threadedVoicePacket.Size, ref threadedVoicePacket.Data, ref buffer);
+            foreach (var modifier in _globalModifiers)
+            {
+                if (!modifier.IsEnabled || modifier.IsThreaded)
+                    continue;
 
-            var msg = new VoiceMessage(CastParent.Hub, threadedVoicePacket.Channel, buffer, threadedVoicePacket.Size, false);
+                modifier.ModifySafe(ref msg, this);
+            }
+
+            foreach (var modifier in _modifiers)
+            {
+                if (!modifier.IsEnabled || modifier.IsThreaded)
+                    continue;
+
+                modifier.ModifySafe(ref msg, this);
+            }
 
             for (int i = 0; i < ExPlayer._players.Count; i++)
             {
