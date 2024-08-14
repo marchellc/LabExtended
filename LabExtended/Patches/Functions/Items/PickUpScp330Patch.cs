@@ -2,8 +2,11 @@
 
 using InventorySystem.Items.Usables.Scp330;
 using InventorySystem.Searching;
+using InventorySystem;
 
 using LabExtended.API;
+using LabExtended.API.Items.Candies;
+
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Enums;
 
@@ -75,7 +78,26 @@ namespace LabExtended.Patches.Functions.Items
                 }
             }
 
-            Scp330Bag.ServerProcessPickup(__instance.Hub, scp330Pickup, out var bag);
+            if (!Scp330Bag.TryGetBag(__instance.Hub, out var bag))
+            {
+                var bagItem = __instance.Hub.inventory.ServerAddItem(ItemType.SCP330);
+
+                if (bagItem is null)
+                {
+                    __instance.TargetPickup.UnlockPickup();
+                    return false;
+                }
+
+                bag = (Scp330Bag)bagItem;
+            }
+
+            player.Inventory._bag ??= new CandyBag(bag, player);
+
+            while (scp330Pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(scp330Pickup.StoredCandies[0]))
+                scp330Pickup.StoredCandies.RemoveAt(0);
+
+            if (bag.AcquisitionAlreadyReceived)
+                bag.ServerRefreshBag();
 
             if (customItem != null)
             {
@@ -99,8 +121,6 @@ namespace LabExtended.Patches.Functions.Items
                 scp330Pickup.UnlockPickup();
                 return false;
             }
-
-            return false;
         }
     }
 }

@@ -4,10 +4,11 @@ using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Pickups;
-
+using InventorySystem.Items.Usables.Scp330;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Firearms;
+
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
@@ -63,6 +64,9 @@ namespace LabExtended.Patches.Events
             {
                 pickup = __instance.ServerDropItem(itemSerial);
             }
+
+            if (item is Scp330Bag)
+                player.Inventory._bag = null;
 
             __instance.SendItemsNextFrame = true;
 

@@ -1,10 +1,11 @@
 ﻿using InventorySystem.Items.Usables;
 
 using LabExtended.API;
+using LabExtended.Core.Events;
 
 namespace LabExtended.Events.Player
 {
-    public class PlayerUsingItemArgs
+    public class PlayerUsingItemArgs : BoolCancellableEvent
     {
         public ExPlayer Player { get; }
         public UsableItem Item { get; }

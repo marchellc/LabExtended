@@ -72,7 +72,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player's SCP-330 candy bag (or <see langword="null"/> if the player doesn't have one).
         /// </summary>
-        public Scp330Bag CandyBag => Scp330Bag.TryGetBag(Inventory._hub, out var bag) ? bag : null;
+        public CandyBag CandyBag => _bag;
 
         /// <summary>
         /// Gets a list of all items.
