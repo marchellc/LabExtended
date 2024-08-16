@@ -5,6 +5,7 @@ using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Scp079;
 
@@ -52,7 +53,7 @@ namespace LabExtended.Patches.Events
             {
                 foreach (var colliderPair in InteractableCollider.AllInstances)
                 {
-                    if (colliderPair.Key is null || colliderPair.Key is not BasicDoor basicDoor)
+                    if (colliderPair.Key is null || colliderPair.Key is not BasicDoor basicDoor || basicDoor == null)
                         continue;
 
                     if (basicDoor.RequiredPermissions.RequiredPermissions != KeycardPermissions.None)
