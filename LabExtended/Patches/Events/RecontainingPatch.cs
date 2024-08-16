@@ -5,7 +5,6 @@ using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 
 using LabExtended.API;
-using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Scp079;
 
