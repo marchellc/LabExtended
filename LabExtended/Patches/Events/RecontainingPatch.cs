@@ -52,7 +52,7 @@ namespace LabExtended.Patches.Events
             {
                 foreach (var colliderPair in InteractableCollider.AllInstances)
                 {
-                    if (colliderPair.Key is null || colliderPair.Key is not BasicDoor basicDoor || basicDoor == null)
+                    if (colliderPair.Key is not BasicDoor basicDoor || basicDoor == null)
                         continue;
 
                     if (basicDoor.RequiredPermissions.RequiredPermissions != KeycardPermissions.None)
