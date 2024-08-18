@@ -102,7 +102,7 @@ namespace LabExtended.Patches.Events
                     customUsable.RemainingTime = 0f;
                     customUsable.RemainingCooldown = customUsable.CooldownTime;
 
-                    customUsable.OnCancelled(CancelReason.Cancelled);
+                    customUsable.OnCancelled(CustomUsabeCancelReason.Cancelled);
                     return false;
                 }
 

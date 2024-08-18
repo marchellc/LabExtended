@@ -1,4 +1,4 @@
-﻿namespace LabExtended.API.CustomItems.Enums
+﻿namespace LabExtended.API.CustomItems
 {
     public enum CustomItemFlags : byte
     {

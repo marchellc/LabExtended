@@ -3,8 +3,6 @@ using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API.Collections.Locked;
-
-using LabExtended.API.CustomItems.Enums;
 using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
 

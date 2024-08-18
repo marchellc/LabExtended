@@ -1,5 +1,4 @@
-﻿using LabExtended.API.CustomItems.Enums;
-using LabExtended.API.CustomItems.Interfaces;
+﻿using LabExtended.API.CustomItems.Interfaces;
 
 namespace LabExtended.API.CustomItems.Info
 {

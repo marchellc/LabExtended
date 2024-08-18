@@ -49,7 +49,7 @@ namespace LabExtended.API.CustomItems.Usables
 
         public virtual void OnUsing() { }
 
-        public virtual void OnCancelled(CancelReason reason) { }
+        public virtual void OnCancelled(CustomUsabeCancelReason reason) { }
 
         public virtual void UpdateUsing() { }
         public virtual void UpdateCooldown() { }

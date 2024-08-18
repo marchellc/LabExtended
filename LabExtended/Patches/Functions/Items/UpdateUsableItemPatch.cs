@@ -47,7 +47,7 @@ namespace LabExtended.Patches.Functions.Items
                                     customUsable.OnEnteredCooldown();
                                 }
 
-                                customUsable.OnCancelled(CancelReason.SwitchedItems);
+                                customUsable.OnCancelled(CustomUsabeCancelReason.SwitchedItems);
 
                                 x.Key.inventory.connectionToClient.Send(new StatusMessage(StatusMessage.StatusType.Cancel, x.Value.CurrentUsable.ItemSerial), 0);
                             }

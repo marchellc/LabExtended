@@ -7,10 +7,10 @@ using Hazards;
 using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
-
+using InventorySystem.Items;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Pickups;
-
+using InventorySystem.Items.ThrowableProjectiles;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Npcs.Navigation;
@@ -29,7 +29,7 @@ using Mirror;
 
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
-
+using PluginAPI.Events;
 using RelativePositioning;
 
 using UnityEngine;
@@ -182,9 +182,102 @@ namespace LabExtended.API
                 light.NetworkOverrideColor = DefaultLightColor;
         }
 
+        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
+        {
+            if (!item.TryGetItemPrefab(out var prefab))
+                return null;
+
+            var pickup = UnityEngine.Object.Instantiate((T)prefab.PickupDropModel, position, rotation);
+
+            pickup.transform.position = position;
+            pickup.transform.rotation = rotation;
+
+            pickup.transform.localScale = scale;
+
+            pickup.Info = new PickupSyncInfo(item, prefab.Weight, ItemSerialGenerator.GenerateNext());
+
+            if (spawn)
+            {
+                NetworkServer.Spawn(pickup.gameObject);
+                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+            }
+
+            return pickup;
+        }
+
+        public static List<T> SpawnItems<T>(ItemType type, int count, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
+        {
+            var list = new List<T>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var item = SpawnItem<T>(type, position, scale, rotation, spawn);
+
+                if (item is null)
+                    continue;
+
+                list.Add(item);
+            }
+
+            return list;
+        }
+
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
+            => SpawnProjectile<T>(item, position, scale, Vector3.forward, Vector3.up, rotation, velocity, force, fuseTime, spawn, activate);
+
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up, Quaternion rotation, Vector3 velocity, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
+        {
+            if (!item.TryGetItemPrefab<ThrowableItem>(out var throwableItem))
+                return null;
+
+            var projectile = UnityEngine.Object.Instantiate((T)throwableItem.Projectile, position, rotation);
+            var settings = throwableItem.FullThrowSettings;
+
+            projectile.transform.localScale = scale;
+
+            projectile.Info = new PickupSyncInfo(item, throwableItem.Weight, ItemSerialGenerator.GenerateNext());
+
+            settings.StartVelocity = force;
+            settings.StartTorque = velocity;
+
+            (projectile as TimeGrenade)!._fuseTime = fuseTime;
+
+            if (spawn)
+            {
+                NetworkServer.Spawn(projectile.gameObject);
+                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+            }
+
+            if (spawn && activate)
+            {
+                if (projectile.TryGetRigidbody(out var rigidbody))
+                {
+                    var num = 1f - Mathf.Abs(Vector3.Dot(forward, Vector3.up));
+
+                    var vector = up * throwableItem.FullThrowSettings.UpwardsFactor;
+                    var vector2 = forward + vector * num;
+
+                    rigidbody.centerOfMass = Vector3.zero;
+                    rigidbody.angularVelocity = settings.StartTorque;
+                    rigidbody.velocity = velocity + vector2 * force;
+                }
+                else
+                {
+                    projectile.Position = position;
+                    projectile.Rotation = rotation;
+                }
+
+                projectile.ServerActivate();
+
+                new ThrowableNetworkHandler.ThrowableItemAudioMessage(projectile.Info.Serial, ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce).SendToAuthenticated();
+            }
+
+            return projectile;
+        }
+
         #region Toys
         public static IEnumerable<T> GetToys<T>(Predicate<T> predicate) where T : AdminToy
-            => _toys.Where<T>(toy => predicate(toy));
+    => _toys.Where<T>(toy => predicate(toy));
 
         public static IEnumerable<AdminToy> GetToys(Predicate<AdminToy> predicate)
             => _toys.Where(toy => predicate(toy));

@@ -8,7 +8,6 @@ using LabExtended.API;
 using LabExtended.API.Items.Candies;
 
 using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Enums;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
