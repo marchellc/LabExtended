@@ -84,14 +84,9 @@ namespace LabExtended.API
         public ExPlayer ClosestScp => ExPlayer.Players.Where(p => p.Role.IsScp).OrderBy(p => p.Position.DistanceTo(Position)).FirstOrDefault();
 
         /// <summary>
-        /// Gets the tesla's position.
-        /// </summary>
-        public Vector3 Position => Transform.position;
-
-        /// <summary>
         /// Gets the tesla's rotation.
         /// </summary>
-        public Quaternion Rotation => Quaternion.Euler(Base.localRotation);
+        public new Quaternion Rotation => Quaternion.Euler(Base.localRotation);
 
         /// <summary>
         /// Gets a <see cref="IEnumerable{T}"/> of <see cref="Player"/> which contains all the players inside the hurt range.

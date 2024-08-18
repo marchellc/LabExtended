@@ -49,7 +49,7 @@ namespace LabExtended.API.CustomItems.Usables
 
         public virtual void OnUsing() { }
 
-        public virtual void OnCancelled(CustomUsabeCancelReason reason) { }
+        public virtual void OnCancelled(CustomUsableCancelReason reason) { }
 
         public virtual void UpdateUsing() { }
         public virtual void UpdateCooldown() { }
@@ -64,23 +64,54 @@ namespace LabExtended.API.CustomItems.Usables
         {
             foreach (var customItem in ActiveItems.Values)
             {
-                if (customItem is not CustomUsable customUsable || !customUsable.IsInInventory || customUsable.IsUsing)
+                if (customItem is not CustomUsable customUsable || !customUsable.IsInInventory)
                     continue;
 
-                if (customUsable.RemainingCooldown == 0f)
-                    continue;
-
-                customUsable.RemainingCooldown -= Time.deltaTime;
-
-                if (customUsable.RemainingCooldown <= 0f)
+                if (customUsable.IsUsing)
                 {
-                    customUsable.RemainingCooldown = 0f;
-                    customUsable.OnFinishedCooldown();
+                    if (customUsable.Owner.Inventory.CurrentItemIdentifier.SerialNumber != customUsable.Serial)
+                    {
+                        customUsable.RemainingTime = 0f;
+                        customUsable.RemainingCooldown = customUsable.CooldownTime;
 
-                    continue;
+                        customUsable.IsUsing = false;
+
+                        customUsable.OnCancelled(CustomUsableCancelReason.SwitchedItems);
+                        customUsable.OnEnteredCooldown();
+
+                        customUsable.Owner.Connection.Send(new StatusMessage(StatusMessage.StatusType.Cancel, customUsable.Serial));
+                        continue;
+                    }
+
+                    customUsable.RemainingTime -= Time.deltaTime;
+                    customUsable.IsUsing = customUsable.RemainingTime > 0f;
+
+                    if (customUsable.IsUsing)
+                    {
+                        customUsable.UpdateUsing();
+                        continue;
+                    }
+
+                    customUsable.RemainingTime = 0f;
+                    customUsable.OnUsed();
+
+                    customUsable.RemainingCooldown = customUsable.CooldownTime;
+                    customUsable.OnEnteredCooldown();
                 }
+                else if (customUsable.RemainingCooldown != 0f)
+                {
+                    customUsable.RemainingCooldown -= Time.deltaTime;
 
-                customUsable.UpdateCooldown();
+                    if (customUsable.RemainingCooldown <= 0f)
+                    {
+                        customUsable.RemainingCooldown = 0f;
+                        customUsable.OnFinishedCooldown();
+
+                        continue;
+                    }
+
+                    customUsable.UpdateCooldown();
+                }
             }
         }
     }

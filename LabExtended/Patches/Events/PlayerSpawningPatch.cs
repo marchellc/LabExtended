@@ -33,11 +33,10 @@ namespace LabExtended.Patches.Events
                 EventManager.ExecuteEvent(new PlayerChangeRoleEvent(__instance.Hub, __instance.CurrentRole, newRole, reason));
 
                 var spawningEv = new PlayerSpawningArgs(player, __instance.CurrentRole, newRole, reason, spawnFlags);
-                var customItems = CustomItem.GetItems<CustomItem>(player);
 
                 spawningEv.IsAllowed = true;
 
-                foreach (var item in customItems)
+                foreach (var item in player.Inventory.CustomItems)
                     item.OnOwnerSpawning(spawningEv);
 
                 if ((player.Switches.CanChangeRoles && HookRunner.RunCancellable(spawningEv, true))

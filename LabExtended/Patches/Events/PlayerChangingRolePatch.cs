@@ -16,7 +16,6 @@ using PluginAPI.Events;
 using CustomPlayerEffects;
 
 using LabExtended.Core;
-using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
@@ -90,9 +89,7 @@ namespace LabExtended.Patches.Events
 
                 HookRunner.RunEvent(changedArgs);
 
-                var customItems = CustomItem.GetItems<CustomItem>(player);
-
-                foreach (var item in customItems)
+                foreach (var item in player.Inventory.CustomItems)
                     item.OnOwnerSpawned(changedArgs);
 
                 if (wasSet)

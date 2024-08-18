@@ -10,7 +10,7 @@ using LabExtended.API.CustomItems.Usables;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
-
+using LabExtended.Extensions;
 using Mirror;
 
 using PluginAPI.Events;
@@ -37,9 +37,12 @@ namespace LabExtended.Patches.Events
 
             if (msg.Status is StatusMessage.StatusType.Start)
             {
+                if (player.Inventory.CustomItems.Any(x => x is CustomUsable usable && usable.IsUsing))
+                    return false;
+
                 if (CustomItem.TryGetItem<CustomUsable>(curUsable, out var customUsable))
                 {
-                    if (customUsable.RemainingTime > 0f)
+                    if (customUsable.RemainingCooldown != 0f)
                     {
                         customUsable.OnUsedInCooldown();
                         return false;
@@ -52,6 +55,8 @@ namespace LabExtended.Patches.Events
                     customUsable.RemainingTime = customUsable.UseTime;
 
                     customUsable.OnUsing();
+
+                    msg.SendToAuthenticated();
                     return false;
                 }
 
@@ -86,9 +91,12 @@ namespace LabExtended.Patches.Events
             }
             else
             {
+                if (!player.Inventory.CustomItems.Any(x => x is CustomUsable usable && usable.IsUsing))
+                    return false;
+
                 if (CustomItem.TryGetItem<CustomUsable>(curUsable, out var customUsable))
                 {
-                    if (customUsable.RemainingCooldown > 0f)
+                    if (customUsable.RemainingCooldown != 0f)
                     {
                         customUsable.OnUsedInCooldown();
                         return false;
@@ -102,7 +110,10 @@ namespace LabExtended.Patches.Events
                     customUsable.RemainingTime = 0f;
                     customUsable.RemainingCooldown = customUsable.CooldownTime;
 
-                    customUsable.OnCancelled(CustomUsabeCancelReason.Cancelled);
+                    customUsable.OnCancelled(CustomUsableCancelReason.Cancelled);
+                    customUsable.OnEnteredCooldown();
+
+                    msg.SendToAuthenticated();
                     return false;
                 }
 
