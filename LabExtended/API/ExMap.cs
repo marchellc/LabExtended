@@ -509,6 +509,10 @@ namespace LabExtended.API
 
                 foreach (var player in ExPlayer.Players)
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
+
+                if (identity.TryGetComponent<IInteractable>(out var interactable)) {
+                    InteractableCollider.AllInstances.Remove(interactable);
+                }
             }
             catch (Exception ex)
             {
