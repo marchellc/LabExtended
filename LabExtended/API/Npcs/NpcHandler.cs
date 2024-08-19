@@ -48,6 +48,13 @@ namespace LabExtended.API.Npcs
             CanCountAs079ExpTarget = false,
             CanBlockScp173 = false,
             CanTriggerScp096 = false,
+            CanBeRecontainedAs079 = false,
+            CanBeCapturedBy106 = false,
+            CanBeConsumedByZombies = false,
+
+            CanTriggerTesla = false,
+            IsVisibleToScp939 = true,
+            CanChangeRoles = false,
 
             IsVisibleInRemoteAdmin = false,
             IsVisibleInSpectatorList = false,
