@@ -18,10 +18,10 @@ namespace LabExtended.Patches.Fixes
             if (newRole != RoleTypeId.Spectator || !__instance.IsScpButNot079(hub.roleManager.CurrentRole))
                 return false;
 
-            if (!Scp079Role.ActiveInstances.Any(x => x.TryGetOwner(out var owner) && ExPlayer.TryGet(owner, out var player) && !player.IsNpc && player.Switches.CanBeRecontainedAs079))
+            if (!Scp079Role.ActiveInstances.Any(x => x.TryGetOwner(out var owner) && ExPlayer.TryGet(owner, out var player) && player.Switches.CanBeRecontainedAs079))
                 return false;
 
-            if (ReferenceHub.AllHubs.Any(x => x != hub && __instance.IsScpButNot079(x.roleManager.CurrentRole) && ExPlayer.TryGet(x, out var player) && !player.IsNpc))
+            if (ExPlayer.Players.Any(x => x.Hub != hub && __instance.IsScpButNot079(x.Role.Role)))
                 return false;
 
             __instance.SetContainmentDoors(true, true);
