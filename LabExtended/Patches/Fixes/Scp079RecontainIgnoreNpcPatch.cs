@@ -11,7 +11,7 @@ namespace LabExtended.Patches.Fixes
     public static class Scp079RecontainIgnoreNpcPatch
     {
         public static bool Prefix(Scp079Recontainer __instance, ReferenceHub hub, RoleTypeId newRole)
-            {
+        {
             if (!ExPlayer.TryGet(hub, out var player) || player.IsNpc)
                 return false;
 
