@@ -182,6 +182,9 @@ namespace LabExtended.API
                 light.NetworkOverrideColor = DefaultLightColor;
         }
 
+        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true)
+            => SpawnItem<ItemPickupBase>(type, position, scale, rotation, spawn);
+
         public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
         {
             if (!item.TryGetItemPrefab(out var prefab))
@@ -221,6 +224,9 @@ namespace LabExtended.API
 
             return list;
         }
+
+        public static ThrownProjectile SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
+            => SpawnProjectile<ThrownProjectile>(item, position, scale, velocity, rotation, force, fuseTime, spawn, activate);
 
         public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
             => SpawnProjectile<T>(item, position, scale, Vector3.forward, Vector3.up, rotation, velocity, force, fuseTime, spawn, activate);
@@ -468,9 +474,6 @@ namespace LabExtended.API
                 foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>())
                     _toys.Add(AdminToy.Create(toy));
 
-                foreach (var gen in Scp079Recontainer.AllGenerators)
-                    _generators.Add(new Generator(gen));
-
                 foreach (var interactable in Scp079InteractableBase.AllInstances)
                 {
                     if (interactable is null || interactable is not Scp079Camera cam)
@@ -478,16 +481,6 @@ namespace LabExtended.API
 
                     _cams.Add(new Camera(cam));
                 }
-
-                ApiLoader.Debug("Map API", $"Finished populating objects, cache state:\n" +
-                    $"Tesla {_gates.Count}\n" +
-                    $"Elevator {_elevators.Count}\n" +
-                    $"Airlock {_airlocks.Count}\n" +
-                    $"Camera {_cams.Count}\n" +
-                    $"Door {_doors.Count}\n" +
-                    $"Lockers {_lockers.Count}\n" +
-                    $"Toys {_toys.Count}\n" +
-                    $"Generators {_generators.Count}");
             }
             catch (Exception ex)
             {

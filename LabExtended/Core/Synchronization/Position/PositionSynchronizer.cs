@@ -37,8 +37,8 @@ namespace LabExtended.Core.Synchronization.Position
         private static bool _sending;
         private static bool _debug;
 
-        private static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
-        private static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Rent();
+        internal static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
+        internal static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Rent();
 
         public static bool ForceSendNextFrame { get; set; }
 
@@ -245,23 +245,17 @@ namespace LabExtended.Core.Synchronization.Position
             if (_sending)
                 return;
 
-            if (ForceSendNextFrame)
-            {
-                ForceSendNextFrame = false;
-
-                Synchronize();
-                return;
-            }
-
             var sendRate = SendRate;
 
             _sendTime -= sendRate;
             _debugTime -= Time.deltaTime;
 
-            if (_sendTime > 0f)
+            if (_sendTime > 0f && !ForceSendNextFrame)
                 return;
 
             _sendTime = sendRate;
+
+            ForceSendNextFrame = false;
 
             Synchronize();
 

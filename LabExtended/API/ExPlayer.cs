@@ -447,9 +447,6 @@ namespace LabExtended.API
 
         internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
 
-        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _newSyncData;
-        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _prevSyncData;
-
         internal readonly LockedHashSet<ExPlayer> _invisibility;
 
         /// <summary>
@@ -476,10 +473,6 @@ namespace LabExtended.API
             _forcedRot = null;
 
             _sentRoles = new LockedDictionary<int, RoleTypeId>();
-
-            _newSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
-            _prevSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
-
             _invisibility = new LockedHashSet<ExPlayer>();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
