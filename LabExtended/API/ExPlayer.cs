@@ -97,6 +97,11 @@ namespace LabExtended.API
         public static IReadOnlyList<ExPlayer> NpcPlayers => _npcPlayers;
 
         /// <summary>
+        /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
+        /// </summary>
+        public static IReadOnlyList<ExPlayer> AllPlayers => _allPlayers;
+
+        /// <summary>
         /// Gets a count of all players on the server.
         /// </summary>
         public static int Count => _players.Count;
@@ -135,6 +140,17 @@ namespace LabExtended.API
                 }
 
                 return _hostPlayer;
+            }
+        }
+
+        /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for Players copied from config.
+        /// </summary>
+        public static SwitchContainer PlayerSwitches {
+            get {
+                var switches = new SwitchContainer();
+                switches.Copy(ApiLoader.Config.SwitchContainers.PlayerSwitches);
+                return switches;
             }
         }
 
@@ -454,7 +470,7 @@ namespace LabExtended.API
         /// </summary>
         /// <param name="hub"></param>
         public ExPlayer(ReferenceHub hub)
-            : this(hub, new SwitchContainer()) { }
+            : this(hub, PlayerSwitches) { }
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with the specified switches.
