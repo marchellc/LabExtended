@@ -10,6 +10,7 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs.Navigation;
 
 using LabExtended.Core;
+using LabExtended.Core.Configs;
 using LabExtended.Extensions;
 using LabExtended.Utilities.Generation;
 
@@ -30,15 +31,25 @@ namespace LabExtended.API.Npcs
     /// A class used to manage NPCs.
     /// </summary>
     public class NpcHandler
-    {
+{
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
         private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
 
         /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs copied from config.
+        /// </summary>
+        public static SwitchContainer NpcSwitches {
+            get {
+                var switches = new SwitchContainer();
+                switches.Copy(ApiLoader.Config.SwitchContainers.NpcSwitches);
+                return switches;
+            }
+        }
+
+        /// <summary>
         /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs.
         /// </summary>
-        public static SwitchContainer NpcSwitches => new SwitchContainer
-        {
+        public static SwitchContainer DefaultNpcSwitches => new SwitchContainer {
             CanBePocketDimensionItemTarget = false,
             CanBeRespawned = false,
             CanBeScp049Target = false,
@@ -48,6 +59,13 @@ namespace LabExtended.API.Npcs
             CanCountAs079ExpTarget = false,
             CanBlockScp173 = false,
             CanTriggerScp096 = false,
+            CanBeRecontainedAs079 = false,
+            CanBeCapturedBy106 = false,
+            CanBeConsumedByZombies = false,
+            PreventsRecontaining079 = false,
+
+            CanTriggerTesla = false,
+            IsVisibleToScp939 = true,
 
             IsVisibleInRemoteAdmin = false,
             IsVisibleInSpectatorList = false,
