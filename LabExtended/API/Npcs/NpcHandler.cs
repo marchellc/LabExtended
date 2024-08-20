@@ -33,11 +33,7 @@ namespace LabExtended.API.Npcs
     {
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
         private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
-
-        /// <summary>
-        /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs.
-        /// </summary>
-        public static SwitchContainer NpcSwitches => new SwitchContainer
+        private static readonly SwitchContainer _npcSwitches = new SwitchContainer
         {
             CanBePocketDimensionItemTarget = false,
             CanBeRespawned = false,
@@ -54,7 +50,6 @@ namespace LabExtended.API.Npcs
 
             CanTriggerTesla = false,
             IsVisibleToScp939 = true,
-            CanChangeRoles = false,
 
             IsVisibleInRemoteAdmin = false,
             IsVisibleInSpectatorList = false,
@@ -666,7 +661,9 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var player = new ExPlayer(hubComponent, NpcSwitches);
+            var switches = new SwitchContainer();
+            switches.Copy(_npcSwitches);
+            var player = new ExPlayer(hubComponent, switches);
             var npc = new NpcHandler(hubComponent, connection, player);
 
             if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))
