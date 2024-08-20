@@ -10,6 +10,7 @@ using LabExtended.API.Modules;
 using LabExtended.API.Npcs.Navigation;
 
 using LabExtended.Core;
+using LabExtended.Core.Configs;
 using LabExtended.Extensions;
 using LabExtended.Utilities.Generation;
 
@@ -30,11 +31,25 @@ namespace LabExtended.API.Npcs
     /// A class used to manage NPCs.
     /// </summary>
     public class NpcHandler
-    {
+{
         private static readonly List<NpcHandler> _spawnedNpcs = new List<NpcHandler>(); // A list of all known NPCs.
         private static readonly UniqueInt32Generator _npcIdGen = new UniqueInt32Generator(9000, 100000); // A unique ID generator ranging from 9000 to 1000.
-        private static readonly SwitchContainer _npcSwitches = new SwitchContainer
-        {
+
+        /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs copied from config.
+        /// </summary>
+        public static SwitchContainer NpcSwitches {
+            get {
+                var switches = new SwitchContainer();
+                switches.Copy(ApiLoader.Config.SwitchContainers.NpcSwitches);
+                return switches;
+            }
+        }
+
+        /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs.
+        /// </summary>
+        public static SwitchContainer DefaultNpcSwitches => new SwitchContainer {
             CanBePocketDimensionItemTarget = false,
             CanBeRespawned = false,
             CanBeScp049Target = false,
@@ -47,6 +62,7 @@ namespace LabExtended.API.Npcs
             CanBeRecontainedAs079 = false,
             CanBeCapturedBy106 = false,
             CanBeConsumedByZombies = false,
+            PreventsRecontaining079 = false,
 
             CanTriggerTesla = false,
             IsVisibleToScp939 = true,
@@ -661,9 +677,7 @@ namespace LabExtended.API.Npcs
             hubComponent.authManager.NetworkSyncedUserId = "ID_Dedicated";
             hubComponent.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
 
-            var switches = new SwitchContainer();
-            switches.Copy(_npcSwitches);
-            var player = new ExPlayer(hubComponent, switches);
+            var player = new ExPlayer(hubComponent, NpcSwitches);
             var npc = new NpcHandler(hubComponent, connection, player);
 
             if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))

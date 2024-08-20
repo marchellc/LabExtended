@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.Extensions;
+using YamlDotNet.Serialization;
 
 namespace LabExtended.API.Containers
 {
@@ -11,6 +12,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets a list of ignored effect types.
         /// </summary>
+        [YamlIgnore]
         public LockedHashSet<Type> IgnoredEffects { get; } = new LockedHashSet<Type>();
 
         #region Visibility Switches
@@ -152,6 +154,11 @@ namespace LabExtended.API.Containers
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-079) can be recontained.
         /// </summary>
         public bool CanBeRecontainedAs079 { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP, except SCP-079) can prevent Recontaining of SCP-079.
+        /// </summary>
+        public bool PreventsRecontaining079 { get; set; } = true;
         #endregion
 
         #region Item Switches
