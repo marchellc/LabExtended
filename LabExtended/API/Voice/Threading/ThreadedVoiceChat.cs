@@ -11,11 +11,12 @@ using VoiceChat.Networking;
 
 using Mirror;
 
+using LabExtended.API.Pooling;
+
 namespace LabExtended.API.Voice.Threading
 {
     public static class ThreadedVoiceChat
     {
-        private static volatile bool m_WasActive;
         private static volatile bool m_RunThread;
 
         private static volatile ProfilerMarker m_ProcessMarker;
@@ -27,10 +28,9 @@ namespace LabExtended.API.Voice.Threading
         private static volatile ConcurrentQueue<ThreadedVoicePacket> m_ProcessingQueue;
         private static volatile ConcurrentQueue<ThreadedVoicePacket> m_OutputQueue;
 
-        public static volatile bool IsPaused;
         public static volatile bool IsEnabled;
-        public static volatile bool IsRunning;
-        public static volatile bool IsActive;
+
+        public static bool IsRunning => m_RunThread;
 
         public static void PrintStats()
         {
@@ -54,12 +54,7 @@ namespace LabExtended.API.Voice.Threading
             RoundEvents.OnWaitingForPlayers -= InternalClean;
             TickManager.OnTick -= ProcessQueue;
 
-            m_WasActive = false;
             m_RunThread = false;
-
-            IsPaused = false;
-            IsEnabled = false;
-            IsActive = false;
 
             m_ProcessMarker?.Dispose();
             m_ProcessMarker = null;
@@ -77,18 +72,13 @@ namespace LabExtended.API.Voice.Threading
             m_OutputQueue = null;
 
             m_ProcessingThread = null;
-
-            IsRunning = false;
         }
 
         public static void Receive(ExPlayer speaker, ref VoiceMessage msg)
         {
-            if (IsPaused || !IsEnabled)
-                return;
-
             m_ReceiveMarker.MarkStart();
 
-            var packet = new ThreadedVoicePacket();
+            var packet = ObjectPool<ThreadedVoicePacket>.Rent();
 
             packet.Speaker = speaker;
 
@@ -115,7 +105,6 @@ namespace LabExtended.API.Voice.Threading
             RoundEvents.OnWaitingForPlayers += InternalClean;
             TickManager.OnTick += ProcessOutput;
 
-            m_WasActive = true;
             m_RunThread = true;
 
             m_ProcessMarker = new ProfilerMarker("Threaded Voice / Processing Thread", 200);
@@ -130,24 +119,22 @@ namespace LabExtended.API.Voice.Threading
             m_ProcessingThread.Start();
 
             Info("Enabled!", "Loader");
-
-            IsRunning = true;
         }
 
         private static void ProcessInput()
         {
-            if (IsPaused || !IsEnabled)
+            if (!IsEnabled)
                 return;
 
             while (m_ProcessingQueue.TryDequeue(out var threadedVoice))
-            {
                 ProcessInput(threadedVoice);
-            }
         }
 
         private static void ProcessInput(ThreadedVoicePacket threadedVoicePacket)
         {
-            if (IsPaused || !IsEnabled)
+            IsEnabled = !ApiLoader.VoiceOptions.DisableCustomVoice && ApiLoader.ThreadedVoiceOptions.IsEnabled;
+
+            if (!IsEnabled)
                 return;
 
             foreach (var modifier in VoiceModule.GlobalModifiers)
@@ -171,15 +158,13 @@ namespace LabExtended.API.Voice.Threading
 
         private static void ProcessOutput()
         {
-            if (IsPaused || !IsEnabled)
+            if (!IsEnabled)
                 return;
 
             m_OutputMarker.MarkStart();
 
             while (m_OutputQueue != null && m_OutputQueue.TryDequeue(out var next))
-            {
                 next?.Speaker?.Voice?.ReceiveThreaded(next);
-            }
 
             m_OutputMarker.MarkEnd();
         }
@@ -190,19 +175,13 @@ namespace LabExtended.API.Voice.Threading
             {
                 m_ProcessMarker.MarkStart();
 
-                IsActive = !IsPaused && IsEnabled;
-
                 if (!IsEnabled)
                 {
-                    if (m_WasActive)
-                        Dispose();
-
-                    m_WasActive = false;
+                    Dispose();
                     break;
                 }
 
-                if (!IsPaused)
-                    ProcessInput();
+                ProcessInput();
 
                 m_ProcessMarker.MarkEnd();
             }
@@ -210,12 +189,8 @@ namespace LabExtended.API.Voice.Threading
 
         private static void InternalClean()
         {
-            IsPaused = true;
-
             PrintStats();
             Clean();
-
-            IsPaused = false;
         }
 
         private static void Info(object msg, string segment = null)

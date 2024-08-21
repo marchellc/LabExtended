@@ -34,7 +34,7 @@ namespace LabExtended.Patches.Functions
 
             if (!ApiLoader.Config.VoiceOptions.DisableCustomVoice)
             {
-                if (ThreadedVoiceChat.IsActive)
+                if (ThreadedVoiceChat.IsRunning)
                 {
                     ThreadedVoiceChat.Receive(speaker, ref msg);
                     return false;

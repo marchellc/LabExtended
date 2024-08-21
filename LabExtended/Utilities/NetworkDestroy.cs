@@ -4,6 +4,7 @@ using Mirror;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
+using LabExtended.API;
 
 namespace LabExtended.Utilities
 {
@@ -64,6 +65,8 @@ namespace LabExtended.Utilities
                 }
 
                 _disposeHandlers.Remove(identity.netId);
+
+                ExMap.OnIdentityDestroyed(identity);
 
                 OnIdentityDestroyed?.Invoke(identity);
             }

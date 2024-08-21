@@ -2,7 +2,6 @@
 
 using LabExtended.Commands;
 
-using LabExtended.API.CustomCommands.Debug.RemoteAdmin;
 using LabExtended.API.CustomCommands.Debug.Hints;
 using LabExtended.API.CustomCommands.Debug.Other;
 
@@ -16,8 +15,6 @@ namespace LabExtended.API.CustomCommands.Debug
 
         public override void LoadGeneratedCommands()
         {
-            RegisterCommand(new ContinuedResponseCommand());
-
             RegisterCommand(new HintShowTemporaryCommand());
             RegisterCommand(new HintToggleDebugCommand());
 

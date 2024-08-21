@@ -1,15 +1,17 @@
 ﻿using VoiceChat.Codec.Enums;
 using VoiceChat.Codec;
+using VoiceChat;
 
 using VoiceChat.Networking;
+
 using LabExtended.API.Voice.Threading;
 
 namespace LabExtended.API.Voice.Modifiers.Pitch
 {
-    public class VoicePitchModifier : VoiceModifier
+    public class VoicePitchModifier : VoiceModifier, IDisposable
     {
         #region Private Static Memebers
-        private static int MAX_FRAME_LENGTH = 16000;
+        private const int MAX_FRAME_LENGTH = 16000;
 
         private float[] gInFIFO = new float[MAX_FRAME_LENGTH];
         private float[] gOutFIFO = new float[MAX_FRAME_LENGTH];
@@ -25,7 +27,7 @@ namespace LabExtended.API.Voice.Modifiers.Pitch
         private long gRover, gInit;
         #endregion
 
-        public override bool IsEnabled => true;
+        public override bool IsEnabled => Encoder != null && Decoder != null;
         public override bool IsThreaded => true;
 
         /// <summary>
@@ -67,13 +69,37 @@ namespace LabExtended.API.Voice.Modifiers.Pitch
             if (pitch == 1f)
                 return;
 
-            var data = new float[48000];
+            var data = new float[VoiceChatSettings.SampleRate];
 
             Decoder.Decode(packet.Data, packet.Size, data);
 
-            PitchShift(pitch, 480U, 48000, data);
+            PitchShift(pitch, VoiceChatSettings.PacketSizePerChannel, VoiceChatSettings.SampleRate, data);
 
-            packet.Size = Encoder.Encode(data, packet.Data, 480);
+            packet.Size = Encoder.Encode(data, packet.Data, VoiceChatSettings.PacketSizePerChannel);
+        }
+
+        public void Dispose()
+        {
+            Encoder?.Dispose();
+            Encoder = null;
+
+            Decoder?.Dispose();
+            Decoder = null;
+
+            gInFIFO = null;
+            gOutFIFO = null;
+            
+            gFFTworksp = null;
+            gOutputAccum = null;
+
+            gLastPhase = null;
+            gSumPhase = null;
+
+            gAnaFreq = null;
+            gAnaMagn = null;
+
+            gSynFreq = null;
+            gSynMagn = null;
         }
 
         /// <summary>
@@ -84,7 +110,7 @@ namespace LabExtended.API.Voice.Modifiers.Pitch
         /// <param name="sampleRate">The sampling rate.</param>
         /// <param name="indata">The input data.</param>
         public void PitchShift(float pitchShift, long numSampsToProcess, float sampleRate, float[] indata)
-            => PitchShift(pitchShift, numSampsToProcess, (long)2048, (long)10, sampleRate, indata);
+            => PitchShift(pitchShift, numSampsToProcess, 2048, 10, sampleRate, indata);
 
         private void PitchShift(float pitchShift, long numSampsToProcess, long fftFrameSize, long osamp, float sampleRate, float[] indata)
         {

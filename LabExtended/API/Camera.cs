@@ -2,8 +2,6 @@
 using LabExtended.API.Npcs;
 using LabExtended.API.Wrappers;
 
-using LabExtended.Core;
-
 using MapGeneration;
 
 using PlayerRoles;
@@ -245,14 +243,10 @@ namespace LabExtended.API
             float horizontal = (eulerRotation.y - cameraRotation.y + 360f) % 360f;
 
             if (vertical > 180f)
-            {
                 vertical -= 360f;
-            }
 
             if (horizontal > 180f)
-            {
                 horizontal -= 360f;
-            }
 
             SetRotation(horizontal, vertical);
         }

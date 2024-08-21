@@ -19,9 +19,9 @@ using LabExtended.Patches.Fixes;
 using LabExtended.Commands;
 
 using NorthwoodLib.Pools;
-using MapGeneration.Distributors;
-using static Mirror.LiteNetLib4Mirror.LiteNetLib4MirrorCore;
+
 using LabExtended.Core.Synchronization.Position;
+using Interactables;
 
 namespace LabExtended.Events
 {
@@ -38,6 +38,8 @@ namespace LabExtended.Events
             NetIdWaypointIgnoreDoorsPatch.CustomWaypoints.Clear();
             NetIdWaypointIgnoreDoorsPatch.DisabledWaypoints.Clear();
 
+            DamageInfo._wrappers.Clear();        
+
             if (ReferenceHub.TryGetHostHub(out var hostHub))
                 ExPlayer._hostPlayer = new ExPlayer(hostHub);
             else
@@ -49,6 +51,8 @@ namespace LabExtended.Events
 
             ExRound.StartedAt = DateTime.MinValue;
             ExRound.State = RoundState.WaitingForPlayers;
+
+            ExMap.OnRoundWait();
 
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
@@ -70,6 +74,8 @@ namespace LabExtended.Events
             NpcHandler.DestroyNpcs();
             Prefabs.DestroySpawnedDoors();
 
+            InteractableCollider.AllInstances.Clear();
+
             ExRound.State = RoundState.Restarting;
         }
 
@@ -77,6 +83,8 @@ namespace LabExtended.Events
         {
             ExRound.StartedAt = DateTime.Now;
             ExRound.State = RoundState.InProgress;
+
+            ExMap.OnRoundStarted();
 
             if (TickManager.IsPaused("Tesla Gate Update"))
                 TickManager.ResumeTick("Tesla Gate Update");

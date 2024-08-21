@@ -7,12 +7,15 @@ using Hazards;
 using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
+
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
+
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
+using LabExtended.API.Npcs;
 using LabExtended.API.Npcs.Navigation;
 using LabExtended.API.Toys;
 
@@ -27,9 +30,16 @@ using MapGeneration.Distributors;
 
 using Mirror;
 
+using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
+using PlayerRoles.PlayableScps.Scp3114;
+using PlayerRoles.Ragdolls;
+
+using PlayerStatsSystem;
+
 using PluginAPI.Events;
+
 using RelativePositioning;
 
 using UnityEngine;
@@ -42,9 +52,17 @@ namespace LabExtended.API
     public static class ExMap
     {
         static ExMap()
-            => NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
+        {
+            NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
+            RagdollManager.ServerOnRagdollCreated += OnRagdollSpawned;
+        }
+
+        private static ExPlayer _bonesNpc;
+
+        internal static bool _bonesRequired = false;
 
         internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
+        internal static readonly LockedHashSet<BasicRagdoll> _ragdolls = new LockedHashSet<BasicRagdoll>();
         internal static readonly LockedHashSet<Generator> _generators = new LockedHashSet<Generator>();
         internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
         internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
@@ -55,6 +73,7 @@ namespace LabExtended.API
         internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
 
         public static IReadOnlyList<ItemPickupBase> Pickups => _pickups;
+        public static IReadOnlyList<BasicRagdoll> Ragdolls => _ragdolls;
         public static IReadOnlyList<Generator> Generators => _generators;
         public static IReadOnlyList<ExTeslaGate> TeslaGates => _gates;
         public static IReadOnlyList<Elevator> Elevators => _elevators;
@@ -88,6 +107,8 @@ namespace LabExtended.API
 
         public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
         public static IEnumerable<NetIdWaypoint> NetIdWaypoints => NetIdWaypoint.AllNetWaypoints.Where(x => x != null);
+
+        public static int AmbientClipsCount => AmbientSoundPlayer.clips.Length;
 
         public static AmbientSoundPlayer AmbientSoundPlayer { get; private set; }
 
@@ -154,6 +175,64 @@ namespace LabExtended.API
         public static void SpawnExplosion(Vector3 position, ItemType type = ItemType.GrenadeHE)
             => ExplosionUtils.ServerSpawnEffect(position, type);
 
+        public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Quaternion rotation)
+            => SpawnBonesRagdoll(position, scale, Vector3.zero, rotation);
+
+        public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation)
+        {
+            if (_bonesNpc is null)
+                throw new InvalidOperationException($"You need to invoke the 'ApiLoader.RequireBonesNpc()' to use this function.");
+
+            var ragdollInstance = SpawnRagdoll(RoleTypeId.Tutorial, position, scale, rotation, true, _bonesNpc, new UniversalDamageHandler(-1f, DeathTranslations.Warhead));
+
+            if (ragdollInstance is null)
+                throw new Exception($"Failed to spawn ragdoll.");
+
+            var bonesRagdoll = SpawnRagdoll(RoleTypeId.Scp3114, position, scale, velocity, rotation, true, _bonesNpc, new Scp3114DamageHandler(ragdollInstance, false)) as DynamicRagdoll;
+
+            _ragdolls.Remove(ragdollInstance);
+
+            NetworkServer.Destroy(ragdollInstance.gameObject);
+
+            if (bonesRagdoll is null)
+                throw new Exception("Failed to spawn bones ragdoll.");
+
+            Scp3114RagdollToBonesConverter.ServerConvertNew(_bonesNpc.Role.Scp3114, bonesRagdoll);
+            return bonesRagdoll;
+        }
+
+        public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
+            => SpawnRagdoll(ragdollRoleType, position, scale, Vector3.zero, rotation, spawn, owner, damageHandler);
+
+        public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
+        {
+            if (!ragdollRoleType.TryGetPrefab(out var role))
+                throw new Exception($"Failed to find role prefab for role {ragdollRoleType}");
+
+            if (role is not IRagdollRole ragdollRole)
+                throw new Exception($"Role {ragdollRoleType} does not have a ragdoll.");
+
+            damageHandler ??= new UniversalDamageHandler(-1f, DeathTranslations.Crushed);
+
+            var ragdoll = UnityEngine.Object.Instantiate(ragdollRole.Ragdoll);
+
+            ragdoll.NetworkInfo = new RagdollData((owner ?? ExPlayer.Host).Hub, damageHandler, ragdoll.transform.localPosition, ragdoll.transform.localRotation);
+
+            ragdoll.transform.position = position;
+            ragdoll.transform.rotation = rotation;
+
+            ragdoll.transform.localScale = scale;
+
+            if (ragdoll.TryGetComponent<Rigidbody>(out var rigidbody))
+                rigidbody.velocity = velocity;
+
+            if (spawn)
+                NetworkServer.Spawn(ragdoll.gameObject);
+
+            _ragdolls.Add(ragdoll);
+            return ragdoll;
+        }
+
         public static void FlickerLights(float duration, params FacilityZone[] zones)
         {
             foreach (var light in RoomLightController.Instances)
@@ -169,18 +248,10 @@ namespace LabExtended.API
         }
 
         public static void SetLightColor(Color color)
-        {
-            PrimitiveUtils.FixColor(ref color);
-
-            foreach (var light in RoomLightController.Instances)
-                light.NetworkOverrideColor = color;
-        }
+            => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = color);
 
         public static void ResetLightsColor()
-        {
-            foreach (var light in RoomLightController.Instances)
-                light.NetworkOverrideColor = DefaultLightColor;
-        }
+            => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = DefaultLightColor);
 
         public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true)
             => SpawnItem<ItemPickupBase>(type, position, scale, rotation, spawn);
@@ -446,6 +517,7 @@ namespace LabExtended.API
 
                 _generators.Clear();
                 _elevators.Clear();
+                _ragdolls.Clear();
                 _airlocks.Clear();
                 _pickups.Clear();
                 _lockers.Clear();
@@ -488,29 +560,56 @@ namespace LabExtended.API
             }
         }
 
-        private static void OnIdentityDestroyed(NetworkIdentity identity)
+        internal static void OnRoundStarted()
+        {
+            if (!_bonesRequired)
+                return;
+
+            NpcHandler.Spawn("Bones Converter", RoleTypeId.Scp3114, null, null, null, npc =>
+            {
+                npc.Player.HasGodMode = true;
+                npc.Player.IsInvisible = true;
+
+                _bonesNpc = npc.Player;
+            });
+        }
+
+        internal static void OnRoundWait()
+        {
+            _bonesNpc = null;
+        }
+
+        internal static void OnIdentityDestroyed(NetworkIdentity identity)
         {
             try
             {
                 _generators.RemoveWhere(x => x.NetId == identity.netId);
                 _airlocks.RemoveWhere(x => x.NetId == identity.netId);
+                _ragdolls.RemoveWhere(x => x.netId == identity.netId);
                 _pickups.RemoveWhere(x => x.netId == identity.netId);
                 _lockers.RemoveWhere(x => x.netId == identity.netId);
                 _gates.RemoveWhere(x => x.NetId == identity.netId);
                 _doors.RemoveWhere(x => x.NetId == identity.netId);
                 _toys.RemoveWhere(x => x.NetId == identity.netId);
 
-                foreach (var player in ExPlayer.Players)
+                foreach (var player in ExPlayer.AllPlayers)
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
 
-                if (identity.TryGetComponent<IInteractable>(out var interactable)) {
+                if (identity.TryGetComponent<IInteractable>(out var interactable))
                     InteractableCollider.AllInstances.Remove(interactable);
-                }
             }
             catch (Exception ex)
             {
                 ApiLoader.Error("Map API", ex);
             }
+        }
+
+        private static void OnRagdollSpawned(ReferenceHub owner, BasicRagdoll ragdoll)
+        {
+            if (ragdoll is null || !ragdoll)
+                return;
+
+            _ragdolls.Add(ragdoll);
         }
     }
 }
