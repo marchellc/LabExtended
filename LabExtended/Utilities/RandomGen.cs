@@ -2,15 +2,15 @@
 
 namespace LabExtended.Utilities
 {
-    public class Generator
+    public class RandomGen
     {
         public static readonly char[] Characters;
         public static readonly char[] ReadableCharacters;
         public static readonly char[] UnreadableCharacters;
 
-        public static readonly Generator Instance;
+        public static readonly RandomGen Instance;
 
-        static Generator()
+        static RandomGen()
         {
             Characters = "$%#@!*abcdefghijklmnopqrstuvwxyz1234567890?;:ABCDEFGHIJKLMNOPQRSTUVWXYZ^&".ToCharArray();
             ReadableCharacters = "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
