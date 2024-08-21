@@ -6,9 +6,9 @@ using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.API;
 
-namespace LabExtended.Utilities
+namespace LabExtended.Events
 {
-    public static class NetworkDestroy
+    public static class NetworkEvents
     {
         private static readonly LockedDictionary<uint, List<Action<NetworkIdentity>>> _disposeHandlers = new LockedDictionary<uint, List<Action<NetworkIdentity>>>();
 

@@ -1,4 +1,6 @@
-﻿using LabExtended.API.Collections.Locked;
+﻿using HarmonyLib;
+
+using LabExtended.API.Collections.Locked;
 using LabExtended.Extensions;
 
 using System.Reflection;
@@ -9,10 +11,10 @@ namespace LabExtended.Utilities
     {
         public struct DefinedEvent
         {
-            public readonly Func<object, THandler> Getter;
+            public readonly AccessTools.FieldRef<object, THandler> Getter;
             public readonly EventInfo Event;
 
-            public DefinedEvent(Func<object, THandler> getter, EventInfo ev)
+            public DefinedEvent(AccessTools.FieldRef<object, THandler> getter, EventInfo ev)
             {
                 Getter = getter;
                 Event = ev;
@@ -21,39 +23,18 @@ namespace LabExtended.Utilities
 
         private static readonly LockedHashSet<DefinedEvent> _definedEvents = new LockedHashSet<DefinedEvent>();
 
-        public static void DefineEvent(Type type, Func<object, THandler> getter = null)
-            => DefineEvent(type.FindEvent<THandler>(), getter);
+        public static void DefineEvent(Type type)
+            => DefineEvent(type.FindEvent<THandler>());
 
-        public static void DefineEvent(Type type, string eventName, Func<object, THandler> getter = null)
-            => DefineEvent(type.FindEvent(eventName), getter);
+        public static void DefineEvent(Type type, string eventName)
+            => DefineEvent(type.FindEvent(eventName));
 
-        public static void DefineEvent(EventInfo ev, Func<object, THandler> getter = null)
+        public static void DefineEvent(EventInfo ev)
         {
-            if (ev is null)
-                throw new ArgumentNullException(nameof(getter));
-
             if (_definedEvents.Any(e => e.Event == ev))
                 return;
 
-            if (getter is null)
-            {
-                var field = ev.DeclaringType.FindField(ev.Name);
-
-                if (field is null)
-                    throw new Exception($"Failed to find event field.");
-
-                getter = target =>
-                {
-                    var result = field.GetValue(target);
-
-                    if (result != null)
-                        return (THandler)result;
-
-                    return null;
-                };
-            }
-
-            _definedEvents.Add(new DefinedEvent(getter, ev));
+            _definedEvents.Add(new DefinedEvent(AccessTools.FieldRefAccess<THandler>($"{ev.DeclaringType.FullName}:{ev.Name}"), ev));
         }
 
         public static void InvokeEvent(Type type, string eventName, object target, params object[] args)

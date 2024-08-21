@@ -20,8 +20,8 @@ using LabExtended.API.Npcs.Navigation;
 using LabExtended.API.Toys;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Utilities;
 
 using LightContainmentZoneDecontamination;
 
@@ -53,7 +53,7 @@ namespace LabExtended.API
     {
         static ExMap()
         {
-            NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
+            NetworkEvents.OnIdentityDestroyed += OnIdentityDestroyed;
             RagdollManager.ServerOnRagdollCreated += OnRagdollSpawned;
         }
 

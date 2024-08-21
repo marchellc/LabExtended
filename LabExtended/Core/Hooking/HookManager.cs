@@ -18,6 +18,7 @@ using LabExtended.Core.Hooking.Executors;
 using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Hooking.Objects;
 
+using LabExtended.Core.Synchronization.Position;
 using LabExtended.Core.Performance;
 
 using MEC;
@@ -26,7 +27,6 @@ using PluginAPI.Events;
 using PluginAPI.Core.Attributes;
 
 using System.Reflection;
-using LabExtended.Core.Synchronization.Position;
 
 namespace LabExtended.Core.Hooking
 {
@@ -184,141 +184,162 @@ namespace LabExtended.Core.Hooking
 
         public static void RegisterDelegates(Type type, object typeInstance)
         {
-            foreach (var eventInfo in type.GetAllEvents())
+            try
             {
-                var pluginEvent = default(PluginEvent);
-
-                if (_activeDelegates.Any(p => p.Value.Any(d => d.Event == eventInfo && d.TypeInstance.IsEqualTo(typeInstance))))
-                    continue;
-
-                var eventField = type.FindField(eventInfo.Name);
-
-                if (eventField is null || !eventInfo.IsMulticast)
-                    continue;
-
-                if (!eventInfo.HasAttribute<HookDescriptorAttribute>(out var hookDescriptorAttribute) && !eventInfo.HasAttribute(out pluginEvent))
-                    continue;
-
-                var eventType = default(Type);
-                var eventPriority = HookPriority.Normal;
-
-                if (eventInfo.EventHandlerType == typeof(Action))
+                foreach (var eventInfo in type.GetAllEvents())
                 {
-                    if (hookDescriptorAttribute.EventOverride is null && pluginEvent is null)
-                        continue;
-
-                    var attrType = hookDescriptorAttribute?.EventOverride;
-
-                    if (attrType is null && pluginEvent != null)
+                    try
                     {
-                        if (!EventManager.Events.TryGetValue(pluginEvent.EventType, out var pluginEv))
+                        var pluginEvent = default(PluginEvent);
+
+                        if (_activeDelegates.Any(p => p.Value.Any(d => d.Event == eventInfo && d.TypeInstance.IsEqualTo(typeInstance))))
                             continue;
 
-                        attrType = pluginEv.EventArgType;
-                    }
+                        var eventField = type.FindField(eventInfo.Name);
 
-                    if (attrType is null)
-                        continue;
-
-                    eventType = attrType;
-                    eventPriority = hookDescriptorAttribute?.Priority ?? HookPriority.Normal;
-                }
-                else if (eventType is null)
-                {
-                    if (eventInfo.EventHandlerType.IsGenericType && (eventInfo.EventHandlerType.GetGenericTypeDefinition() == typeof(Action<>) || eventInfo.EventHandlerType.GetGenericTypeDefinition() == typeof(Func<,>)))
-                    {
-                        var genericArgs = eventInfo.EventHandlerType.GetGenericArguments();
-
-                        if (genericArgs.Length != 1)
+                        if (eventField is null || !eventInfo.IsMulticast)
                             continue;
 
-                        eventType = genericArgs[0];
-                        eventPriority = HookPriority.Normal;
+                        if (!eventInfo.HasAttribute<HookDescriptorAttribute>(out var hookDescriptorAttribute) && !eventInfo.HasAttribute(out pluginEvent))
+                            continue;
+
+                        var eventType = default(Type);
+                        var eventPriority = HookPriority.Normal;
+
+                        if (eventInfo.EventHandlerType == typeof(Action))
+                        {
+                            if (hookDescriptorAttribute.EventOverride is null && pluginEvent is null)
+                                continue;
+
+                            var attrType = hookDescriptorAttribute?.EventOverride;
+
+                            if (attrType is null && pluginEvent != null)
+                            {
+                                if (!EventManager.Events.TryGetValue(pluginEvent.EventType, out var pluginEv))
+                                    continue;
+
+                                attrType = pluginEv.EventArgType;
+                            }
+
+                            if (attrType is null)
+                                continue;
+
+                            eventType = attrType;
+                            eventPriority = hookDescriptorAttribute?.Priority ?? HookPriority.Normal;
+                        }
+                        else if (eventType is null)
+                        {
+                            if (eventInfo.EventHandlerType.IsGenericType && (eventInfo.EventHandlerType.GetGenericTypeDefinition() == typeof(Action<>) || eventInfo.EventHandlerType.GetGenericTypeDefinition() == typeof(Func<,>)))
+                            {
+                                var genericArgs = eventInfo.EventHandlerType.GetGenericArguments();
+
+                                if (genericArgs.Length != 1)
+                                    continue;
+
+                                eventType = genericArgs[0];
+                                eventPriority = HookPriority.Normal;
+                            }
+                            else
+                            {
+                                continue;
+                            }
+                        }
+
+                        if (eventType is null)
+                            continue;
+
+                        if (!_activeDelegates.TryGetValue(eventType, out var hookDelegateObjects))
+                            _activeDelegates[eventType] = hookDelegateObjects = new List<HookDelegateObject>();
+
+                        if ((eventPriority is HookPriority.AlwaysFirst || eventPriority is HookPriority.AlwaysLast) && hookDelegateObjects.Any(h => h.Priority == eventPriority))
+                            eventPriority = eventPriority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
+
+                        hookDelegateObjects.Add(new HookDelegateObject(eventInfo, eventField, typeInstance, eventPriority));
+
+                        var ordered = hookDelegateObjects.OrderBy(h => (short)h.Priority).ToList();
+
+                        hookDelegateObjects.Clear();
+                        hookDelegateObjects.AddRange(ordered);
+
+                        ApiLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.GetMemberName()}&r (&6{eventType.Name}&r)");
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        continue;
+                        ApiLoader.Error("Hooking API", $"Failed while registering custom delegate &3{eventInfo.GetMemberName()}&r:\n{ex.ToColoredString()}");
                     }
                 }
-
-                if (eventType is null)
-                    continue;
-
-                if (!_activeDelegates.TryGetValue(eventType, out var hookDelegateObjects))
-                    _activeDelegates[eventType] = hookDelegateObjects = new List<HookDelegateObject>();
-
-                if ((eventPriority is HookPriority.AlwaysFirst || eventPriority is HookPriority.AlwaysLast) && hookDelegateObjects.Any(h => h.Priority == eventPriority))
-                    eventPriority = eventPriority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
-
-                hookDelegateObjects.Add(new HookDelegateObject(eventInfo, eventField, typeInstance, eventPriority));
-
-                var ordered = hookDelegateObjects.OrderBy(h => (short)h.Priority).ToList();
-
-                hookDelegateObjects.Clear();
-                hookDelegateObjects.AddRange(ordered);
-
-                ApiLoader.Debug("Hooking API", $"Registered custom delegate: &3{eventInfo.GetMemberName()}&r (&6{eventType.Name}&r)");
+            }
+            catch (Exception ex)
+            {
+                ApiLoader.Error("Hooking API", $"Failed while registering delegates in type &3{type.FullName}&r:\n{ex.ToColoredString()}");
             }
         }
 
         private static void RegisterInternal(MethodInfo method, object typeInstance, bool log, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute, PluginEvent pluginEvent)
         {
-            if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
-                return;
-
-            if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
-                return;
-
-            if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance, true) && h.Method == method)))
+            try
             {
-                ApiLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
-                return;
+                if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
+                    return;
+
+                if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
+                    return;
+
+                if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance, true) && h.Method == method)))
+                {
+                    ApiLoader.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
+                    return;
+                }
+
+                var methodArgs = method.GetAllParameters();
+
+                if (!TryGetEventType(hookDescriptorAttribute, pluginEvent, methodArgs, out var eventType))
+                {
+                    ApiLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.GetMemberName()}&r");
+                    return;
+                }
+
+                if (!TryGetBinder(methodArgs, eventType, out var hookBinder))
+                {
+                    ApiLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.GetMemberName()}&r");
+                    return;
+                }
+
+                if (!TryGetRunner(method.ReturnType, out var hookRunner))
+                {
+                    ApiLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.GetMemberName()}&r");
+                    return;
+                }
+
+                if (!_activeHooks.TryGetValue(eventType, out var hooks))
+                    _activeHooks[eventType] = hooks = new List<HookInfo>();
+
+                var priority = hookDescriptorAttribute?.Priority ?? HookPriority.Normal;
+
+                if ((priority is HookPriority.AlwaysFirst || priority is HookPriority.AlwaysLast) && hooks.Any(h => h.Priority == priority))
+                {
+                    var newPriority = priority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
+
+                    ApiLoader.Warn("Hooking API", $"Hook &3{method.GetMemberName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
+
+                    priority = newPriority;
+                }
+
+                var hook = new HookInfo(method, typeInstance, hookRunner, hookBinder, priority);
+
+                hooks.Add(hook);
+
+                var ordered = hooks.OrderBy(h => (short)h.Priority).ToList();
+
+                hooks.Clear();
+                hooks.AddRange(ordered);
+
+                ApiLoader.Debug("Hooking API", $"Registered a new hook: &3{method.GetMemberName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
             }
-
-            var methodArgs = method.GetAllParameters();
-
-            if (!TryGetEventType(hookDescriptorAttribute, pluginEvent, methodArgs, out var eventType))
+            catch (Exception ex)
             {
-                ApiLoader.Warn("Hooking API", $"Failed to recognize event type in method &3{method.GetMemberName()}&r");
-                return;
+                ApiLoader.Error("Hooking API", $"Failed while registering hook &3{method.GetMemberName()}&r:\n{ex.ToColoredString()}");
             }
-
-            if (!TryGetBinder(methodArgs, eventType, out var hookBinder))
-            {
-                ApiLoader.Warn("Hooking API", $"Failed to get a valid overload binder for method &3{method.GetMemberName()}&r");
-                return;
-            }
-
-            if (!TryGetRunner(method.ReturnType, out var hookRunner))
-            {
-                ApiLoader.Warn("Hooking API", $"Failed to get a valid method runner for method &3{method.GetMemberName()}&r");
-                return;
-            }
-
-            if (!_activeHooks.TryGetValue(eventType, out var hooks))
-                _activeHooks[eventType] = hooks = new List<HookInfo>();
-
-            var priority = hookDescriptorAttribute?.Priority ?? HookPriority.Normal;
-
-            if ((priority is HookPriority.AlwaysFirst || priority is HookPriority.AlwaysLast) && hooks.Any(h => h.Priority == priority))
-            {
-                var newPriority = priority is HookPriority.AlwaysFirst ? HookPriority.Highest : HookPriority.Lowest;
-
-                ApiLoader.Warn("Hooking API", $"Hook &3{method.GetMemberName()}&r tried to register it's priority as &6{priority}&r, but that spot was already taken by another hook. It's new priority will be &6{newPriority}&r.");
-
-                priority = newPriority;
-            }
-
-            var hook = new HookInfo(method, typeInstance, hookRunner, hookBinder, priority);
-
-            hooks.Add(hook);
-
-            var ordered = hooks.OrderBy(h => (short)h.Priority).ToList();
-
-            hooks.Clear();
-            hooks.AddRange(ordered);
-
-            ApiLoader.Debug("Hooking API", $"Registered a new hook: &3{method.GetMemberName()}&r (&6{eventType.FullName}&r) ({hooks.Count})");
         }
 
         private static bool TryGetRunner(Type returnType, out IHookRunner hookRunner)

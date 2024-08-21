@@ -40,7 +40,7 @@ namespace LabExtended.Core.Hooking
 
             try
             {
-                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates))
+                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates) && predefinedDelegates.Count > 0)
                 {
                     foreach (var predefinedDelegate in predefinedDelegates)
                     {
@@ -55,7 +55,7 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates))
+                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates) && predefinedDelegates.Count > 0)
                 {
                     foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
                     {
@@ -76,13 +76,15 @@ namespace LabExtended.Core.Hooking
                 if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks.Count > 0)
                     returnValue = RunInternal(eventObject, hooks, returnValue);
 
-                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects))
+                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects) && hookDelegateObjects.Count > 0)
                 {
+                    var args = new object[] { eventObject };
+
                     foreach (var hookDelegateObject in hookDelegateObjects)
                     {
                         try
                         {
-                            var value = hookDelegateObject.Field.GetValue(null);
+                            var value = hookDelegateObject.FieldGetter();
 
                             if (value is null || value is not Delegate del)
                             {
@@ -96,7 +98,7 @@ namespace LabExtended.Core.Hooking
                                 continue;
                             }
 
-                            del.DynamicInvoke(eventObject);
+                            hookDelegateObject.Invoker(null, args);
                         }
                         catch (Exception ex)
                         {
