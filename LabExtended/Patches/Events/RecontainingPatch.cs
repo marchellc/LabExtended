@@ -30,7 +30,7 @@ namespace LabExtended.Patches.Events
 
             var recontainingArgs = new Scp079RecontainingArgs(ExPlayer.Get(__instance._activatorGlass.LastAttacker), list);
 
-            if (!HookRunner.RunCancellable(recontainingArgs, true))
+            if (!HookRunner.RunEvent(recontainingArgs, true))
             {
                 __instance._alreadyRecontained = !recontainingArgs.PlayAnnouncement;
                 return false;

@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Functions.Items
                 customItem.OnPickingUp(pickingUpEv);
             }
 
-            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.IsAllowed))
+            if (!HookRunner.RunEvent(pickingUpEv, pickingUpEv.IsAllowed))
             {
                 if (pickingUpEv.DestroyPickup)
                 {

@@ -44,7 +44,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickUpEv = new PlayerPickingUpAmmoArgs(player, ammoPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, (ammoPickup.SavedAmmo - ammo) <= 0, ammo);
 
-            if (!HookRunner.RunCancellable(pickUpEv, true))
+            if (!HookRunner.RunEvent(pickUpEv, true))
             {
                 if (pickUpEv.DestroyPickup)
                 {

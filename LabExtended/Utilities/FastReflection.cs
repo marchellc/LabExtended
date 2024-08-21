@@ -54,17 +54,6 @@ namespace LabExtended.Utilities
         public static Func<object, object[], object> ForMethod(MethodInfo method)
             => CreateMethodWrapper(method.DeclaringType, method, false);
 
-        public static Func<object, object[], object> ForProperty(Type type, string propertyName)
-        {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
-
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
-
-            return CreatePropertyWrapper(type, propertyName);
-        }
-
         private static Func<object, object[], object> CreateMethodWrapper(Type type, MethodInfo method, bool isDelegate)
         {
             if (method is null)
@@ -80,21 +69,19 @@ namespace LabExtended.Utilities
 
             var invokeExp = isDelegate
                 ? (Expression)Expression.Invoke(castTargetExp, paramsExps)
-                : Expression.Call(castTargetExp, method, paramsExps);
+                : (method.IsStatic ? Expression.Call(method, paramsExps) : Expression.Call(castTargetExp, method, paramsExps));
 
             LambdaExpression lambdaExp;
 
             if (method.ReturnType != typeof(void))
             {
                 var resultExp = Expression.Convert(invokeExp, typeof(object));
-
                 lambdaExp = Expression.Lambda(resultExp, targetExp, argsExp);
             }
             else
             {
                 var constExp = Expression.Constant(null, typeof(object));
                 var blockExp = Expression.Block(invokeExp, constExp);
-
                 lambdaExp = Expression.Lambda(blockExp, targetExp, argsExp);
             }
 
@@ -115,24 +102,6 @@ namespace LabExtended.Utilities
 
                 paramsExps[i] = Expression.Convert(argExp, parameters[i]);
             }
-        }
-
-        private static Func<object, object[], object> CreatePropertyWrapper(Type type, string propertyName)
-        {
-            var property = type.GetRuntimeProperty(propertyName);
-
-            var targetExp = Expression.Parameter(typeof(object), "target");
-            var argsExp = Expression.Parameter(typeof(object[]), "args");
-
-            var castArgExp = Expression.Convert(targetExp, type);
-            var propExp = Expression.Property(castArgExp, property);
-
-            var castPropExp = Expression.Convert(propExp, typeof(object));
-            var lambdaExp = Expression.Lambda(castPropExp, targetExp, argsExp);
-
-            var lambda = lambdaExp.Compile();
-
-            return (Func<object, object[], object>)lambda;
         }
     }
 }

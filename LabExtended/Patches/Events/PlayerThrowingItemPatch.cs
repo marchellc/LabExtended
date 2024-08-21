@@ -40,7 +40,7 @@ namespace LabExtended.Patches.Events
 
             var droppingEv = new PlayerDroppingItemArgs(player, item, tryThrow);
 
-            if (!HookRunner.RunCancellable(droppingEv, true))
+            if (!HookRunner.RunEvent(droppingEv, true))
                 return false;
 
             ItemPickupBase pickup = null;
@@ -108,7 +108,7 @@ namespace LabExtended.Patches.Events
 
                 var throwingEv = new PlayerThrowingItemArgs(player, item, pickup, rigidbody, __instance._hub.PlayerCameraReference.position, velocity, angular);
 
-                if (!HookRunner.RunCancellable(throwingEv, true))
+                if (!HookRunner.RunEvent(throwingEv, true))
                     return false;
 
                 if (customItem != null)

@@ -71,7 +71,7 @@ namespace LabExtended.Patches.Events
 
                 var usingArgs = new PlayerUsingItemArgs(player, curUsable, UsableItemsController.GetCooldown(curUsable.ItemSerial, curUsable, player.Inventory.UsableItemsHandler), curUsable.ItemTypeId.GetSpeedMultiplier(player.Hub));
 
-                if (!HookRunner.RunCancellable(usingArgs, true))
+                if (!HookRunner.RunEvent(usingArgs, true))
                     return false;
 
                 if (usingArgs.RemainingCooldown > 0f)

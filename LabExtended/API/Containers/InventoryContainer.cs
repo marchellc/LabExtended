@@ -457,7 +457,7 @@ namespace LabExtended.API.Containers
 
             var throwingEv = new PlayerThrowingItemArgs(ExPlayer.Get(Inventory._hub), itemPrefab, pickupInstance, pickupRigidbody, Inventory._hub.PlayerCameraReference.position, velocity, angular);
 
-            if (!HookRunner.RunCancellable(throwingEv, true))
+            if (!HookRunner.RunEvent(throwingEv, true))
                 return pickupInstance;
 
             pickupRigidbody.position = throwingEv.Position;

@@ -39,7 +39,7 @@ namespace LabExtended.Patches.Events
                 foreach (var item in player.Inventory.CustomItems)
                     item.OnOwnerSpawning(spawningEv);
 
-                if ((player.Switches.CanChangeRoles && HookRunner.RunCancellable(spawningEv, true))
+                if ((player.Switches.CanChangeRoles && HookRunner.RunEvent(spawningEv, true))
                     || (!__instance._anySet || (newRole is RoleTypeId.None && reason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)
                 {

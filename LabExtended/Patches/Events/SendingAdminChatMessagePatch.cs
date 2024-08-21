@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Events
 
             var sendingArgs = new PlayerSendingAdminChatMessageArgs(player, q);
 
-            if (!HookRunner.RunCancellable(sendingArgs, true))
+            if (!HookRunner.RunEvent(sendingArgs, true))
                 return false;
 
             q = sendingArgs.Message;

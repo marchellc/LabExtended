@@ -48,7 +48,7 @@ namespace LabExtended.Patches.Events
 
             var processingArgs = new ProcessingFirearmRequestArgs(player, msg);
 
-            if (!HookRunner.RunCancellable(processingArgs, true))
+            if (!HookRunner.RunEvent(processingArgs, true))
                 return false;
 
             msg = processingArgs.Message;

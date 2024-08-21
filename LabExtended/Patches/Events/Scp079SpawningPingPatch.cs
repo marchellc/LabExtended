@@ -37,7 +37,7 @@ namespace LabExtended.Patches.Events
 
                 var ev = new Scp079SpawningPingArgs(player, __instance.CastRole, __instance, processor.GetPingType(), position.Position, __instance._cost);
 
-                if (!HookRunner.RunCancellable(ev, true))
+                if (!HookRunner.RunEvent(ev, true))
                     return false;
 
                 __instance._syncIndex = (byte)ev.PingType;

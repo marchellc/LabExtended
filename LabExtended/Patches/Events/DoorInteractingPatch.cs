@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Events
                     if (!EventManager.ExecuteEvent(new PlayerInteractDoorEvent(ply, __instance, false)))
                         return false;
 
-                    if (!HookRunner.RunCancellable(new PlayerInteractingDoorArgs(player, door, false), true))
+                    if (!HookRunner.RunEvent(new PlayerInteractingDoorArgs(player, door, false), true))
                         return false;
 
                     __instance.LockBypassDenied(ply, colliderId);
@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Events
 
             var interactingArgs = new PlayerInteractingDoorArgs(player, door, interactEvent.CanOpen);
 
-            if (!HookRunner.RunCancellable(interactingArgs, true))
+            if (!HookRunner.RunEvent(interactingArgs, true))
                 return false;
 
             if (interactingArgs.CanOpen)

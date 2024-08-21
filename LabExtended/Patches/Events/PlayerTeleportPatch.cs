@@ -23,7 +23,7 @@ namespace LabExtended.Patches.Events
 
             var teleportingArgs = new PlayerTeleportingArgs(player, __instance.Position, position, deltaRotation);
 
-            if (!HookRunner.RunCancellable(teleportingArgs, true))
+            if (!HookRunner.RunEvent(teleportingArgs, true))
                 return false;
 
             __instance.Position = teleportingArgs.NewPosition;

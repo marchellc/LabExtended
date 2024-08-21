@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Events
                 {
                     var args = new PlayerTogglingRoundLockArgs(player, !state);
 
-                    if (!HookRunner.RunCancellable(args, true))
+                    if (!HookRunner.RunEvent(args, true))
                     {
                         response = $"Round Lock change prevented by a plugin.";
                         __result = false;
@@ -77,7 +77,7 @@ namespace LabExtended.Patches.Events
             {
                 var args = new PlayerTogglingRoundLockArgs(player, ExRound.IsRoundLocked);
 
-                if (!HookRunner.RunCancellable(args, true))
+                if (!HookRunner.RunEvent(args, true))
                 {
                     response = $"Round Lock change prevented by a plugin.";
                     __result = false;

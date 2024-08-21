@@ -25,7 +25,7 @@ namespace LabExtended.Patches.Events
 
             if (__instance.Active)
             {
-                if (!HookRunner.RunCancellable(new Scp939RemovingMimicryArgs(scp, __instance._syncPos, MimicPointController.RpcStateMsg.RemovedByUser), true))
+                if (!HookRunner.RunEvent(new Scp939RemovingMimicryArgs(scp, __instance._syncPos, MimicPointController.RpcStateMsg.RemovedByUser), true))
                     return false;
 
                 __instance._syncMessage = MimicPointController.RpcStateMsg.RemovedByUser;
@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Events
             {
                 var placingArgs = new Scp939PlacingMimicryArgs(scp, new RelativePosition(__instance.CastRole.FpcModule.Position));
 
-                if (!HookRunner.RunCancellable(placingArgs, true))
+                if (!HookRunner.RunEvent(placingArgs, true))
                     return false;
 
                 __instance._syncMessage = MimicPointController.RpcStateMsg.PlacedByUser;

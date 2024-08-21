@@ -38,7 +38,7 @@ namespace LabExtended.Patches.Functions.Items
                 var prevIdentifier = __instance.NetworkCurItem;
                 var switchingArgs = new PlayerSelectingItemArgs(player, __instance.CurInstance, itemSerial);
 
-                if (!HookRunner.RunCancellable(switchingArgs, true))
+                if (!HookRunner.RunEvent(switchingArgs, true))
                     return false;
 
                 itemSerial = switchingArgs.NextSerial;

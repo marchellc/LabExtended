@@ -53,7 +53,7 @@ namespace LabExtended.Patches.Events
 
                 var cancellingArgs = new Scp049CancellingResurrectionArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub), __instance._errorCode);
 
-                if (!HookRunner.RunCancellable(cancellingArgs, true) || cancellingArgs.ErrorCode != 0)
+                if (!HookRunner.RunEvent(cancellingArgs, true) || cancellingArgs.ErrorCode != 0)
                 {
                     __instance.ServerSendRpc(true);
                     return false;

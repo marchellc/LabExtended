@@ -282,7 +282,7 @@ namespace LabExtended.API
 
                 if (!shouldTrigger && Base.PlayerInRange(player.Hub) && !Base.InProgress)
                 {
-                    if (!HookRunner.RunCancellable(new PlayerTriggeringTeslaGateArgs(player, this), true))
+                    if (!HookRunner.RunEvent(new PlayerTriggeringTeslaGateArgs(player, this), true))
                         continue;
 
                     shouldTrigger = true;
@@ -295,7 +295,7 @@ namespace LabExtended.API
                 {
                     var triggerEv = new TeslaGateTriggeringArgs(this, Base.next079burst);
 
-                    if (HookRunner.RunCancellable(triggerEv, true))
+                    if (HookRunner.RunEvent(triggerEv, true))
                     {
                         Base.next079burst = triggerEv.IsInstant;
                         Base.RpcPlayAnimation();

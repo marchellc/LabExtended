@@ -20,7 +20,7 @@ namespace LabExtended.Patches.Events
 
             var addingArgs = new PlayerAddingCandyArgs(player, kind, __instance.Candies.Count < 6);
 
-            if (!HookRunner.RunCancellable(addingArgs, true) || !addingArgs.CanAdd || addingArgs.CandyType == CandyKindID.None)
+            if (!HookRunner.RunEvent(addingArgs, true) || !addingArgs.CanAdd || addingArgs.CandyType == CandyKindID.None)
                 return __result = false;
 
             __instance.Candies.Add(addingArgs.CandyType);

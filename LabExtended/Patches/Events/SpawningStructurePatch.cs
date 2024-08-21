@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Events
 
             var spawningArgs = new SpawningStructureArgs(structure, tr, triggerDoor);
 
-            if (!HookRunner.RunCancellable(spawningArgs, true))
+            if (!HookRunner.RunEvent(spawningArgs, true))
                 return false;
 
             var obj = UnityEngine.Object.Instantiate(structure, tr.position, tr.rotation);

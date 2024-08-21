@@ -49,7 +49,7 @@ namespace LabExtended.Patches.Events
 
                 var grantingArgs = new PlayerGrantingInventoryArgs(player, true, !dropItems || !hasEscaped, hasEscaped, dropItems, itemsToAdd, ammoToAdd);
 
-                if (!HookRunner.RunCancellable(grantingArgs, true))
+                if (!HookRunner.RunEvent(grantingArgs, true))
                 {
                     ListPool<ItemType>.Shared.Return(itemsToAdd);
                     DictionaryPool<ItemType, ushort>.Return(ammoToAdd);
