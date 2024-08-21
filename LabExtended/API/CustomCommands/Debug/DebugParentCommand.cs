@@ -22,6 +22,8 @@ namespace LabExtended.API.CustomCommands.Debug
             RegisterCommand(new HintToggleDebugCommand());
 
             RegisterCommand(new SetSwitchCommand());
+
+            RegisterCommand(new SpawnNpcCommand());
         }
     }
 }
