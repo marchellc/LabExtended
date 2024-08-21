@@ -20,11 +20,14 @@ namespace LabExtended.Core.Hooking
             var type = eventObject.GetType();
             var cancellable = eventObject as ICancellableEvent<T>;
 
-            _marker.MarkStart(type.Name);       
+            _marker.MarkStart(type.Name);
+
+            if (cancellable != null)
+                cancellable.IsAllowed = returnValue;
 
             try
             {
-                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates) && predefinedDelegates.Count > 0)
+                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates) && predefinedDelegates != null && predefinedDelegates.Count > 0)
                 {
                     foreach (var predefinedDelegate in predefinedDelegates)
                     {
@@ -42,10 +45,13 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates) && predefinedReturnDelegates.Count > 0)
+                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates) && predefinedReturnDelegates != null && predefinedReturnDelegates.Count > 0)
                 {
                     foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
                     {
+                        if (predefinedReturnDelegate is null || predefinedReturnDelegate.Method is null)
+                            continue;
+
                         try
                         {
                             var result = predefinedReturnDelegate(eventObject);
@@ -60,7 +66,7 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks.Count > 0)
+                if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks != null && hooks.Count > 0)
                 {
                     for (int i = 0; i < hooks.Count; i++)
                     {
@@ -71,7 +77,9 @@ namespace LabExtended.Core.Hooking
                             if (hookResult != null && hookResult is T castValue)
                             {
                                 returnValue = castValue;
-                                cancellable!.IsAllowed = returnValue;
+
+                                if (cancellable != null)
+                                    cancellable.IsAllowed = returnValue;
                             }
                         }
                         catch (Exception ex)
@@ -81,7 +89,7 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects) && hookDelegateObjects.Count > 0)
+                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects) && hookDelegateObjects != null && hookDelegateObjects.Count > 0)
                 {
                     var args = new object[] { eventObject };
 
@@ -89,9 +97,12 @@ namespace LabExtended.Core.Hooking
                     {
                         try
                         {
+                            if (hookDelegateObject.FieldGetter is null || hookDelegateObject.Invoker is null)
+                                continue;
+
                             var value = hookDelegateObject.FieldGetter();
 
-                            if (value is null || value is not Delegate del)
+                            if (value is null)
                             {
                                 ApiLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
                                 continue;
@@ -103,7 +114,7 @@ namespace LabExtended.Core.Hooking
                                 continue;
                             }
 
-                            hookDelegateObject.Invoker(null, args);
+                            hookDelegateObject.Invoker(value, args);
                         }
                         catch (Exception ex)
                         {
@@ -112,7 +123,8 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                cancellable!.IsAllowed = returnValue;
+                if (cancellable != null)
+                    cancellable.IsAllowed = returnValue;
             }
             catch (Exception ex)
             {
