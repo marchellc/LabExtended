@@ -24,6 +24,8 @@ namespace LabExtended.API.Containers
 
         public SubroutineManagerModule SubroutineManager => Role.SubroutineManager;
 
+        public IEnumerable<SubroutineBase> AllSubroutines => SubroutineManager?.AllSubroutines ?? Array.Empty<SubroutineBase>();
+
         #region Scp049 Abilities
         public Scp049CallAbility Scp049CallAbility => GetRoutine<Scp049CallAbility>();
         public Scp049SenseAbility Scp049SenseAbility => GetRoutine<Scp049SenseAbility>();

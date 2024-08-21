@@ -24,6 +24,7 @@ using InventorySystem.Items.Usables;
 
 using LabExtended.API.Items.Candies;
 using LabExtended.API.CustomItems;
+using System.ComponentModel;
 
 namespace LabExtended.API.Containers
 {
@@ -571,6 +572,9 @@ namespace LabExtended.API.Containers
         public void Synchronize()
             => Inventory.ServerSendItems();
 
+        public override string ToString()
+            => (CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
+
         public static implicit operator ItemBase(InventoryContainer container)
             => container?.CurrentItem;
 
@@ -585,5 +589,8 @@ namespace LabExtended.API.Containers
 
         public static implicit operator bool(InventoryContainer container)
             => container != null && container.CurrentItem != null && container.CurrentItem;
+
+        public static implicit operator string(InventoryContainer container)
+            => (container?.CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
     }
 }

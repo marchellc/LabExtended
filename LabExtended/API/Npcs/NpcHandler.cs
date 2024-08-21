@@ -49,7 +49,7 @@ namespace LabExtended.API.Npcs
         /// <summary>
         /// Gets a new <see cref="SwitchContainer"/> instance configured for NPCs.
         /// </summary>
-        public static SwitchContainer DefaultNpcSwitches => new SwitchContainer {
+        public static SwitchContainer DefaultNpcSwitches { get; } = new SwitchContainer {
             CanBePocketDimensionItemTarget = false,
             CanBeRespawned = false,
             CanBeScp049Target = false,
