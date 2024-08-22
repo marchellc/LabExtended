@@ -31,7 +31,7 @@ namespace LabExtended.Extensions
         {
             if (!Prefabs.TryGetValue(roleType, out var roleBase))
             {
-                ApiLoader.Warn("Frozen Roles", $"Unknown role: &1{roleType}&r");
+                ApiLoader.Warn("Role API", $"Unknown role: &1{roleType}&r");
 
                 prefab = null;
                 return false;

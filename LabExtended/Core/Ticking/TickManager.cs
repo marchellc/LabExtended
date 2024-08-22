@@ -47,7 +47,7 @@ namespace LabExtended.Core.Ticking
 
         public static bool TryGetHandler(Action action, out TickInfo handler)
         {
-            return (_activeTicks.TryGetFirst(p => p.Target.Method == action.Method && p.Target.Target.IsEqualTo(action.Target), out var activeTick) ? handler = activeTick : handler = null) != null;
+            return (_activeTicks.TryGetFirst(p => p.Target.Method == action.Method && p.Target.Target.IsEqualTo(action.Target, true), out var activeTick) ? handler = activeTick : handler = null) != null;
         }
 
         public static bool IsPaused(Action action)

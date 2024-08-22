@@ -292,6 +292,12 @@ namespace LabExtended.Extensions
         public static string AsString(this IEnumerable<string> values, string separator = "\n")
             => string.Join(separator, values);
 
+        public static string AsString<T>(this IEnumerable<T> values, Func<T, string> convertor, string separator = "\n")
+            => string.Join(separator, values.Select(x => convertor(x)));
+
+        public static string AsString<T>(this IEnumerable<T> values, Func<T, string> convertor, Predicate<T> predicate, string separator = "\n")
+            => string.Join(separator, values.Where(x => predicate(x)).Select(x => convertor(x)));
+
         public static string SubstringPostfix(this string str, int index, int length, string postfix = " ...")
             => str.Substring(index, length) + postfix;
 
