@@ -12,11 +12,13 @@ namespace LabExtended.Utilities
         public struct DefinedEvent
         {
             public readonly AccessTools.FieldRef<object, THandler> Getter;
+            public readonly Func<object, object[], object> Invoker;
             public readonly EventInfo Event;
 
-            public DefinedEvent(AccessTools.FieldRef<object, THandler> getter, EventInfo ev)
+            public DefinedEvent(AccessTools.FieldRef<object, THandler> getter, Func<object, object[], object> invoker, EventInfo ev)
             {
                 Getter = getter;
+                Invoker = invoker;
                 Event = ev;
             }
         }
@@ -34,7 +36,10 @@ namespace LabExtended.Utilities
             if (_definedEvents.Any(e => e.Event == ev))
                 return;
 
-            _definedEvents.Add(new DefinedEvent(AccessTools.FieldRefAccess<THandler>($"{ev.DeclaringType.FullName}:{ev.Name}"), ev));
+            var fieldRef = AccessTools.FieldRefAccess<THandler>(ev.DeclaringType, ev.Name);
+            var evInvoker = FastReflection.ForDelegate(ev.EventHandlerType, ev.EventHandlerType.FindMethod("Invoke"));
+
+            _definedEvents.Add(new DefinedEvent(fieldRef, evInvoker, ev));
         }
 
         public static void InvokeEvent(Type type, string eventName, object target, params object[] args)
@@ -42,7 +47,12 @@ namespace LabExtended.Utilities
             if (!_definedEvents.TryGetFirst(e => e.Event.DeclaringType == type && e.Event.Name == eventName, out var definedEvent))
                 throw new InvalidOperationException($"Event '{type.FullName}.{eventName}' has not been registered");
 
-            definedEvent.Getter(target)?.DynamicInvoke(args);
+            var value = definedEvent.Getter(target);
+
+            if (value is null)
+                return;
+
+            definedEvent.Invoker(value, args);
         }
 
         public static void InvokeEvent(EventInfo ev, object target, params object[] args)
@@ -50,7 +60,12 @@ namespace LabExtended.Utilities
             if (!_definedEvents.TryGetFirst(e => e.Event == ev, out var definedEvent))
                 throw new InvalidOperationException($"Event '{ev.GetMemberName()}' has not been registered");
 
-            definedEvent.Getter(target)?.DynamicInvoke(args);
+            var value = definedEvent.Getter(target);
+
+            if (value is null)
+                return;
+
+            definedEvent.Invoker(value, args);
         }
     }
 }
