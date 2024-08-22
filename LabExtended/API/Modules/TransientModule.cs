@@ -62,7 +62,7 @@ namespace LabExtended.API.Modules
         /// <summary>
         /// Gets the module's ID.
         /// </summary>
-        public string ModuleId { get; } = Utilities.Generator.Instance.GetString(10);
+        public string ModuleId { get; } = Utilities.RandomGen.Instance.GetString(10);
 
         /// <summary>
         /// Gets the owner's user ID.

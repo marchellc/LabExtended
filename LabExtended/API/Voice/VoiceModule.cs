@@ -1,13 +1,15 @@
 ﻿using LabExtended.API.Modules;
+using LabExtended.API.Pooling;
 using LabExtended.API.Voice.Modifiers.Pitch;
 using LabExtended.API.Voice.Threading;
 
-using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
 
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
+
+using NorthwoodLib.Pools;
 
 using VoiceChat;
 using VoiceChat.Networking;
@@ -19,13 +21,13 @@ namespace LabExtended.API.Voice
         public static event Action<ExPlayer> OnStartedSpeaking;
         public static event Action<ExPlayer, DateTime, TimeSpan, IReadOnlyList<byte[]>> OnStoppedSpeaking;
 
-        private static volatile HashSet<VoiceModifier> _globalModifiers = new HashSet<VoiceModifier>();
+        private static volatile List<VoiceModifier> _globalModifiers = ListPool<VoiceModifier>.Shared.Rent();
 
         public static volatile float GlobalVoicePitch = 1f;
 
-        private volatile List<VoiceModifier> _modifiers = new List<VoiceModifier>() { new VoicePitchModifier() };
-        private volatile List<VoiceProfile> _profiles = new List<VoiceProfile>();
-        private volatile List<byte[]> _capture = new List<byte[]>();
+        private volatile List<VoiceModifier> _modifiers;
+        private volatile List<VoiceProfile> _profiles;
+        private volatile List<byte[]> _capture;
 
         private bool _speaking;
         private DateTime _speakingStart;
@@ -40,6 +42,40 @@ namespace LabExtended.API.Voice
         public volatile float VoicePitch = 1f;
 
         public bool CanReceiveSelf { get; set; }
+
+        public override void OnStarted()
+        {
+            base.OnStarted();
+
+            _profiles = ListPool<VoiceProfile>.Shared.Rent();
+            _capture = ListPool<byte[]>.Shared.Rent();
+
+            _modifiers = ListPool<VoiceModifier>.Shared.Rent();
+            _modifiers.Add(new VoicePitchModifier());
+        }
+
+        public override void OnStopped()
+        {
+            base.OnStopped();
+
+            _profiles.ForEach(x => x.OnDisabled());
+
+            _modifiers.ForEach(x =>
+            {
+                if (x is not IDisposable disposable)
+                    return;
+
+                disposable.Dispose();
+            });
+
+            ListPool<VoiceModifier>.Shared.Return(_modifiers);
+            ListPool<VoiceProfile>.Shared.Return(_profiles);
+            ListPool<byte[]>.Shared.Return(_capture);
+
+            _modifiers = null;
+            _profiles = null;
+            _capture = null;
+        }
 
         public bool HasModifier<T>() where T : VoiceModifier
             => _modifiers.Any(m => m.IsEnabled && m is T);
@@ -229,9 +265,14 @@ namespace LabExtended.API.Voice
 
             var sendChannel = CastParent.Role.VoiceModule.ValidateSend(message.Channel);
 
-            foreach (var player in ExPlayer.Players)
+            for (int i = 0; i < ExPlayer._players.Count; i++)
             {
-                var channel = GetChannel(player, sendChannel);
+                var player = ExPlayer._players[i];
+
+                if (player is null || !player)
+                    continue;
+
+                var channel = GetChannel(player, CastParent, sendChannel);
 
                 if (channel is VoiceChatChannel.None)
                     continue;
@@ -268,7 +309,7 @@ namespace LabExtended.API.Voice
                     continue;
 
                 var player = ExPlayer._players[i];
-                var channel = GetChannel(player, sendChannel);
+                var channel = GetChannel(player, CastParent, sendChannel);
 
                 if (channel is VoiceChatChannel.None)
                     continue;
@@ -277,21 +318,26 @@ namespace LabExtended.API.Voice
                 player.Connection.Send(msg);
             }
 
-            threadedVoicePacket.Dispose();
-            threadedVoicePacket = null;
+            ObjectPool<ThreadedVoicePacket>.Return(threadedVoicePacket, x => x.Dispose());
         }
 
-        private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)
+        private static VoiceChatChannel GetChannel(ExPlayer receiver, ExPlayer speaker, VoiceChatChannel messageChannel)
         {
             if (receiver.Role.VoiceModule is null)
                 return VoiceChatChannel.None;
 
-            messageChannel = receiver.Role.VoiceModule.ValidateReceive(CastParent.Hub, messageChannel);
+            if (!speaker.Switches.CanBeHeard
+                && (!speaker.Switches.CanBeHeardByOtherRoles || receiver.Role.Type != speaker.Role.Type)
+                && (!speaker.Switches.CanBeHeardBySpectators || !receiver.Role.IsSpectator)
+                && (!speaker.Switches.CanBeHeardByStaff || !receiver.HasRemoteAdminAccess))
+                return VoiceChatChannel.None;
 
-            if (receiver == CastParent && CanReceiveSelf)
+            messageChannel = receiver.Role.VoiceModule.ValidateReceive(speaker.Hub, messageChannel);
+
+            if (receiver == speaker && speaker.Voice.CanReceiveSelf)
                 messageChannel = VoiceChatChannel.RoundSummary;
 
-            foreach (var profile in _profiles)
+            foreach (var profile in speaker.Voice._profiles)
             {
                 if (!profile.IsEnabled)
                     continue;

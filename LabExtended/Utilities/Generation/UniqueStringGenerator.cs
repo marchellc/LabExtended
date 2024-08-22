@@ -17,6 +17,6 @@
         }
 
         private string GenerateString()
-            => Generator.Instance.GetString(StringSize, AllowUnreadable);
+            => RandomGen.Instance.GetString(StringSize, AllowUnreadable);
     }
 }

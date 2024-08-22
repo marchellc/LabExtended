@@ -3,8 +3,6 @@ using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API.Collections.Locked;
-
-using LabExtended.API.CustomItems.Enums;
 using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
 
@@ -17,8 +15,6 @@ using LabExtended.Core.Ticking;
 using PluginAPI.Events;
 
 using UnityEngine;
-
-using NorthwoodLib.Pools;
 
 namespace LabExtended.API.CustomItems
 {
@@ -48,6 +44,7 @@ namespace LabExtended.API.CustomItems
         public bool IsDropped => Pickup != null;
         public bool IsOwned => Owner != null;
         public bool IsInInventory => Item != null;
+
         public bool IsSelected { get; internal set; }
 
         public virtual void OnInventoryTicked() { }
@@ -94,6 +91,8 @@ namespace LabExtended.API.CustomItems
                 if (!args.IsAllowed)
                     return;
 
+                Owner?.Inventory._customItems.Remove(this);
+
                 var item = Pickup.Info.ItemId.GetItemInstance<ItemBase>(Serial);
 
                 item.SetupItem(player.Hub, false);
@@ -105,6 +104,9 @@ namespace LabExtended.API.CustomItems
                     Pickup.DestroySelf();
 
                 Pickup = null;
+
+                if (!player.Inventory._customItems.Contains(this))
+                    player.Inventory._customItems.Add(this);
 
                 OnPickedUp(args);
                 SetupItem();
@@ -118,8 +120,13 @@ namespace LabExtended.API.CustomItems
                 if (!args.IsAllowed)
                     return;
 
+                Owner?.Inventory._customItems.Remove(this);
+
                 Item.SetupItem(player.Hub, false);
                 Owner = player;
+
+                if (!player.Inventory._customItems.Contains(this))
+                    player.Inventory._customItems.Add(this);
 
                 OnPickedUp(args);
                 SetupItem();
@@ -280,44 +287,6 @@ namespace LabExtended.API.CustomItems
         public static bool TryGetItem<T>(ItemPickupBase pickup, out T customItem) where T : CustomItem
             => (_items.TryGetValue(pickup.Info.Serial, out var item) && item is T ? customItem = (T)item : customItem = null) != null;
 
-        public static TItem GetItem<TItem>(ExPlayer player) where TItem : CustomItem
-        {
-            foreach (var item in player.Inventory.Items)
-            {
-                if (_items.TryGetValue(item.ItemSerial, out var customItem) && customItem is TItem castItem)
-                    return castItem;
-            }
-
-            return default;
-        }
-
-        public static TItem[] GetItems<TItem>(ExPlayer player) where TItem : CustomItem
-        {
-            var list = ListPool<TItem>.Shared.Rent();
-
-            foreach (var pair in _items)
-            {
-                if (pair.Value.Owner != null && pair.Value.Owner == player && pair.Value.Pickup is null && pair.Value.Item != null
-                    && !list.Any(it => it.Serial == pair.Value.Serial) && pair.Value is TItem castItem)
-                    list.Add(castItem);
-            }
-
-            return ListPool<TItem>.Shared.ToArrayReturn(list);
-        }
-
-        public static TItem[] GetSpawned<TItem>() where TItem : CustomItem
-        {
-            var list = ListPool<TItem>.Shared.Rent();
-
-            foreach (var pair in _items)
-            {
-                if (pair.Value.Pickup != null && pair.Value.Item is null && !list.Any(it => it.Serial == pair.Value.Serial) && pair.Value is TItem castItem)
-                    list.Add(castItem);
-            }
-
-            return ListPool<TItem>.Shared.ToArrayReturn(list);
-        }
-
         public static TItem Give<TItem>(ExPlayer player, bool selectItem = false) where TItem : CustomItem
         {
             if (!TryGetRegistered<TItem>(out var itemInfo))
@@ -328,6 +297,8 @@ namespace LabExtended.API.CustomItems
 
             var customItem = itemInfo.Type.Construct<TItem>();
             var gameItem = player.Inventory.AddItem(itemInfo.InventoryType);
+
+            player.Inventory._customItems.Add(customItem);
 
             customItem.Info = itemInfo;
             customItem.OnAdding();
@@ -363,6 +334,8 @@ namespace LabExtended.API.CustomItems
 
             var customItem = itemInfo.Type.Construct<TItem>();
             var gamePickup = itemInfo.PickupInfo.Type.GetPickupInstance<ItemPickupBase>(position, itemScale, itemRot, null, true);
+
+            owner?.Inventory._customItems.Add(customItem);
 
             customItem.Info = itemInfo;
             customItem.OnSpawning();

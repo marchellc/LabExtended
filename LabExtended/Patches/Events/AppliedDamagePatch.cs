@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Events
 
             var args = new ApplyingDamageArgs(info, player);
 
-            if (!HookRunner.RunCancellable(args, true))
+            if (!HookRunner.RunEvent(args, true))
             {
                 __result = DamageHandlerBase.HandlerOutput.Nothing;
                 return false;

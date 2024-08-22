@@ -20,6 +20,9 @@ using LabExtended.Commands;
 
 using NorthwoodLib.Pools;
 
+using LabExtended.Core.Synchronization.Position;
+using Interactables;
+
 namespace LabExtended.Events
 {
     internal static class InternalEvents
@@ -35,6 +38,8 @@ namespace LabExtended.Events
             NetIdWaypointIgnoreDoorsPatch.CustomWaypoints.Clear();
             NetIdWaypointIgnoreDoorsPatch.DisabledWaypoints.Clear();
 
+            DamageInfo._wrappers.Clear();        
+
             if (ReferenceHub.TryGetHostHub(out var hostHub))
                 ExPlayer._hostPlayer = new ExPlayer(hostHub);
             else
@@ -46,6 +51,8 @@ namespace LabExtended.Events
 
             ExRound.StartedAt = DateTime.MinValue;
             ExRound.State = RoundState.WaitingForPlayers;
+
+            ExMap.OnRoundWait();
 
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
@@ -67,6 +74,8 @@ namespace LabExtended.Events
             NpcHandler.DestroyNpcs();
             Prefabs.DestroySpawnedDoors();
 
+            InteractableCollider.AllInstances.Clear();
+
             ExRound.State = RoundState.Restarting;
         }
 
@@ -75,8 +84,20 @@ namespace LabExtended.Events
             ExRound.StartedAt = DateTime.Now;
             ExRound.State = RoundState.InProgress;
 
+            ExMap.OnRoundStarted();
+
             if (TickManager.IsPaused("Tesla Gate Update"))
                 TickManager.ResumeTick("Tesla Gate Update");
+
+            ApiLoader.Info("Map API", $"Finished populating objects, cache state:\n" +
+                $"Generators | {ExMap.Generators.Count}\n" +
+                $"Elevators  | {ExMap.Elevators.Count}\n" +
+                $"Airlock    | {ExMap.Airlocks.Count}\n" +
+                $"Lockers    | {ExMap.Lockers.Count}\n" +
+                $"Camera     | {ExMap.Cameras.Count}\n" +
+                $"Doors      | {ExMap.Doors.Count}\n" +
+                $"Gates      | {ExMap.TeslaGates.Count}\n" +
+                $"Toys       | {ExMap.Toys.Count}");
         }
 
         internal static void InternalHandlePlayerJoin(ExPlayer player)
@@ -137,21 +158,15 @@ namespace LabExtended.Events
                 }
             }
 
-            player._newSyncData.Clear();
-            player._prevSyncData.Clear();
-
             player._sentRoles.Clear();
+            player._invisibility.Clear();
 
             player.Inventory._droppedItems.Clear();
-
-            player._invisibility.Clear();
 
             CustomCommand._continuedContexts.Remove(player.NetId);
 
             foreach (var other in ExPlayer._allPlayers)
             {
-                other._prevSyncData.Remove(player);
-                other._newSyncData.Remove(player);
                 other._sentRoles.Remove(player.PlayerId);
                 other._invisibility.Remove(player);
             }
@@ -179,6 +194,17 @@ namespace LabExtended.Events
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)
         {
+            if (args.Player != null)
+            {
+                PositionSynchronizer._syncCache.Remove(args.Player);
+
+                foreach (var player in ExPlayer._allPlayers)
+                {
+                    if (PositionSynchronizer._syncCache.TryGetValue(player, out var cache))
+                        cache.Remove(args.Player);
+                }
+            }
+
             if (args.Player is null || args.Player.IsNpc || args.Player.Voice is null)
                 return;
 

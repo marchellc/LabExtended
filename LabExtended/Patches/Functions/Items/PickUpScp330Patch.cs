@@ -8,7 +8,6 @@ using LabExtended.API;
 using LabExtended.API.Items.Candies;
 
 using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Enums;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -48,7 +47,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpItemEv = new PlayerPickingUpItemArgs(player, scp330Pickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
 
-            if (!HookRunner.RunCancellable(pickingUpItemEv, true))
+            if (!HookRunner.RunEvent(pickingUpItemEv, true))
             {
                 if (pickingUpItemEv.DestroyPickup)
                 {

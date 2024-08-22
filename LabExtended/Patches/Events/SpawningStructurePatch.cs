@@ -2,6 +2,7 @@
 
 using Interactables.Interobjects.DoorUtils;
 
+using LabExtended.API;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Map;
 
@@ -23,7 +24,7 @@ namespace LabExtended.Patches.Events
 
             var spawningArgs = new SpawningStructureArgs(structure, tr, triggerDoor);
 
-            if (!HookRunner.RunCancellable(spawningArgs, true))
+            if (!HookRunner.RunEvent(spawningArgs, true))
                 return false;
 
             var obj = UnityEngine.Object.Instantiate(structure, tr.position, tr.rotation);
@@ -34,6 +35,9 @@ namespace LabExtended.Patches.Events
                 __instance.SpawnObject(obj.gameObject);
             else
                 __instance.RegisterUnspawnedObject(triggerDoor, obj.gameObject);
+
+            if (structure is Scp079Generator scp079Generator)
+                ExMap._generators.Add(new Generator(scp079Generator));
 
             return false;
         }

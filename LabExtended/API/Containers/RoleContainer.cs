@@ -111,8 +111,6 @@ namespace LabExtended.API.Containers
         public ZombieRole ZombieRole => Role as ZombieRole;
         #endregion
 
-        public IEnumerable<SubroutineBase> AllSubroutines => SubroutineManager?.AllSubroutines ?? Array.Empty<SubroutineBase>();
-
         public void Set(RoleTypeId newRole, RoleChangeReason changeReason = RoleChangeReason.RemoteAdmin, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All)
             => Manager.ServerSetRole(newRole, changeReason, spawnFlags);
 
@@ -144,5 +142,20 @@ namespace LabExtended.API.Containers
 
             return false;
         }
+
+        public override string ToString()
+            => Name;
+
+        public static implicit operator PlayerRoleBase(RoleContainer container)
+            => container?.Role;
+
+        public static implicit operator RoleTypeId(RoleContainer container)
+            => container?.Type ?? RoleTypeId.None;
+
+        public static implicit operator bool(RoleContainer container)
+            => container?.Role != null;
+
+        public static implicit operator string(RoleContainer container)
+            => container?.Name ?? string.Empty;
     }
 }

@@ -14,6 +14,6 @@
         }
 
         private int GenerateInt()
-            => Generator.Instance.GetInt32(MinValue, MaxValue);
+            => RandomGen.Instance.GetInt32(MinValue, MaxValue);
     }
 }

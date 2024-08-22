@@ -6,7 +6,6 @@ using InventorySystem.Searching;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Enums;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -51,7 +50,7 @@ namespace LabExtended.Patches.Functions.Items
                 customItem.OnPickingUp(pickingUpEv);
             }
 
-            if (!HookRunner.RunCancellable(pickingUpEv, pickingUpEv.IsAllowed))
+            if (!HookRunner.RunEvent(pickingUpEv, pickingUpEv.IsAllowed))
             {
                 if (pickingUpEv.DestroyPickup)
                 {

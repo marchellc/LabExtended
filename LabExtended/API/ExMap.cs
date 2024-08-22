@@ -8,17 +8,20 @@ using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 
+using InventorySystem.Items;
 using InventorySystem.Items.Firearms.BasicMessages;
 using InventorySystem.Items.Pickups;
+using InventorySystem.Items.ThrowableProjectiles;
 
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
+using LabExtended.API.Npcs;
 using LabExtended.API.Npcs.Navigation;
 using LabExtended.API.Toys;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Utilities;
 
 using LightContainmentZoneDecontamination;
 
@@ -27,8 +30,15 @@ using MapGeneration.Distributors;
 
 using Mirror;
 
+using PlayerRoles;
 using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.PlayableScps.Scp079.Cameras;
+using PlayerRoles.PlayableScps.Scp3114;
+using PlayerRoles.Ragdolls;
+
+using PlayerStatsSystem;
+
+using PluginAPI.Events;
 
 using RelativePositioning;
 
@@ -42,9 +52,17 @@ namespace LabExtended.API
     public static class ExMap
     {
         static ExMap()
-            => NetworkDestroy.OnIdentityDestroyed += OnIdentityDestroyed;
+        {
+            NetworkEvents.OnIdentityDestroyed += OnIdentityDestroyed;
+            RagdollManager.ServerOnRagdollCreated += OnRagdollSpawned;
+        }
+
+        private static ExPlayer _bonesNpc;
+
+        internal static bool _bonesRequired = false;
 
         internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
+        internal static readonly LockedHashSet<BasicRagdoll> _ragdolls = new LockedHashSet<BasicRagdoll>();
         internal static readonly LockedHashSet<Generator> _generators = new LockedHashSet<Generator>();
         internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
         internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
@@ -55,6 +73,7 @@ namespace LabExtended.API
         internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
 
         public static IReadOnlyList<ItemPickupBase> Pickups => _pickups;
+        public static IReadOnlyList<BasicRagdoll> Ragdolls => _ragdolls;
         public static IReadOnlyList<Generator> Generators => _generators;
         public static IReadOnlyList<ExTeslaGate> TeslaGates => _gates;
         public static IReadOnlyList<Elevator> Elevators => _elevators;
@@ -88,6 +107,8 @@ namespace LabExtended.API
 
         public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
         public static IEnumerable<NetIdWaypoint> NetIdWaypoints => NetIdWaypoint.AllNetWaypoints.Where(x => x != null);
+
+        public static int AmbientClipsCount => AmbientSoundPlayer.clips.Length;
 
         public static AmbientSoundPlayer AmbientSoundPlayer { get; private set; }
 
@@ -154,6 +175,64 @@ namespace LabExtended.API
         public static void SpawnExplosion(Vector3 position, ItemType type = ItemType.GrenadeHE)
             => ExplosionUtils.ServerSpawnEffect(position, type);
 
+        public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Quaternion rotation)
+            => SpawnBonesRagdoll(position, scale, Vector3.zero, rotation);
+
+        public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation)
+        {
+            if (_bonesNpc is null)
+                throw new InvalidOperationException($"You need to invoke the 'ApiLoader.RequireBonesNpc()' to use this function.");
+
+            var ragdollInstance = SpawnRagdoll(RoleTypeId.Tutorial, position, scale, rotation, true, _bonesNpc, new UniversalDamageHandler(-1f, DeathTranslations.Warhead));
+
+            if (ragdollInstance is null)
+                throw new Exception($"Failed to spawn ragdoll.");
+
+            var bonesRagdoll = SpawnRagdoll(RoleTypeId.Scp3114, position, scale, velocity, rotation, true, _bonesNpc, new Scp3114DamageHandler(ragdollInstance, false)) as DynamicRagdoll;
+
+            _ragdolls.Remove(ragdollInstance);
+
+            NetworkServer.Destroy(ragdollInstance.gameObject);
+
+            if (bonesRagdoll is null)
+                throw new Exception("Failed to spawn bones ragdoll.");
+
+            Scp3114RagdollToBonesConverter.ServerConvertNew(_bonesNpc.Role.Scp3114, bonesRagdoll);
+            return bonesRagdoll;
+        }
+
+        public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
+            => SpawnRagdoll(ragdollRoleType, position, scale, Vector3.zero, rotation, spawn, owner, damageHandler);
+
+        public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
+        {
+            if (!ragdollRoleType.TryGetPrefab(out var role))
+                throw new Exception($"Failed to find role prefab for role {ragdollRoleType}");
+
+            if (role is not IRagdollRole ragdollRole)
+                throw new Exception($"Role {ragdollRoleType} does not have a ragdoll.");
+
+            damageHandler ??= new UniversalDamageHandler(-1f, DeathTranslations.Crushed);
+
+            var ragdoll = UnityEngine.Object.Instantiate(ragdollRole.Ragdoll);
+
+            ragdoll.NetworkInfo = new RagdollData((owner ?? ExPlayer.Host).Hub, damageHandler, ragdoll.transform.localPosition, ragdoll.transform.localRotation);
+
+            ragdoll.transform.position = position;
+            ragdoll.transform.rotation = rotation;
+
+            ragdoll.transform.localScale = scale;
+
+            if (ragdoll.TryGetComponent<Rigidbody>(out var rigidbody))
+                rigidbody.velocity = velocity;
+
+            if (spawn)
+                NetworkServer.Spawn(ragdoll.gameObject);
+
+            _ragdolls.Add(ragdoll);
+            return ragdoll;
+        }
+
         public static void FlickerLights(float duration, params FacilityZone[] zones)
         {
             foreach (var light in RoomLightController.Instances)
@@ -169,22 +248,113 @@ namespace LabExtended.API
         }
 
         public static void SetLightColor(Color color)
-        {
-            PrimitiveUtils.FixColor(ref color);
-
-            foreach (var light in RoomLightController.Instances)
-                light.NetworkOverrideColor = color;
-        }
+            => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = color);
 
         public static void ResetLightsColor()
+            => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = DefaultLightColor);
+
+        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true)
+            => SpawnItem<ItemPickupBase>(type, position, scale, rotation, spawn);
+
+        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
         {
-            foreach (var light in RoomLightController.Instances)
-                light.NetworkOverrideColor = DefaultLightColor;
+            if (!item.TryGetItemPrefab(out var prefab))
+                return null;
+
+            var pickup = UnityEngine.Object.Instantiate((T)prefab.PickupDropModel, position, rotation);
+
+            pickup.transform.position = position;
+            pickup.transform.rotation = rotation;
+
+            pickup.transform.localScale = scale;
+
+            pickup.Info = new PickupSyncInfo(item, prefab.Weight, ItemSerialGenerator.GenerateNext());
+
+            if (spawn)
+            {
+                NetworkServer.Spawn(pickup.gameObject);
+                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+            }
+
+            return pickup;
+        }
+
+        public static List<T> SpawnItems<T>(ItemType type, int count, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
+        {
+            var list = new List<T>(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                var item = SpawnItem<T>(type, position, scale, rotation, spawn);
+
+                if (item is null)
+                    continue;
+
+                list.Add(item);
+            }
+
+            return list;
+        }
+
+        public static ThrownProjectile SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
+            => SpawnProjectile<ThrownProjectile>(item, position, scale, velocity, rotation, force, fuseTime, spawn, activate);
+
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
+            => SpawnProjectile<T>(item, position, scale, Vector3.forward, Vector3.up, rotation, velocity, force, fuseTime, spawn, activate);
+
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up, Quaternion rotation, Vector3 velocity, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
+        {
+            if (!item.TryGetItemPrefab<ThrowableItem>(out var throwableItem))
+                return null;
+
+            var projectile = UnityEngine.Object.Instantiate((T)throwableItem.Projectile, position, rotation);
+            var settings = throwableItem.FullThrowSettings;
+
+            projectile.transform.localScale = scale;
+
+            projectile.Info = new PickupSyncInfo(item, throwableItem.Weight, ItemSerialGenerator.GenerateNext());
+
+            settings.StartVelocity = force;
+            settings.StartTorque = velocity;
+
+            (projectile as TimeGrenade)!._fuseTime = fuseTime;
+
+            if (spawn)
+            {
+                NetworkServer.Spawn(projectile.gameObject);
+                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+            }
+
+            if (spawn && activate)
+            {
+                if (projectile.TryGetRigidbody(out var rigidbody))
+                {
+                    var num = 1f - Mathf.Abs(Vector3.Dot(forward, Vector3.up));
+
+                    var vector = up * throwableItem.FullThrowSettings.UpwardsFactor;
+                    var vector2 = forward + vector * num;
+
+                    rigidbody.centerOfMass = Vector3.zero;
+                    rigidbody.angularVelocity = settings.StartTorque;
+                    rigidbody.velocity = velocity + vector2 * force;
+                }
+                else
+                {
+                    projectile.Position = position;
+                    projectile.Rotation = rotation;
+                }
+
+                projectile.ServerActivate();
+
+                new ThrowableNetworkHandler.ThrowableItemAudioMessage(projectile.Info.Serial, ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce).SendToAuthenticated();
+            }
+
+            return projectile;
         }
 
         #region Toys
         public static IEnumerable<T> GetToys<T>(Predicate<T> predicate) where T : AdminToy
-            => _toys.Where<T>(toy => predicate(toy));
+    => _toys.Where<T>(toy => predicate(toy));
 
         public static IEnumerable<AdminToy> GetToys(Predicate<AdminToy> predicate)
             => _toys.Where(toy => predicate(toy));
@@ -347,6 +517,7 @@ namespace LabExtended.API
 
                 _generators.Clear();
                 _elevators.Clear();
+                _ragdolls.Clear();
                 _airlocks.Clear();
                 _pickups.Clear();
                 _lockers.Clear();
@@ -375,9 +546,6 @@ namespace LabExtended.API
                 foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>())
                     _toys.Add(AdminToy.Create(toy));
 
-                foreach (var gen in Scp079Recontainer.AllGenerators)
-                    _generators.Add(new Generator(gen));
-
                 foreach (var interactable in Scp079InteractableBase.AllInstances)
                 {
                     if (interactable is null || interactable is not Scp079Camera cam)
@@ -385,16 +553,6 @@ namespace LabExtended.API
 
                     _cams.Add(new Camera(cam));
                 }
-
-                ApiLoader.Debug("Map API", $"Finished populating objects, cache state:\n" +
-                    $"Tesla {_gates.Count}\n" +
-                    $"Elevator {_elevators.Count}\n" +
-                    $"Airlock {_airlocks.Count}\n" +
-                    $"Camera {_cams.Count}\n" +
-                    $"Door {_doors.Count}\n" +
-                    $"Lockers {_lockers.Count}\n" +
-                    $"Toys {_toys.Count}\n" +
-                    $"Generators {_generators.Count}");
             }
             catch (Exception ex)
             {
@@ -402,25 +560,56 @@ namespace LabExtended.API
             }
         }
 
-        private static void OnIdentityDestroyed(NetworkIdentity identity)
+        internal static void OnRoundStarted()
+        {
+            if (!_bonesRequired)
+                return;
+
+            NpcHandler.Spawn("Bones Converter", RoleTypeId.Scp3114, null, null, null, npc =>
+            {
+                npc.Player.HasGodMode = true;
+                npc.Player.IsInvisible = true;
+
+                _bonesNpc = npc.Player;
+            });
+        }
+
+        internal static void OnRoundWait()
+        {
+            _bonesNpc = null;
+        }
+
+        internal static void OnIdentityDestroyed(NetworkIdentity identity)
         {
             try
             {
                 _generators.RemoveWhere(x => x.NetId == identity.netId);
                 _airlocks.RemoveWhere(x => x.NetId == identity.netId);
+                _ragdolls.RemoveWhere(x => x.netId == identity.netId);
                 _pickups.RemoveWhere(x => x.netId == identity.netId);
                 _lockers.RemoveWhere(x => x.netId == identity.netId);
                 _gates.RemoveWhere(x => x.NetId == identity.netId);
                 _doors.RemoveWhere(x => x.NetId == identity.netId);
                 _toys.RemoveWhere(x => x.NetId == identity.netId);
 
-                foreach (var player in ExPlayer.Players)
+                foreach (var player in ExPlayer.AllPlayers)
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
+
+                if (identity.TryGetComponent<IInteractable>(out var interactable))
+                    InteractableCollider.AllInstances.Remove(interactable);
             }
             catch (Exception ex)
             {
                 ApiLoader.Error("Map API", ex);
             }
+        }
+
+        private static void OnRagdollSpawned(ReferenceHub owner, BasicRagdoll ragdoll)
+        {
+            if (ragdoll is null || !ragdoll)
+                return;
+
+            _ragdolls.Add(ragdoll);
         }
     }
 }

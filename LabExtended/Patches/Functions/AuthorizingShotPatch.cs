@@ -45,7 +45,7 @@ namespace LabExtended.Patches.Functions
 
             var authorizingArgs = new PlayerAuthorizingShotArgs(player, firearm, player.Switches.HasUnlimitedAmmo ? byte.MinValue : (byte)action._ammoConsumption);
 
-            if (!HookRunner.RunCancellable(authorizingArgs, true))
+            if (!HookRunner.RunEvent(authorizingArgs, true))
                 return false;
 
             var flags = firearm.Status.Flags;
@@ -66,7 +66,7 @@ namespace LabExtended.Patches.Functions
 
             var authorizingArgs = new PlayerAuthorizingShotArgs(player, firearm, player.Switches.HasUnlimitedAmmo ? byte.MinValue : (byte)1);
 
-            if (!HookRunner.RunCancellable(authorizingArgs, true))
+            if (!HookRunner.RunEvent(authorizingArgs, true))
                 return false;
 
             if (firearm.Status.Ammo == 0)
@@ -91,7 +91,7 @@ namespace LabExtended.Patches.Functions
             {
                 var authorizingArgs = new PlayerAuthorizingShotArgs(player, firearm, player.Switches.HasUnlimitedAmmo ? byte.MinValue : (byte)1);
 
-                if (!HookRunner.RunCancellable(authorizingArgs, true))
+                if (!HookRunner.RunEvent(authorizingArgs, true))
                     return false;
 
                 if (authorizingArgs.SubstractAmmo > 0 && (firearm.Status.Ammo - authorizingArgs.SubstractAmmo) < 0)
@@ -123,7 +123,7 @@ namespace LabExtended.Patches.Functions
 
             var authorizingArgs = new PlayerAuthorizingShotArgs(player, firearm, player.Switches.HasUnlimitedAmmo ? byte.MinValue : (byte)action.AmmoUsage);
 
-            if (!HookRunner.RunCancellable(authorizingArgs, true))
+            if (!HookRunner.RunEvent(authorizingArgs, true))
                 return false;
 
             action.LastFiredAmount = 0;

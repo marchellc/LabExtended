@@ -1,4 +1,8 @@
-﻿using LabExtended.Core.Hooking.Enums;
+﻿using HarmonyLib;
+
+using LabExtended.Core.Hooking.Enums;
+using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 using System.Reflection;
 
@@ -8,6 +12,8 @@ namespace LabExtended.Core.Hooking.Objects
     {
         public readonly EventInfo Event;
         public readonly FieldInfo Field;
+        public readonly Func<object, object[], object> Invoker;
+        public readonly AccessTools.FieldRef<object, Delegate> FieldGetter;
 
         public readonly object TypeInstance;
 
@@ -19,6 +25,9 @@ namespace LabExtended.Core.Hooking.Objects
             Field = fieldInfo;
             Priority = priority;
             TypeInstance = typeInstance;
+
+            Invoker = FastReflection.ForDelegate(eventInfo.EventHandlerType, eventInfo.EventHandlerType.FindMethod("Invoke"));
+            FieldGetter = AccessTools.FieldRefAccess<Delegate>(fieldInfo.DeclaringType, fieldInfo.Name);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace LabExtended.API.CustomCommands.Input
                 return;
             }
 
-            if (!HookRunner.RunCancellable(new PlayerKeybindReceivedArgs(sender, key), true))
+            if (!HookRunner.RunEvent(new PlayerKeybindReceivedArgs(sender, key), true))
             {
                 ctx.RespondFail("Keybind cancelled by a plugin.");
                 return;

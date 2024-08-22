@@ -29,7 +29,7 @@ namespace LabExtended.Patches.Events
             var locker = ExMap.Lockers.FirstOrDefault(locker => locker.Chambers.Contains(__instance));
             var spawningArgs = new LockerSpawningPickupArgs(locker, __instance, spawnPoint, amount, id);
 
-            if (!HookRunner.RunCancellable(spawningArgs, true))
+            if (!HookRunner.RunEvent(spawningArgs, true))
                 return false;
 
             id = spawningArgs.Type;

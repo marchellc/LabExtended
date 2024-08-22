@@ -38,7 +38,7 @@ namespace LabExtended.Patches.Events
                 {
                     var changingArgs = new WarheadChangingLeverArgs(nukesidePanel.Networkenabled, player);
 
-                    if (!HookRunner.RunCancellable(changingArgs, true) || changingArgs.NewState == nukesidePanel.Networkenabled)
+                    if (!HookRunner.RunEvent(changingArgs, true) || changingArgs.NewState == nukesidePanel.Networkenabled)
                         return false;
 
                     __instance.OnInteract();

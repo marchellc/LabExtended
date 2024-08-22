@@ -22,7 +22,7 @@ namespace LabExtended.Patches.Events
             {
                 var removingArgs = new Scp939RemovingMimicryArgs(player, __instance._syncPos, MimicPointController.RpcStateMsg.DestroyedByDistance);
 
-                if (!HookRunner.RunCancellable(removingArgs, true))
+                if (!HookRunner.RunEvent(removingArgs, true))
                     return false;
             }
 

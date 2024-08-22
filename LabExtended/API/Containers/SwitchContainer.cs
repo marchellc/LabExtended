@@ -1,5 +1,9 @@
 ﻿using LabExtended.API.Collections.Locked;
-using LabExtended.Extensions;
+using LabExtended.API.Npcs;
+
+using LabExtended.Core;
+
+using YamlDotNet.Serialization;
 
 namespace LabExtended.API.Containers
 {
@@ -8,9 +12,16 @@ namespace LabExtended.API.Containers
     /// </summary>
     public class SwitchContainer
     {
+        public static SwitchContainer DefaultPlayerSwitches { get; } = new SwitchContainer();
+        public static SwitchContainer DefaultNpcSwitches => NpcHandler.DefaultNpcSwitches;
+
+        public static SwitchContainer ConfigPlayerSwitches => ApiLoader.Config.SwitchContainers.PlayerSwitches;
+        public static SwitchContainer ConfigNpcSwitches => ApiLoader.Config.SwitchContainers.NpcSwitches;
+
         /// <summary>
         /// Gets a list of ignored effect types.
         /// </summary>
+        [YamlIgnore]
         public LockedHashSet<Type> IgnoredEffects { get; } = new LockedHashSet<Type>();
 
         #region Visibility Switches
@@ -152,6 +163,11 @@ namespace LabExtended.API.Containers
         /// Gets or sets a value indicating whether or not this player (when playing as SCP-079) can be recontained.
         /// </summary>
         public bool CanBeRecontainedAs079 { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP, except SCP-079) can prevent Recontaining of SCP-079.
+        /// </summary>
+        public bool PreventsRecontaining079 { get; set; } = true;
         #endregion
 
         #region Item Switches
@@ -246,12 +262,71 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool ShouldReceiveOwnPosition { get; set; } = false;
 
+        public void ResetToPlayer(bool fromConfig = true)
+            => Copy(fromConfig ? ConfigPlayerSwitches : DefaultPlayerSwitches);
+
+        public void ResetToNpc(bool fromConfig = true)
+            => Copy(fromConfig ? ConfigNpcSwitches : DefaultNpcSwitches);
+
         public void Copy(SwitchContainer other)
         {
             if (other is null)
                 return;
 
-            other.CopyPropertiesTo(this);
+            IgnoredEffects.Clear();
+            IgnoredEffects.AddRange(other.IgnoredEffects);
+
+            IsVisibleInRemoteAdmin = other.IsVisibleInRemoteAdmin;
+            IsVisibleInSpectatorList = other.IsVisibleInSpectatorList;
+            IsVisibleToScp939 = other.IsVisibleToScp939;
+
+            CanSeeEveryoneAs939 = other.CanSeeEveryoneAs939;
+            CanBeRespawned = other.CanBeRespawned;
+            CanBlockRoundEnd = other.CanBlockRoundEnd;
+            CanBeScp049Target = other.CanBeScp049Target;
+            CanBePocketDimensionItemTarget = other.CanBePocketDimensionItemTarget;
+            CanTriggerScp096 = other.CanTriggerScp096;
+            CanBlockScp173 = other.CanBlockScp173;
+            CanBeCapturedBy106 = other.CanBeCapturedBy106;
+            CanBeStrangledBy3114 = other.CanBeStrangledBy3114;
+            CanHearAmnesticCloudSpawn = other.CanHearAmnesticCloudSpawn;
+            CanCountAs079ExpTarget = other.CanCountAs079ExpTarget;
+            CanBeResurrectedBy049 = other.CanBeResurrectedBy049;
+            CanBeConsumedByZombies = other.CanBeConsumedByZombies;
+            CanUseSenseAs049 = other.CanUseSenseAs049;
+            CanUseResurrectAs049 = other.CanUseResurrectAs049;
+            CanStrangleAs3114 = other.CanStrangleAs3114;
+            CanCaptureAs106 = other.CanCaptureAs106;
+            CanConsumeRagdollsAsZombie = other.CanConsumeRagdollsAsZombie;
+            CanBeTriggeredAs096 = other.CanBeTriggeredAs096;
+            CanBeBlockedAs173 = other.CanBeBlockedAs173;
+            CanLungeAs939 = other.CanLungeAs939;
+            CanGainExpAs079 = other.CanGainExpAs079;
+            CanUseMimicryAs939 = other.CanUseMimicryAs939;
+            CanBeRecontainedAs079 = other.CanBeRecontainedAs079;
+
+            PreventsRecontaining079 = other.PreventsRecontaining079;
+
+            CanDropItems = other.CanDropItems;
+            CanThrowItems = other.CanThrowItems;
+            CanPickUpItems = other.CanPickUpItems;
+            CanPickUpAmmo = other.CanPickUpAmmo;
+            CanSwitchItems = other.CanSwitchItems;
+            CanReceiveEffects = other.CanReceiveEffects;
+            CanTriggerTesla = other.CanTriggerTesla;
+            CanChangeRoles = other.CanChangeRoles;
+
+            CanBeHeard = other.CanBeHeard;
+            CanBeHeardByStaff = other.CanBeHeardByStaff;
+            CanBeHeardByOtherRoles = other.CanBeHeardByOtherRoles;
+            CanBeHeardBySpectators = other.CanBeHeardBySpectators;
+
+            HasInstantKill = other.HasInstantKill;
+            HasUnlimitedAmmo = other.HasUnlimitedAmmo;
+
+            ShouldReceiveOwnPosition = other.ShouldReceiveOwnPosition;
+            ShouldReceivePositions = other.ShouldReceivePositions;
+            ShouldSendPosition = other.ShouldSendPosition;
         }
     }
 }

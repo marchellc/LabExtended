@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Functions
 
             var lungingArgs = new Scp939LungingArgs(scp, target, __instance.CastRole, __instance);
 
-            if (!HookRunner.RunCancellable(lungingArgs, true))
+            if (!HookRunner.RunEvent(lungingArgs, true))
                 return false;
 
             if (__instance.State != Scp939LungeState.Triggered)

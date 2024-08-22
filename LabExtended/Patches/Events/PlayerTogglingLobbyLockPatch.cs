@@ -56,7 +56,7 @@ namespace LabExtended.Patches.Events
                 {
                     var args = new PlayerTogglingLobbyLockArgs(player, !state);
 
-                    if (!HookRunner.RunCancellable(args, true))
+                    if (!HookRunner.RunEvent(args, true))
                     {
                         response = $"Lobby Lock change prevented by a plugin.";
                         __result = false;
@@ -79,7 +79,7 @@ namespace LabExtended.Patches.Events
             {
                 var args = new PlayerTogglingLobbyLockArgs(player, ExRound.IsLobbyLocked);
 
-                if (!HookRunner.RunCancellable(args, true))
+                if (!HookRunner.RunEvent(args, true))
                 {
                     response = $"Lobby Lock change prevented by a plugin.";
                     __result = false;

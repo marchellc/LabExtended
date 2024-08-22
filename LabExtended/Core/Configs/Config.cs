@@ -19,5 +19,7 @@ namespace LabExtended.Core.Configs
 
         [Description("Advanced API configuration.")]
         public ApiOptions ApiOptions { get; set; } = new ApiOptions();
+
+        public SwitchContainers SwitchContainers { get; set; } = new SwitchContainers();
     }
 }

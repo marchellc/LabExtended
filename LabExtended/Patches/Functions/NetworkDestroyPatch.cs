@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
-
-using LabExtended.Utilities;
+using LabExtended.Events;
 
 using Mirror;
 
@@ -51,7 +50,7 @@ namespace LabExtended.Patches.Functions
                 NetworkClient.spawned.Remove(identity.netId);
             }
 
-            NetworkDestroy.InternalHandleDestroy(identity);
+            NetworkEvents.InternalHandleDestroy(identity);
 
             identity.OnStopServer();
 

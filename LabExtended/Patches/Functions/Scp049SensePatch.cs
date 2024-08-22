@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Functions
 
             var sensingArgs = new Scp049SensingTargetArgs(scp, target, __instance.CastRole, __instance);
 
-            if (!HookRunner.RunCancellable(sensingArgs, true) || sensingArgs.Target is null)
+            if (!HookRunner.RunEvent(sensingArgs, true) || sensingArgs.Target is null)
             {
                 if (sensingArgs.Cooldown > 0)
                     __instance.Cooldown.Trigger(sensingArgs.Cooldown);

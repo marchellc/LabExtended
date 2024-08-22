@@ -8,9 +8,9 @@ using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Patches.Fixes;
-using LabExtended.Utilities;
 
 using MapGeneration;
 
@@ -31,7 +31,7 @@ namespace LabExtended.API
     public static class Prefabs
     {
         static Prefabs()
-            => NetworkDestroy.OnIdentityDestroyed += HandleNetIdDestroy;
+            => NetworkEvents.OnIdentityDestroyed += HandleNetIdDestroy;
 
         internal static readonly LockedHashSet<DoorVariant> _spawnedDoors = new LockedHashSet<DoorVariant>();
 

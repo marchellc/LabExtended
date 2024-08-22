@@ -23,6 +23,8 @@ namespace LabExtended.Core.Hooking
 
         public object Instance { get; }
 
+        public Func<object, object[], object> Invoker { get; }
+
         internal HookInfo(MethodInfo method, object instance, IHookRunner hookRunner, IHookBinder hookBinder, HookPriority hookPriority)
         {
             if (method is null)
@@ -42,6 +44,8 @@ namespace LabExtended.Core.Hooking
 
             Method = method;
             Instance = instance;
+
+            Invoker = FastReflection.ForMethod(method);
         }
 
         internal object Run(object eventObject)

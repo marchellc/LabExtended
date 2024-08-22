@@ -41,13 +41,13 @@ namespace LabExtended.Patches.Functions
                         {
                             var pickup = pair.Key;
 
-                            if (item.Remove && HookRunner.RunCancellable(new PocketDimensionDestroyingItemArgs(pickup), true))
+                            if (item.Remove && HookRunner.RunEvent(new PocketDimensionDestroyingItemArgs(pickup), true))
                                 pickup.DestroySelf();
                             else if (pickup.TryGetRigidbody(out var rigidbody))
                             {
                                 var droppingArgs = new PocketDimensionDroppingItemArgs(pickup, item.DropPosition.Position, new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel));
 
-                                if (HookRunner.RunCancellable(droppingArgs, true))
+                                if (HookRunner.RunEvent(droppingArgs, true))
                                 {
                                     rigidbody.velocity = droppingArgs.Velocity;
                                     pickup.transform.position = droppingArgs.Position;

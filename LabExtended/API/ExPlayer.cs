@@ -97,6 +97,11 @@ namespace LabExtended.API
         public static IReadOnlyList<ExPlayer> NpcPlayers => _npcPlayers;
 
         /// <summary>
+        /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
+        /// </summary>
+        public static IReadOnlyList<ExPlayer> AllPlayers => _allPlayers;
+
+        /// <summary>
         /// Gets a count of all players on the server.
         /// </summary>
         public static int Count => _players.Count;
@@ -135,6 +140,17 @@ namespace LabExtended.API
                 }
 
                 return _hostPlayer;
+            }
+        }
+
+        /// <summary>
+        /// Gets a new <see cref="SwitchContainer"/> instance configured for Players copied from config.
+        /// </summary>
+        public static SwitchContainer PlayerSwitches {
+            get {
+                var switches = new SwitchContainer();
+                switches.Copy(ApiLoader.Config.SwitchContainers.PlayerSwitches);
+                return switches;
             }
         }
 
@@ -447,9 +463,6 @@ namespace LabExtended.API
 
         internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
 
-        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _newSyncData;
-        internal readonly LockedDictionary<ExPlayer, FpcSyncData> _prevSyncData;
-
         internal readonly LockedHashSet<ExPlayer> _invisibility;
 
         /// <summary>
@@ -457,7 +470,7 @@ namespace LabExtended.API
         /// </summary>
         /// <param name="hub"></param>
         public ExPlayer(ReferenceHub hub)
-            : this(hub, new SwitchContainer()) { }
+            : this(hub, PlayerSwitches) { }
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with the specified switches.
@@ -476,10 +489,6 @@ namespace LabExtended.API
             _forcedRot = null;
 
             _sentRoles = new LockedDictionary<int, RoleTypeId>();
-
-            _newSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
-            _prevSyncData = new LockedDictionary<ExPlayer, FpcSyncData>();
-
             _invisibility = new LockedHashSet<ExPlayer>();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);

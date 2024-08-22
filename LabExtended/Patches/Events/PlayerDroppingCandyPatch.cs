@@ -22,7 +22,7 @@ namespace LabExtended.Patches.Events
                 return false;
             }
 
-            if (!HookRunner.RunCancellable(new PlayerDroppingCandyArgs(player, player.Inventory.CandyBag.Candies[index]), true))
+            if (!HookRunner.RunEvent(new PlayerDroppingCandyArgs(player, player.Inventory.CandyBag.Candies[index]), true))
             {
                 __result = CandyKindID.None;
                 return false;

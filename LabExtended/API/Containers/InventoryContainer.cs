@@ -5,7 +5,6 @@ using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
-using InventorySystem.Items.Usables.Scp330;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -20,9 +19,12 @@ using UnityEngine;
 using NorthwoodLib.Pools;
 
 using PlayerRoles.FirstPersonControl;
+
 using InventorySystem.Items.Usables;
+
 using LabExtended.API.Items.Candies;
-using LabExtended.Core.Ticking;
+using LabExtended.API.CustomItems;
+using System.ComponentModel;
 
 namespace LabExtended.API.Containers
 {
@@ -32,6 +34,8 @@ namespace LabExtended.API.Containers
     public class InventoryContainer
     {
         internal readonly LockedHashSet<ItemPickupBase> _droppedItems = new LockedHashSet<ItemPickupBase>();
+        internal readonly LockedHashSet<CustomItem> _customItems = new LockedHashSet<CustomItem>();
+
         internal CandyBag _bag;
 
         /// <summary>
@@ -43,6 +47,8 @@ namespace LabExtended.API.Containers
             Inventory = inventory;
             UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
         }
+
+        public ItemBase this[ushort itemSerial] => UserInventory.Items.TryGetValue(itemSerial, out var item) ? item : null;
 
         /// <summary>
         /// Gets the targeted player's <see cref="InventorySystem.Inventory"/> component.
@@ -65,14 +71,49 @@ namespace LabExtended.API.Containers
         public int ItemCount => Inventory.UserInventory.Items.Count;
 
         /// <summary>
+        /// Gets the amount of owned custom items (dropped and in inventory).
+        /// </summary>
+        public int CustomItemCount => _customItems.Count;
+
+        /// <summary>
+        /// Gets the amount of custom items that have been dropped.
+        /// </summary>
+        public int DroppedCustomItemCount => CountCustomItems(x => x.IsDropped);
+
+        /// <summary>
+        /// Gets the amount of custom items that are currently in the player's inventory.
+        /// </summary>
+        public int InventoryCustomItemCount => CountCustomItems(x => x.IsInInventory);
+
+        /// <summary>
         /// Whether or not the player has any items.
         /// </summary>
         public bool HasAnyItems => Inventory.UserInventory.Items.Count > 0;
 
         /// <summary>
+        /// Whether or not the player has any custom items (dropped or in inventory).
+        /// </summary>
+        public bool OwnsAnyCustomItems => _customItems.Count > 0;
+
+        /// <summary>
+        /// Whether or not the player has dropped any custom items.
+        /// </summary>
+        public bool HasDroppedAnyCustomItems => DroppedCustomItemCount > 0;
+
+        /// <summary>
+        /// Whether or not the player has any custom items in their inventory.
+        /// </summary>
+        public bool HasCustomItemsInInventory => InventoryCustomItemCount > 0;
+
+        /// <summary>
         /// Gets the player's SCP-330 candy bag (or <see langword="null"/> if the player doesn't have one).
         /// </summary>
         public CandyBag CandyBag => _bag;
+
+        /// <summary>
+        /// Gets the custom item that is currently being held by this player.
+        /// </summary>
+        public CustomItem CurrentCustomItem => CurrentItem != null && CustomItem.TryGetItem(CurrentItem, out var customItem) ? customItem : null;
 
         /// <summary>
         /// Gets a list of all items.
@@ -90,9 +131,24 @@ namespace LabExtended.API.Containers
         public IEnumerable<KeycardItem> Keycards => Inventory.UserInventory.Items.Values.Where<KeycardItem>();
 
         /// <summary>
+        /// Gets all <see cref="CustomItem"/>s dropped by this player.
+        /// </summary>
+        public IEnumerable<CustomItem> DroppedCustomItems => GetCustomItems(x => x.IsDropped);
+
+        /// <summary>
+        /// Gets all <see cref="CustomItem"/>s in this player's inventory.
+        /// </summary>
+        public IEnumerable<CustomItem> InventoryCustomItems => GetCustomItems(x => x.IsInInventory);
+
+        /// <summary>
         /// Gets a list of all items that have been dropped by this player.
         /// </summary>
         public IReadOnlyList<ItemPickupBase> DroppedItems => _droppedItems;
+
+        /// <summary>
+        /// Gets a list of all items that are owned by this player (including dropped items).
+        /// </summary>
+        public IReadOnlyList<CustomItem> CustomItems => _customItems;
 
         /// <summary>
         /// Gets permissions of the currently held keycard. <i>(<see cref="KeycardPermissions.None"/> if the player isn't holding a keycard)</i>.
@@ -401,7 +457,7 @@ namespace LabExtended.API.Containers
 
             var throwingEv = new PlayerThrowingItemArgs(ExPlayer.Get(Inventory._hub), itemPrefab, pickupInstance, pickupRigidbody, Inventory._hub.PlayerCameraReference.position, velocity, angular);
 
-            if (!HookRunner.RunCancellable(throwingEv, true))
+            if (!HookRunner.RunEvent(throwingEv, true))
                 return pickupInstance;
 
             pickupRigidbody.position = throwingEv.Position;
@@ -413,6 +469,93 @@ namespace LabExtended.API.Containers
 
             return pickupInstance;
         }
+
+        public bool TryGetCustomItem<T>(out T result) where T : CustomItem
+            => _customItems.TryGetFirst(out result);
+
+        public bool TryGetCustomItem<T>(Predicate<T> predicate, out T result) where T : CustomItem
+            => _customItems.TryGetFirst(x => predicate(x), out result);
+
+        public bool TryGetCustomItems<T>(out IEnumerable<T> result)
+            => (result = _customItems.Where<T>()).Any();
+
+        public bool TryGetCustomItems<T>(Predicate<T> predicate, out IEnumerable<T> items)
+            => (items = _customItems.Where<T>(x => predicate(x))).Any();
+
+        public bool TryGetCustomItems(Predicate<CustomItem> predicate, out IEnumerable<CustomItem> items)
+            => (items = _customItems.Where(x => predicate(x))).Any();
+
+        public bool TryGetCustomItems(Type type, out IEnumerable<CustomItem> items)
+            => TryGetCustomItems(x => x.GetType() == type, out items);
+
+        public bool HasCustomItem<T>() where T : CustomItem
+            => _customItems.Any(x => x is T);
+
+        public bool HasCustomItem<T>(Predicate<T> predicate) where T : CustomItem
+            => _customItems.Any(x => x is T item && predicate(item));
+
+        public bool HasCustomItem(Type type)
+            => _customItems.Any(x => x.GetType() == type);
+
+        public bool HasCustomItem(Predicate<CustomItem> predicate)
+            => _customItems.Any(x => predicate(x));
+
+        public int CountCustomItems<T>() where T : CustomItem
+            => _customItems.Count(x => x is T);
+
+        public int CountCustomItems<T>(Predicate<T> predicate) where T : CustomItem
+            => _customItems.Count(x => x is T item && predicate(item));
+
+        public int CountCustomItems(Predicate<CustomItem> predicate)
+            => _customItems.Count(x => predicate(x));
+
+        public int CountCustomItems(Type type)
+            => _customItems.Count(x => x.GetType() == type);
+
+        public T GetCustomItem<T>() where T : CustomItem
+            => _customItems.TryGetFirst<T>(out var result) ? result : null;
+
+        public T GetCustomItem<T>(Predicate<T> predicate) where T : CustomItem
+            => _customItems.TryGetFirst<T>(x => predicate(x), out var result) ? result : null;
+
+        public CustomItem GetCustomItem(Predicate<CustomItem> predicate)
+            => _customItems.FirstOrDefault(x => predicate(x));
+
+        public CustomItem GetCustomItem(Type type)
+            => GetCustomItem(x => x.GetType() == type);
+
+        public IEnumerable<T> GetCustomItems<T>() where T : CustomItem
+            => _customItems.Where<T>();
+
+        public IEnumerable<T> GetCustomItems<T>(Predicate<T> predicate) where T : CustomItem
+            => _customItems.Where<T>(x => predicate(x));
+
+        public IEnumerable<CustomItem> GetCustomItems(Predicate<CustomItem> predicate)
+            => _customItems.Where(x => predicate(x));
+
+        public IEnumerable<CustomItem> GetCustomItems(Type type)
+            => GetCustomItems(x => x.GetType() == type);
+
+        public void ForEachCustomItem(Action<CustomItem> action)
+            => _customItems.ForEach(action);
+
+        public void ForEachCustomItem(Type type, Action<CustomItem> action)
+            => _customItems.ForEach(x =>
+            {
+                if (x is null || x.GetType() != type)
+                    return;
+
+                action(x);
+            });
+
+        public void ForEachCustomItem<T>(Action<T> action) where T : CustomItem
+            => _customItems.ForEach(x => 
+            {
+                if (x is null || x is not T item)
+                    return;
+
+                action(item);
+            });
 
         public float GetPersonalUsableCooldown(ItemType usableItemType)
             => UsableItemsHandler.PersonalCooldowns.TryGetValue(usableItemType, out var cooldown) ? cooldown : 0f;
@@ -428,5 +571,26 @@ namespace LabExtended.API.Containers
 
         public void Synchronize()
             => Inventory.ServerSendItems();
+
+        public override string ToString()
+            => (CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
+
+        public static implicit operator ItemBase(InventoryContainer container)
+            => container?.CurrentItem;
+
+        public static implicit operator ItemType(InventoryContainer container)
+            => container?.CurrentItemType ?? ItemType.None;
+
+        public static implicit operator ItemIdentifier(InventoryContainer container)
+            => container?.CurrentItemIdentifier ?? ItemIdentifier.None;
+
+        public static implicit operator ushort(InventoryContainer container)
+            => container?.CurrentItem?.ItemSerial ?? 0;
+
+        public static implicit operator bool(InventoryContainer container)
+            => container != null && container.CurrentItem != null && container.CurrentItem;
+
+        public static implicit operator string(InventoryContainer container)
+            => (container?.CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
     }
 }

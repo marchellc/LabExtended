@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Events
 
             var togglingArgs = new PlayerTogglingNoClipArgs(player, player.Stats.AdminFlags.HasFlag(AdminFlags.Noclip));
 
-            if (!HookRunner.RunCancellable(togglingArgs, true))
+            if (!HookRunner.RunEvent(togglingArgs, true))
                 return false;
 
             if (togglingArgs.NewState == togglingArgs.CurrentState)

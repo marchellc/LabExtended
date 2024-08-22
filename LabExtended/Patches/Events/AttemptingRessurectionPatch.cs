@@ -71,7 +71,7 @@ namespace LabExtended.Patches.Events
 
             var resurrectingArgs = new Scp049AttemptingResurrectionArgs(scp, target, __result);
 
-            if (!HookRunner.RunCancellable(resurrectingArgs, true))
+            if (!HookRunner.RunEvent(resurrectingArgs, true))
             {
                 __result = Scp049ResurrectAbility.ResurrectError.Refused;
                 return false;

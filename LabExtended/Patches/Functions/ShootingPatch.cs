@@ -45,7 +45,7 @@ namespace LabExtended.Patches.Functions
 
             var shootingArgs = new PlayerShootingArgs(player, firearm, msg);
 
-            if (!HookRunner.RunCancellable(shootingArgs, true))
+            if (!HookRunner.RunEvent(shootingArgs, true))
                 return false;
 
             msg = shootingArgs.Message;
@@ -100,7 +100,7 @@ namespace LabExtended.Patches.Functions
                 standardHitreg.PrimaryTargetNetId = msg.TargetNetId;
                 standardHitreg.SetHitboxes(player.Hub, !player.Hub.isLocalPlayer);
 
-                if (!HookRunner.RunCancellable(processingArgs, true))
+                if (!HookRunner.RunEvent(processingArgs, true))
                 {
                     if (isPlayer)
                     {
@@ -173,7 +173,7 @@ namespace LabExtended.Patches.Functions
                     {
                         var performingArgs = new PlayerPerformingShotArgs(player, null, firearm, newRay, hit, null, 0f);
 
-                        if (!HookRunner.RunCancellable(performingArgs, true))
+                        if (!HookRunner.RunEvent(performingArgs, true))
                             continue;
 
                         if (performingArgs.PlaceBulletDecal)
@@ -202,7 +202,7 @@ namespace LabExtended.Patches.Functions
 
                 var performingArgs = new PlayerPerformingShotArgs(player, (hasHub ? ExPlayer.Get(hitboxIdentity.TargetHub) : null), firearm, hit.RcRay, hit.RcResult, hit.Target, hit.Damage);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     continue;
 
                 if (performingArgs.Damage < -1f || !hit.Target.Damage(performingArgs.Damage, handler, hit.RcResult.point))
@@ -235,7 +235,7 @@ namespace LabExtended.Patches.Functions
             {
                 var performingArgs = new PlayerPerformingShotArgs(player, null, firearm, ray, hit, null, 0f);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     return;
 
                 if (performingArgs.SpawnExplosion)
@@ -248,7 +248,7 @@ namespace LabExtended.Patches.Functions
             {
                 var performingArgs = new PlayerPerformingShotArgs(player, null, firearm, ray, hit, null, 0f);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     return;
 
                 new DisruptorHitreg.DisruptorHitMessage
@@ -267,7 +267,7 @@ namespace LabExtended.Patches.Functions
 
                 var performingArgs = new PlayerPerformingShotArgs(player, ExPlayer.Get(destructible.NetworkId), firearm, ray, hit, destructible, damage);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     return;
 
                 if (destructible.Damage(performingArgs.Damage, handler, hit.point))
@@ -328,7 +328,7 @@ namespace LabExtended.Patches.Functions
 
                 var performingArgs = new PlayerPerformingShotArgs(player, ExPlayer.Get(destructible.NetworkId), firearm, ray, hit, destructible, damage);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     return;
 
                 if (destructible.Damage(performingArgs.Damage, handler, hit.point))
@@ -351,7 +351,7 @@ namespace LabExtended.Patches.Functions
             {
                 var performingArgs = new PlayerPerformingShotArgs(player, null, firearm, ray, hit, null, 0f);
 
-                if (!HookRunner.RunCancellable(performingArgs, true))
+                if (!HookRunner.RunEvent(performingArgs, true))
                     return;
 
                 if (performingArgs.PlaceBulletDecal)

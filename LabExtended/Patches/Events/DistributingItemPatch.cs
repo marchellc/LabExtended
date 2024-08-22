@@ -49,7 +49,7 @@ namespace LabExtended.Patches.Events
 
             var distributingPickupsArgs = new DistributingPickupsArgs(spawnableItem, (int)amount, list);
 
-            if (!HookRunner.RunCancellable(distributingPickupsArgs, true))
+            if (!HookRunner.RunEvent(distributingPickupsArgs, true))
             {
                 ListPool<ItemSpawnpoint>.Shared.Return(list);
                 return;
@@ -70,7 +70,7 @@ namespace LabExtended.Patches.Events
                 var spawnpointIndex = UnityEngine.Random.Range(0, list.Count);
                 var distributingArgs = new DistributingPickupArgs(list[spawnpointIndex], type, list[spawnpointIndex].Occupy());
 
-                if (!HookRunner.RunCancellable(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(distributingArgs.Type, distributingArgs.TargetTransform.position)))
+                if (!HookRunner.RunEvent(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(distributingArgs.Type, distributingArgs.TargetTransform.position)))
                 {
                     list[spawnpointIndex]._uses--;
                     continue;
@@ -90,7 +90,7 @@ namespace LabExtended.Patches.Events
             var transform = itemSpawnpoint.Occupy();
             var distributingArgs = new DistributingPickupArgs(itemSpawnpoint, itemSpawnpoint.AutospawnItem, transform);
 
-            if (!HookRunner.RunCancellable(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(itemSpawnpoint.AutospawnItem, transform.position)))
+            if (!HookRunner.RunEvent(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(itemSpawnpoint.AutospawnItem, transform.position)))
             {
                 itemSpawnpoint._uses--;
                 return;

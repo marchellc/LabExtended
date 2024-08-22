@@ -1,9 +1,108 @@
-﻿using System.Collections;
+﻿using LabExtended.Utilities;
+
+using NorthwoodLib.Pools;
+
+using System.Collections;
 
 namespace LabExtended.Extensions
 {
     public static class CollectionExtensions
     {
+        #region Random Selection Extensions
+        public static T GetRandomItem<T>(this IEnumerable<T> items, Predicate<T> predicate = null)
+        {
+            var validItems = predicate != null ? items.Where(x => predicate(x)) : items;
+            var count = validItems.Count();
+
+            if (count == 0)
+                throw new Exception($"Cannot select item in an empty collection");
+
+            if (count < 2)
+                return items.First();
+
+            return validItems.ElementAt(RandomGen.Instance.GetInt32(0, count - 1));
+        }
+
+        public static T[] GetRandomArray<T>(this IEnumerable<T> items, int minCount, Predicate<T> predicate = null)
+        {
+            var validItems = predicate != null ? items.Where(x => predicate(x)) : items;
+            var count = validItems.Count();
+
+            if (count < minCount)
+                throw new Exception($"Not enough items to select ({count} / {minCount})");
+
+            var array = new T[minCount];
+            var selected = ListPool<int>.Shared.Rent();
+
+            for (int i = 0; i < minCount; i++)
+            {
+                var index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                while (selected.Contains(index))
+                    index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                selected.Add(index);
+                array[i] = items.ElementAt(index);
+            }
+
+            ListPool<int>.Shared.Return(selected);
+            return array;
+        }
+
+        public static List<T> GetRandomList<T>(this IEnumerable<T> items, int minCount, Predicate<T> predicate = null)
+        {
+            var validItems = predicate != null ? items.Where(x => predicate(x)) : items;
+            var count = validItems.Count();
+
+            if (count < minCount)
+                throw new Exception($"Not enough items to select ({count} / {minCount})");
+
+            var list = new List<T>(minCount);
+            var selected = ListPool<int>.Shared.Rent();
+
+            for (int i = 0; i < minCount; i++)
+            {
+                var index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                while (selected.Contains(index))
+                    index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                selected.Add(index);
+                list.Add(items.ElementAt(index));
+            }
+
+            ListPool<int>.Shared.Return(selected);
+            return list;
+        }
+
+        public static HashSet<T> GetRandomHashSet<T>(this IEnumerable<T> items, int minCount, Predicate<T> predicate = null)
+        {
+            var validItems = predicate != null ? items.Where(x => predicate(x)) : items;
+            var count = validItems.Count();
+
+            if (count < minCount)
+                throw new Exception($"Not enough items to select ({count} / {minCount})");
+
+            var set = new HashSet<T>(minCount);
+            var selected = ListPool<int>.Shared.Rent();
+
+            for (int i = 0; i < minCount; i++)
+            {
+                var index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                while (selected.Contains(index))
+                    index = RandomGen.Instance.GetInt32(0, count - 1);
+
+                selected.Add(index);
+                set.Add(items.ElementAt(index));
+            }
+
+            ListPool<int>.Shared.Return(selected);
+            return set;
+        }
+        #endregion
+
+        #region Array Extensions
         public static void SetIndex<T>(this ArraySegment<T> segment, int index, T value)
             => segment.Array[index] = value;
 
@@ -24,7 +123,9 @@ namespace LabExtended.Extensions
             value = array[index];
             return true;
         }
+        #endregion
 
+        #region Collection Extensions
         public static T RemoveAndTake<T>(this IList<T> list, int index)
         {
             var value = list[index];
@@ -53,7 +154,9 @@ namespace LabExtended.Extensions
 
             return list;
         }
+        #endregion
 
+        #region Enumerable Extensions
         public static IEnumerable<T> Where<T>(this IEnumerable<object> objects)
             => objects.Where(obj => obj is T).Select(obj => (T)obj);
 
@@ -121,7 +224,9 @@ namespace LabExtended.Extensions
             result = default;
             return false;
         }
+        #endregion
 
+        #region Dictionary Extensions
         public static bool TryGetKey<TKey, TValue>(this IDictionary<TKey, TValue> dict, TValue value, out TKey key)
         {
             foreach (var pair in dict)
@@ -224,7 +329,9 @@ namespace LabExtended.Extensions
             pair = default;
             return false;
         }
+        #endregion
 
+        #region Queue Extensions
         public static void Remove<T>(this Queue<T> queue, T value)
         {
             var values = queue.ToList();
@@ -238,5 +345,6 @@ namespace LabExtended.Extensions
             foreach (var item in values)
                 queue.Enqueue(item);
         }
+        #endregion
     }
 }

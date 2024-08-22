@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions
             var target = __instance.ProcessAttackRequest(reader);
             var player = target.HasValue ? ExPlayer.Get(target.Value.Target) : null;
 
-            if (player != null && ((!scp.Switches.CanStrangleAs3114 || !player.Switches.CanBeStrangledBy3114) || !HookRunner.RunCancellable(new Scp3114StranglingArgs(scp, player), true)))
+            if (player != null && ((!scp.Switches.CanStrangleAs3114 || !player.Switches.CanBeStrangledBy3114) || !HookRunner.RunEvent(new Scp3114StranglingArgs(scp, player), true)))
             {
                 __instance.SyncTarget = null;
 

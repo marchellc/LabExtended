@@ -1,6 +1,6 @@
 ﻿namespace LabExtended.API.CustomItems.Usables
 {
-    public enum CancelReason
+    public enum CustomUsableCancelReason
     {
         SwitchedItems,
         Cancelled

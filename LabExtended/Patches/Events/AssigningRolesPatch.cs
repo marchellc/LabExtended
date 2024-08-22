@@ -16,7 +16,7 @@ namespace LabExtended.Patches.Events
         {
             var roles = ExRound.ChooseRoles();
 
-            if (!HookRunner.RunCancellable(new AssigningRolesArgs(roles), true))
+            if (!HookRunner.RunEvent(new AssigningRolesArgs(roles), true))
                 return false;
 
             foreach (var pair in roles)

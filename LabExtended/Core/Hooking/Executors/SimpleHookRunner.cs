@@ -9,7 +9,7 @@ namespace LabExtended.Core.Hooking.Executors
             if (!binder.BindArgs(eventObject, out var methodArgs))
                 throw new Exception("Argument binder failed to bind method arguments.");
 
-            var methodResult = hook.Method.Invoke(hook.Instance, methodArgs);
+            var methodResult = hook.Invoker(hook.Instance, methodArgs);
 
             if (methodArgs != null)
                 binder.UnbindArgs(methodArgs);

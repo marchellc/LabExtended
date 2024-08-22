@@ -2,7 +2,6 @@
 using LabExtended.Core.Profiling;
 
 using LabExtended.Extensions;
-using LabExtended.Utilities;
 
 namespace LabExtended.Core.Hooking
 {
@@ -10,40 +9,31 @@ namespace LabExtended.Core.Hooking
     {
         private static readonly ProfilerMarker _marker = new ProfilerMarker("Hooks (Execution)");
 
-        public static T RunCancellable<T>(object eventObject, T cancellation)
-        {
-            ArgumentUtils.Null(eventObject, "eventObject");
-
-            if (eventObject is ICancellableEvent<T> cancellableEvent)
-            {
-                cancellableEvent.IsAllowed = cancellation;
-
-                RunEvent(eventObject, cancellation);
-                return cancellableEvent.IsAllowed;
-            }
-            else
-            {
-                return RunEvent(eventObject, cancellation);
-            }
-        }
-
         public static void RunEvent(object eventObject)
             => RunEvent<object>(eventObject, null);
 
         public static T RunEvent<T>(object eventObject, T returnValue = default)
         {
-            ArgumentUtils.Null(eventObject, "eventObject");
+            if (eventObject is null)
+                throw new ArgumentNullException(nameof(eventObject));
 
             var type = eventObject.GetType();
+            var cancellable = eventObject as ICancellableEvent<T>;
 
             _marker.MarkStart(type.Name);
 
+            if (cancellable != null)
+                cancellable.IsAllowed = returnValue;
+
             try
             {
-                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates))
+                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates) && predefinedDelegates != null && predefinedDelegates.Count > 0)
                 {
                     foreach (var predefinedDelegate in predefinedDelegates)
                     {
+                        if (predefinedDelegate is null || predefinedDelegate.Method is null)
+                            continue;
+
                         try
                         {
                             predefinedDelegate(eventObject);
@@ -55,10 +45,13 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates))
+                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates) && predefinedReturnDelegates != null && predefinedReturnDelegates.Count > 0)
                 {
                     foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
                     {
+                        if (predefinedReturnDelegate is null || predefinedReturnDelegate.Method is null)
+                            continue;
+
                         try
                         {
                             var result = predefinedReturnDelegate(eventObject);
@@ -73,18 +66,43 @@ namespace LabExtended.Core.Hooking
                     }
                 }
 
-                if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks.Count > 0)
-                    returnValue = RunInternal(eventObject, hooks, returnValue);
-
-                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects))
+                if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks != null && hooks.Count > 0)
                 {
+                    for (int i = 0; i < hooks.Count; i++)
+                    {
+                        try
+                        {
+                            var hookResult = hooks[i].Run(eventObject);
+
+                            if (hookResult != null && hookResult is T castValue)
+                            {
+                                returnValue = castValue;
+
+                                if (cancellable != null)
+                                    cancellable.IsAllowed = returnValue;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ApiLoader.Error("Hooking API", $"Failed to run hook &3{hooks[i].Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
+                        }
+                    }
+                }
+
+                if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects) && hookDelegateObjects != null && hookDelegateObjects.Count > 0)
+                {
+                    var args = new object[] { eventObject };
+
                     foreach (var hookDelegateObject in hookDelegateObjects)
                     {
                         try
                         {
-                            var value = hookDelegateObject.Field.GetValue(null);
+                            if (hookDelegateObject.FieldGetter is null || hookDelegateObject.Invoker is null)
+                                continue;
 
-                            if (value is null || value is not Delegate del)
+                            var value = hookDelegateObject.FieldGetter();
+
+                            if (value is null)
                             {
                                 ApiLoader.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
                                 continue;
@@ -96,7 +114,7 @@ namespace LabExtended.Core.Hooking
                                 continue;
                             }
 
-                            del.DynamicInvoke(eventObject);
+                            hookDelegateObject.Invoker(value, args);
                         }
                         catch (Exception ex)
                         {
@@ -104,6 +122,9 @@ namespace LabExtended.Core.Hooking
                         }
                     }
                 }
+
+                if (cancellable != null)
+                    cancellable.IsAllowed = returnValue;
             }
             catch (Exception ex)
             {
@@ -111,26 +132,6 @@ namespace LabExtended.Core.Hooking
             }
 
             _marker.MarkEnd();
-            return returnValue;
-        }
-
-        private static T RunInternal<T>(object eventObject, List<HookInfo> hooks, T returnValue)
-        {
-            for (int i = 0; i < hooks.Count; i++)
-            {
-                try
-                {
-                    var hookResult = hooks[i].Run(eventObject);
-
-                    if (hookResult != null && hookResult is T castValue)
-                        returnValue = castValue;
-                }
-                catch (Exception ex)
-                {
-                    ApiLoader.Error("Hooking API", $"Failed to run hook &3{hooks[i].Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
-                }
-            }
-
             return returnValue;
         }
     }

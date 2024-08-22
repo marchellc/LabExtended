@@ -1,5 +1,8 @@
-﻿using LabExtended.API.Collections.Locked;
+﻿using HarmonyLib;
+
+using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
+using LabExtended.Utilities;
 
 using System.Reflection;
 
@@ -109,19 +112,33 @@ namespace LabExtended.Extensions
             if (field is null)
                 throw new Exception($"Event '{eventName}' does not have a backing field");
 
-            var delValue = field.GetValue(target);
+            var delGetter = FieldRefCache<Delegate>.Get(field);
+            var delValue = delGetter(target);
 
-            if (delValue is null || delValue is not Delegate del)
+            if (delValue is null)
                 return;
 
-            del.DynamicInvoke(args);
+            var invoker = FastReflection.ForDelegate(delValue);
+
+            if (invoker is null)
+                return;
+
+            invoker(target, args);
         }
 
         public static object Construct(this Type type)
-            => Activator.CreateInstance(type);
+        {
+            var constructor = AccessTools.Constructor(type);
+
+            if (constructor is null)
+                throw new Exception("No constructors were found");
+
+            var invoker = FastReflection.ForConstructor(constructor);
+            return invoker(null);
+        }
 
         public static T Construct<T>(this Type type)
-            => (T)Activator.CreateInstance(type);
+            => (T)Construct(type);
 
         public static bool InheritsType(this Type type, Type checkType)
         {
@@ -139,10 +156,12 @@ namespace LabExtended.Extensions
             if (instance is null)
                 return false;
 
-            if (instance.GetType() != type)
+            var instanceType = instance.GetType();
+
+            if (instanceType != type)
                 return false;
 
-            return true;
+            return instanceType == type || instanceType.InheritsType(type);
         }
 
         public static void InvokeStaticMethod(this Type type, Func<MethodInfo, bool> predicate, params object[] args)
@@ -152,9 +171,14 @@ namespace LabExtended.Extensions
             if (method is null || !method.IsStatic)
                 return;
 
+            var invoker = FastReflection.ForMethod(method);
+
+            if (invoker is null)
+                return;
+
             try
             {
-                method.Invoke(null, args);
+                invoker(null, args);
             }
             catch (Exception ex)
             {

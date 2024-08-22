@@ -58,7 +58,7 @@ namespace LabExtended.Patches.Functions
 
             var consumingArgs = new Scp0492ConsumingRagdollArgs(scp, target, ragdoll);
 
-            if (!HookRunner.RunCancellable(consumingArgs, true))
+            if (!HookRunner.RunEvent(consumingArgs, true))
             {
                 __result = (byte)(consumingArgs.Code == 0 ? 2 : consumingArgs.Code);
                 return false;
