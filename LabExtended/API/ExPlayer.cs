@@ -1180,6 +1180,15 @@ namespace LabExtended.API
         /// <param name="tag">The tag that will be shown in command name.</param>
         public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
         {
+            if (content is null)
+                return;
+
+            if (IsServer)
+            {
+                ApiLoader.Info($"Remote Admin{(!string.IsNullOrWhiteSpace(tag) ? $" / {tag}" : "")}", content);
+                return;
+            }
+
             if (!HasRemoteAdminAccess)
                 return;
 
