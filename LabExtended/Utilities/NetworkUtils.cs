@@ -112,19 +112,19 @@ namespace LabExtended.Utilities
             }
         }
 
-        public static void Send<T>(this NetworkConnection connection, Action<NetworkWriter> action) where T : struct, NetworkMessage
+        public static void WriteAndSend<T>(this NetworkConnection connection, Action<NetworkWriter> action) where T : struct, NetworkMessage
         {
             using (var writer = NetworkWriterPool.Get())
             {
-                writer.Pack<T>(() => action(writer));
-                writer.Send(connection);
+                writer.WriteMessage<T>(() => action(writer));
+                writer.SendWriter(connection);
             }
         }
 
-        public static void Send(this NetworkWriter writer, NetworkConnection connection)
+        public static void SendWriter(this NetworkWriter writer, NetworkConnection connection)
             => connection?.Send(writer.ToArraySegment());
 
-        public static NetworkWriter Pack<T>(Action<NetworkWriter> action) where T : struct, NetworkMessage
+        public static NetworkWriter WriteMessage<T>(Action<NetworkWriter> action) where T : struct, NetworkMessage
         {
             var writer = NetworkWriterPool.Get();
 
@@ -134,10 +134,9 @@ namespace LabExtended.Utilities
             return writer;
         }
 
-        public static void Pack<T>(this NetworkWriter writer, Action action) where T : struct, NetworkMessage
+        public static void WriteMessage<T>(this NetworkWriter writer, Action action) where T : struct, NetworkMessage
         {
             writer.WriteUShort(NetworkMessageId<T>.Id);
-
             action();
         }
 
