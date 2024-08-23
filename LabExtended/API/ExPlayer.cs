@@ -66,9 +66,6 @@ namespace LabExtended.API
             _npcPlayers = new LockedHashSet<ExPlayer>();
             _allPlayers = new LockedHashSet<ExPlayer>();
             _ghostedPlayers = new LockedHashSet<ExPlayer>();
-
-            TickManager.SubscribeTick(SynchronizeRoles, TickTimer.NoneProfiled, "Role Synchronization", true);
-            TickManager.Init();
         }
 
         internal static readonly LockedHashSet<ExPlayer> _players;
@@ -1388,34 +1385,6 @@ namespace LabExtended.API
 
         internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
             => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
-        #endregion
-
-        #region Synchronization
-        private static void SynchronizeRoles()
-        {
-            foreach (var player in _allPlayers)
-            {
-                var curRoleId = player.Role.Type;
-
-                if (player.Role.Role is IObfuscatedRole obfuscatedRole)
-                    curRoleId = obfuscatedRole.GetRoleForUser(player.Hub);
-
-                foreach (var other in _allPlayers)
-                {
-                    if (player.Role.FakedList.TryGetValue(other, out var fakedRole))
-                        curRoleId = fakedRole;
-
-                    if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
-                        curRoleId = RoleTypeId.Spectator;
-
-                    if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == curRoleId)
-                        continue;
-
-                    player._sentRoles[other.PlayerId] = curRoleId;
-                    other.Connection.Send(new RoleSyncInfo(player.Hub, curRoleId, other.Hub));
-                }
-            }
-        }
         #endregion
 
         #region Operators

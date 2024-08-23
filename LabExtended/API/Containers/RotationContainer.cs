@@ -250,7 +250,7 @@ namespace LabExtended.API.Containers
         /// <param name="sendPosition">Whether or not to send a position.</param>
         /// <param name="positionToSend">The position to send.</param>
         public void Set(ushort compressedHorizontal, ushort compressedVertical, bool sendPosition = false, RelativePosition? positionToSend = null)
-            => Player.Connection.Send<FpcPositionMessage>(writer => InternalWrite(writer, compressedHorizontal, compressedVertical, sendPosition, positionToSend));
+            => Player.Connection.WriteAndSend<FpcPositionMessage>(writer => InternalWrite(writer, compressedHorizontal, compressedVertical, sendPosition, positionToSend));
 
         private void InternalWrite(NetworkWriter writer, ushort horizontal, ushort vertical, bool writePosition, RelativePosition? positionToSend)
         {
@@ -259,20 +259,11 @@ namespace LabExtended.API.Containers
             if (module is null)
                 throw new Exception($"The player's movement module is null!");
 
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"Writing rotation for &3{Player.Name}&r (&6{Player.UserId}&r): {horizontal}H {vertical}V");
-
             Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7, out var b8);
 
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"syncState={module.SyncMovementState} b1={b1} b2={b2} b3={b3} b4={b4} b5={b5} bit={module.IsGrounded}");
-
             var b = Misc.BoolsToByte(b1, b2, b3, b4, b5, true, writePosition, module.IsGrounded);
-
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"b={b}");
-
             var pos = positionToSend.HasValue ? positionToSend.Value : Player.Position.Relative;
             var id = Player.Hub.Network_playerId;
-
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"Writing data, pos.WaypointId={pos.WaypointId} id={id.Value}");
 
             writer.WriteUShort(2); // Data count
 
@@ -285,8 +276,6 @@ namespace LabExtended.API.Containers
             writer.WriteUShort(horizontal++);
             writer.WriteUShort(vertical++);
 
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written rotations, {horizontal}H {vertical}V");
-
             writer.WriteRecyclablePlayerId(id);
             writer.WriteByte(b);
 
@@ -295,9 +284,6 @@ namespace LabExtended.API.Containers
 
             writer.WriteUShort(--horizontal);
             writer.WriteUShort(--vertical);
-
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written rotations (2), {horizontal}H {vertical}V");
-            ApiLoader.Debug("RoleContainer.InternalWrite", $"Written data, size={writer.buffer.Length}");
         }
 
         /// <summary>

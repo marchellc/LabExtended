@@ -3,7 +3,6 @@ using LabExtended.API.Pooling;
 
 using LabExtended.Attributes;
 
-using LabExtended.Core.Profiling;
 using LabExtended.Core.Ticking;
 
 using LabExtended.Events.Player;
@@ -28,7 +27,7 @@ namespace LabExtended.Core.Synchronization.Position
 {
     public static class PositionSynchronizer
     {
-        private static ProfilerMarker _marker = new ProfilerMarker("Position Synchronization", 1000);
+        private static NetworkWriter _writer = NetworkWriterPool.Get();
 
         private static float _sendTime = 0f;
         private static float _debugTime = 0f;
@@ -47,14 +46,13 @@ namespace LabExtended.Core.Synchronization.Position
 
         public static float SendRate => ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.PositionSyncRate > 0f ? ApiLoader.Config.ApiOptions.PositionSynchronizerOptions.PositionSyncRate : FpcServerPositionDistributor.SendRate;
 
-        public static void Synchronize()
+        private static void Synchronize()
         {
             if (_sending || ExPlayer._players.Count < 1)
                 return;
 
             _sending = true;
             _debug = _debugTime <= 0f;
-            _marker.MarkStart();
 
             if (IsDebug)
                 ApiLoader.Debug("Position Synchronizer", $"Synchronizing positions for {ExPlayer._allPlayers.Count} players.");
@@ -124,12 +122,13 @@ namespace LabExtended.Core.Synchronization.Position
                     if (!_syncCache.TryGetValue(player, out var syncCache))
                         _syncCache[player] = syncCache = DictionaryPool<ExPlayer, PositionData>.Rent();
 
-                    player.Connection.Send<FpcPositionMessage>(writer =>
-                    {
-                        writer.WriteUShort((ushort)_validBuffer.Count);
+                    _writer.Reset();
+                    _writer.WriteMessage<FpcPositionMessage>(() => 
+                    { 
+                        _writer.WriteUShort((ushort)_validBuffer.Count);
 
                         if (IsDebug)
-                            ApiLoader.Debug("Position Synchronizer", $"Written count ({_validBuffer.Count}), {writer.buffer.Length} bytes");
+                            ApiLoader.Debug("Position Synchronizer", $"Written count ({_validBuffer.Count}), {_writer.buffer.Length} bytes");
 
                         for (int y = 0; y < _validBuffer.Count; y++)
                         {
@@ -158,6 +157,12 @@ namespace LabExtended.Core.Synchronization.Position
 
                             var position = other.Transform.position;
                             var posBit = false;
+
+                            if (player.Position.FakedList.GlobalValue.HasValue)
+                            {
+                                position = player.Position.FakedList.GlobalValue.Value;
+                                posBit = true;
+                            }
 
                             if (player.Position.FakedList.TryGetValue(other, out var fakedPos))
                             {
@@ -188,22 +193,22 @@ namespace LabExtended.Core.Synchronization.Position
                             if (IsDebug)
                                 ApiLoader.Debug("Position Synchronizer", $"b1={b1} b2={b2} b3={b3} b4={b4} b5={b5}");
 
-                            writer.WriteRecyclablePlayerId(other.Hub.Network_playerId);
+                            _writer.WriteRecyclablePlayerId(other.Hub.Network_playerId);
 
                             if (IsDebug)
-                                ApiLoader.Debug("Position Synchronizer", $"Written ID, {writer.buffer.Length} bytes");
+                                ApiLoader.Debug("Position Synchronizer", $"Written ID, {_writer.Position} bytes");
 
-                            writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
+                            _writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
 
                             if (IsDebug)
-                                ApiLoader.Debug("Position Synchronizer", $"Written flags, {writer.buffer.Length} bytes");
+                                ApiLoader.Debug("Position Synchronizer", $"Written flags, {_writer.Position} bytes");
 
                             if (posBit)
                             {
-                                writer.WriteRelativePosition(relative);
+                                _writer.WriteRelativePosition(relative);
 
                                 if (IsDebug)
-                                    ApiLoader.Debug("Position Synchronizer", $"Written position, {writer.buffer.Length} bytes");
+                                    ApiLoader.Debug("Position Synchronizer", $"Written position, {_writer.Position} bytes");
                             }
                             else
                             {
@@ -213,11 +218,11 @@ namespace LabExtended.Core.Synchronization.Position
 
                             if (lookBit)
                             {
-                                writer.WriteUShort(syncH);
-                                writer.WriteUShort(syncV);
+                                _writer.WriteUShort(syncH);
+                                _writer.WriteUShort(syncV);
 
                                 if (IsDebug)
-                                    ApiLoader.Debug("Position Synchronizer", $"Written rotation, {writer.buffer.Length} bytes");
+                                    ApiLoader.Debug("Position Synchronizer", $"Written rotation, {_writer.Position} bytes");
                             }
                             else
                             {
@@ -226,9 +231,11 @@ namespace LabExtended.Core.Synchronization.Position
                             }
 
                             if (IsDebug)
-                                ApiLoader.Debug("Position Synchronizer", $"Finished writing data for {other.Name} {other.UserId} {other.Role.Type} ({writer.buffer.Length})");
+                                ApiLoader.Debug("Position Synchronizer", $"Finished writing data for {other.Name} {other.UserId} {other.Role.Type} ({_writer.Position})");
                         }
                     });
+
+                    player.Connection.Send(_writer.ToArraySegment());
                 }
             }
             catch (Exception ex)
@@ -237,7 +244,6 @@ namespace LabExtended.Core.Synchronization.Position
             }
 
             _sending = false;
-            _marker.MarkEnd();
         }
 
         private static void Update()
@@ -268,12 +274,8 @@ namespace LabExtended.Core.Synchronization.Position
             if (_restarting || args.PreviousRole is null || args.PreviousRole is not IFpcRole)
                 return;
 
-            _marker.Clear();
-
             _sending = true;
-
             _syncCache.ForEach(x => x.Value.Remove(args.Player));
-
             _sending = false;
         }
 
@@ -309,8 +311,8 @@ namespace LabExtended.Core.Synchronization.Position
         [OnLoad]
         private static void InternalLoad()
         {
-            TickManager.OnTick += Update;
             PlayerLeavePatch.OnLeaving += InternalHandleLeave;
+            TickManager.SubscribeTick(Update, TickTimer.None, "Position Synchronization", true);
         }
     }
 }

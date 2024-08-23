@@ -4,7 +4,7 @@ using Footprinting;
 
 using LabExtended.API.Toys;
 using LabExtended.API.Wrappers;
-
+using LabExtended.Core;
 using LabExtended.Patches.Functions;
 using LabExtended.Utilities;
 
@@ -93,7 +93,7 @@ namespace LabExtended.API
 
         private void ResyncStatic(bool writePos, bool writeRot, bool writeScale, bool writeSmoothing)
         {
-            var msg = NetworkUtils.Pack<EntityStateMessage>(writer =>
+            var msg = NetworkUtils.WriteMessage<EntityStateMessage>(writer =>
             {
                 using (var writer2 = NetworkWriterPool.Get())
                 {
@@ -184,8 +184,10 @@ namespace LabExtended.API
 
             obj.NetworkBehaviours.ForEach(x =>
             {
-                if (x is not AdminToyBase adminToyBase)
+                if (x is null || x is not AdminToyBase adminToyBase)
                     return;
+
+                ApiLoader.Debug("Toy API", $"Detected an Admin Toy spawn ({adminToyBase.CommandName} - {adminToyBase.netId})");
 
                 ExMap._toys.Add(Create(adminToyBase));
             });

@@ -7,15 +7,25 @@ namespace LabExtended.Utilities.Values
     {
         private readonly LockedDictionary<uint, T> _values;
 
-        public T GlobalValue { get; set; }
+        public OptionalValue<T> GlobalValue { get; set; }
 
         public bool KeepOnDeath { get; set; }
         public bool KeepOnRoleChange { get; set; }
 
-        public FakeValue()
+        public T this[uint netId]
         {
-            _values = new LockedDictionary<uint, T>();
+            get => _values[netId];
+            set => _values[netId] = value;
         }
+
+        public T this[ExPlayer player]
+        {
+            get => _values[player.NetId];
+            set => _values[player.NetId] = value;
+        }
+
+        public FakeValue()
+            => _values = new LockedDictionary<uint, T>();
 
         public T GetValue(uint netId, T defaultValue = default)
             => _values.TryGetValue(netId, out var fakedValue) ? fakedValue : defaultValue;
@@ -88,5 +98,11 @@ namespace LabExtended.Utilities.Values
 
         public void ClearValues()
             => _values.Clear();
+
+        public static implicit operator T(FakeValue<T> value)
+            => value.GlobalValue.Value;
+
+        public static explicit operator FakeValue<T>(T value)
+            => new FakeValue<T>() { GlobalValue = OptionalValue<T>.FromValue(value) };
     }
 }
