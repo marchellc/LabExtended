@@ -17,7 +17,7 @@ namespace LabExtended.API.Modules
     public class TransientModule : GenericModule<ExPlayer>
     {
         static TransientModule()
-            => TickManager.SubscribeTick(UpdateModules, TickTimer.NoneProfiled, "Transient Modules Tick");
+            => TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(UpdateModules));
 
         /// <summary>
         /// The reason for a module's removal.

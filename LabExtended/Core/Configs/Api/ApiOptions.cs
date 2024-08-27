@@ -9,8 +9,5 @@ namespace LabExtended.Core.Configs.Api
 
         [Description("Options for the custom position synchronizer.")]
         public PositionSynchronizerOptions PositionSynchronizerOptions { get; set; } = new PositionSynchronizerOptions();
-
-        [Description("Options for performance monitoring.")]
-        public PerformanceOptions PerformanceOptions { get; set; } = new PerformanceOptions();
     }
 }

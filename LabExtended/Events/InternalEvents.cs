@@ -56,14 +56,12 @@ namespace LabExtended.Events
 
             NavigationMesh.Reset();
             Prefabs.ReloadPrefabs();
-
-            if (ApiLoader.Config.ApiOptions.PerformanceOptions.EnableProfilerLogs)
-                ProfilerMarker.LogAllMarkers(ApiLoader.Config.LogOptions.ProfilingAsDebug);
         }
 
         internal static void InternalHandleRoundRestart()
         {
-            TickManager.PauseTick("Tesla Gate Update");
+            if (ExTeslaGate._tickHandle.IsActive)
+                ExTeslaGate._tickHandle.IsPaused = true;
 
             try
             {
@@ -86,8 +84,10 @@ namespace LabExtended.Events
 
             ExMap.OnRoundStarted();
 
-            if (TickManager.IsPaused("Tesla Gate Update"))
-                TickManager.ResumeTick("Tesla Gate Update");
+            if (ExTeslaGate._tickHandle.IsPaused)
+                ExTeslaGate._tickHandle.IsPaused = false;
+            else
+                ExTeslaGate._tickHandle = TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(ExTeslaGate.TickGates));
 
             ApiLoader.Info("Map API", $"Finished populating objects, cache state:\n" +
                 $"Generators | {ExMap.Generators.Count}\n" +

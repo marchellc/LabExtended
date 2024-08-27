@@ -51,9 +51,6 @@ namespace LabExtended.Core.Synchronization.Role
 
         [OnLoad]
         private static void InternalLoad()
-        {
-            TickManager.SubscribeTick(Synchronize, TickTimer.None, "Role Synchronization", true);
-            TickManager.Init();
-        }
+            => TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(Synchronize));
     }
 }

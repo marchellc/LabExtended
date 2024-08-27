@@ -7,10 +7,10 @@ using LabExtended.API.CustomItems.Info;
 using LabExtended.API.CustomItems.Interfaces;
 
 using LabExtended.Core;
+using LabExtended.Core.Ticking;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 
 using PluginAPI.Events;
 
@@ -21,7 +21,7 @@ namespace LabExtended.API.CustomItems
     public class CustomItem
     {
         static CustomItem()
-            => TickManager.SubscribeTick(TickItems, TickTimer.None, "Custom Item Tick");
+            => TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(TickItems));
 
         private static readonly List<ICustomItemInfo> _registeredTypes = new List<ICustomItemInfo>();
         private static readonly LockedDictionary<ushort, CustomItem> _items = new LockedDictionary<ushort, CustomItem>();

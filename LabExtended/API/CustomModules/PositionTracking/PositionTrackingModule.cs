@@ -1,10 +1,12 @@
 ﻿using LabExtended.API.Collections.Locked;
+using LabExtended.API.Modules;
+
 using LabExtended.Core;
+using LabExtended.Core.Ticking.Distributors.Unity;
+
 using LabExtended.Extensions;
-using LabExtended.Core.Ticking;
 
 using UnityEngine;
-using LabExtended.API.Modules;
 
 namespace LabExtended.API.CustomModules.PositionTracking
 {
@@ -17,7 +19,7 @@ namespace LabExtended.API.CustomModules.PositionTracking
         private readonly LockedHashSet<PositionTrackingEntry> _removeNextTick = new LockedHashSet<PositionTrackingEntry>(); // Used to avoid collection exceptions.
 
         /// <inheritdoc/>
-        public override TickTimer TickTimer { get; } = TickTimer.None;
+        public override Type TickType { get; } = typeof(UnityTickDistributor);
 
         /// <summary>
         /// Gets a list of all active entries.

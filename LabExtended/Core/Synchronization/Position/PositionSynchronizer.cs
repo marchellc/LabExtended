@@ -312,7 +312,7 @@ namespace LabExtended.Core.Synchronization.Position
         private static void InternalLoad()
         {
             PlayerLeavePatch.OnLeaving += InternalHandleLeave;
-            TickManager.SubscribeTick(Update, TickTimer.None, "Position Synchronization", true);
+            TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(Update));
         }
     }
 }

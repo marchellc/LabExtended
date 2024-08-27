@@ -9,7 +9,7 @@ namespace LabExtended.API.CustomItems.Usables
     public class CustomUsable : CustomItem
     {
         static CustomUsable()
-            => TickManager.OnTick += UpdateUsables;
+            => TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(UpdateUsables));
 
         public UsableItem UsableItem
         {

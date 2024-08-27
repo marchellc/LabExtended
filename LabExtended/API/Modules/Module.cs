@@ -1,4 +1,5 @@
 ﻿using LabExtended.Core.Ticking;
+using LabExtended.Core.Ticking.Interfaces;
 using LabExtended.Extensions;
 
 namespace LabExtended.API.Modules
@@ -11,17 +12,37 @@ namespace LabExtended.API.Modules
         internal readonly Dictionary<Type, Module> _modules = new Dictionary<Type, Module>();
         internal readonly HashSet<Type> _cache = new HashSet<Type>();
 
-        internal TickInfo _tickHandler;
-
-        public IReadOnlyCollection<Module> Modules => _modules.Values;
-        public IReadOnlyCollection<Type> Cache => _cache;
-
-        public TickInfo TickInfo => _tickHandler;
+        private TickHandle _handle;
 
         /// <summary>
-        /// When overriden, retrieves this module's tick settings.
+        /// Gets all submodules.
         /// </summary>
-        public virtual TickTimer TickTimer { get; }
+        public IReadOnlyCollection<Module> Modules => _modules.Values;
+
+        /// <summary>
+        /// Gets all cached module types.
+        /// </summary>
+        public IReadOnlyCollection<Type> Cache => _cache;
+
+        /// <summary>
+        /// Gets the handle for the <see cref="OnTick"/> method.
+        /// </summary>
+        public TickHandle TickHandle => _handle;
+
+        /// <summary>
+        /// Gets or sets the options for the <see cref="OnTick"/> method.
+        /// </summary>
+        public virtual ITickOptions TickOptions { get; }
+
+        /// <summary>
+        /// Gets or sets the timer for the <see cref="OnTick"/> method.
+        /// </summary>
+        public virtual ITickTimer TickTimer { get; }
+
+        /// <summary>
+        /// Gets or sets the tick distributor type.
+        /// </summary>
+        public virtual Type TickType { get; }
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this module is active.
@@ -42,8 +63,13 @@ namespace LabExtended.API.Modules
         {
             IsActive = true;
 
-            if (TickTimer != null)
-                _tickHandler = TickManager.SubscribeTick(TickModule, TickTimer);
+            if (TickType != null)
+            {
+                var distributor = TickDistribution.GetDistributor(TickType);
+                var handle = TickDistribution.CreateWith(TickModule, TickOptions, TickTimer);
+
+                _handle = distributor.CreateHandle(handle);
+            }
 
             OnStarted();
         }
@@ -52,8 +78,11 @@ namespace LabExtended.API.Modules
         {
             IsActive = false;
 
-            _tickHandler?.Unsubscribe();
-            _tickHandler = null;
+            if (_handle.IsActive)
+            {
+                _handle.Destroy();
+                _handle = default;
+            }
 
             foreach (var subModule in _modules)
             {
@@ -247,7 +276,7 @@ namespace LabExtended.API.Modules
 
         internal void TickModule()
         {
-            if (TickTimer is null || TickInfo is null || !IsActive || IsPaused)
+            if (!IsActive || IsPaused)
                 return;
 
             OnTick();

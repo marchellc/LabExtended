@@ -7,9 +7,6 @@ namespace LabExtended.Core.Configs.Api
         [Description("Toggles logging of debug messages.")]
         public bool DebugEnabled { get; set; }
 
-        [Description("Whether or not to consider profiling output as debug.")]
-        public bool ProfilingAsDebug { get; set; } = true;
-
         [Description("Sets a list of sources that cannot send debug messages.")]
         public List<string> DisabledSources { get; set; } = new List<string>();
 

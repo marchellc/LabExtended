@@ -19,7 +19,6 @@ using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Hooking.Objects;
 
 using LabExtended.Core.Synchronization.Position;
-using LabExtended.Core.Performance;
 
 using MEC;
 
@@ -76,7 +75,6 @@ namespace LabExtended.Core.Hooking
             {
                 _ => PositionSynchronizer.InternalHandleWaiting(),
                 _ => InternalEvents.InternalHandleRoundWaiting(),
-                _ => PerformanceWatcher.SubmitReport(),
                 _ => CustomItem.InternalHandleWaiting(),
                 _ => RoundEvents.InvokeWaiting(),
                 _ => InputHandler.OnWaiting()

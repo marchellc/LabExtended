@@ -1,8 +1,11 @@
 ﻿using Interactables;
 
 using LabExtended.API.Modules;
+
 using LabExtended.Core;
-using LabExtended.Core.Ticking;
+using LabExtended.Core.Ticking.Distributors.Unity;
+using LabExtended.Core.Ticking.Interfaces;
+using LabExtended.Core.Ticking.Timers;
 
 using Mirror;
 
@@ -29,7 +32,10 @@ namespace LabExtended.API.Npcs.Navigation
         public NpcHandler Npc { get; internal set; }
 
         /// <inheritdoc/>
-        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(50f);
+        public override ITickTimer TickTimer { get; } = new StaticTickTimer(500);
+
+        /// <inheritdoc/>
+        public override Type TickType { get; } = typeof(UnityTickDistributor);
 
         /// <summary>
         /// Whether or not to allow the NPC to interact.

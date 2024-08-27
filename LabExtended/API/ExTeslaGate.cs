@@ -13,8 +13,6 @@ using LabExtended.Extensions;
 
 using MapGeneration;
 
-using Mirror;
-
 using PlayerRoles;
 using PlayerStatsSystem;
 
@@ -30,8 +28,7 @@ namespace LabExtended.API
 
         IDamageObject
     {
-        static ExTeslaGate()
-            => TickManager.SubscribeTick(TickGates, TickTimer.NoneProfiled, "Tesla Gate Update");
+        internal static TickHandle _tickHandle;
 
         internal ExTeslaGate(TeslaGate baseValue) : base(baseValue) { }
 
@@ -320,7 +317,7 @@ namespace LabExtended.API
             }
         }
 
-        private static void TickGates()
+        internal static void TickGates()
         {
             foreach (var pair in ExMap._gates)
             {

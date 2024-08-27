@@ -2,7 +2,9 @@
 using LabExtended.API.Enums;
 using LabExtended.API.Modules;
 
-using LabExtended.Core.Ticking;
+using LabExtended.Core.Ticking.Distributors.Unity;
+using LabExtended.Core.Ticking.Interfaces;
+using LabExtended.Core.Ticking.Timers;
 
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -18,7 +20,11 @@ namespace LabExtended.API.Hints
 
         public IReadOnlyList<HintElement> Elements => _activeElements;
 
-        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(500f, false, true);
+        /// <inheritdoc/>
+        public override Type TickType { get; } = typeof(UnityTickDistributor);
+
+        /// <inheritdoc/>
+        public override ITickTimer TickTimer { get; } = new StaticTickTimer(600);
 
         public override bool ValidateAdd(Module module)
             => base.ValidateAdd(module) && Instance is null;

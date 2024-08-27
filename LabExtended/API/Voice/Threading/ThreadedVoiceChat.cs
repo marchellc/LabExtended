@@ -2,7 +2,6 @@
 using LabExtended.Events;
 
 using LabExtended.Core;
-using LabExtended.Core.Ticking;
 using LabExtended.Core.Profiling;
 
 using System.Collections.Concurrent;
@@ -12,12 +11,15 @@ using VoiceChat.Networking;
 using Mirror;
 
 using LabExtended.API.Pooling;
+using LabExtended.Core.Ticking;
 
 namespace LabExtended.API.Voice.Threading
 {
     public static class ThreadedVoiceChat
     {
         private static volatile bool m_RunThread;
+
+        private static TickHandle _handle;
 
         private static volatile ProfilerMarker m_ProcessMarker;
         private static volatile ProfilerMarker m_ReceiveMarker;
@@ -32,13 +34,6 @@ namespace LabExtended.API.Voice.Threading
 
         public static bool IsRunning => m_RunThread;
 
-        public static void PrintStats()
-        {
-            m_ProcessMarker.LogStats();
-            m_ReceiveMarker.LogStats();
-            m_OutputMarker.LogStats();
-        }
-
         public static void Clean()
         {
             m_ProcessMarker.Clear();
@@ -51,8 +46,10 @@ namespace LabExtended.API.Voice.Threading
 
         public static void Dispose()
         {
-            RoundEvents.OnWaitingForPlayers -= InternalClean;
-            TickManager.OnTick -= ProcessQueue;
+            RoundEvents.OnWaitingForPlayers -= Clean;
+
+            _handle.Destroy();
+            _handle = default;
 
             m_RunThread = false;
 
@@ -102,8 +99,9 @@ namespace LabExtended.API.Voice.Threading
                 return;
             }
 
-            RoundEvents.OnWaitingForPlayers += InternalClean;
-            TickManager.OnTick += ProcessOutput;
+            RoundEvents.OnWaitingForPlayers += Clean;
+
+            _handle = TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(ProcessOutput));
 
             m_RunThread = true;
 
@@ -185,12 +183,6 @@ namespace LabExtended.API.Voice.Threading
 
                 m_ProcessMarker.MarkEnd();
             }
-        }
-
-        private static void InternalClean()
-        {
-            PrintStats();
-            Clean();
         }
 
         private static void Info(object msg, string segment = null)

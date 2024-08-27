@@ -7,7 +7,7 @@ namespace LabExtended.Utilities.Threading
     public static class ThreadSafe
     {
         static ThreadSafe()
-            => TickManager.OnTick += UpdatePending;
+            => TickDistribution.UnityTick.CreateHandle(TickDistribution.CreateWith(UpdatePending, new TickOptions(TickFlags.Separate)));
 
         private static volatile ConcurrentQueue<ThreadSafeOperation> m_Pending = new ConcurrentQueue<ThreadSafeOperation>();
 

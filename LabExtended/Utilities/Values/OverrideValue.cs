@@ -13,9 +13,7 @@
         public bool HasValue => _override.HasValue;
 
         public OverrideValue()
-        {
-            _override = OptionalValue<T>.FromNull();
-        }
+            => _override = OptionalValue<T>.FromNull();
 
         public void ClearValue()
             => _override = OptionalValue<T>.FromNull();

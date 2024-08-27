@@ -6,7 +6,9 @@ using LabExtended.API.RemoteAdmin.Interfaces;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
-
+using LabExtended.Core.Ticking.Distributors.Unity;
+using LabExtended.Core.Ticking.Interfaces;
+using LabExtended.Core.Ticking.Timers;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions.RemoteAdmin;
@@ -29,14 +31,15 @@ namespace LabExtended.API.RemoteAdmin
         private DateTime _lastListRequestTime = DateTime.MinValue;
         private bool _wasOpen = false;
 
-        public override TickTimer TickTimer { get; } = TickTimer.GetStatic(800f);
+        /// <inheritdoc/>
+        public override Type TickType { get; } = typeof(UnityTickDistributor);
+
+        /// <inheritdoc/>
+        public override ITickTimer TickTimer { get; } = new StaticTickTimer(8000);
 
         public bool IsRemoteAdminOpen { get; private set; }
 
         public IReadOnlyList<IRemoteAdminObject> Objects => _objects;
-
-        public static int SpaceCount = 0;
-        public static int TotalLines = 0;
 
         public override void OnStarted()
         {

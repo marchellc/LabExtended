@@ -35,7 +35,6 @@ namespace LabExtended.Core
         public static LogOptions LogOptions => Config?.LogOptions;
         public static VoiceOptions VoiceOptions => Config?.VoiceOptions;
         public static RoundOptions RoundOptions => Config?.RoundOptions;
-        public static PerformanceOptions PerformanceOptions => Config?.ApiOptions?.PerformanceOptions;
         public static ThreadedVoiceOptions ThreadedVoiceOptions => Config?.VoiceOptions?.ThreadedVoiceOptions;
         public static PositionSynchronizerOptions PositionSynchronizerOptions => Config?.ApiOptions?.PositionSynchronizerOptions;
 

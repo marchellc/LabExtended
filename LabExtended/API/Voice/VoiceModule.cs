@@ -5,7 +5,8 @@ using LabExtended.API.Voice.Threading;
 
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Ticking;
-
+using LabExtended.Core.Ticking.Distributors.Unity;
+using LabExtended.Core.Ticking.Interfaces;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
@@ -37,7 +38,8 @@ namespace LabExtended.API.Voice
 
         public static IReadOnlyCollection<VoiceModifier> GlobalModifiers => _globalModifiers;
 
-        public override TickTimer TickTimer { get; } = TickTimer.None;
+        /// <inheritdoc/>
+        public override Type TickType { get; } = typeof(UnityTickDistributor);
 
         public volatile float VoicePitch = 1f;
 
