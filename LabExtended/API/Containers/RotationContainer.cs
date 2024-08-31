@@ -16,8 +16,7 @@ namespace LabExtended.API.Containers
     /// <summary>
     /// A class used to manage player rotation.
     /// </summary>
-    public class RotationContainer
-    {
+    public class RotationContainer {
         /// <summary>
         /// Creates a new <see cref="RotationContainer"/> instance.
         /// </summary>
@@ -33,7 +32,19 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player that this player is currently looking at.
         /// </summary>
-        public ExPlayer LookingAtPlayer => ExPlayer.Players.FirstOrDefault(x => IsLookingAt(x));
+        public ExPlayer LookingAtPlayer
+            => ExPlayer.Players.Where(x => IsLookingAt(x)).OrderBy(Player.Position.DistanceTo).FirstOrDefault();
+
+        /// <summary>
+        /// Gets the player that this player is directly looking at.
+        /// </summary>
+        public ExPlayer DirectlyLookingAtPlayer
+        {
+            get {
+                PhysicsUtils.IsDirectlyLookingAtPlayer(Player, out var target);
+                return target;
+            }
+        }
 
         /// <summary>
         /// Gets a list of players that are currently in the line of sight of this player.
@@ -162,7 +173,7 @@ namespace LabExtended.API.Containers
         /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
         /// <returns><see langword="true"/> if the player is being looked at.</returns>
         public bool IsLookingAt(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
-            => player != null && player.Role.IsAlive && ((player.IsSpectatedBy(Player) && countSpectating) || IsLookingAt(player.Rotation.CameraPosition));
+            => player != null && player.Role.IsAlive && ((player.IsSpectatedBy(Player) && countSpectating) || IsLookingAt(player.Rotation.CameraPosition, radius, distance));
 
         /// <summary>
         /// Whether or not a specific <see cref="Transform"/> is being looked at by this player.

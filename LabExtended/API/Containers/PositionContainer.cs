@@ -1,4 +1,5 @@
-﻿using LabExtended.Utilities.Values;
+﻿using LabExtended.Utilities;
+using LabExtended.Utilities.Values;
 
 using MapGeneration;
 
@@ -94,6 +95,19 @@ namespace LabExtended.API.Containers
         {
             get => new RelativePosition(Position);
             set => Set(value.Position);
+        }
+
+        /// <summary>
+        /// Gets the player's current ground position, where player is actually standing on.<br />
+        /// Returns <see langword="null" /> when Player isn't grounded.
+        /// </summary>
+        public Vector3? GroundPosition {
+            get {
+                if (PhysicsUtils.TryGetGroundPosition(Player, out var groundPosition)) {
+                    return groundPosition;
+                }
+                return null;
+            }
         }
 
         public void Set(Vector3 position, Vector3? rotationDelta = null)
