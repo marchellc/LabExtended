@@ -903,6 +903,18 @@ namespace LabExtended.API
         }
 
         /// <summary>
+        /// Whether or not the player has Active NoClip.
+        /// </summary>
+        public bool IsNoclipActive {
+            get => Role.NoClip?.IsActive ?? false;
+            set
+            {
+                if (Role.NoClip != null)
+                    Role.NoClip.IsActive = value;
+            }
+        }
+
+        /// <summary>
         /// Whether or not the player has Bypass Mode active.
         /// </summary>
         public bool HasBypassMode
