@@ -57,6 +57,6 @@ namespace LabExtended.Utilities.Unity
         /// <returns>The <see cref="CollisionHandler"/> instance if found, otherwise <see langword="null"/>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         public static CollisionHandler GetOrAdd(MonoBehaviour monoBehaviour, Func<Collision, bool> onCollision)
-            => GetOrAdd(monoBehaviour.gameObject);
+            => GetOrAdd(monoBehaviour.gameObject, onCollision);
     }
 }
