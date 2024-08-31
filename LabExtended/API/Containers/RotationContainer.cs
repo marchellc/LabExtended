@@ -33,7 +33,7 @@ namespace LabExtended.API.Containers
         /// Gets the player that this player is currently looking at.
         /// </summary>
         public ExPlayer LookingAtPlayer
-            => ExPlayer.Players.Where(x => IsLookingAt(x)).OrderBy(Player.Position.DistanceTo).FirstOrDefault();
+            => ExPlayer.AllPlayers.Where(x => IsLookingAt(x)).OrderBy(Player.Position.DistanceTo).FirstOrDefault();
 
         /// <summary>
         /// Gets the player that this player is directly looking at.

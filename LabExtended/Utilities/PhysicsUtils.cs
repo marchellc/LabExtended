@@ -26,8 +26,8 @@ namespace LabExtended.Utilities {
             }
 
             Vector3 castOrigin = fpcRole.FpcModule.Position; // Always 0.96f above ground, on horizontal plane
-            castOrigin.y -= 0.9f; // Constant, hopefully never changes
-            float castDistance = controller.radius + 0.07f; // Don't go bellow 0.07f
+            castOrigin.y -= 0.54f; // Constant, hopefully never changes
+            float castDistance = 0.7f;
             if (!Physics.SphereCast(castOrigin, controller.radius, Vector3.down, out RaycastHit hit, castDistance, PlayerCollisionMask.value)) {
                 return false;
             }
