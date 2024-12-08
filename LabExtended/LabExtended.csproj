@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+      <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Assembly-CSharp">
+        <HintPath>$(SL_REFERENCES)\Assembly-CSharp-publicized.dll</HintPath>
+      </Reference>
+      <Reference Include="Assembly-CSharp-firstpass">
+        <HintPath>$(SL_REFERENCES)\Assembly-CSharp-firstpass.dll</HintPath>
+      </Reference>
+      <Reference Include="CommandSystem.Core">
+        <HintPath>$(SL_REFERENCES)\CommandSystem.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="Mirror">
+        <HintPath>$(SL_REFERENCES)\Mirror-publicized.dll</HintPath>
+      </Reference>
+      <Reference Include="NorthwoodLib">
+        <HintPath>$(SL_REFERENCES)\NorthwoodLib-publicized.dll</HintPath>
+      </Reference>
+      <Reference Include="PluginAPI">
+        <HintPath>$(SL_REFERENCES)\PluginAPI-publicized.dll</HintPath>
+      </Reference>
+      <Reference Include="Pooling">
+        <HintPath>$(SL_REFERENCES)\Pooling.dll</HintPath>
+      </Reference>
+      <Reference Include="Unity.TextMeshPro">
+        <HintPath>$(SL_REFERENCES)\Unity.TextMeshPro.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine">
+        <HintPath>$(SL_REFERENCES)\UnityEngine.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.CoreModule">
+        <HintPath>$(SL_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.PhysicsModule">
+        <HintPath>$(SL_REFERENCES)\UnityEngine.PhysicsModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.UI">
+        <HintPath>$(SL_REFERENCES)\UnityEngine.UI.dll</HintPath>
+      </Reference>
+      <Reference Include="YamlDotNet">
+        <HintPath>$(SL_REFERENCES)\YamlDotNet.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
