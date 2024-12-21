@@ -9,8 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      LAB_EX_REFERENCES: "/home/runner/work/dependencies"
-      SL_REFERENCES: "/home/runner/work/dependencies"
+      LAB_EX_REFERENCES: "/home/runner/work/refs"
+      SL_REFERENCES: "/home/runner/work/refs"
 
     steps:
     - uses: actions/checkout@v4
