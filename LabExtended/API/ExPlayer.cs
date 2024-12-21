@@ -50,6 +50,7 @@ using Utils;
 
 using VoiceChat;
 using GameCore;
+using LabExtended.Core.Networking;
 
 namespace LabExtended.API
 {
@@ -1268,7 +1269,7 @@ namespace LabExtended.API
             _hub.transform.localScale = scale;
 
             foreach (var target in _players)
-                NetworkServer.SendSpawnMessage(_hub.netIdentity, target.Connection);
+                MirrorMethods.SendSpawnMessage(_hub.netIdentity, target.Connection);
         }
 
         // Taken from EXILED

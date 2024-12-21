@@ -228,7 +228,7 @@ namespace LabExtended.API
         {
             foreach (var light in RoomLightController.Instances)
             {
-                var room = RoomIdentifier.AllRoomIdentifiers.FirstOrDefault(r => r != null && r.ApiRoom != null && r.ApiRoom.Lights != null && r.ApiRoom.Lights._lightController == light);
+                var room = RoomIdentifier.AllRoomIdentifiers.FirstOrDefault(r => r != null && r.LightControllers.Contains(light));
 
                 if (room is null)
                     continue;

@@ -110,8 +110,8 @@ namespace LabExtended.API.Containers
             }
         }
 
-        public void Set(Vector3 position, Vector3? rotationDelta = null)
-            => Player.Hub.TryOverridePosition(position, rotationDelta.HasValue ? rotationDelta.Value : Vector3.zero);
+        public void Set(Vector3 position)
+            => Player.Hub.TryOverridePosition(position);
 
         /// <summary>
         /// Gets a list of players in a specified range.

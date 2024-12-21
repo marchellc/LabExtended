@@ -9,30 +9,35 @@ using Mirror;
 using PluginAPI.Loader;
 
 using System.Reflection.Emit;
-
+using LabExtended.Utilities.Values;
 using UnityEngine;
 
 namespace LabExtended.Core.Networking
 {
     public static class MirrorMethods
     {
-        private static bool _writerBusy;
-        private static NetworkWriterPooled _writer;
+        private static ReusableValue<NetworkWriterPooled> _writer;
 
         public static volatile LockedHashSet<Tuple<Type, Func<object, object[], object>>> Writers;
         public static volatile LockedHashSet<Tuple<string, string>> RpcFullNames;
         public static volatile LockedHashSet<Tuple<string, ulong>> DirtyBits;
 
+        public static volatile Action<NetworkIdentity, NetworkConnection> SendSpawnMessageDelegate;
+
         static MirrorMethods()
         {
             try
             {
-                _writerBusy = false;
-                _writer = NetworkWriterPool.Get();
+                _writer = new ReusableValue<NetworkWriterPooled>(NetworkWriterPool.Get(), NetworkWriterPool.Get, null, x => x.Dispose());
 
                 Writers = new LockedHashSet<Tuple<Type, Func<object, object[], object>>>();
                 DirtyBits = new LockedHashSet<Tuple<string, ulong>>();
                 RpcFullNames = new LockedHashSet<Tuple<string, string>>();
+
+                SendSpawnMessageDelegate =
+                    typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
+                            .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
+                        Action<NetworkIdentity, NetworkConnection>;
 
                 var assembly = AssemblyLoader.MainAssembly;
                 var types = assembly.GetTypes();
@@ -226,7 +231,7 @@ namespace LabExtended.Core.Networking
             => behaviour?.SetSyncVarDirtyBit(bit);
 
         public static void SendSpawnMessage(this NetworkIdentity identity, NetworkConnection connection)
-            => NetworkServer.SendSpawnMessage(identity, connection);
+            => SendSpawnMessageDelegate(identity, connection);
 
         public static void SendSpawnMessage(this NetworkIdentity identity, Func<ExPlayer, bool> predicate = null, Vector3? customPos = null, Vector3? customScale = null, Quaternion? customRot = null, ArraySegment<byte>? payload = null)
         {
@@ -731,29 +736,14 @@ namespace LabExtended.Core.Networking
         }
 
         public static NetworkWriterPooled RentWriter()
-        {
-            if (_writerBusy)
-                return NetworkWriterPool.Get();
-
-            _writer.Reset();
-            _writerBusy = true;
-
-            return _writer;
-        }
+            => _writer.Rent();
 
         public static void ReturnWriter(NetworkWriterPooled writer)
         {
             if (writer is null)
                 throw new ArgumentNullException(nameof(writer));
 
-            if (writer != _writer)
-            {
-                NetworkWriterPool.Return(writer);
-                return;
-            }
-
-            _writer.Reset();
-            _writerBusy = false;
+            _writer.Return(writer);
         }
 
         public static ArraySegment<byte> ReturnWriterAndData(NetworkWriterPooled writer)
@@ -761,22 +751,10 @@ namespace LabExtended.Core.Networking
             if (writer is null)
                 throw new ArgumentNullException(nameof(writer));
 
-            if (writer != _writer)
-            {
-                var data = writer.ToArraySegment();
+            var data = writer.ToArraySegment();
 
-                NetworkWriterPool.Return(writer);
-                return data;
-            }
-            else
-            {
-                var data = _writer.ToArraySegment();
-
-                _writerBusy = false;
-                _writer.Reset();
-
-                return data;
-            }
+            _writer.Return(writer);
+            return data;
         }
     }
 }

@@ -17,20 +17,20 @@ namespace LabExtended.Patches.Events
     {
         [HookPatch(typeof(PlayerTeleportingArgs))]
         [HarmonyPatch(typeof(FirstPersonMovementModule), nameof(FirstPersonMovementModule.ServerOverridePosition))]
-        public static bool Prefix(FirstPersonMovementModule __instance, Vector3 position, Vector3 deltaRotation)
+        public static bool Prefix(FirstPersonMovementModule __instance, Vector3 position)
         {
             var player = ExPlayer.Get(__instance.Hub);
 
             if (player is null)
                 return true;
 
-            var teleportingArgs = new PlayerTeleportingArgs(player, __instance.Position, position, deltaRotation);
+            var teleportingArgs = new PlayerTeleportingArgs(player, __instance.Position, position);
 
             if (!HookRunner.RunEvent(teleportingArgs, true))
                 return false;
 
             __instance.Position = teleportingArgs.NewPosition;
-            __instance.Hub.connectionToClient.Send(new FpcOverrideMessage(teleportingArgs.NewPosition, teleportingArgs.DeltaRotation.y));
+            __instance.Hub.connectionToClient.Send(new FpcPositionOverrideMessage(teleportingArgs.NewPosition));
             __instance.OnServerPositionOverwritten.InvokeSafe();
 
             return false;

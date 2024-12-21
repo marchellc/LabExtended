@@ -27,7 +27,7 @@ namespace LabExtended.Commands.Parsing
                 var tokens = PlayerListLexer.LexicalAnalysis(value);
                 var players = TokenParser.Run(TokenParser.ParseCode(ref position, tokens), (list, tag) =>
                                         list.Where(p => ServerStatic.PermissionsHandler != null &&
-                                                        ServerStatic.PermissionsHandler._members.TryGetValue(p.UserId, out var playerTag) &&
+                                                        ServerStatic.PermissionsHandler.Members.TryGetValue(p.UserId, out var playerTag) &&
                                                             !string.IsNullOrWhiteSpace(playerTag) && playerTag == tag));
 
                 var list = new CustomData.PlayerListData(players.ToList());
@@ -48,7 +48,7 @@ namespace LabExtended.Commands.Parsing
             var tokens = PlayerListLexer.LexicalAnalysis(selector);
             var players = TokenParser.Run(TokenParser.ParseCode(ref position, tokens), (list, tag) =>
                                         list.Where(p => ServerStatic.PermissionsHandler != null &&
-                                                        ServerStatic.PermissionsHandler._members.TryGetValue(p.UserId, out var playerTag) &&
+                                                        ServerStatic.PermissionsHandler.Members.TryGetValue(p.UserId, out var playerTag) &&
                                                             !string.IsNullOrWhiteSpace(playerTag) && playerTag == tag));
 
             return players.ToList();

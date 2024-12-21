@@ -6,16 +6,11 @@ using LabExtended.Commands.Interfaces;
 
 using NorthwoodLib.Pools;
 
-using System;
-using System.Linq;
-using System.Text;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Collections.Generic;
 
 using UnityEngine;
 
-namespace LabExtended.API.CustomCommands.Tps
+namespace LabExtended.API.CustomCommands.Performance
 {
     [CommandHandler(typeof(RemoteAdminCommandHandler))]
     [CommandHandler(typeof(GameConsoleCommandHandler))]

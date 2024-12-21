@@ -25,17 +25,11 @@ namespace LabExtended.Events.Player
         /// </summary>
         public Vector3 NewPosition { get; set; }
 
-        /// <summary>
-        /// Gets or sets the player's delta rotation.
-        /// </summary>
-        public Vector3 DeltaRotation { get; set; }
-
-        internal PlayerTeleportingArgs(ExPlayer player, Vector3 currentPosition, Vector3 newPosition, Vector3 deltaRotation)
+        internal PlayerTeleportingArgs(ExPlayer player, Vector3 currentPosition, Vector3 newPosition)
         {
             Player = player;
             CurrentPosition = currentPosition;
             NewPosition = newPosition;
-            DeltaRotation = deltaRotation;
         }
     }
 }

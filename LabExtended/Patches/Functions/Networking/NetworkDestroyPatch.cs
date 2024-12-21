@@ -10,6 +10,7 @@ namespace LabExtended.Patches.Functions.Networking
 {
     public static class NetworkDestroyPatch
     {
+        /*
         [HarmonyPatch(typeof(NetworkServer), nameof(NetworkServer.DestroyObject), typeof(NetworkIdentity), typeof(NetworkServer.DestroyMode))]
         public static bool Prefix(NetworkIdentity identity, NetworkServer.DestroyMode mode)
         {
@@ -74,5 +75,6 @@ namespace LabExtended.Patches.Functions.Networking
             UnityEngine.Object.DestroyImmediate(identity.gameObject);
             return false;
         }
+        */
     }
 }

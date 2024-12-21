@@ -15,6 +15,10 @@ namespace LabExtended.Utilities.Unity
 {
     public static class PlayerLoopHelper
     {
+        private static Action mirrorRuntimeInitialize =
+            typeof(NetworkLoop).FindMethod(x => x.Name == "RuntimeInitializeOnLoad")
+                .CreateDelegate(typeof(Action)) as Action;
+        
         public struct CustomBeforePlayerLoop { }
         public struct CustomAfterPlayerLoop { }
 
@@ -44,7 +48,7 @@ namespace LabExtended.Utilities.Unity
                 });
             }
 
-            NetworkLoop.RuntimeInitializeOnLoad();
+            mirrorRuntimeInitialize();
         }
 
         public static void ModifySystem(Func<PlayerLoopSystem, PlayerLoopSystem?> modifier)

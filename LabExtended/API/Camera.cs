@@ -183,7 +183,7 @@ namespace LabExtended.API
         public GameObject GameObject => Base.gameObject;
 
         public Transform Transform => Base.transform;
-        public Transform Anchor => Base._cameraAnchor;
+        public Transform Anchor => Base.CameraAnchor;
         public Transform Pivot => Base.HorizontalAxis._pivot;
 
         public RoomIdentifier Room => Base.Room;

@@ -19,7 +19,7 @@ namespace LabExtended.API.Toys
 
         public byte MovementSmoothing
         {
-            get => Base.MovementSmoothing;
+            get => Base.NetworkMovementSmoothing;
             set => Base.NetworkMovementSmoothing = value;
         }
 
@@ -37,20 +37,20 @@ namespace LabExtended.API.Toys
 
         public override Vector3 Position
         {
-            get => Base.Position;
-            set => Base.NetworkPosition = value;
+            get => Base.NetworkPosition;
+            set => Base.NetworkPosition = Base.transform.position = value;
         }
 
         public override Vector3 Scale
         {
-            get => Base.Scale;
-            set => Base.NetworkScale = value;
+            get => Base.NetworkScale;
+            set => Base.NetworkScale = Base.transform.localScale = value;
         }
 
         public override Quaternion Rotation
         {
-            get => Base.Rotation;
-            set => Base.NetworkRotation = value;
+            get => Base.NetworkRotation;
+            set => Base.NetworkRotation = Base.transform.rotation = value;
         }
 
         public override void SetPositionAndRotation(Vector3 position, Quaternion rotation, Vector3? scale = null)
@@ -67,14 +67,18 @@ namespace LabExtended.API.Toys
             if (adminToy is null)
                 return null;
 
-            return adminToy switch
+            var wrapperToy = adminToy switch
             {
                 LightSourceToy lightSource => new LightToy(lightSource),
+                AdminToys.SpeakerToy speakerToy => new SpeakerToy(speakerToy),
                 ShootingTarget shootingTarget => new TargetToy(shootingTarget),
                 PrimitiveObjectToy primitiveObject => new PrimitiveToy(primitiveObject),
 
                 _ => new AdminToy(adminToy)
             };
+
+            ExMap._toys.Add(wrapperToy);
+            return wrapperToy;
         }
     }
 }
