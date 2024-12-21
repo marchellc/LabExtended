@@ -1,8 +1,8 @@
 ﻿/.vs
 /.idea
 /.cr
+/.github
+/.git
 /LabExtended/bin
 /LabExtended/obj
-/packages/
-/LabExtended.MirrorObjects/bin/Release
-/LabExtended.MirrorObjects/obj
+/packages
