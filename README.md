@@ -1,2 +1,2 @@
 # LabExtended
-This branch servers only to host build references for GitHub Actions.
+This branch exists only to host build references for GitHub Actions.
