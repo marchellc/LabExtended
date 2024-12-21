@@ -33,7 +33,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore --property WarningLevel=0
+      run: dotnet build --configuration Release --no-restore --property WarningLevel=0
     - name: Create artifacts
       run: mkdir /home/runner/work/artifacts/ && cp ./LabExtended/bin/Release/net48/LabExtended.dll /home/runner/work/artifacts
     - name: Upload artifacts
