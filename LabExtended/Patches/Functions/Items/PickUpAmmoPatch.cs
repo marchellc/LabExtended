@@ -5,19 +5,19 @@ using Hints;
 using InventorySystem.Items.Firearms.Ammo;
 using InventorySystem.Searching;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
-using PluginAPI.Events;
-
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpAmmoPatch
     {
-        [HookPatch(typeof(PlayerPickupAmmoEvent), true)]
         [HookPatch(typeof(PlayerPickingUpAmmoArgs), true)]
         [HarmonyPatch(typeof(AmmoSearchCompletor), nameof(AmmoSearchCompletor.Complete))]
         public static bool Prefix(AmmoSearchCompletor __instance)
@@ -39,7 +39,11 @@ namespace LabExtended.Patches.Functions.Items
             var curAmmo = __instance.CurrentAmmo;
             var ammo = (uint)Math.Min(curAmmo + ammoPickup.SavedAmmo, __instance.MaxAmmo) - curAmmo;
 
-            if (!EventManager.ExecuteEvent(new PlayerPickupAmmoEvent(__instance.Hub, ammoPickup)))
+            var pickingUpArgs = new PlayerPickingUpAmmoEventArgs(player.Hub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup);
+
+            PlayerEvents.OnPickingUpAmmo(pickingUpArgs);
+            
+            if (!pickingUpArgs.IsAllowed)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -75,6 +79,8 @@ namespace LabExtended.Patches.Functions.Items
                         new PackedULongHintParameter(__instance.MaxAmmo)
                     }, HintEffectPresets.FadeInAndOut(0.25f), 1.5f));
                 }
+
+                PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.Hub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup));
             }
 
             if (pickUpEv.DestroyPickup)

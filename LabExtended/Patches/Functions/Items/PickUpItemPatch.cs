@@ -4,19 +4,19 @@ using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Searching;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
-using PluginAPI.Events;
-
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpItemPatch
     {
-        [HookPatch(typeof(PlayerSearchedPickupEvent), true)]
         [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(ItemSearchCompletor), nameof(ItemSearchCompletor.Complete))]
         public static bool Prefix(ItemSearchCompletor __instance)
@@ -35,7 +35,11 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            if (!EventManager.ExecuteEvent(new PlayerSearchedPickupEvent(__instance.Hub, __instance.TargetPickup)))
+            var pickingUpArgs = new PlayerPickingUpItemEventArgs(player.Hub, __instance.TargetPickup);
+
+            PlayerEvents.OnPickingUpItem(pickingUpArgs);
+
+            if (!pickingUpArgs.IsAllowed)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -43,9 +47,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, __instance.TargetPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, true);
 
-            pickingUpEv.IsAllowed = true;
-
-            if (!HookRunner.RunEvent(pickingUpEv, pickingUpEv.IsAllowed))
+            if (!HookRunner.RunEvent(pickingUpEv, true))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -65,6 +67,8 @@ namespace LabExtended.Patches.Functions.Items
 
                 if (pickingUpEv.DestroyPickup)
                     __instance.TargetPickup.DestroySelf();
+
+                PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.Hub, item));
             }
             else
             {

@@ -5,21 +5,19 @@ using InventorySystem.Items;
 using InventorySystem.Items.Armor;
 using InventorySystem.Searching;
 
-using LabExtended.API;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 
+using LabExtended.API;
 using LabExtended.Core.Hooking;
 using LabExtended.Extensions;
 using LabExtended.Events.Player;
-
-using PluginAPI.Events;
-
 using LabExtended.Attributes;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpArmorPatch
     {
-        [HookPatch(typeof(PlayerPickupArmorEvent), true)]
         [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(ArmorSearchCompletor), nameof(ArmorSearchCompletor.Complete))]
         public static bool Prefix(ArmorSearchCompletor __instance)
@@ -41,7 +39,11 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            if (!EventManager.ExecuteEvent(new PlayerPickupArmorEvent(__instance.Hub, __instance.TargetPickup)))
+            var pickingUpArgs = new PlayerPickingUpArmorEventArgs(player.Hub, __instance.TargetPickup);
+
+            PlayerEvents.OnPickingUpArmor(pickingUpArgs);
+            
+            if (!pickingUpArgs.IsAllowed)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -55,9 +57,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, __instance.TargetPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, true);
 
-            pickingUpEv.IsAllowed = true;
-
-            if (!HookRunner.RunEvent(pickingUpEv, pickingUpEv.IsAllowed))
+            if (!HookRunner.RunEvent(pickingUpEv, true))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -78,6 +78,8 @@ namespace LabExtended.Patches.Functions.Items
 
                 if (pickingUpEv.DestroyPickup)
                     __instance.TargetPickup.DestroySelf();
+
+                PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(player.Hub, item));
             }
             else
             {

@@ -16,11 +16,6 @@
         InProgress,
 
         /// <summary>
-        /// The round is ending.
-        /// </summary>
-        Ending,
-
-        /// <summary>
         /// The round has ended.
         /// </summary>
         Ended,

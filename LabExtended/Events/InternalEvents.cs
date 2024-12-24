@@ -1,4 +1,7 @@
-﻿using LabExtended.API;
+﻿using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
+using LabExtended.API;
 using LabExtended.API.Enums;
 using LabExtended.API.Voice;
 using LabExtended.API.Hints;
@@ -14,11 +17,10 @@ using LabExtended.Core.Networking.Synchronization.Position;
 
 using LabExtended.Events.Player;
 
+using LabExtended.Attributes;
 using LabExtended.Commands;
 
 using NorthwoodLib.Pools;
-
-using PluginAPI.Events;
 
 using NetworkManagerUtils;
 
@@ -26,17 +28,18 @@ namespace LabExtended.Events
 {
     internal static class InternalEvents
     {
-        internal static void InternalHandleRoundWaiting()
+        private static void InternalHandleRoundWaiting()
         {
-            ExMap.GenerateMap();
-            ExPlayer._preauthData.Clear();
-
             if (ExPlayer._hostPlayer != null)
             {
                 ExPlayer._hostPlayer.StopModule();
                 ExPlayer._hostPlayer = null;
             }
-
+            
+            ExMap.GenerateMap();
+            ExRound.OnRoundWait();
+            
+            ExPlayer._preauthData.Clear();
             DamageInfo._wrappers.Clear();    
 
             ExRound.RoundNumber++;
@@ -48,23 +51,25 @@ namespace LabExtended.Events
 
             // No reason not to reset the NPC connection ID
             DummyNetworkConnection._idGenerator = 65535;
+
+            PositionSynchronizer.InternalHandleWaiting();
+            
+            RoundEvents.InvokeWaiting();
         }
 
-        internal static void InternalHandleRoundRestart()
+        private static void InternalHandleRoundRestart()
         {
             if (ExTeslaGate._tickHandle.IsActive)
                 ExTeslaGate._tickHandle.IsPaused = true;
-
-            try
-            {
-                ExMap._gates.Clear();
-            }
-            catch { }
-
+            
+            ExMap._gates.Clear();
             ExRound.State = RoundState.Restarting;
+
+            PositionSynchronizer.InternalHandleRoundRestart();
+            RoundEvents.InvokeRestarted();
         }
 
-        internal static void InternalHandleRoundStart()
+        private static void InternalHandleRoundStart()
         {
             ExRound.StartedAt = DateTime.Now;
             ExRound.State = RoundState.InProgress;
@@ -73,9 +78,17 @@ namespace LabExtended.Events
                 ExTeslaGate._tickHandle.IsPaused = false;
             else
                 ExTeslaGate._tickHandle = ApiLoader.ApiConfig.TickSection.GetCustomOrDefault("TeslaGates", TickDistribution.UnityTick).CreateHandle(TickDistribution.CreateWith(ExTeslaGate.TickGates, null, new DynamicTickTimer(() => ExTeslaGate.TickRate / TimeSpan.TicksPerMillisecond)));
+
+            RoundEvents.InvokeStarted();
         }
 
-        internal static void InternalHandlePlayerAuth(PlayerPreauthEvent ev)
+        private static void InternalHandleRoundEnd()
+        {
+            ExRound.State = RoundState.Ended;
+            RoundEvents.InvokeEnded();
+        }
+
+        internal static void InternalHandlePlayerAuth(PlayerPreAuthenticatingEventArgs ev)
         {
             ExPlayer._preauthData[ev.UserId] = ev.Region;
         }
@@ -179,6 +192,9 @@ namespace LabExtended.Events
 
             if (!player.IsNpc && !player.IsServer)
                 HintController.OnLeft(player);
+
+            if (!string.IsNullOrWhiteSpace(player.UserId))
+                ExPlayer._preauthData.Remove(player.UserId);
         }
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)
@@ -209,6 +225,17 @@ namespace LabExtended.Events
                 args.Player.Voice.RemoveProfile(profile);
 
             ListPool<VoiceProfile>.Shared.Return(profilesToRemove);
+        }
+
+        [LoaderInitialize(1)]
+        private static void RegisterEvents()
+        {
+            PlayerEvents.PreAuthenticating += InternalHandlePlayerAuth;
+            
+            ServerEvents.WaitingForPlayers += InternalHandleRoundWaiting;
+            ServerEvents.RoundRestarted += InternalHandleRoundRestart;
+            ServerEvents.RoundStarted += InternalHandleRoundStart;
+            ServerEvents.RoundEnded += _ => InternalHandleRoundEnd();
         }
     }
 }

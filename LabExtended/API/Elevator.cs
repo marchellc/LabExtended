@@ -9,11 +9,11 @@ using MapGeneration;
 
 using PlayerRoles;
 
-using PluginAPI.Core;
-
 using UnityEngine;
 
 using Interactables.Interobjects.DoorUtils;
+
+using LabApi.Features.Wrappers;
 
 namespace LabExtended.API
 {

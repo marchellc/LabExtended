@@ -250,13 +250,13 @@ namespace LabExtended.API
             => GameCore.Console.singleton.TypeCommand(command, sender ?? ServerConsole.Scs);
 
         /// <summary>
-        /// Shows the server on the list.
+        /// Shows the server on the list (only works on verified servers).
         /// </summary>
         public static void MakePublic()
             => ExecuteCommand("!public");
 
         /// <summary>
-        /// Hides the server from the server list.
+        /// Hides the server from the server list (only works on verified servers).
         /// </summary>
         public static void MakePrivate()
             => ExecuteCommand("!private");

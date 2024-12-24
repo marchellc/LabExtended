@@ -6,6 +6,9 @@ using InventorySystem.Items;
 using InventorySystem.Searching;
 using InventorySystem;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.API.Items.Candies;
 
@@ -13,14 +16,12 @@ using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
-using PluginAPI.Events;
 using LabExtended.Attributes;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpScp330Patch
     {
-        [HookPatch(typeof(PlayerPickupScp330Event), true)]
         [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(Scp330SearchCompletor), nameof(Scp330SearchCompletor.Complete))]
         public static bool Prefix(Scp330SearchCompletor __instance)
@@ -42,7 +43,11 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            if (!EventManager.ExecuteEvent(new PlayerPickupScp330Event(__instance.Hub, scp330Pickup)))
+            var scp330Args = new PlayerPickingUpScp330EventArgs(player.Hub, scp330Pickup);
+
+            PlayerEvents.OnPickingUpScp330(scp330Args);
+
+            if (!scp330Args.IsAllowed)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -82,6 +87,8 @@ namespace LabExtended.Patches.Functions.Items
 
             if (bag.AcquisitionAlreadyReceived)
                 bag.ServerRefreshBag();
+
+            PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(player.Hub, scp330Pickup, bag));
 
             if (pickingUpItemEv.DestroyPickup || scp330Pickup.StoredCandies.Count == 0)
             {

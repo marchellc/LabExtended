@@ -2,6 +2,9 @@
 
 using Interactables.Interobjects.DoorUtils;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
@@ -9,13 +12,10 @@ using LabExtended.Events.Player;
 
 using PlayerRoles;
 
-using PluginAPI.Events;
-
 namespace LabExtended.Patches.Events
 {
     public static class DoorInteractingPatch
     {
-        [HookPatch(typeof(PlayerInteractDoorEvent))]
         [HookPatch(typeof(PlayerInteractingDoorArgs))]
         [HarmonyPatch(typeof(DoorVariant), nameof(DoorVariant.ServerInteract))]
         public static bool Prefix(DoorVariant __instance, ReferenceHub ply, byte colliderId)
@@ -27,6 +27,9 @@ namespace LabExtended.Patches.Events
 
             if (door is null)
                 return true;
+            
+            if (!__instance.AllowInteracting(ply, colliderId))
+                return false;
 
             if (__instance.ActiveLocks > 0 && !ply.serverRoles.BypassMode)
             {
@@ -36,32 +39,41 @@ namespace LabExtended.Patches.Events
                     && (!mode.HasFlagFast(DoorLockMode.ScpOverride) || !ply.IsSCP(true)) && (mode == DoorLockMode.FullLock
                     || (__instance.TargetState && !mode.HasFlagFast(DoorLockMode.CanClose)) || (!__instance.TargetState && !mode.HasFlagFast(DoorLockMode.CanOpen))))
                 {
-                    if (!EventManager.ExecuteEvent(new PlayerInteractDoorEvent(ply, __instance, false)))
+                    var interactingEventArgs = new PlayerInteractingDoorEventArgs(player.Hub, __instance, false);
+
+                    PlayerEvents.OnInteractingDoor(interactingEventArgs);
+
+                    if (!interactingEventArgs.IsAllowed)
                         return false;
 
-                    if (!HookRunner.RunEvent(new PlayerInteractingDoorArgs(player, door, false), true))
+                    var interactingArgs = new PlayerInteractingDoorArgs(player, door, interactingEventArgs.CanOpen);
+
+                    if (!HookRunner.RunEvent(interactingArgs, true))
                         return false;
 
-                    __instance.LockBypassDenied(ply, colliderId);
-                    return false;
+                    if (!interactingArgs.CanOpen)
+                    {
+                        __instance.LockBypassDenied(ply, colliderId);
+                        return false;
+                    }
                 }
             }
 
-            if (!__instance.AllowInteracting(ply, colliderId))
-                return false;
-
             var canOpen = player.Role.Is(RoleTypeId.Scp079) || __instance.RequiredPermissions.CheckPermissions(ply.inventory.CurInstance, ply);
-            var interactEvent = new PlayerInteractDoorEvent(ply, __instance, canOpen);
+            
+            var interactingDoorEvArgs = new PlayerInteractingDoorEventArgs(player.Hub, __instance, canOpen);
 
-            if (!EventManager.ExecuteEvent(interactEvent))
+            PlayerEvents.OnInteractingDoor(interactingDoorEvArgs);
+
+            if (!interactingDoorEvArgs.IsAllowed)
+                return false;
+            
+            var interactingDoorArgs = new PlayerInteractingDoorArgs(player, door, interactingDoorEvArgs.CanOpen);
+
+            if (!HookRunner.RunEvent(interactingDoorArgs, true))
                 return false;
 
-            var interactingArgs = new PlayerInteractingDoorArgs(player, door, interactEvent.CanOpen);
-
-            if (!HookRunner.RunEvent(interactingArgs, true))
-                return false;
-
-            if (interactingArgs.CanOpen)
+            if (interactingDoorArgs.CanOpen)
             {
                 __instance.NetworkTargetState = !__instance.TargetState;
                 __instance._triggerPlayer = ply;

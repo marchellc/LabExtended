@@ -4,23 +4,22 @@ using PlayerRoles;
 
 using Mirror;
 
-using LabExtended.API;
-using LabExtended.Events.Player;
-using LabExtended.Core.Hooking;
-
 using UnityEngine;
 
 using PlayerRoles.SpawnData;
-using PluginAPI.Events;
 
 using CustomPlayerEffects;
 
+using LabExtended.Events.Player;
+using LabExtended.Core.Hooking;
+
+using LabExtended.API;
 using LabExtended.Core;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 using PlayerRoles.FirstPersonControl.Spawnpoints;
-using LabExtended.Attributes;
 
 namespace LabExtended.Patches.Events
 {
@@ -28,8 +27,7 @@ namespace LabExtended.Patches.Events
     {
         static PlayerChangingRolePatch()
             => FastEvents<PlayerRoleManager.RoleChanged>.DefineEvent(typeof(PlayerRoleManager), "OnRoleChanged");
-
-        [HookPatch(typeof(PlayerSpawnEvent))]
+        
         [HookPatch(typeof(PlayerChangedRoleArgs))]
         [HookPatch(typeof(PlayerChangingRoleArgs))]
         [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.InitializeNewRole))]
@@ -37,9 +35,7 @@ namespace LabExtended.Patches.Events
         {
             try
             {
-                var player = ExPlayer.Get(__instance.Hub);
-
-                if (player is null)
+                if (!ExPlayer.TryGet(__instance.Hub, out var player))
                     return true;
 
                 var prevRole = default(PlayerRoleBase);
@@ -62,8 +58,7 @@ namespace LabExtended.Patches.Events
                 }
 
                 __instance.CurrentRole = newRole;
-
-                var dataPos = data?.Position ?? -1;
+                
                 var changingEv = new PlayerChangingRoleArgs(player, prevRole, newRole, reason, spawnFlags, data);
 
                 HookRunner.RunEvent(changingEv);
@@ -76,16 +71,10 @@ namespace LabExtended.Patches.Events
                 RoleSpawnpointManager.SetPosition(player.Hub, newRole);
 
                 newRole.SetupPoolObject();
-
-                if (newRole is ISpawnDataReader spawnDataReader && data != null)
-                {
-                    if (targetId is not RoleTypeId.Spectator && !__instance.isLocalPlayer && EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId)))
-                        spawnDataReader.ReadSpawnData(data);
-                }
-                else if (targetId != RoleTypeId.Spectator && !__instance.isLocalPlayer)
-                {
-                    EventManager.ExecuteEvent(new PlayerSpawnEvent(__instance.Hub, targetId));
-                }
+                
+                if (__instance.CurrentRole is ISpawnDataReader currentRole && data != null && targetId != RoleTypeId.Spectator 
+                    && !__instance.isLocalPlayer)
+                    currentRole.ReadSpawnData(data);
 
                 var hasSpawnProtection = false;
 

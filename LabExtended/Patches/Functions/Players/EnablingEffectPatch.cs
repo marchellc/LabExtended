@@ -2,12 +2,12 @@
 
 using HarmonyLib;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using Mirror;
-
-using PluginAPI.Events;
 
 using UnityEngine;
 
@@ -15,7 +15,6 @@ namespace LabExtended.Patches.Functions.Players
 {
     public static class EnablingEffectPatch
     {
-        [HookPatch(typeof(PlayerReceiveEffectEvent), true)]
         [HarmonyPatch(typeof(StatusEffectBase), nameof(StatusEffectBase.ForceIntensity))]
         public static bool Prefix(StatusEffectBase __instance, byte value)
         {
@@ -34,14 +33,18 @@ namespace LabExtended.Patches.Functions.Players
 
             if (serverActive && isEnabling)
             {
-                var effectEvent = new PlayerReceiveEffectEvent(__instance.Hub, __instance, value, __instance.Duration);
+                var receivingArgs =
+                    new PlayerReceivingEffectEventArgs(player.Hub, __instance, value, __instance.Duration);
 
-                if (!EventManager.ExecuteEvent(effectEvent))
+                PlayerEvents.OnReceivingEffect(receivingArgs);
+
+                if (!receivingArgs.IsAllowed)
                     return false;
 
-                value = effectEvent.Intensity;
+                value = receivingArgs.Intensity;
 
-                __instance.Duration = effectEvent.Duration;
+                if (__instance.Duration != receivingArgs.Duration)
+                    __instance.Duration = receivingArgs.Duration;
             }
 
             __instance._intensity = (byte)Mathf.Min(value, __instance.MaxIntensity);
@@ -55,6 +58,8 @@ namespace LabExtended.Patches.Functions.Players
                 __instance.Disabled();
 
             __instance.IntensityChanged(prevIntensity, value);
+
+            PlayerEvents.OnReceivedEffect(new PlayerReceivedEffectEventArgs(player.Hub, __instance, value, __instance.Duration));
             return false;
         }
     }

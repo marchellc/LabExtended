@@ -9,7 +9,7 @@ using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
-
+using LabApi.Events.Arguments.ServerEvents;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Prefabs;
@@ -34,8 +34,6 @@ using PlayerRoles.PlayableScps.Scp3114;
 using PlayerRoles.Ragdolls;
 
 using PlayerStatsSystem;
-
-using PluginAPI.Events;
 
 using RelativePositioning;
 
@@ -264,7 +262,7 @@ namespace LabExtended.API
             if (spawn)
             {
                 NetworkServer.Spawn(pickup.gameObject);
-                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+                LabApi.Events.Handlers.ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(pickup));
             }
 
             return pickup;
@@ -312,7 +310,7 @@ namespace LabExtended.API
             if (spawn)
             {
                 NetworkServer.Spawn(projectile.gameObject);
-                EventManager.ExecuteEvent(new ItemSpawnedEvent(item, position));
+                LabApi.Events.Handlers.ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(projectile));
             }
 
             if (spawn && activate)

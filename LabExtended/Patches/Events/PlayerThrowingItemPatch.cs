@@ -4,6 +4,9 @@ using InventorySystem;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.Usables.Scp330;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
@@ -11,16 +14,12 @@ using LabExtended.Events.Player;
 
 using PlayerRoles.FirstPersonControl;
 
-using PluginAPI.Events;
-
 using UnityEngine;
 
 namespace LabExtended.Patches.Events
 {
     public static class PlayerThrowingItemPatch
     {
-        [HookPatch(typeof(PlayerDropItemEvent))]
-        [HookPatch(typeof(PlayerThrowItemEvent))]
         [HookPatch(typeof(PlayerThrowingItemArgs))]
         [HookPatch(typeof(PlayerDroppingItemArgs))]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.UserCode_CmdDropItem__UInt16__Boolean))]
@@ -34,8 +33,14 @@ namespace LabExtended.Patches.Events
             if (!player.Switches.CanDropItems)
                 return false;
 
-            if (!__instance.UserInventory.Items.TryGetValue(itemSerial, out var item) || !item.AllowHolster
-                || !EventManager.ExecuteEvent(new PlayerDropItemEvent(__instance._hub, item)))
+            if (!__instance.UserInventory.Items.TryGetValue(itemSerial, out var item) || !item.AllowHolster)
+                return false;
+
+            var droppingArgs = new PlayerDroppingItemEventArgs(player.Hub, item);
+
+            PlayerEvents.OnDroppingItem(droppingArgs);
+
+            if (!droppingArgs.IsAllowed)
                 return false;
 
             var droppingEv = new PlayerDroppingItemArgs(player, item, tryThrow);
@@ -57,9 +62,17 @@ namespace LabExtended.Patches.Events
 
             player.Inventory._droppedItems.Add(pickup);
 
-            if (player.Switches.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody)
-                && EventManager.ExecuteEvent(new PlayerThrowItemEvent(__instance._hub, item, rigidbody)))
+            PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.Hub, pickup));
+
+            if (player.Switches.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody))
             {
+                var throwingArgs = new PlayerThrowingItemEventArgs(player.Hub, pickup, rigidbody);
+
+                PlayerEvents.OnThrowingItem(throwingArgs);
+
+                if (!throwingArgs.IsAllowed)
+                    return false;
+                
                 var velocity = __instance._hub.GetVelocity();
                 var angular = Vector3.Lerp(item.ThrowSettings.RandomTorqueA, item.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 
@@ -80,6 +93,8 @@ namespace LabExtended.Patches.Events
 
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
+
+                PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(player.Hub, pickup, rigidbody));
             }
 
             return false;

@@ -23,45 +23,6 @@ namespace LabExtended.Core.Hooking
 
             try
             {
-                if (HookManager.PredefinedDelegates.TryGetValue(type, out var predefinedDelegates) && predefinedDelegates != null && predefinedDelegates.Count > 0)
-                {
-                    foreach (var predefinedDelegate in predefinedDelegates)
-                    {
-                        if (predefinedDelegate is null || predefinedDelegate.Method is null)
-                            continue;
-
-                        try
-                        {
-                            predefinedDelegate(eventObject);
-                        }
-                        catch (Exception ex)
-                        {
-                            ApiLog.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
-                        }
-                    }
-                }
-
-                if (HookManager.PredefinedReturnDelegates.TryGetValue(type, out var predefinedReturnDelegates) && predefinedReturnDelegates != null && predefinedReturnDelegates.Count > 0)
-                {
-                    foreach (var predefinedReturnDelegate in predefinedReturnDelegates)
-                    {
-                        if (predefinedReturnDelegate is null || predefinedReturnDelegate.Method is null)
-                            continue;
-
-                        try
-                        {
-                            var result = predefinedReturnDelegate(eventObject);
-
-                            if (result != null && result is T castResult)
-                                returnValue = castResult;
-                        }
-                        catch (Exception ex)
-                        {
-                            ApiLog.Error("Hooking API", $"An error occured while executing predefined delegate &3{predefinedReturnDelegate.Method.GetMemberName()}&r:\n{ex.ToColoredString()}");
-                        }
-                    }
-                }
-
                 if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks != null && hooks.Count > 0)
                 {
                     for (int i = 0; i < hooks.Count; i++)

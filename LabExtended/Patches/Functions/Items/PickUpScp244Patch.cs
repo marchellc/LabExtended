@@ -5,20 +5,20 @@ using InventorySystem.Items;
 using InventorySystem.Items.Usables.Scp244;
 using InventorySystem.Searching;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
-using PluginAPI.Events;
-
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpScp244Patch
     {
         [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
-        [HookPatch(typeof(PlayerSearchedPickupEvent), true)]
         [HarmonyPatch(typeof(Scp244SearchCompletor), nameof(Scp244SearchCompletor.Complete))]
         public static bool Prefix(Scp244SearchCompletor __instance)
         {
@@ -39,7 +39,11 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            if (!EventManager.ExecuteEvent(new PlayerSearchedPickupEvent(__instance.Hub, __instance.TargetPickup)))
+            var pickingUpArgs = new PlayerPickingUpItemEventArgs(player.Hub, __instance.TargetPickup);
+
+            PlayerEvents.OnPickingUpItem(pickingUpArgs);
+            
+            if (!pickingUpArgs.IsAllowed)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -47,9 +51,7 @@ namespace LabExtended.Patches.Functions.Items
 
             var pickingUpEv = new PlayerPickingUpItemArgs(player, scp244DeployablePickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
 
-            pickingUpEv.IsAllowed = true;
-
-            if (!HookRunner.RunEvent(pickingUpEv, pickingUpEv.IsAllowed))
+            if (!HookRunner.RunEvent(pickingUpEv, true))
             {
                 if (pickingUpEv.DestroyPickup)
                 {
@@ -74,6 +76,8 @@ namespace LabExtended.Patches.Functions.Items
                     scp244DeployablePickup.State = Scp244State.Destroyed;
                     scp244DeployablePickup.DestroySelf();
                 }
+
+                PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.Hub, item));
             }
             else
             {

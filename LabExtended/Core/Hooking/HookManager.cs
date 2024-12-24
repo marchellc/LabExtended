@@ -1,10 +1,6 @@
 using LabExtended.Attributes;
 using LabExtended.Extensions;
-using LabExtended.Commands;
 
-using LabExtended.Events;
-
-using LabExtended.API;
 using LabExtended.API.Collections.Locked;
 
 using LabExtended.Core.Hooking.Binders;
@@ -12,12 +8,8 @@ using LabExtended.Core.Hooking.Enums;
 using LabExtended.Core.Hooking.Executors;
 using LabExtended.Core.Hooking.Interfaces;
 using LabExtended.Core.Hooking.Objects;
-using LabExtended.Core.Networking.Synchronization.Position;
 
 using MEC;
-
-using PluginAPI.Events;
-using PluginAPI.Core.Attributes;
 
 using System.Reflection;
 
@@ -25,66 +17,13 @@ namespace LabExtended.Core.Hooking
 {
     public static class HookManager
     {
-        public static LockedDictionary<Type, List<Func<object, object>>> PredefinedReturnDelegates { get; } = new LockedDictionary<Type, List<Func<object, object>>>()
-        {
-            [typeof(RemoteAdminCommandEvent)] = new List<Func<object, object>>()
-            {
-                ev => CustomCommand.InternalHandleRemoteAdminCommand((RemoteAdminCommandEvent)ev)
-            },
-
-            [typeof(ConsoleCommandEvent)] = new List<Func<object, object>>()
-            {
-                ev => CustomCommand.InternalHandleConsoleCommand((ConsoleCommandEvent)ev)
-            },
-
-            [typeof(PlayerGameConsoleCommandEvent)] = new List<Func<object, object>>()
-            {
-                ev => CustomCommand.InternalHandleGameConsoleCommand((PlayerGameConsoleCommandEvent)ev)
-            },
-        };
-
-        public static LockedDictionary<Type, List<Action<object>>> PredefinedDelegates { get; } = new LockedDictionary<Type, List<Action<object>>>()
-        {
-            [typeof(RoundStartEvent)] = new List<Action<object>>()
-            {
-                _ => InternalEvents.InternalHandleRoundStart(),
-                _ => RoundEvents.InvokeStarted(),
-            },
-
-            [typeof(RoundEndEvent)] = new List<Action<object>>()
-            {
-                _ => RoundEvents.InvokeEnded()
-            },
-
-            [typeof(RoundRestartEvent)] = new List<Action<object>>()
-            {
-                _ => PositionSynchronizer.InternalHandleRoundRestart(),
-                _ => InternalEvents.InternalHandleRoundRestart(),
-                _ => RoundEvents.InvokeRestarted()
-            },
-
-            [typeof(WaitingForPlayersEvent)] = new List<Action<object>>()
-            {
-                _ => PositionSynchronizer.InternalHandleWaiting(),
-                _ => InternalEvents.InternalHandleRoundWaiting(),
-                _ => RoundEvents.InvokeWaiting(),
-            },
-
-            [typeof(PlayerPreauthEvent)] = new List<Action<object>>()
-            {
-                ev => InternalEvents.InternalHandlePlayerAuth((PlayerPreauthEvent)ev)
-            }
-        };
-
         internal static readonly LockedDictionary<Type, List<HookInfo>> _activeHooks = new LockedDictionary<Type, List<HookInfo>>();
         internal static readonly LockedDictionary<Type, List<HookDelegateObject>> _activeDelegates = new LockedDictionary<Type, List<HookDelegateObject>>();
 
         public static bool AnyRegistered(Type eventType)
             => eventType != null && (
-            (_activeHooks.TryGetValue(eventType, out var hooks) && hooks.Count > 0) ||
-            (_activeDelegates.TryGetValue(eventType, out var delegates) && delegates.Count > 0) ||
-            (PredefinedDelegates.TryGetValue(eventType, out var predefined) && predefined.Count > 0) ||
-            (PredefinedReturnDelegates.TryGetValue(eventType, out var predefinedReturn) && predefinedReturn.Count > 0));
+                (_activeHooks.TryGetValue(eventType, out var hooks) && hooks.Count > 0) ||
+                (_activeDelegates.TryGetValue(eventType, out var delegates) && delegates.Count > 0));
 
         public static void RegisterAll()
             => RegisterAll(Assembly.GetCallingAssembly());
@@ -139,13 +78,13 @@ namespace LabExtended.Core.Hooking
             => _activeDelegates.ForEach(p => p.Value.RemoveAll(h => h.Event.DeclaringType != null && h.Event.DeclaringType == type && h.TypeInstance.IsEqualTo(typeInstance)));
 
         public static void Register<T>(Action<T> handler)
-            => RegisterInternal(handler.Method, handler.Target, true, true, null, null);
+            => RegisterInternal(handler.Method, handler.Target, true, true, null);
 
         public static void Register<T, TReturn>(Func<T, TReturn> handler) where TReturn : struct
-            => RegisterInternal(handler.Method, handler.Target, true, true, null, null);
+            => RegisterInternal(handler.Method, handler.Target, true, true, null);
 
         public static void Register(MethodInfo method, object typeInstance = null, bool logAdditionalInfo = false)
-            => RegisterInternal(method, typeInstance, logAdditionalInfo, false, method.GetCustomAttribute<HookDescriptorAttribute>(), method.GetCustomAttribute<PluginEvent>());
+            => RegisterInternal(method, typeInstance, logAdditionalInfo, false, method.GetCustomAttribute<HookDescriptorAttribute>());
 
         public static void RegisterDelegates(Type type, object typeInstance)
         {
@@ -155,8 +94,6 @@ namespace LabExtended.Core.Hooking
                 {
                     try
                     {
-                        var pluginEvent = default(PluginEvent);
-
                         if (_activeDelegates.Any(p => p.Value.Any(d => d.Event == eventInfo && d.TypeInstance.IsEqualTo(typeInstance))))
                             continue;
 
@@ -165,7 +102,7 @@ namespace LabExtended.Core.Hooking
                         if (eventField is null || !eventInfo.IsMulticast)
                             continue;
 
-                        if (!eventInfo.HasAttribute<HookDescriptorAttribute>(out var hookDescriptorAttribute) && !eventInfo.HasAttribute(out pluginEvent))
+                        if (!eventInfo.HasAttribute<HookDescriptorAttribute>(out var hookDescriptorAttribute))
                             continue;
 
                         var eventType = default(Type);
@@ -173,18 +110,10 @@ namespace LabExtended.Core.Hooking
 
                         if (eventInfo.EventHandlerType == typeof(Action))
                         {
-                            if (hookDescriptorAttribute.EventOverride is null && pluginEvent is null)
+                            if (hookDescriptorAttribute.EventOverride is null)
                                 continue;
 
                             var attrType = hookDescriptorAttribute?.EventOverride;
-
-                            if (attrType is null && pluginEvent != null)
-                            {
-                                if (!EventManager.Events.TryGetValue(pluginEvent.EventType, out var pluginEv))
-                                    continue;
-
-                                attrType = pluginEv.EventArgType;
-                            }
 
                             if (attrType is null)
                                 continue;
@@ -240,11 +169,11 @@ namespace LabExtended.Core.Hooking
             }
         }
 
-        private static void RegisterInternal(MethodInfo method, object typeInstance, bool log, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute, PluginEvent pluginEvent)
+        private static void RegisterInternal(MethodInfo method, object typeInstance, bool log, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute)
         {
             try
             {
-                if (!skipAttributes && hookDescriptorAttribute is null && pluginEvent is null)
+                if (!skipAttributes && hookDescriptorAttribute is null)
                     return;
 
                 if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
@@ -258,7 +187,7 @@ namespace LabExtended.Core.Hooking
 
                 var methodArgs = method.GetAllParameters();
 
-                if (!TryGetEventType(hookDescriptorAttribute, pluginEvent, methodArgs, out var eventType))
+                if (!TryGetEventType(hookDescriptorAttribute, methodArgs, out var eventType))
                 {
                     ApiLog.Warn("Hooking API", $"Failed to recognize event type in method &3{method.GetMemberName()}&r");
                     return;
@@ -315,7 +244,7 @@ namespace LabExtended.Core.Hooking
                 return true;
             }
 
-            if (returnType == typeof(bool) || returnType == typeof(void) || returnType.InheritsType<IEventCancellation>())
+            if (returnType == typeof(bool) || returnType == typeof(void))
             {
                 hookRunner = new SimpleHookRunner();
                 return true;
@@ -371,7 +300,7 @@ namespace LabExtended.Core.Hooking
             return true;
         }
 
-        private static bool TryGetEventType(HookDescriptorAttribute hookDescriptorAttribute, PluginEvent pluginEvent, ParameterInfo[] methodArgs, out Type eventType)
+        private static bool TryGetEventType(HookDescriptorAttribute hookDescriptorAttribute, ParameterInfo[] methodArgs, out Type eventType)
         {
             if (hookDescriptorAttribute?.EventOverride != null)
             {
@@ -382,12 +311,6 @@ namespace LabExtended.Core.Hooking
             if (methodArgs.Length == 1)
             {
                 eventType = methodArgs[0].ParameterType;
-                return true;
-            }
-
-            if (pluginEvent != null && EventManager.Events.TryGetValue(pluginEvent.EventType, out var eventInfo))
-            {
-                eventType = eventInfo.EventArgType;
                 return true;
             }
 

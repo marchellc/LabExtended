@@ -12,8 +12,6 @@ using LabExtended.Extensions;
 
 using LabExtended.API.Collections.Locked;
 
-using PluginAPI.Events;
-
 using UnityEngine;
 
 using NorthwoodLib.Pools;
@@ -21,7 +19,7 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
-
+using LabApi.Events.Arguments.PlayerEvents;
 using LabExtended.API.Items.Candies;
 
 namespace LabExtended.API.Containers
@@ -399,9 +397,13 @@ namespace LabExtended.API.Containers
             if (pickupRigidbody is null)
                 return null;
 
-            if (!EventManager.ExecuteEvent(new PlayerThrowItemEvent(Inventory._hub, itemPrefab, pickupRigidbody)))
-                return pickupInstance;
+            var throwArgs = new PlayerThrowingItemEventArgs(Inventory._hub, pickupInstance, pickupRigidbody);
 
+            LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(throwArgs);
+
+            if (!throwArgs.IsAllowed)
+                return default;
+            
             var velocity = Inventory._hub.GetVelocity();
             var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
 

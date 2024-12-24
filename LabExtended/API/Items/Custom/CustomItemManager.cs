@@ -3,12 +3,15 @@
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Items.Custom.Item;
 using LabExtended.API.Items.Custom.Pickup;
+
 using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
 using LabExtended.Utilities.Unity;
+
+using UnityEngine.PlayerLoop;
 
 namespace LabExtended.API.Items.Custom
 {
@@ -224,7 +227,7 @@ namespace LabExtended.API.Items.Custom
         [LoaderInitialize(1)]
         internal static void OnLoad()
         {
-            PlayerLoopHelper.System.InjectBefore(OnUpdate, typeof(PlayerLoopHelper.CustomBeforePlayerLoop), typeof(CustomItemsUpdateSegment));
+            PlayerLoopHelper.System.InjectBefore(OnUpdate, typeof(Initialization.ProfilerStartFrame), typeof(CustomItemsUpdateSegment));
         }
 
         private static void OnUpdate()

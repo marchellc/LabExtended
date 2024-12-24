@@ -1,6 +1,6 @@
 ﻿using LabExtended.Commands.Interfaces;
 
-namespace LabExtended.Commands.Contexts
+namespace LabExtended.Extensions
 {
     public static class ContextExtensions
     {

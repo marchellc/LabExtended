@@ -10,15 +10,12 @@ using MapGeneration;
 using PlayerRoles.PlayableScps;
 using PlayerRoles.PlayableScps.Scp173;
 
-using PluginAPI.Events;
-
 using UnityEngine;
 
 namespace LabExtended.Patches.Functions.Scp173
 {
     public static class Scp173BlockPatch
     {
-        [HookPatch(typeof(Scp173NewObserverEvent), true)]
         [HookPatch(typeof(PlayerObservingScp173Args), true)]
         [HarmonyPatch(typeof(Scp173ObserversTracker), nameof(Scp173ObserversTracker.IsObservedBy))]
         public static bool Prefix(Scp173ObserversTracker __instance, ReferenceHub target, float widthMultiplier, ref bool __result)
@@ -54,12 +51,10 @@ namespace LabExtended.Patches.Functions.Scp173
                 {
                     var lookingEv = new PlayerObservingScp173Args(scp, player, __instance.CastRole, __instance, vision, vision.IsLooking);
 
-                    HookRunner.RunEvent(lookingEv);
-
-                    if (!lookingEv.IsLooking)
+                    if (!HookRunner.RunEvent(lookingEv, true))
                         return __result = false;
 
-                    if (!EventManager.ExecuteEvent(new Scp173NewObserverEvent(__instance.Owner, target)))
+                    if (!lookingEv.IsLooking)
                         return __result = false;
 
                     __result = true;

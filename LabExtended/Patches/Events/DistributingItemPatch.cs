@@ -4,6 +4,9 @@ using Interactables.Interobjects.DoorUtils;
 
 using InventorySystem.Items.Pickups;
 
+using LabApi.Events.Arguments.ServerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Map;
@@ -13,15 +16,12 @@ using MapGeneration.Distributors;
 
 using NorthwoodLib.Pools;
 
-using PluginAPI.Events;
-
 using UnityEngine;
 
 namespace LabExtended.Patches.Events
 {
     public static class DistributingItemPatch
     {
-        [HookPatch(typeof(ItemSpawnedEvent))]
         [HookPatch(typeof(DistributedPickupArgs))]
         [HookPatch(typeof(DistributingPickupArgs))]
         [HookPatch(typeof(DistributingPickupsArgs))]
@@ -77,7 +77,11 @@ namespace LabExtended.Patches.Events
                 var spawnpointIndex = UnityEngine.Random.Range(0, list.Count);
                 var distributingArgs = new DistributingPickupArgs(list[spawnpointIndex], type, list[spawnpointIndex].Occupy());
 
-                if (!HookRunner.RunEvent(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(distributingArgs.Type, distributingArgs.TargetTransform.position)))
+                var itemSpawnedArgs = new ItemSpawningEventArgs(type);
+
+                ServerEvents.OnItemSpawning(itemSpawnedArgs);
+                
+                if (!HookRunner.RunEvent(distributingArgs, true) || !itemSpawnedArgs.IsAllowed)
                 {
                     list[spawnpointIndex]._uses--;
                     continue;
@@ -96,8 +100,11 @@ namespace LabExtended.Patches.Events
         {
             var transform = itemSpawnpoint.Occupy();
             var distributingArgs = new DistributingPickupArgs(itemSpawnpoint, itemSpawnpoint.AutospawnItem, transform);
+            var itemSpawningArgs = new ItemSpawningEventArgs(itemSpawnpoint.AutospawnItem);
 
-            if (!HookRunner.RunEvent(distributingArgs, true) || !EventManager.ExecuteEvent(new ItemSpawnedEvent(itemSpawnpoint.AutospawnItem, transform.position)))
+            ServerEvents.OnItemSpawning(itemSpawningArgs);
+            
+            if (!HookRunner.RunEvent(distributingArgs, true) || !itemSpawningArgs.IsAllowed)
             {
                 itemSpawnpoint._uses--;
                 return;

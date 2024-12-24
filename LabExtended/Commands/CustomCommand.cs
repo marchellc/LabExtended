@@ -10,9 +10,11 @@ using LabExtended.Commands.Responses;
 
 using NorthwoodLib.Pools;
 
-using PluginAPI.Events;
-
 using System.Reflection;
+using LabApi.Events.Arguments.ServerEvents;
+using LabApi.Events.Handlers;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands
 {
@@ -214,15 +216,18 @@ namespace LabExtended.Commands
         #endregion
 
         #region Continued Response Handling
-        internal static bool HandleCommand(ExPlayer player, string cmd, string[] args)
+        private static void HandleCommand(CommandExecutingEventArgs args)
         {
-            if (player is null)
-                return true;
+            if (!ExPlayer.TryGet(args.Sender, out var player))
+                return;
 
             if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
-                return true;
+                return;
 
-            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext, cmd, args);
+            args.IsAllowed = false;
+            
+            var ctx = new ContinuedContext(continuedContext.PreviousResponse, continuedContext,
+                args.Arguments.AsString(" "), args.Arguments.Array);
 
             try
             {
@@ -234,22 +239,16 @@ namespace LabExtended.Commands
             }
 
             if (ctx.Response is ContinuedResponse continuedResponse)
-                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, cmd, args);
+                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, ctx.RawInput, ctx.RawArgs);
             else
                 _continuedContexts.Remove(player.NetId);
 
             player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
-            return false;
         }
 
-        internal static bool InternalHandleGameConsoleCommand(PlayerGameConsoleCommandEvent ev)
-            => HandleCommand(ev.Player.ReferenceHub, ev.Command, ev.Arguments);
-
-        internal static bool InternalHandleConsoleCommand(ConsoleCommandEvent ev)
-            => HandleCommand(ExPlayer.Get(ev.Sender), ev.Command, ev.Arguments);
-
-        internal static bool InternalHandleRemoteAdminCommand(RemoteAdminCommandEvent ev)
-            => HandleCommand(ExPlayer.Get(ev.Sender), ev.Command, ev.Arguments);
+        [LoaderInitialize(1)]
+        private static void RegisterEvents()
+            => ServerEvents.CommandExecuting += HandleCommand;
         #endregion
     }
 }

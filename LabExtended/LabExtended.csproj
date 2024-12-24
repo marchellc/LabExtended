@@ -20,43 +20,49 @@
 
     <ItemGroup>
       <Reference Include="Assembly-CSharp">
-        <HintPath>$(SL_REFERENCES)\Assembly-CSharp-publicized.dll</HintPath>
+        <HintPath>..\..\..\refs\Assembly-CSharp-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Assembly-CSharp-firstpass">
-        <HintPath>$(SL_REFERENCES)\Assembly-CSharp-firstpass.dll</HintPath>
+        <HintPath>..\..\..\refs\Assembly-CSharp-firstpass.dll</HintPath>
       </Reference>
       <Reference Include="CommandSystem.Core">
-        <HintPath>$(SL_REFERENCES)\CommandSystem.Core.dll</HintPath>
+        <HintPath>..\..\..\refs\CommandSystem.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="LabApi">
+        <HintPath>..\..\..\refs\LabApi-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Mirror">
-        <HintPath>$(SL_REFERENCES)\Mirror-publicized.dll</HintPath>
+        <HintPath>..\..\..\refs\Mirror-publicized.dll</HintPath>
+      </Reference>
+      <Reference Include="Mirror.Components">
+        <HintPath>..\..\..\refs\Mirror.Components.dll</HintPath>
       </Reference>
       <Reference Include="NorthwoodLib">
-        <HintPath>$(SL_REFERENCES)\NorthwoodLib-publicized.dll</HintPath>
-      </Reference>
-      <Reference Include="PluginAPI">
-        <HintPath>$(SL_REFERENCES)\PluginAPI-publicized.dll</HintPath>
+        <HintPath>..\..\..\refs\NorthwoodLib-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Pooling">
-        <HintPath>$(SL_REFERENCES)\Pooling.dll</HintPath>
+        <HintPath>..\..\..\refs\Pooling.dll</HintPath>
       </Reference>
       <Reference Include="Unity.TextMeshPro">
-        <HintPath>$(SL_REFERENCES)\Unity.TextMeshPro.dll</HintPath>
+        <HintPath>..\..\..\refs\Unity.TextMeshPro.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine">
-        <HintPath>$(SL_REFERENCES)\UnityEngine.dll</HintPath>
+        <HintPath>..\..\..\refs\UnityEngine.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.AudioModule">
+        <HintPath>..\..\..\refs\UnityEngine.AudioModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.CoreModule">
-        <HintPath>$(SL_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
+        <HintPath>..\..\..\refs\UnityEngine.CoreModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.PhysicsModule">
-        <HintPath>$(SL_REFERENCES)\UnityEngine.PhysicsModule.dll</HintPath>
+        <HintPath>..\..\..\refs\UnityEngine.PhysicsModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.UI">
-        <HintPath>$(SL_REFERENCES)\UnityEngine.UI.dll</HintPath>
+        <HintPath>..\..\..\refs\UnityEngine.UI.dll</HintPath>
       </Reference>
       <Reference Include="YamlDotNet">
-        <HintPath>$(SL_REFERENCES)\YamlDotNet.dll</HintPath>
+        <HintPath>..\..\..\refs\YamlDotNet.dll</HintPath>
       </Reference>
     </ItemGroup>
 

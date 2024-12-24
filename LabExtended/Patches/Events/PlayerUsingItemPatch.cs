@@ -4,14 +4,15 @@ using HarmonyLib;
 
 using InventorySystem.Items.Usables;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 
 using Mirror;
-
-using PluginAPI.Events;
 
 using UnityEngine;
 
@@ -21,9 +22,7 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerUsingItemPatch
     {
-        [HookPatch(typeof(PlayerUseItemEvent))]
         [HookPatch(typeof(PlayerUsingItemArgs))]
-        [HookPatch(typeof(PlayerCancelUsingItemEvent))]
         [HarmonyPatch(typeof(UsableItemsController), nameof(UsableItemsController.ServerReceivedStatus))]
         public static bool Prefix(NetworkConnection conn, StatusMessage msg)
         {
@@ -58,8 +57,15 @@ namespace LabExtended.Patches.Events
                     return false;
                 }
 
-                if (usingArgs.SpeedMultiplier > 0f && EventManager.ExecuteEvent(new PlayerUseItemEvent(player.Hub, curUsable)))
+                if (usingArgs.SpeedMultiplier > 0f)
                 {
+                    var usingEventArgs = new PlayerUsingItemEventArgs(player.Hub, curUsable);
+
+                    PlayerEvents.OnUsingItem(usingEventArgs);
+
+                    if (!usingEventArgs.IsAllowed)
+                        return false;
+                    
                     player.Inventory.UsableItemsHandler.CurrentUsable = new CurrentlyUsedItem(curUsable, curUsable.ItemSerial, Time.timeSinceLevelLoad);
                     player.Inventory.UsableItemsHandler.CurrentUsable.Item.OnUsingStarted();
 
@@ -79,13 +85,19 @@ namespace LabExtended.Patches.Events
 
                 if (player.Inventory.CurrentlyUsedItem.StartTime + curUsable.MaxCancellableTime / speedMultiplier > Time.timeSinceLevelLoad)
                 {
-                    if (!EventManager.ExecuteEvent(new PlayerCancelUsingItemEvent(player.Hub, curUsable)))
+                    var cancellingArgs = new PlayerCancellingUsingItemEventArgs(player.Hub, curUsable);
+
+                    PlayerEvents.OnCancellingUsingItem(cancellingArgs);
+
+                    if (!cancellingArgs.IsAllowed)
                         return false;
 
                     player.Inventory.CurrentlyUsedItem.Item.OnUsingCancelled();
                     player.Inventory.CurrentlyUsedItem = CurrentlyUsedItem.None;
 
                     msg.SendToAuthenticated();
+
+                    PlayerEvents.OnCancelledUsingItem(new PlayerCancelledUsingItemEventArgs(player.Hub, curUsable));
                 }
             }
 

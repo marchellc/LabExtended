@@ -29,6 +29,8 @@ namespace LabExtended.API
         private static RoundLock? _roundLockTracking;
         private static RoundLock? _lobbyLockTracking;
 
+        private static GameObject _roundStart;
+        
         /// <summary>
         /// Gets the round's number.
         /// </summary>
@@ -38,11 +40,6 @@ namespace LabExtended.API
         /// Gets the round's current state.
         /// </summary>
         public static RoundState State { get; internal set; }
-
-        /// <summary>
-        /// Gets a value indicating whether the round is ending.
-        /// </summary>
-        public static bool IsEnding => State is RoundState.Ending;
 
         /// <summary>
         /// Gets a value indicating whether the round has ended.
@@ -68,6 +65,20 @@ namespace LabExtended.API
         /// Gets a value indicating whether or not Light Containmetn Zone has started decontaminating.
         /// </summary>
         public static bool IsLczDecontaminated => DecontaminationController.Singleton?.IsDecontaminating ?? false;
+
+        /// <summary>
+        /// Gets the <see cref="GameObject"/> of the background of the waiting for players screen.
+        /// </summary>
+        public static GameObject RoundStartBackground
+        {
+            get
+            {
+                if (_roundStart is null)
+                    _roundStart = GameObject.Find("StartRound");
+
+                return _roundStart;
+            }
+        }
 
         /// <summary>
         /// Gets the date of this round's start.
@@ -117,7 +128,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the <see cref="Footprint"/> of the player who enabled the lobby lock.
         /// </summary>
-        public static Footprint LobbyLockEnabledByFootpring => _lobbyLockTracking?.EnabledByFootprint ?? default;
+        public static Footprint LobbyLockEnabledByFootprint => _lobbyLockTracking?.EnabledByFootprint ?? default;
 
         /// <summary>
         /// Gets or sets the round lock tracker.
@@ -191,7 +202,10 @@ namespace LabExtended.API
         {
             get
             {
-                if (DecontaminationController.Singleton._nextPhase < 0)
+                if (DecontaminationController.Singleton is null)
+                    return DecontaminationController.DecontaminationPhase.PhaseFunction.None;
+                
+                if (DecontaminationController.Singleton._nextPhase < 0 || DecontaminationController.Singleton._nextPhase >= DecontaminationController.Singleton.DecontaminationPhases.Length)
                     return DecontaminationController.DecontaminationPhase.PhaseFunction.None;
 
                 return DecontaminationController.Singleton.DecontaminationPhases[DecontaminationController.Singleton._nextPhase].Function;
@@ -533,11 +547,8 @@ namespace LabExtended.API
 
                     if (candidates.Count > 1)
                     {
-                        var count = candidates.Count;
-                        var randomPlayer = candidates.RandomItem();
-
                         candidates.Clear();
-                        candidates.Add(randomPlayer);
+                        candidates.Add(candidates.RandomItem());
                     }
 
                     scps -= candidates.Count;
@@ -609,6 +620,7 @@ namespace LabExtended.API
                     num2++;
 
                     ScpSpawner.ChancesBuffer[player.Hub] = num3;
+                    
                     num = Mathf.Min(num3, num);
                 }
 
@@ -643,5 +655,8 @@ namespace LabExtended.API
             }
             #endregion
         }
+
+        internal static void OnRoundWait()
+            => _roundStart = null;
     }
 }

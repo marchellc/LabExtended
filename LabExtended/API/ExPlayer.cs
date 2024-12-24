@@ -19,6 +19,8 @@ using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Voice;
 
 using LabExtended.Core;
+using LabExtended.Core.Networking;
+
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
@@ -36,9 +38,6 @@ using PlayerRoles.FirstPersonControl.NetworkMessages;
 
 using PlayerStatsSystem;
 
-using PluginAPI.Core;
-using PluginAPI.Events;
-
 using RelativePositioning;
 
 using RemoteAdmin;
@@ -49,8 +48,9 @@ using UnityEngine;
 using Utils;
 
 using VoiceChat;
+
 using GameCore;
-using LabExtended.Core.Networking;
+using LabApi.Features.Wrappers;
 
 namespace LabExtended.API
 {
@@ -63,6 +63,7 @@ namespace LabExtended.API
         internal static readonly LockedHashSet<ExPlayer> _npcPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
         internal static readonly LockedHashSet<ExPlayer> _allPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
         internal static readonly LockedHashSet<ExPlayer> _ghostedPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
+        
         internal static readonly LockedDictionary<string, string> _preauthData = new LockedDictionary<string, string>(byte.MaxValue);
 
         internal static ExPlayer _hostPlayer;

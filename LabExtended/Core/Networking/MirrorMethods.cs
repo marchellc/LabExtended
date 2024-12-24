@@ -1,15 +1,15 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Collections;
 using LabExtended.API.Collections.Locked;
+
 using LabExtended.Extensions;
+
 using LabExtended.Utilities;
+using LabExtended.Utilities.Values;
 
 using Mirror;
 
-using PluginAPI.Loader;
-
 using System.Reflection.Emit;
-using LabExtended.Utilities.Values;
+
 using UnityEngine;
 
 namespace LabExtended.Core.Networking
@@ -39,7 +39,7 @@ namespace LabExtended.Core.Networking
                             .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
                         Action<NetworkIdentity, NetworkConnection>;
 
-                var assembly = AssemblyLoader.MainAssembly;
+                var assembly = typeof(ServerConsole).Assembly;
                 var types = assembly.GetTypes();
 
                 for (int i = 0; i < types.Length; i++)
