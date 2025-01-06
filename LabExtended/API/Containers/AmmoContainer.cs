@@ -132,11 +132,17 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets a value indicating whether the player has the required amount of ammo.
         /// </summary>
-        /// <param name="itemType">The type of ammo to count.</param>
+        /// <param name="ammoType">The type of ammo to count.</param>
         /// <param name="minAmount">The minimum required amount of ammo.</param>
         /// <returns><see langword="true"/> if the player has at least <see cref="minAmount"/> of ammo, otherwise <see langword="false"/></returns>
-        public bool HasAmmo(ItemType itemType, ushort minAmount = 1)
-            => GetAmmo(itemType) >= minAmount;
+        public bool HasAmmo(ItemType ammoType, ushort minAmount = 1)
+            => GetAmmo(ammoType) >= minAmount;
+
+        public bool TryGetReserveAmmo(ItemType ammoType, out int reserveAmmo)
+            => ReserveAmmoSync.TryGet(Inventory._hub, ammoType, out reserveAmmo);
+
+        public void SetReserveAmmo(ItemType ammoType, int reserveAmmo)
+            => ReserveAmmoSync.Set(Inventory._hub, ammoType, reserveAmmo);
 
         /// <summary>
         /// Removes all the player's ammo.

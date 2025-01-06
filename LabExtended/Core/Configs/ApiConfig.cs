@@ -18,6 +18,9 @@ namespace LabExtended.Core.Configs
         [Description("Pooling API configuration.")]
         public PoolSection PoolSection { get; set; } = new PoolSection();
 
+        [Description("Multi Threading configuration.")]
+        public MultiThreadSection MultiThreadSection { get; set; } = new MultiThreadSection();
+        
         [Description("Voice chat threading configuration.")]
         public ThreadedVoiceSection ThreadedVoiceSection { get; set; } = new ThreadedVoiceSection();
 

@@ -8,7 +8,7 @@ public class DictionaryPool<TKey, TValue> : PoolBase<Dictionary<TKey, TValue>>
 
     public static DictionaryPool<TKey, TValue> Shared => _shared ??= new DictionaryPool<TKey, TValue>();
 
-    public override string Name { get; } = $"DictionaryPool<{typeof(TKey).FullName}, {typeof(TValue).FullName}>";
+    public override string Name { get; } = $"DictionaryPool<{typeof(TKey).Name}, {typeof(TValue).Name}>";
 
     public Dictionary<TKey, TValue> Rent()
         => base.Rent(null, () => new Dictionary<TKey, TValue>());

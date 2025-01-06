@@ -7,7 +7,7 @@ public class ObjectPool<T> : PoolBase<T>
 
     public static ObjectPool<T> Shared => _shared ??= new ObjectPool<T>();
 
-    public override string Name { get; } = $"ObjectPool<{typeof(T).FullName}>";
+    public override string Name { get; } = $"ObjectPool<{typeof(T).Name}>";
 
     public override void HandleRent(T item)
     {

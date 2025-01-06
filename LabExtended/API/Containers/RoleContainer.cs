@@ -1,4 +1,7 @@
-﻿using PlayerRoles;
+﻿using LabExtended.Extensions;
+using LabExtended.Utilities.Values;
+
+using PlayerRoles;
 using PlayerRoles.Voice;
 using PlayerRoles.Spectating;
 using PlayerRoles.FirstPersonControl;
@@ -15,9 +18,9 @@ using PlayerRoles.PlayableScps.Scp939;
 using PlayerRoles.PlayableScps.Scp3114;
 using PlayerRoles.PlayableScps.Scp049.Zombies;
 
-using UnityEngine;
+using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
 
-using LabExtended.Utilities.Values;
+using UnityEngine;
 
 namespace LabExtended.API.Containers
 {
@@ -47,6 +50,18 @@ namespace LabExtended.API.Containers
             set => Manager.ServerSetRole(value, RoleChangeReason.RemoteAdmin, RoleSpawnFlags.All);
         }
 
+        public EmotionPresetType Emotion
+        {
+            get => EmotionSync.GetEmotionPreset(Manager._hub);
+            set => EmotionSync.ServerSetEmotionPreset(Manager._hub, value);
+        }
+
+        public WearableElements WearableElements
+        {
+            get => WearableSync.GetWearables(Manager._hub);
+            set => WearableSync.OverrideWearables(Manager._hub, value);
+        }
+
         public Team Team => Type.GetTeam();
         public Faction Faction => Team.GetFaction();
 
@@ -72,6 +87,48 @@ namespace LabExtended.API.Containers
         public bool IsSpectator => Type is RoleTypeId.Spectator;
         public bool IsTutorial => Type is RoleTypeId.Tutorial;
         public bool IsNone => Type is RoleTypeId.None;
+
+        public bool IsWearingScp268
+        {
+            get => WearableElements.Any(WearableElements.Scp268Hat);
+            set
+            {
+                if (value)
+                {
+                    if (IsWearingScp268)
+                        return;
+
+                    WearableElements |= WearableElements.Scp268Hat;
+                    return;
+                }
+
+                if (!IsWearingScp268)
+                    return;
+
+                WearableElements &= ~WearableElements.Scp268Hat;
+            }
+        }
+        
+        public bool IsWearingScp1344
+        {
+            get => WearableElements.Any(WearableElements.Scp1344Goggles);
+            set
+            {
+                if (value)
+                {
+                    if (IsWearingScp268)
+                        return;
+
+                    WearableElements |= WearableElements.Scp1344Goggles;
+                    return;
+                }
+
+                if (!IsWearingScp268)
+                    return;
+
+                WearableElements &= ~WearableElements.Scp1344Goggles;
+            }
+        }
 
         public IFpcRole FpcRole => Role as IFpcRole;
         public IVoiceRole VoiceRole => Role as IVoiceRole;
