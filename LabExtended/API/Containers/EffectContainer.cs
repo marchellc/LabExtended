@@ -4,14 +4,13 @@ using CustomRendering;
 
 using InventorySystem.Items.Usables.Scp244.Hypothermia;
 
-using LabExtended.API.Pooling;
 using LabExtended.Core;
 using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
 
 using System.Reflection;
-
+using LabExtended.Core.Pooling.Pools;
 using UnityEngine;
 
 namespace LabExtended.API.Containers
@@ -115,7 +114,7 @@ namespace LabExtended.API.Containers
         {
             try
             {
-                var dict = DictionaryPool<Type, StatusEffectBase>.Rent();
+                var dict = new Dictionary<Type, StatusEffectBase>();
                 var props = ListPool<PropertyInfo>.Shared.Rent();
 
                 foreach (var effect in controller.AllEffects)

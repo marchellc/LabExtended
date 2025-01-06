@@ -44,7 +44,7 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
             if (TickSection.UseTickLoop)
             {
                 _loop = new UnityTickLoop();
-                _loop.OnInvoke += OnUpdate;
+                _loop.OnInvoke = onTick;
 
                 type = "Player Loop";
             }
@@ -53,7 +53,7 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
                 var go = new GameObject($"Unity Tick Component ({DateTime.Now.Ticks})");
 
                 _component = go.AddComponent<UnityTickComponent>();
-                _component.SetUpdate(OnUpdate);
+                _component.SetUpdate(onTick);
 
                 UnityEngine.Object.DontDestroyOnLoad(go);
                 UnityEngine.Object.DontDestroyOnLoad(_component);
@@ -63,18 +63,20 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
             else if (TickSection.UseTickCoroutine)
             {
                 _handle = Timing.RunCoroutine(TickCoroutine());
+                _onTick = onTick;
 
                 type = "Coroutine";
             }
-
-            _onTick = onTick;
         }
 
         public static void Destroy()
         {
+            _onTick = null;
+            
             if (_loop != null)
             {
-                _loop.OnInvoke -= OnUpdate;
+                _loop.OnInvoke = null;
+                
                 _loop.Stop();
                 _loop = null;
             }
@@ -94,11 +96,6 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
 
                 _handle = null;
             }    
-        }
-
-        private static void OnUpdate()
-        {
-            _onTick.InvokeSafe();
         }
 
         private static IEnumerator<float> TickCoroutine()
@@ -126,7 +123,7 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
                     if (MaxTickRate < 0f || TickRate > MaxTickRate)
                         MaxTickRate = TickRate;
 
-                    OnUpdate();
+                    _onTick.InvokeSafe();
                 }
                 catch (Exception ex)
                 {

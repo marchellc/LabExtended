@@ -1,5 +1,6 @@
-﻿using LabExtended.API.Pooling;
-using LabExtended.Core;
+﻿using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Extensions;
 
 using Mirror;
@@ -9,7 +10,7 @@ using System.Collections.ObjectModel;
 namespace LabExtended.API.Prefabs
 {
     /// <summary>
-    /// Servers as a list of all known prefabs.
+    /// Serves as a list of all known prefabs.
     /// </summary>
     public static class PrefabList
     {
@@ -24,7 +25,7 @@ namespace LabExtended.API.Prefabs
             {
                 if (_allPrefabs is null)
                 {
-                    var allDict = DictionaryPool<string, PrefabDefinition>.Rent();
+                    var allDict = DictionaryPool<string, PrefabDefinition>.Shared.Rent();
                     var allProps = typeof(PrefabList).GetAllProperties();
 
                     foreach (var prop in allProps)
@@ -36,6 +37,8 @@ namespace LabExtended.API.Prefabs
                     }
 
                     _allPrefabs = new ReadOnlyDictionary<string, PrefabDefinition>(allDict);
+
+                    DictionaryPool<string, PrefabDefinition>.Shared.Return(allDict);
 
                     foreach (var prefab in NetworkClient.prefabs)
                     {

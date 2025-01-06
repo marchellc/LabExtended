@@ -1,4 +1,5 @@
-﻿using LabExtended.API.Pooling;
+﻿using LabExtended.Core.Pooling.Pools;
+
 using System.Drawing;
 
 using Color = UnityEngine.Color;
@@ -33,7 +34,7 @@ namespace LabExtended.Commands.Parsing
                 else
                 {
                     var args = value.Split(' ');
-                    var axis = DictionaryPool<char, float>.Rent();
+                    var axis = DictionaryPool<char, float>.Shared.Rent();
 
                     axis['a'] = 0f;
                     axis['r'] = 0f;
@@ -42,13 +43,13 @@ namespace LabExtended.Commands.Parsing
 
                     if (!AxisParser.ParseAxis(args, axis, out failureMessage))
                     {
-                        DictionaryPool<char, float>.Return(axis);
+                        DictionaryPool<char, float>.Shared.Return(axis);
                         return false;
                     }
 
                     result = new Color(axis['r'], axis['g'], axis['b'], axis['a']);
 
-                    DictionaryPool<char, float>.Return(axis);
+                    DictionaryPool<char, float>.Shared.Return(axis);
                     return true;
                 }
             }

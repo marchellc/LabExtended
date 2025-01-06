@@ -5,15 +5,14 @@ using InventorySystem.Configs;
 
 using InventorySystem.Items;
 using InventorySystem.Items.Armor;
-using InventorySystem.Items.Firearms;
-using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
-using LabExtended.API.Pooling;
 using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
@@ -43,7 +42,7 @@ namespace LabExtended.Patches.Events
                 var dropItems = InventoryItemProvider.KeepItemsAfterEscaping;
 
                 var itemsToAdd = ListPool<ItemType>.Shared.Rent();
-                var ammoToAdd = DictionaryPool<ItemType, ushort>.Rent();
+                var ammoToAdd = DictionaryPool<ItemType, ushort>.Shared.Rent();
 
                 var previousItems = new List<ItemPickupBase>();
 
@@ -58,7 +57,7 @@ namespace LabExtended.Patches.Events
                 if (!HookRunner.RunEvent(grantingArgs, true))
                 {
                     ListPool<ItemType>.Shared.Return(itemsToAdd);
-                    DictionaryPool<ItemType, ushort>.Return(ammoToAdd);
+                    DictionaryPool<ItemType, ushort>.Shared.Return(ammoToAdd);
                     return false;
                 }
 
@@ -111,7 +110,7 @@ namespace LabExtended.Patches.Events
                 ListPool<ItemType>.Shared.Return(itemsToAdd);
                 ListPool<ItemBase>.Shared.Return(addedItems);
 
-                DictionaryPool<ItemType, ushort>.Return(ammoToAdd);
+                DictionaryPool<ItemType, ushort>.Shared.Return(ammoToAdd);
                 return false;
             }
             catch (Exception ex)

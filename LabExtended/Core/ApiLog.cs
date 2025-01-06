@@ -19,7 +19,7 @@ namespace LabExtended.Core
             if (source is null || source.Length < 1 || source[0] == ' ')
                 source = GetSourceType();
 
-            AppendLog($"&7[&b&6{source}&B&7] &7[&b&2INFO&B&7]&r {msg}", ConsoleColor.White);
+            AppendLog($"&7[&b&6INFO&B&7] &7[&b&2{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
         public static void Warn(string source, object msg)
@@ -30,7 +30,7 @@ namespace LabExtended.Core
 	        if (source is null || source.Length < 1 || source[0] == ' ')
 		        source = GetSourceType();
 
-	        AppendLog($"&7[&b&3{source}&B&7] &7[&b&3WARN&B&7]&r {msg}", ConsoleColor.White);
+	        AppendLog($"&7[&b&3WARN&B&7] &7[&b&3{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
         public static void Error(string source, object msg)
@@ -41,7 +41,7 @@ namespace LabExtended.Core
 	        if (source is null || source.Length < 1 || source[0] == ' ')
 		        source = GetSourceType();
 
-	        AppendLog($"&7[&b&1{source}&B&7] &7[&b&1ERROR&B&7]&r {msg}", ConsoleColor.White);
+	        AppendLog($"&7[&b&1ERROR&B&7] &7[&b&1{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
         public static void Debug(string source, object msg)
@@ -58,7 +58,7 @@ namespace LabExtended.Core
             if (msg is null)
 	            throw new ArgumentNullException(nameof(msg));
 
-            AppendLog($"&7[&b&5{source}&B&7] &7[&b&5DEBUG&B&7]&r {msg}", ConsoleColor.White);
+            AppendLog($"&7[&b&5DEBUG&B&7] &7[&b&5{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
         public static bool CheckDebug(string sourceName, bool ifMissingConfig = true)

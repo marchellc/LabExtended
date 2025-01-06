@@ -1,8 +1,8 @@
 ﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Pooling;
 
 using LabExtended.Core;
 using LabExtended.Core.Ticking;
+using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Extensions;
 using LabExtended.Utilities.Generation;
@@ -157,7 +157,7 @@ namespace LabExtended.API.Modules
 
             _tickTimer = DateTime.Now;
 
-            var modulesToRemove = DictionaryPool<string, List<TransientModule>>.Rent();
+            var modulesToRemove = DictionaryPool<string, List<TransientModule>>.Shared.Rent();
 
             foreach (var modulePair in _cachedModules)
             {
@@ -211,7 +211,7 @@ namespace LabExtended.API.Modules
                 ListPool<TransientModule>.Shared.Return(removedPair.Value);
             }
 
-            DictionaryPool<string, List<TransientModule>>.Return(modulesToRemove);
+            DictionaryPool<string, List<TransientModule>>.Shared.Return(modulesToRemove);
         }
     }
 }

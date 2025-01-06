@@ -1,9 +1,11 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Pooling;
 using LabExtended.Attributes;
-using LabExtended.Core.Ticking;
-using LabExtended.Events.Player;
 using LabExtended.Extensions;
+
+using LabExtended.Core.Ticking;
+using LabExtended.Core.Pooling.Pools;
+
+using LabExtended.Events.Player;
 using LabExtended.Patches.Functions.Players;
 
 using Mirror;
@@ -32,7 +34,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
         private static bool _debug;
 
         internal static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
-        internal static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Rent();
+        internal static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Shared.Rent();
 
         public static bool ForceSendNextFrame { get; set; }
 
@@ -81,7 +83,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                         continue;
 
                     if (!_syncCache.TryGetValue(player, out var syncCache))
-                        _syncCache[player] = syncCache = DictionaryPool<ExPlayer, PositionData>.Rent();
+                        _syncCache[player] = syncCache = DictionaryPool<ExPlayer, PositionData>.Shared.Rent();
 
                     _writer.Reset();
                     _writer.WriteMessage<FpcPositionMessage>(_ =>
@@ -195,7 +197,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
             _sending = true;
 
             if (_syncCache.TryGetValue(player, out var syncCache))
-                DictionaryPool<ExPlayer, PositionData>.Return(syncCache);
+                DictionaryPool<ExPlayer, PositionData>.Shared.Return(syncCache);
 
             _syncCache.Remove(player);
             _syncCache.ForEach(x => x.Value.Remove(player));

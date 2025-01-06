@@ -2,10 +2,12 @@
 
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
-using LabExtended.API.Pooling;
+
 using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Core.Ticking;
+using LabExtended.Core.Pooling;
 
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -13,7 +15,7 @@ using LabExtended.Utilities;
 using NorthwoodLib.Pools;
 
 using System.Text;
-
+using LabExtended.Core.Pooling.Pools;
 using UnityEngine;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
@@ -351,7 +353,7 @@ namespace LabExtended.API.Hints
                             {
                                 if (element._prevCompiled is null || element._prevCompiled != content)
                                 {
-                                    element.Data.ForEach(x => ObjectPool<HintData>.Return(x));
+                                    element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
                                     element.Data.Clear();
 
                                     element._prevCompiled = content;

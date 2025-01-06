@@ -43,7 +43,7 @@ namespace LabExtended.API.Toys
         public byte ControllerId
         {
             get => Base.NetworkControllerId;
-            set => Base.NetworkControllerId = value;
+            set => Base.NetworkControllerId = Base.Playback!.ControllerId = value;
         }
 
         public float MaxDistance

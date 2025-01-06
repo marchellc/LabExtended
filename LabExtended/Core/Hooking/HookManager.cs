@@ -13,6 +13,8 @@ using MEC;
 
 using System.Reflection;
 
+using HarmonyLib;
+
 namespace LabExtended.Core.Hooking
 {
     public static class HookManager
@@ -51,7 +53,7 @@ namespace LabExtended.Core.Hooking
         {
             foreach (var method in type.GetAllMethods())
             {
-                Register(method, typeInstance, false);
+                Register(method, typeInstance);
                 RegisterDelegates(type, typeInstance);
             }
         }
@@ -78,13 +80,13 @@ namespace LabExtended.Core.Hooking
             => _activeDelegates.ForEach(p => p.Value.RemoveAll(h => h.Event.DeclaringType != null && h.Event.DeclaringType == type && h.TypeInstance.IsEqualTo(typeInstance)));
 
         public static void Register<T>(Action<T> handler)
-            => RegisterInternal(handler.Method, handler.Target, true, true, null);
+            => RegisterInternal(handler.Method, handler.Target, true, null);
 
         public static void Register<T, TReturn>(Func<T, TReturn> handler) where TReturn : struct
-            => RegisterInternal(handler.Method, handler.Target, true, true, null);
+            => RegisterInternal(handler.Method, handler.Target, true, null);
 
-        public static void Register(MethodInfo method, object typeInstance = null, bool logAdditionalInfo = false)
-            => RegisterInternal(method, typeInstance, logAdditionalInfo, false, method.GetCustomAttribute<HookDescriptorAttribute>());
+        public static void Register(MethodInfo method, object typeInstance = null)
+            => RegisterInternal(method, typeInstance, false, method.GetCustomAttribute<HookDescriptorAttribute>());
 
         public static void RegisterDelegates(Type type, object typeInstance)
         {
@@ -169,7 +171,7 @@ namespace LabExtended.Core.Hooking
             }
         }
 
-        private static void RegisterInternal(MethodInfo method, object typeInstance, bool log, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute)
+        private static void RegisterInternal(MethodInfo method, object typeInstance, bool skipAttributes, HookDescriptorAttribute hookDescriptorAttribute)
         {
             try
             {
@@ -179,10 +181,21 @@ namespace LabExtended.Core.Hooking
                 if (!method.IsStatic && !method.DeclaringType.IsTypeInstance(typeInstance))
                     return;
 
-                if (_activeHooks.Any(p => p.Value.Any(h => h.Instance.IsEqualTo(typeInstance, true) && h.Method == method)))
+                foreach (var activeHookPair in _activeHooks)
                 {
-                    ApiLog.Warn("Hooking API", $"Tried to register a duplicate hook: &3{method.GetMemberName()}&r");
-                    return;
+                    foreach (var activeHook in activeHookPair.Value)
+                    {
+                        if (activeHook.Method != method)
+                            continue;
+
+                        if ((!method.IsStatic || !method.DeclaringType.IsStatic()) &&
+                            (activeHook.Instance != null && typeInstance is null)
+                            || (activeHook.Instance is null && typeInstance != null)
+                            || (activeHook.Instance != typeInstance))
+                            continue;
+
+                        return;
+                    }
                 }
 
                 var methodArgs = method.GetAllParameters();
@@ -219,7 +232,7 @@ namespace LabExtended.Core.Hooking
                     priority = newPriority;
                 }
 
-                var hook = new HookInfo(method, typeInstance, hookRunner, hookBinder, priority, hookDescriptorAttribute?.UseReflection ?? false);
+                var hook = new HookInfo(method, (method.IsStatic || method.DeclaringType.IsStatic()) ? null : typeInstance, hookRunner, hookBinder, priority, hookDescriptorAttribute?.UseReflection ?? false);
 
                 hooks.Add(hook);
 

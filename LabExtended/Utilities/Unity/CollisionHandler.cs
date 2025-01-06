@@ -13,6 +13,8 @@ namespace LabExtended.Utilities.Unity
         public static event Action<CollisionHandler, Collision> OnCollision;
 
         private Func<Collision, bool> _onCollision;
+        
+        public object CustomData { get; set; }
 
         private void OnCollisionEnter(Collision collision)
         {
@@ -32,7 +34,7 @@ namespace LabExtended.Utilities.Unity
         /// <param name="onCollision">The collision handler.</param>
         /// <returns>The <see cref="CollisionHandler"/> instance if found, otherwise <see langword="null"/>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static CollisionHandler GetOrAdd(GameObject gameObject, Func<Collision, bool> onCollision = null)
+        public static CollisionHandler GetOrAdd(GameObject gameObject, object customData = null, Func<Collision, bool> onCollision = null)
         {
             if (gameObject is null)
                 throw new ArgumentNullException(nameof(gameObject));
@@ -45,6 +47,7 @@ namespace LabExtended.Utilities.Unity
 
             collisionHandler = gameObject.AddComponent<CollisionHandler>();
             collisionHandler._onCollision = onCollision;
+            collisionHandler.CustomData = customData;
 
             return collisionHandler;
         }
@@ -56,7 +59,7 @@ namespace LabExtended.Utilities.Unity
         /// <param name="onCollision">The collision handler.</param>
         /// <returns>The <see cref="CollisionHandler"/> instance if found, otherwise <see langword="null"/>.</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public static CollisionHandler GetOrAdd(MonoBehaviour monoBehaviour, Func<Collision, bool> onCollision = null)
-            => GetOrAdd(monoBehaviour.gameObject, onCollision);
+        public static CollisionHandler GetOrAdd(MonoBehaviour monoBehaviour, object customData = null, Func<Collision, bool> onCollision = null)
+            => GetOrAdd(monoBehaviour.gameObject, customData, onCollision);
     }
 }

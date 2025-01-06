@@ -1,10 +1,24 @@
-﻿namespace LabExtended.API.Hints
+﻿using LabExtended.Core.Pooling;
+
+namespace LabExtended.API.Hints
 {
-    public class HintData
+    public class HintData : PoolObject
     {
-        public float VerticalOffset;
-        public string Content;
-        public int Size;
-        public int Id;
+        public float VerticalOffset { get; set; }
+        
+        public string Content { get; set; }
+        
+        public int Size { get; set; }
+        public int Id { get; set; }
+
+        public override void OnReturned()
+        {
+            base.OnReturned();
+
+            VerticalOffset = 0f;
+            Content = null;
+            Size = 0;
+            Id = 0;
+        }
     }
 }

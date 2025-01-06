@@ -6,8 +6,9 @@ using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Interfaces;
 
 using LabExtended.API;
-using LabExtended.API.Pooling;
 using LabExtended.API.Collections.Locked;
+
+using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
 
@@ -31,37 +32,38 @@ namespace LabExtended.Commands
         {
             base.OnCommand(sender, ctx, args);
 
-            var buffer = ObjectPool<object[]>.Rent(null, () => new object[1]);
+            var buffer = ArrayPool<object>.Shared.Rent(1);
 
             try
             {
-                var collection = ObjectPool<T>.Rent(null, Instantiate);
-
-                for (int i = 0; i < _members.Count; i++)
+                using (var collectionPooled = WrapperPool<T>.Shared.Rent(null, Instantiate))
                 {
-                    var member = _members[i];
+                    var collection = collectionPooled.Value;
+                    
+                    for (int i = 0; i < _members.Count; i++)
+                    {
+                        var member = _members[i];
 
-                    buffer[0] = args.Get(member.Definition.Name);
+                        buffer[0] = args.Get(member.Definition.Name);
 
-                    member.SetValue(collection, buffer);
+                        member.SetValue(collection, buffer);
+                    }
+
+                    if (collection is IArgumentCollection argumentCollection)
+                        argumentCollection.Initialize(sender, ctx, args);
+
+                    OnCommand(sender, ctx, collection);
+
+                    if (collection is IDisposable disposable)
+                        disposable.Dispose();
                 }
-
-                if (collection is IArgumentCollection argumentCollection)
-                    argumentCollection.Initialize(sender, ctx, args);
-
-                OnCommand(sender, ctx, collection);
-
-                if (collection is IDisposable disposable)
-                    disposable.Dispose();
-
-                ObjectPool<T>.Return(collection);
             }
             catch (Exception ex)
             {
                 ctx.RespondFail(ex);
             }
 
-            ObjectPool<object[]>.Return(buffer);
+            ArrayPool<object>.Shared.Return(buffer);
         }
 
 

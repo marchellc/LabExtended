@@ -25,8 +25,9 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerChangingRolePatch
     {
-        static PlayerChangingRolePatch()
-            => FastEvents<PlayerRoleManager.RoleChanged>.DefineEvent(typeof(PlayerRoleManager), "OnRoleChanged");
+        public static FastEvent<PlayerRoleManager.RoleChanged> OnRoleChanged { get; } =
+            FastEvents.DefineEvent<PlayerRoleManager.RoleChanged>(typeof(PlayerRoleManager),
+                nameof(PlayerRoleManager.OnRoleChanged));
         
         [HookPatch(typeof(PlayerChangedRoleArgs))]
         [HookPatch(typeof(PlayerChangingRoleArgs))]
@@ -86,7 +87,7 @@ namespace LabExtended.Patches.Events
                 HookRunner.RunEvent(changedArgs);
 
                 if (wasSet)
-                    FastEvents<PlayerRoleManager.RoleChanged>.InvokeEvent(typeof(PlayerRoleManager), "OnRoleChanged", null, player.Hub, prevRole, newRole);
+                    OnRoleChanged.InvokeEvent(null, player.Hub, prevRole, newRole);
 
                 return false;
             }

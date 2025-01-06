@@ -1,4 +1,4 @@
-﻿using LabExtended.API.Pooling;
+﻿using LabExtended.Core.Pooling.Pools;
 
 using UnityEngine;
 
@@ -14,14 +14,14 @@ namespace LabExtended.Commands.Parsing
             failureMessage = null;
             result = null;
 
-            var axis = DictionaryPool<char, float>.Rent();
+            var axis = DictionaryPool<char, float>.Shared.Rent(2);
 
             axis['x'] = 1f;
             axis['y'] = 1f;
 
             if (!AxisParser.ParseAxis(value.Split(' '), axis, out var error))
             {
-                DictionaryPool<char, float>.Return(axis);
+                DictionaryPool<char, float>.Shared.Return(axis);
 
                 failureMessage = $"Error: {error}";
                 return false;
@@ -29,7 +29,7 @@ namespace LabExtended.Commands.Parsing
 
             result = new Vector2(axis['x'], axis['y']);
 
-            DictionaryPool<char, float>.Return(axis);
+            DictionaryPool<char, float>.Shared.Return(axis);
             return true;
         }
     }

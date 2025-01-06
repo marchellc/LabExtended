@@ -1,9 +1,9 @@
 ﻿using LabExtended.API.Modules;
-using LabExtended.API.Pooling;
 using LabExtended.API.Voice.Modifiers.Pitch;
 using LabExtended.API.Voice.Threading;
 
 using LabExtended.Core.Hooking;
+using LabExtended.Core.Pooling.Pools;
 using LabExtended.Core.Ticking.Distributors.Unity;
 
 using LabExtended.Events.Player;

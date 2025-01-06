@@ -1,6 +1,7 @@
-﻿using LabApi.Events.Arguments.PlayerEvents;
+﻿using LabApi.Events;
 using LabApi.Events.Handlers;
-
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Arguments.ServerEvents;
 using LabExtended.API;
 using LabExtended.API.Enums;
 using LabExtended.API.Voice;
@@ -19,6 +20,8 @@ using LabExtended.Events.Player;
 
 using LabExtended.Attributes;
 using LabExtended.Commands;
+using LabExtended.Core.Pooling;
+using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
 
@@ -53,6 +56,7 @@ namespace LabExtended.Events
             DummyNetworkConnection._idGenerator = 65535;
 
             PositionSynchronizer.InternalHandleWaiting();
+            PoolManager.OnWaiting();
             
             RoundEvents.InvokeWaiting();
         }
@@ -82,13 +86,13 @@ namespace LabExtended.Events
             RoundEvents.InvokeStarted();
         }
 
-        private static void InternalHandleRoundEnd()
+        private static void InternalHandleRoundEnd(RoundEndedEventArgs _)
         {
             ExRound.State = RoundState.Ended;
             RoundEvents.InvokeEnded();
         }
 
-        internal static void InternalHandlePlayerAuth(PlayerPreAuthenticatingEventArgs ev)
+        private static void InternalHandlePlayerAuth(PlayerPreAuthenticatingEventArgs ev)
         {
             ExPlayer._preauthData[ev.UserId] = ev.Region;
         }
@@ -134,7 +138,7 @@ namespace LabExtended.Events
                 if (player.IsNpc)
                     ExPlayer._npcPlayers.Add(player);
                 else
-                    ExPlayer._allPlayers.Add(player);
+                    ExPlayer._players.Add(player);
             }
 
             if (!player.IsNpc && !player.IsServer)
@@ -199,18 +203,18 @@ namespace LabExtended.Events
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)
         {
-            if (args.Player != null)
-            {
-                PositionSynchronizer._syncCache.Remove(args.Player);
+            if (args.Player is null)
+                return;
 
-                foreach (var player in ExPlayer._allPlayers)
-                {
-                    if (PositionSynchronizer._syncCache.TryGetValue(player, out var cache))
-                        cache.Remove(args.Player);
-                }
+            PositionSynchronizer._syncCache.Remove(args.Player);
+
+            foreach (var player in ExPlayer._allPlayers)
+            {
+                if (PositionSynchronizer._syncCache.TryGetValue(player, out var cache))
+                    cache.Remove(args.Player);
             }
 
-            if (args.Player is null || args.Player.Voice is null)
+            if (args.Player.Voice is null)
                 return;
 
             var profilesToRemove = ListPool<VoiceProfile>.Shared.Rent();
@@ -230,12 +234,11 @@ namespace LabExtended.Events
         [LoaderInitialize(1)]
         private static void RegisterEvents()
         {
-            PlayerEvents.PreAuthenticating += InternalHandlePlayerAuth;
-            
-            ServerEvents.WaitingForPlayers += InternalHandleRoundWaiting;
-            ServerEvents.RoundRestarted += InternalHandleRoundRestart;
-            ServerEvents.RoundStarted += InternalHandleRoundStart;
-            ServerEvents.RoundEnded += _ => InternalHandleRoundEnd();
+            EventExtensions.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(typeof(PlayerEvents), nameof(PlayerEvents.PreAuthenticating), InternalHandlePlayerAuth);
+            EventExtensions.InsertFirst<LabEventHandler<RoundEndedEventArgs>>(typeof(ServerEvents), nameof(ServerEvents.RoundEnded), InternalHandleRoundEnd);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.WaitingForPlayers), InternalHandleRoundWaiting);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.RoundRestarted), InternalHandleRoundRestart);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.RoundStarted), InternalHandleRoundStart);
         }
     }
 }

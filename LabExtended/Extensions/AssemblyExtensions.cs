@@ -57,7 +57,7 @@ namespace LabExtended.Extensions
             {
                 try
                 {
-                    method.Invoke(null, null);
+                    method.Invoke(null, args);
                 }
                 catch (Exception ex)
                 {

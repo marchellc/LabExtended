@@ -12,7 +12,7 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
     {
         private struct UnityTickDistributorLoop { }
 
-        private static event Action _customLoop;
+        public static event Action OnLoop;
 
         static UnityTickLoop()
             => PlayerLoopHelper.ModifySystem(x => 
@@ -25,16 +25,15 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
 
         private Stopwatch _watch = new Stopwatch();
 
-        public event Action OnInvoke;
+        public Action OnInvoke;
 
         public UnityTickLoop()
-            => _customLoop += Invoke;
+            => OnLoop += Invoke;
 
         public void Stop()
-        {
+        { 
             OnInvoke = null;
-
-            _customLoop -= Invoke;
+            OnLoop -= Invoke;
 
             _watch?.Reset();
             _watch = null;
@@ -68,6 +67,6 @@ namespace LabExtended.Core.Ticking.Distributors.Unity
         }
 
         private static void InvokeCustom()
-            => _customLoop.InvokeSafe();
+            => OnLoop.InvokeSafe();
     }
 }

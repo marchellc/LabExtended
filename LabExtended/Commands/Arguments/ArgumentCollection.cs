@@ -1,10 +1,10 @@
-﻿using LabExtended.API.Pooling;
+﻿using LabExtended.Core.Pooling.Pools;
 
 namespace LabExtended.Commands.Arguments
 {
     public class ArgumentCollection : IDisposable
     {
-        private Dictionary<string, object> _args = DictionaryPool<string, object>.Rent();
+        private Dictionary<string, object> _args = DictionaryPool<string, object>.Shared.Rent();
 
         public int Size => _args.Count;
 
@@ -51,7 +51,7 @@ namespace LabExtended.Commands.Arguments
             if (_args is null)
                 return;
 
-            DictionaryPool<string, object>.Return(_args);
+            DictionaryPool<string, object>.Shared.Return(_args);
 
             _args = null;
         }

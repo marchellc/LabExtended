@@ -237,7 +237,7 @@ namespace LabExtended.API.Settings
                                 
                                 idSettings[player] = builtSetting;
 
-                                HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting));
+                                HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting, null, player));
                                 
                                 builtList.Add(builtSetting.Base);
                             }
@@ -277,7 +277,7 @@ namespace LabExtended.API.Settings
                                         
                                         idSettings[player] = menuSetting;
 
-                                        HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting));
+                                        HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, builtMenu, player));
                                         
                                         builtList.Add(menuSetting.Base);
                                     }

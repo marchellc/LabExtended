@@ -22,12 +22,12 @@ namespace LabExtended.Patches.Functions
 {
   public static class RoundEndPatch
   {
-    static RoundEndPatch()
-      => FastEvents<RoundSummary.RoundEnded>.DefineEvent(typeof(RoundSummary), nameof(RoundSummary.OnRoundEnded));
+    public static FastEvent<RoundSummary.RoundEnded> OnRoundEnded { get; } =
+      FastEvents.DefineEvent<RoundSummary.RoundEnded>(typeof(RoundSummary), nameof(RoundSummary.OnRoundEnded));
 
     public static Func<RoundSummary, IEnumerator<float>> GetRoundProcessor { get; set; } =
       x => DefaultRoundProcessor(x);
-    
+
     [HarmonyPatch(typeof(RoundSummary), nameof(RoundSummary.Start))]
     public static bool Prefix(RoundSummary __instance)
     {
@@ -35,18 +35,18 @@ namespace LabExtended.Patches.Functions
       RoundSummary._singletonSet = true;
 
       RoundSummary.roundTime = 0;
-      
+
       __instance.KeepRoundOnOne = !ConfigFile.ServerConfig.GetBool("end_round_on_one_player");
-      
+
       if (GetRoundProcessor != null)
         Timing.RunCoroutine(GetRoundProcessor(__instance), Segment.FixedUpdate);
-      
+
       RoundSummary.KilledBySCPs = 0;
       RoundSummary.EscapedClassD = 0;
       RoundSummary.EscapedScientists = 0;
       RoundSummary.ChangedIntoZombies = 0;
       RoundSummary.Kills = 0;
-      
+
       PlayerRoleManager.OnServerRoleSet += __instance.OnServerRoleSet;
       PlayerStats.OnAnyPlayerDied += __instance.OnAnyPlayerDied;
       return false;
@@ -145,12 +145,12 @@ namespace LabExtended.Patches.Functions
             if (summary._roundEnded)
             {
               var num10 = num1 > 0 ? 1 : 0;
-              
+
               var flag1 = num2 > 0;
               var flag2 = num3 > 0;
-              
+
               var leadingTeam = RoundSummary.LeadingTeam.Draw;
-              
+
               if (num10 != 0)
                 leadingTeam = RoundSummary.EscapedScientists >= RoundSummary.EscapedClassD
                   ? RoundSummary.LeadingTeam.FacilityForces
@@ -165,17 +165,17 @@ namespace LabExtended.Patches.Functions
                 leadingTeam = RoundSummary.EscapedClassD >= RoundSummary.EscapedScientists
                   ? RoundSummary.LeadingTeam.ChaosInsurgency
                   : RoundSummary.LeadingTeam.Draw;
-              
+
               var endingArgs = new RoundEndingEventArgs(leadingTeam);
-              
+
               LabApi.Events.Handlers.ServerEvents.OnRoundEnding(endingArgs);
 
               if (endingArgs.IsAllowed)
               {
                 leadingTeam = endingArgs.LeadingTeam;
 
-                FastEvents<RoundSummary.RoundEnded>.InvokeEvent(typeof(RoundSummary), nameof(RoundSummary.OnRoundEnded),
-                  null);
+                OnRoundEnded.InvokeEvent(null);
+
                 FriendlyFireConfig.PauseDetector = true;
 
                 string str = "Round finished! Anomalies: " + num3.ToString() + " | Chaos: " + num2.ToString() +

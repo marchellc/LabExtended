@@ -1,6 +1,7 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Hints;
-using LabExtended.API.Pooling;
+
+using LabExtended.Core.Pooling.Pools;
 
 using System.Text.RegularExpressions;
 
@@ -120,7 +121,7 @@ namespace LabExtended.Utilities
                     if (messages.Count > 0)
                         vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
-                    messages.Add(ObjectPool<HintData>.Rent(x =>
+                    messages.Add(ObjectPool<HintData>.Shared.Rent(x =>
                     {
                         x.Content = line;
                         x.Size = biggestPixelSize;
@@ -155,7 +156,7 @@ namespace LabExtended.Utilities
                         if (messages.Count > 0)
                             vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
-                        messages.Add(ObjectPool<HintData>.Rent(x =>
+                        messages.Add(ObjectPool<HintData>.Shared.Rent(x =>
                         {
                             x.Content = line;
                             x.Size = biggestPixelSize;
@@ -175,7 +176,7 @@ namespace LabExtended.Utilities
                         if (messages.Count > 0)
                             vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
-                        messages.Add(ObjectPool<HintData>.Rent(x =>
+                        messages.Add(ObjectPool<HintData>.Shared.Rent(x =>
                         {
                             x.Content = line;
                             x.Size = biggestPixelSize;
@@ -198,7 +199,7 @@ namespace LabExtended.Utilities
                 if (messages.Count > 0)
                     vOffset -= (biggestPixelSize + pixelLineSpacing) / (float)PixelsPerEm;
 
-                messages.Add(ObjectPool<HintData>.Rent(x =>
+                messages.Add(ObjectPool<HintData>.Shared.Rent(x =>
                 {
                     x.Content = line;
                     x.Size = biggestPixelSize;

@@ -20,8 +20,9 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerSpawningPatch
     {
-        static PlayerSpawningPatch()
-            => FastEvents<PlayerRoleManager.ServerRoleSet>.DefineEvent(typeof(PlayerRoleManager), "OnServerRoleSet");
+        public static FastEvent<PlayerRoleManager.ServerRoleSet> OnServerRoleSet { get; } =
+            FastEvents.DefineEvent<PlayerRoleManager.ServerRoleSet>(typeof(PlayerRoleManager),
+                nameof(PlayerRoleManager.OnServerRoleSet));
 
         [HookPatch(typeof(PlayerSpawningArgs))]
         [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.ServerSetRole))]
@@ -62,7 +63,7 @@ namespace LabExtended.Patches.Events
 
                     InternalEvents.InternalHandleRoleChange(spawningEv);
 
-                    FastEvents<PlayerRoleManager.ServerRoleSet>.InvokeEvent(typeof(PlayerRoleManager), "OnServerRoleSet", null, player.Hub, newRole, reason);
+                    OnServerRoleSet.InvokeEvent(null, player.Hub, newRole, reason);
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                     __instance._sendNextFrame = true;
