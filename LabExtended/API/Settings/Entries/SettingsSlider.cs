@@ -51,6 +51,9 @@ namespace LabExtended.API.Settings.Entries
 
         public float Value => Base.SyncFloatValue;
         public float PreviousValue => _prevValue;
+        
+        public int FillPercentage => (int)Math.Round((double)(100 * Value) / MaxValue);
+        public int EmptyPercentage => 100 - FillPercentage;
 
         public bool ShouldSyncDrag
         {
@@ -98,6 +101,9 @@ namespace LabExtended.API.Settings.Entries
         }
         
         public virtual void HandleMove(float previousValue, float newValue) { }
+        
+        public override string ToString()
+            => $"SettingsSlider (CustomId={CustomId}; AssignedId={AssignedId}; Percentage={FillPercentage}%; Value={Value}; Max={MaxValue}; Min={MinValue}; Ply={Player?.UserId ?? "null"})";
 
         public static SettingsSlider Create(string customId, string sliderLabel, float minValue, float maxValue, float defaultValue = 0f, bool isInteger = false, string valueToStringFormat = "0.##", string finalDisplayFormat = "{0}", string sliderHint = null)
         {

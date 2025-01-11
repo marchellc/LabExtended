@@ -15,4 +15,7 @@ public class SettingsGroup : SettingsEntry, IWrapper<SSGroupHeader>
     }
     
     public new SSGroupHeader Base { get; }
+
+    public override string ToString()
+        => $"SettingsGroup (Header={Base?.Label ?? "null"}; Ply={Player?.UserId ?? "null"})";
 }

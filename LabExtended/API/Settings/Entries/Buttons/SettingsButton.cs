@@ -67,6 +67,9 @@ namespace LabExtended.API.Settings.Entries.Buttons
         
         public virtual void HandleTrigger() { }
 
+        public override string ToString()
+            => $"SettingsButton (CustomId={CustomId}; AssignedId={AssignedId}; Ply={Player?.UserId ?? "null"})";
+
         public static SettingsButton Create(string customId, string buttonLabel, string buttonText, string buttonHint = null, float? requiredHeldTimeSeconds = null)
         {
             if (string.IsNullOrWhiteSpace(customId))

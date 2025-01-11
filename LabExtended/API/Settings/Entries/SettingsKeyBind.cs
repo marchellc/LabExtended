@@ -92,6 +92,9 @@ namespace LabExtended.API.Settings.Entries
         
         public virtual void HandlePress(bool isPressed) { }
 
+        public override string ToString()
+            => $"SettingsKeyBind (CustomId={CustomId}; AssignedId={AssignedId}; SuggestedKey={SuggestedKey}; Ply={Player?.UserId ?? "null"})";
+
         public static SettingsKeyBind Create(string customId, string settingLabel, KeyCode suggestedKey = KeyCode.None, bool shouldPreventOnGuiInteraction = true, string settingHint = null)
         {
             if (string.IsNullOrWhiteSpace(customId))

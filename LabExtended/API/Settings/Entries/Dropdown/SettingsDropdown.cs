@@ -44,7 +44,7 @@ namespace LabExtended.API.Settings.Entries.Dropdown
 
         public new SSDropdownSetting Base { get; }
         
-        public Action<SettingsDropdown, SettingsDropdownOption> OnSelected { get; set; }
+        public Action<SettingsDropdown, SettingsDropdownOption, SettingsDropdownOption> OnSelected { get; set; }
 
         public LockedList<SettingsDropdownOption> Options { get; } = new LockedList<SettingsDropdownOption>();
 
@@ -185,22 +185,21 @@ namespace LabExtended.API.Settings.Entries.Dropdown
             if (_prevSelectedIndex == SelectedIndex)
                 return;
 
-            _prevSelectedIndex = SelectedIndex;
+            var previousOption = TryGetOption(_prevSelectedIndex, out var previous) ? previous : null;
+            var currentOption = TryGetOption(SelectedIndex, out var current) ? current : null;
 
-            if (TryGetOption(SelectedIndex, out var selectedOption))
-            {
-                HandleSelection(selectedOption);
-                OnSelected.InvokeSafe(this, selectedOption);
-            }
-            else
-            {
-                HandleSelection(null);
-                OnSelected.InvokeSafe(this, null);
-            }
+            _prevSelectedIndex = SelectedIndex;
+            
+            HandleSelection(previousOption, currentOption);
+
+            OnSelected.InvokeSafe(this, previousOption, currentOption);
         }
         
-        public virtual void HandleSelection(SettingsDropdownOption option) { }
+        public virtual void HandleSelection(SettingsDropdownOption previous, SettingsDropdownOption option) { }
 
+        public override string ToString()
+            => $"SettingsDropdown (CustomId={CustomId}; AssignedId={AssignedId}; Ply={Player?.UserId ?? "null"}; Selected={SelectedIndex}; Default={DefaultOptionIndex})";
+        
         public static SettingsDropdown Create(string customId, string dropdownLabel, int defaultOptionIndex, SSDropdownSetting.DropdownEntryType dropdownEntryType, Action<SettingsDropdown> dropdownBuilder = null, string dropdownHint = null)
         {
             if (string.IsNullOrWhiteSpace(customId))

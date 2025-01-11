@@ -95,6 +95,9 @@ namespace LabExtended.API.Settings.Entries.Buttons
         public bool WasAButtonActive => !_previousIsSyncB;
         public bool WasBButtonActive => _previousIsSyncB;
 
+        public T GetOption<T>(T primaryOption, T secondaryOption)
+            => IsAButtonActive ? primaryOption : secondaryOption;
+
         /// <inheritdoc />
         internal override void InternalOnUpdated()
         {
@@ -116,7 +119,10 @@ namespace LabExtended.API.Settings.Entries.Buttons
         }
 
         public virtual void HandleTrigger(bool isB) { }
-        
+
+        public override string ToString()
+            => $"SettingsTwoButtons (CustomId={CustomId}; AssignedId={AssignedId}; Ply={Player?.UserId ?? "null"}; IsA={IsAButtonActive})";
+
         public static SettingsTwoButtons Create(string customId, string buttonLabel, string buttonAText, string buttonBText, bool isDefaultButtonB = true, string buttonsHint = null)
         {
             if (string.IsNullOrWhiteSpace(customId))

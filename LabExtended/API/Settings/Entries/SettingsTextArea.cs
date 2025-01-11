@@ -61,6 +61,9 @@ namespace LabExtended.API.Settings.Entries
         public void SendText(string text)
             => Player?.Connection?.Send(new SSSUpdateMessage(Base, writer => writer.WriteString(text)));
 
+        public override string ToString()
+            => $"SettingsTextArea (CustomId={CustomId}; AssignedId={AssignedId}; Text={Text}; Ply={Player?.UserId ?? "null"})";
+
         public static SettingsTextArea Create(string customId, string settingsText, string collapsedText, TextAlignmentOptions alignmentOptions = TextAlignmentOptions.TopLeft, SSTextArea.FoldoutMode foldoutMode = SSTextArea.FoldoutMode.NotCollapsable)
         {
             if (string.IsNullOrWhiteSpace(customId))

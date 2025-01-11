@@ -85,6 +85,9 @@ namespace LabExtended.API.Settings.Entries
         
         public virtual void HandleInput(string newText) { }
 
+        public override string ToString()
+            => $"SettingsPlainText (CustomId={CustomId}; AssignedId={AssignedId}; Text={Text}; Ply={Player?.UserId ?? "null"})";
+        
         public static SettingsPlainText Create(string customId, string settingLabel, string placeHolder = "...", int characterLimit = 64, TMP_InputField.ContentType contentType = TMP_InputField.ContentType.Standard, string settingHint = null)
         {
             if (string.IsNullOrWhiteSpace(customId))
