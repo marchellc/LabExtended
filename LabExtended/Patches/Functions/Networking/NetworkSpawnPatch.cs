@@ -12,7 +12,6 @@ namespace LabExtended.Patches.Functions.Networking
 {
     public static class NetworkSpawnPatch
     {
-        /*
         [HarmonyPatch(typeof(NetworkServer), nameof(NetworkServer.SpawnObject), typeof(GameObject), typeof(NetworkConnection))]
         public static bool Prefix(GameObject obj, NetworkConnection ownerConnection)
         {
@@ -68,6 +67,5 @@ namespace LabExtended.Patches.Functions.Networking
 
             return false;
         }
-        */
     }
 }

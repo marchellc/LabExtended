@@ -3,9 +3,8 @@ using LabExtended.API.Voice.Modifiers.Pitch;
 using LabExtended.API.Voice.Threading;
 
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Pooling.Pools;
-using LabExtended.Core.Ticking.Distributors.Unity;
 
+using LabExtended.Events;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
@@ -37,9 +36,6 @@ namespace LabExtended.API.Voice
 
         public static IReadOnlyCollection<VoiceModifier> GlobalModifiers => _globalModifiers;
 
-        /// <inheritdoc/>
-        public override Type TickType { get; } = typeof(UnityTickDistributor);
-
         public volatile float VoicePitch = 1f;
 
         public bool CanReceiveSelf { get; set; }
@@ -53,13 +49,17 @@ namespace LabExtended.API.Voice
 
             _modifiers = ListPool<VoiceModifier>.Shared.Rent();
             _modifiers.Add(new VoicePitchModifier());
+
+            InternalEvents.OnSpawning += OnSpawning;
         }
 
         public override void OnStopped()
         {
             base.OnStopped();
 
-            _profiles.ForEach(x => x.OnDisabled());
+            InternalEvents.OnSpawning -= OnSpawning;
+            
+            _profiles.ForEach(x => x.OnDestroy());
 
             _modifiers.ForEach(x =>
             {
@@ -90,7 +90,7 @@ namespace LabExtended.API.Voice
         public bool HasProfile<T>(out T profile) where T : VoiceProfile
             => (_profiles.TryGetFirst<VoiceProfile>(p => p.IsEnabled && p is T, out var voiceProfile) ? profile = (T)voiceProfile : profile = null) != null;
 
-        public T AddProfile<T>() where T : VoiceProfile
+        public T AddProfile<T>(bool enableProfile = false) where T : VoiceProfile
         {
             if (HasProfile<T>(out var profile))
                 return profile;
@@ -98,31 +98,13 @@ namespace LabExtended.API.Voice
             profile = typeof(T).Construct<T>();
 
             profile.Owner = CastParent;
-            profile.IsEnabled = true;
-            profile.OnEnabled();
+            profile.OnStart();
 
-            _profiles.Add(profile);
-            return profile;
-        }
-
-        public T AddProfile<T>(T profile) where T : VoiceProfile
-        {
-            if (profile is null)
-                throw new ArgumentNullException(nameof(profile));
-
-            if (HasProfile(out profile))
-                return profile;
-
-            if (profile.IsEnabled)
+            if (enableProfile)
             {
-                profile.IsEnabled = false;
-                profile.OnDisabled();
-                profile.Owner = null;
+                profile.IsEnabled = true;
+                profile.OnEnabled();
             }
-
-            profile.Owner = CastParent;
-            profile.IsEnabled = true;
-            profile.OnEnabled();
 
             _profiles.Add(profile);
             return profile;
@@ -159,8 +141,13 @@ namespace LabExtended.API.Voice
         {
             if (HasProfile<T>(out var profile))
             {
-                profile.IsEnabled = false;
-                profile.OnDisabled();
+                if (profile.IsEnabled)
+                {
+                    profile.IsEnabled = false;
+                    profile.OnDisabled();
+                }
+                
+                profile.OnDestroy();
                 profile.Owner = null;
 
                 _profiles.Remove(profile);
@@ -181,8 +168,10 @@ namespace LabExtended.API.Voice
                 {
                     profile.IsEnabled = false;
                     profile.OnDisabled();
-                    profile.Owner = null;
                 }
+
+                profile.OnDestroy();
+                profile.Owner = null;
 
                 _profiles.Remove(profile);
                 return true;
@@ -203,8 +192,13 @@ namespace LabExtended.API.Voice
         {
             foreach (var profile in _profiles)
             {
-                profile.IsEnabled = false;
-                profile.OnDisabled();
+                if (profile.IsEnabled)
+                {
+                    profile.IsEnabled = false;
+                    profile.OnDisabled();
+                }
+
+                profile.OnDestroy();
                 profile.Owner = null;
             }
 
@@ -214,10 +208,8 @@ namespace LabExtended.API.Voice
         public void RemoveModifiers()
             => _modifiers.Clear();
 
-        public override void OnTick()
+        public override void Update()
         {
-            base.OnTick();
-
             if (CastParent is null)
                 return;
 
@@ -229,6 +221,7 @@ namespace LabExtended.API.Voice
                 _capture.Clear();
 
                 OnStartedSpeaking?.Invoke(CastParent);
+                
                 HookRunner.RunEvent(new PlayerStartedSpeakingArgs(CastParent));
             }
             else if (!CastParent.IsSpeaking && _speaking)
@@ -237,6 +230,7 @@ namespace LabExtended.API.Voice
                 _speakingStart = DateTime.MinValue;
 
                 OnStoppedSpeaking?.Invoke(CastParent, _speakingStart, DateTime.Now - _speakingStart, _capture);
+                
                 HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(CastParent, _speakingStart, DateTime.Now - _speakingStart, _capture));
 
                 _capture.Clear();
@@ -274,16 +268,34 @@ namespace LabExtended.API.Voice
                     continue;
 
                 var channel = GetChannel(player, sendChannel);
-
+                var status = true;
+                
                 if (channel is VoiceChatChannel.None)
                     continue;
 
                 message.Channel = channel;
+
+                for (int x = 0; x < _profiles.Count; x++)
+                {
+                    var profile = _profiles[x];
+                    
+                    if (profile is null || !profile.IsEnabled)
+                        continue;
+
+                    if (!profile.TryReceive(player, ref message))
+                    {
+                        status = false;
+                        break;
+                    }
+                }
+                
+                if (!status)
+                    continue;
+                
                 player.Connection.Send(message);
             }
         }
-
-
+        
         internal void ReceiveThreaded(ThreadedVoicePacket threadedVoicePacket)
         {
             var sendChannel = CastParent.Role.VoiceModule.ValidateSend(threadedVoicePacket.Channel);
@@ -300,38 +312,71 @@ namespace LabExtended.API.Voice
 
                 var player = ExPlayer._players[i];
                 var channel = GetChannel(player, sendChannel);
+                var status = true;
 
                 if (channel is VoiceChatChannel.None)
                     continue;
 
                 msg.Channel = channel;
+
+                for (int x = 0; x < _profiles.Count; x++)
+                {
+                    var profile = _profiles[x];
+                    
+                    if (profile is null || !profile.IsEnabled)
+                        continue;
+
+                    if (!profile.TryReceive(player, ref msg))
+                    {
+                        status = false;
+                        break;
+                    }
+                }
+                
+                if (!status)
+                    continue;
+                
                 player.Connection.Send(msg);
             }
 
             threadedVoicePacket.Dispose();
-            threadedVoicePacket = null;
         }
-
-
+        
         private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)
         {
             if (receiver.Role.VoiceModule is null)
                 return VoiceChatChannel.None;
-
-            messageChannel = receiver.Role.VoiceModule.ValidateReceive(CastParent.Hub, messageChannel);
-
+            
             if (receiver == CastParent && CanReceiveSelf)
                 messageChannel = VoiceChatChannel.RoundSummary;
 
-            foreach (var profile in _profiles)
-            {
-                if (!profile.IsEnabled)
-                    continue;
-
-                profile.ModifyChannel(receiver, ref messageChannel);
-            }
-
             return messageChannel;
+        }
+
+        private void OnSpawning(PlayerSpawningArgs args)
+        {
+            if (args.Player != CastParent)
+                return;
+
+            foreach (var profile in Profiles)
+            {
+                if (!profile.OnRoleChanged(args.NewRole))
+                {
+                    if (profile.IsEnabled)
+                    {
+                        profile.IsEnabled = false;
+                        profile.OnDisabled();
+                    }
+                }
+                else
+                {
+                    if (!profile.IsEnabled)
+                    {
+                        profile.OnEnabled();
+                        profile.IsEnabled = true;
+                    }
+                }
+            }
         }
     }
 }

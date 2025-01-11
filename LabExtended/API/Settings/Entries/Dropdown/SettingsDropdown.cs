@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.Collections.Locked;
 using LabExtended.API.Interfaces;
+
 using LabExtended.Extensions;
 
 using UserSettings.ServerSpecific;
@@ -8,9 +9,37 @@ namespace LabExtended.API.Settings.Entries.Dropdown
 {
     public class SettingsDropdown : SettingsEntry, IWrapper<SSDropdownSetting>
     {
-        public SettingsDropdown(SSDropdownSetting baseValue, string customId) : base(baseValue, customId)
+        private int _prevSelectedIndex;
+
+        public SettingsDropdown(
+            string customId, 
+            string dropdownLabel, 
+            
+            int defaultOptionIndex, 
+            SSDropdownSetting.DropdownEntryType dropdownEntryType, 
+            Action<SettingsDropdown> dropdownBuilder = null, 
+            string dropdownHint = null)
+            : base(new SSDropdownSetting(
+                    SettingsManager.GetIntegerId(customId),
+
+                    dropdownLabel,
+                    null,
+                    defaultOptionIndex,
+                    dropdownEntryType,
+                    dropdownHint),
+
+                customId)
+        {
+            Base = (SSDropdownSetting)base.Base;
+            Base.Options = Options.Select(x => x.Text).ToArray();
+
+            _prevSelectedIndex = Base.DefaultOptionIndex;
+        }
+        
+        private SettingsDropdown(SSDropdownSetting baseValue, string customId) : base(baseValue, customId)
         {
             Base = baseValue;
+            _prevSelectedIndex = Base.DefaultOptionIndex;
         }
 
         public new SSDropdownSetting Base { get; }
@@ -19,6 +48,8 @@ namespace LabExtended.API.Settings.Entries.Dropdown
 
         public LockedList<SettingsDropdownOption> Options { get; } = new LockedList<SettingsDropdownOption>();
 
+        public int PreviousIndex => _prevSelectedIndex;
+        
         public int DefaultOptionIndex
         {
             get => Base.DefaultOptionIndex;
@@ -150,8 +181,25 @@ namespace LabExtended.API.Settings.Entries.Dropdown
         internal override void InternalOnUpdated()
         {
             base.InternalOnUpdated();
-            OnSelected.InvokeSafe(this, TryGetOption(SelectedIndex, out var selectedOption) ? selectedOption : null);
+
+            if (_prevSelectedIndex == SelectedIndex)
+                return;
+
+            _prevSelectedIndex = SelectedIndex;
+
+            if (TryGetOption(SelectedIndex, out var selectedOption))
+            {
+                HandleSelection(selectedOption);
+                OnSelected.InvokeSafe(this, selectedOption);
+            }
+            else
+            {
+                HandleSelection(null);
+                OnSelected.InvokeSafe(this, null);
+            }
         }
+        
+        public virtual void HandleSelection(SettingsDropdownOption option) { }
 
         public static SettingsDropdown Create(string customId, string dropdownLabel, int defaultOptionIndex, SSDropdownSetting.DropdownEntryType dropdownEntryType, Action<SettingsDropdown> dropdownBuilder = null, string dropdownHint = null)
         {

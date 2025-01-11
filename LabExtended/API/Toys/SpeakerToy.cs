@@ -75,7 +75,7 @@ namespace LabExtended.API.Toys
             if (Id.Cache.Count + 1 >= byte.MaxValue)
                 throw new Exception("No more speakers can be spawned.");
 
-            var toy = PrefabList.Speaker.Instance.GetComponent<AdminToys.SpeakerToy>();
+            var toy = PrefabList.Speaker.CreateInstance().GetComponent<AdminToys.SpeakerToy>();
             var wrapper = new SpeakerToy(toy);
 
             NetworkServer.Spawn(toy.gameObject);

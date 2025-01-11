@@ -17,15 +17,15 @@ namespace LabExtended.API.Settings.Menus
 
         public abstract void BuildMenu(List<SettingsEntry> settings);
 
-        public virtual void OnButtonTriggered(SettingsButton button) {}
-        public virtual void OnButtonSwitched(SettingsTwoButtons button) {}
+        public virtual void OnButtonTriggered(SettingsButton button) { }
+        public virtual void OnButtonSwitched(SettingsTwoButtons button) { }
         
-        public virtual void OnDropdownSelected(SettingsDropdown dropdown, SettingsDropdownOption option) {}
+        public virtual void OnDropdownSelected(SettingsDropdown dropdown, SettingsDropdownOption option) { }
         
-        public virtual void OnKeyBindPressed(SettingsKeyBind keyBind) {}
+        public virtual void OnKeyBindPressed(SettingsKeyBind keyBind) { }
         
-        public virtual void OnPlainTextUpdated(SettingsPlainText plainText) {}
-        public virtual void OnSliderMoved(SettingsSlider slider) {}
-        public virtual void OnTextInput(SettingsTextArea textArea) {}
+        public virtual void OnPlainTextUpdated(SettingsPlainText plainText) { }
+        public virtual void OnSliderMoved(SettingsSlider slider) { }
+        public virtual void OnTextInput(SettingsTextArea textArea) { }
     }
 }

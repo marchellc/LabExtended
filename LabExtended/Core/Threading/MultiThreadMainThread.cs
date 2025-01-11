@@ -11,7 +11,7 @@ namespace LabExtended.Core.Threading;
 
 public static class MultiThreadMainThread
 {
-    private struct MultiThreadUpdateLoop { }
+    public struct MultiThreadUpdateLoop { }
 
     private static volatile ConcurrentQueue<MultiThreadOperation> _pendingOperations = new ConcurrentQueue<MultiThreadOperation>();
     private static Stopwatch _timeWatch = new Stopwatch();

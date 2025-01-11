@@ -1,6 +1,6 @@
 ﻿using PlayerRoles;
 
-using VoiceChat;
+using VoiceChat.Networking;
 
 namespace LabExtended.API.Voice
 {
@@ -10,11 +10,14 @@ namespace LabExtended.API.Voice
 
         public ExPlayer Owner { get; internal set; }
 
-        public abstract void ModifyChannel(ExPlayer receiver, ref VoiceChatChannel receiverChannel);
-
         public virtual void OnEnabled() { }
         public virtual void OnDisabled() { }
+        
+        public virtual void OnStart() { }
+        public virtual void OnDestroy() { }
 
         public virtual bool OnRoleChanged(RoleTypeId newRole) => false;
+
+        public abstract bool TryReceive(ExPlayer receiver, ref VoiceMessage message);
     }
 }

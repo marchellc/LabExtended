@@ -1,7 +1,11 @@
-﻿using LabExtended.Core.Ticking;
-using LabExtended.Core.Ticking.Interfaces;
-
+﻿using LabExtended.API.Collections.Locked;
+using LabExtended.Attributes;
+using LabExtended.Core;
 using LabExtended.Extensions;
+using LabExtended.Utilities.Unity;
+
+using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace LabExtended.API.Modules
 {
@@ -10,11 +14,15 @@ namespace LabExtended.API.Modules
     /// </summary>
     public class Module
     {
-        internal readonly Dictionary<Type, Module> _modules = new Dictionary<Type, Module>();
-        internal readonly HashSet<Type> _cache = new HashSet<Type>();
+        public struct ModuleUpdateLoop { }
+        
+        private static LockedList<Module> _allModules = new LockedList<Module>();
 
-        private TickHandle _handle;
+        internal Dictionary<Type, Module> _modules = new Dictionary<Type, Module>();
+        internal HashSet<Type> _cache = new HashSet<Type>();
 
+        internal float _moduleTime = 0f;
+        
         /// <summary>
         /// Gets all submodules.
         /// </summary>
@@ -24,27 +32,7 @@ namespace LabExtended.API.Modules
         /// Gets all cached module types.
         /// </summary>
         public IReadOnlyCollection<Type> Cache => _cache;
-
-        /// <summary>
-        /// Gets the handle for the <see cref="OnTick"/> method.
-        /// </summary>
-        public TickHandle TickHandle => _handle;
-
-        /// <summary>
-        /// Gets or sets the options for the <see cref="OnTick"/> method.
-        /// </summary>
-        public virtual ITickOptions TickOptions { get; }
-
-        /// <summary>
-        /// Gets or sets the timer for the <see cref="OnTick"/> method.
-        /// </summary>
-        public virtual ITickTimer TickTimer { get; }
-
-        /// <summary>
-        /// Gets or sets the tick distributor type.
-        /// </summary>
-        public virtual Type TickType { get; }
-
+        
         /// <summary>
         /// Gets or sets a value indicating whether or not this module is active.
         /// </summary>
@@ -60,17 +48,16 @@ namespace LabExtended.API.Modules
         /// </summary>
         public Module Parent { get; internal set; }
 
+        /// <summary>
+        /// Gets the module's update delay.
+        /// </summary>
+        public virtual float UpdateDelay { get; } = -1f;
+
         public void StartModule()
         {
             IsActive = true;
 
-            if (TickType != null)
-            {
-                var distributor = TickDistribution.GetDistributor(TickType);
-                var handle = TickDistribution.CreateWith(TickModule, TickOptions, TickTimer);
-
-                _handle = distributor.CreateHandle(handle);
-            }
+            _allModules.Add(this);
 
             OnStarted();
         }
@@ -78,12 +65,6 @@ namespace LabExtended.API.Modules
         public void StopModule()
         {
             IsActive = false;
-
-            if (_handle.IsActive)
-            {
-                _handle.Destroy();
-                _handle = default;
-            }
 
             foreach (var subModule in _modules)
             {
@@ -96,6 +77,7 @@ namespace LabExtended.API.Modules
             }
 
             _modules.Clear();
+            _allModules.Remove(this);
 
             OnStopped();
         }
@@ -259,7 +241,7 @@ namespace LabExtended.API.Modules
         /// <summary>
         /// Method called repeatedly as configured in <see cref="TickSettings"/>.
         /// </summary>
-        public virtual void OnTick() { }
+        public virtual void Update() { }
 
         public virtual void OnStarted() { }
         public virtual void OnStopped() { }
@@ -267,20 +249,42 @@ namespace LabExtended.API.Modules
         public virtual void OnModuleAdded(Module module) { }
         public virtual void OnModuleRemoved(Module module) { }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="module"></param>
-        /// <returns></returns>
         public virtual bool ValidateAdd(Module module)
             => module != null;
 
-        internal void TickModule()
+        private static void OnUpdate()
         {
-            if (!IsActive || IsPaused)
-                return;
+            foreach (var module in _allModules)
+            {
+                if (!module.IsActive || module.IsPaused || module.UpdateDelay < 0f)
+                    continue;
 
-            OnTick();
+                if (module.UpdateDelay > 0f)
+                {
+                    module._moduleTime -= Time.deltaTime;
+                    
+                    if (module._moduleTime > 0f)
+                        continue;
+
+                    module._moduleTime = module.UpdateDelay;
+                }
+
+                try
+                {
+                    module.Update();
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Module API", $"Failed to update module &1{module.GetType().Name}&r:\n{ex.ToColoredString()}");
+                }
+            }
+        }
+
+        [LoaderInitialize(1)]
+        private static void Init()
+        {
+            PlayerLoopHelper.ModifySystem(x =>
+                x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(ModuleUpdateLoop)) ? x : null);
         }
     }
 }

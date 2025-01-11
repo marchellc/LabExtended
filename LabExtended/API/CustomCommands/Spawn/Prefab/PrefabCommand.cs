@@ -21,7 +21,7 @@ namespace LabExtended.API.CustomCommands.Spawn.Prefab
             {
                 x.WithArg<string>("Name", "Name of the prefab.");
 
-                x.WithOptional<Vector3>("Scale", "Scale of the spawned prefab.", Vector3.zero);
+                x.WithOptional<Vector3>("Scale", "Scale of the spawned prefab.", Vector3.one);
                 x.WithOptional<Vector3>("Position", "Position of the prefab", Vector3.zero);
             });
         }
@@ -43,13 +43,19 @@ namespace LabExtended.API.CustomCommands.Spawn.Prefab
                 return;
             }
 
-            var spawnedPrefab = prefab.Spawn<NetworkIdentity>(prefab =>
+            var spawnedPrefab = prefab.Spawn<NetworkIdentity>(x =>
             {
+                if (prefab.IsCustom)
+                {
+                    prefab.SetupInstance(x, prefabPosition, prefabScale, sender.Rotation);
+                    return;
+                }
+                
                 if (prefabScale != Vector3.zero)
-                    prefab.transform.localScale = prefabScale;
+                    x.transform.localScale = prefabScale;
 
-                prefab.transform.position = prefabPosition;
-                prefab.transform.rotation = sender.Rotation;
+                x.transform.position = prefabPosition;
+                x.transform.rotation = sender.Rotation;
             });
 
             ctx.RespondOk($"Spawned prefab '{spawnedPrefab.name}' with network ID '{spawnedPrefab.netId}'");

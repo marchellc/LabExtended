@@ -1,7 +1,4 @@
-﻿using LabExtended.Core.Ticking.Interfaces;
-using LabExtended.Core.Ticking;
-
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace LabExtended.Core.Configs.Sections
 {
@@ -18,30 +15,5 @@ namespace LabExtended.Core.Configs.Sections
 
         [Description("Whether or not to enable distributor performance metrics.")]
         public bool EnableMetrics { get; set; } = true;
-
-        [Description("A dictionary of custom ticks. You can set which method will be registered to which tick distributor.")]
-        public Dictionary<string, string> CustomTicks { get; set; } = new Dictionary<string, string>()
-        {
-            ["TeslaGates"] = "UnityTickDistributor",
-
-            ["CustomItems"] = "UnityTickDistributor",
-            ["CustomUsables"] = "UnityTickDistributor",
-
-            ["TransientModules"] = "UnityTickDistributor",
-            ["ThreadedVoiceOutput"] = "UnityTickDistributor",
-
-            ["PositionSync"] = "UnityTickDistributor",
-            ["RoleSync"] = "UnityTickDistributor",
-
-            ["ThreadSafe"] = "UnityTickDistributor"
-        };
-
-        public ITickDistributor GetCustomOrDefault(string tickName, ITickDistributor defaultDistributor)
-        {
-            if (CustomTicks.TryGetValue(tickName, out var distributorName))
-                return TickDistribution.GetDistributor(distributorName);
-
-            return defaultDistributor;
-        }
     }
 }

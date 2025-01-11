@@ -1,11 +1,7 @@
 ﻿using LabExtended.Core;
-using LabExtended.Core.Pooling.Pools;
-
 using LabExtended.Extensions;
 
 using Mirror;
-
-using System.Collections.ObjectModel;
 
 namespace LabExtended.API.Prefabs
 {
@@ -14,7 +10,7 @@ namespace LabExtended.API.Prefabs
     /// </summary>
     public static class PrefabList
     {
-        private static IReadOnlyDictionary<string, PrefabDefinition> _allPrefabs;
+        private static Dictionary<string, PrefabDefinition> _allPrefabs = new Dictionary<string, PrefabDefinition>();
 
         /// <summary>
         /// Gets a list of all prefabs keyed by property names.
@@ -23,22 +19,32 @@ namespace LabExtended.API.Prefabs
         {
             get
             {
-                if (_allPrefabs is null)
+                if (_allPrefabs.Count < NetworkClient.prefabs.Count)
                 {
-                    var allDict = DictionaryPool<string, PrefabDefinition>.Shared.Rent();
+                    var allDict = _allPrefabs;
                     var allProps = typeof(PrefabList).GetAllProperties();
 
                     foreach (var prop in allProps)
                     {
+                        if (allDict.ContainsKey(prop.Name))
+                            continue;
+                        
                         if (prop.PropertyType != typeof(PrefabDefinition))
                             continue;
 
-                        allDict.Add(prop.Name, (PrefabDefinition)prop.GetValue(null));
+                        var value = prop.GetValue(null);
+                        
+                        if (value is null || value is not PrefabDefinition definition)
+                            continue;
+                        
+                        if (definition.IsCustom)
+                            continue;
+                        
+                        if (allDict.ContainsKey(definition.Name))
+                            continue;
+
+                        allDict.Add(prop.Name, definition);
                     }
-
-                    _allPrefabs = new ReadOnlyDictionary<string, PrefabDefinition>(allDict);
-
-                    DictionaryPool<string, PrefabDefinition>.Shared.Return(allDict);
 
                     foreach (var prefab in NetworkClient.prefabs)
                     {
@@ -48,7 +54,7 @@ namespace LabExtended.API.Prefabs
 
                     foreach (var prefab in _allPrefabs)
                     {
-                        if (!NetworkClient.prefabs.TryGetFirst(x => x.Value.name == prefab.Value.Name, out _))
+                        if (!NetworkClient.prefabs.TryGetFirst(x => x.Value.name == prefab.Value.Name, out _) && !prefab.Value.IsCustom)
                             ApiLog.Warn("Prefab API", $"Prefab &1{prefab.Key}&r has either been renamed or removed!");
                     }
 
@@ -57,6 +63,21 @@ namespace LabExtended.API.Prefabs
 
                 return _allPrefabs;
             }
+        }
+
+        public static bool RegisterPrefab(PrefabDefinition definition)
+        {
+            if (definition is null)
+                throw new ArgumentNullException(nameof(definition));
+
+            if (!definition.IsCustom)
+                throw new Exception("Only custom prefab definitions can be registered.");
+
+            if (_allPrefabs.ContainsKey(definition.Name))
+                return false;
+
+            _allPrefabs.Add(definition.Name, definition);
+            return true;
         }
 
         #region Other Prefabs

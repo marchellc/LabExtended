@@ -1,16 +1,18 @@
 ﻿using LabExtended.Attributes;
 
 using LabExtended.Core;
-using LabExtended.Core.Ticking;
 
 using System.Collections.Concurrent;
-
+using LabExtended.Utilities.Unity;
+using UnityEngine.PlayerLoop;
 using VoiceChat.Networking;
 
 namespace LabExtended.API.Voice.Threading
 {
     public static class ThreadedVoiceChat
     {
+        public struct ThreadedVoiceOutputQueueUpdateLoop { }
+        
         private static volatile bool m_WasActive;
         private static volatile bool m_RunThread;
 
@@ -26,8 +28,6 @@ namespace LabExtended.API.Voice.Threading
 
         public static void Dispose()
         {
-            TickDistribution.UnityTick.OnTick -= ProcessQueue;
-
             m_WasActive = false;
             m_RunThread = false;
 
@@ -68,14 +68,18 @@ namespace LabExtended.API.Voice.Threading
                 return;
             }
 
-            TickDistribution.UnityTick.OnTick += ProcessOutput;
-
             m_WasActive = true;
             m_RunThread = true;
 
             m_ProcessingQueue = new ConcurrentQueue<ThreadedVoicePacket>();
             m_OutputQueue = new ConcurrentQueue<ThreadedVoicePacket>();
 
+            PlayerLoopHelper.ModifySystem(x =>
+                x.InjectBefore<Initialization.ProfilerStartFrame>(ProcessOutput,
+                    typeof(ThreadedVoiceOutputQueueUpdateLoop))
+                    ? x
+                    : null);
+            
             m_ProcessingThread = new Thread(ProcessQueue);
             m_ProcessingThread.Start();
 

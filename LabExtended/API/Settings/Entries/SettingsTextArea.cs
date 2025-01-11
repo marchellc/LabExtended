@@ -10,14 +10,31 @@ namespace LabExtended.API.Settings.Entries
 {
     public class SettingsTextArea : SettingsEntry, IWrapper<SSTextArea>
     {
-        public SettingsTextArea(SSTextArea baseValue, string customId) : base(baseValue, customId)
+        public SettingsTextArea(
+            string customId,
+            string settingsText,
+            string collapsedText,
+
+            TextAlignmentOptions alignmentOptions = TextAlignmentOptions.TopLeft,
+            SSTextArea.FoldoutMode foldoutMode = SSTextArea.FoldoutMode.NotCollapsable)
+
+            : base(new SSTextArea(
+                    SettingsManager.GetIntegerId(customId),
+
+                    settingsText,
+                    foldoutMode,
+                    collapsedText,
+                    alignmentOptions),
+
+                customId)
         {
-            Base = baseValue;
+            Base = (SSTextArea)base.Base;
         }
 
-        public new SSTextArea Base { get; }
+        private SettingsTextArea(SSTextArea baseValue, string customId) : base(baseValue, customId)
+            => Base = baseValue;
         
-        public Action<SettingsTextArea> OnInput { get; set; }
+        public new SSTextArea Base { get; }
 
         public TextAlignmentOptions AlignmentOptions
         {
@@ -43,13 +60,6 @@ namespace LabExtended.API.Settings.Entries
         
         public void SendText(string text)
             => Player?.Connection?.Send(new SSSUpdateMessage(Base, writer => writer.WriteString(text)));
-
-        /// <inheritdoc />
-        internal override void InternalOnUpdated()
-        {
-            base.InternalOnUpdated();
-            OnInput.InvokeSafe(this);
-        }
 
         public static SettingsTextArea Create(string customId, string settingsText, string collapsedText, TextAlignmentOptions alignmentOptions = TextAlignmentOptions.TopLeft, SSTextArea.FoldoutMode foldoutMode = SSTextArea.FoldoutMode.NotCollapsable)
         {

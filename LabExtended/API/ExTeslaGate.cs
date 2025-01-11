@@ -3,14 +3,16 @@
 using LabExtended.API.Interfaces;
 using LabExtended.API.Wrappers;
 
+using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.Core.Ticking;
 
 using LabExtended.Events.Map;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
+using LabExtended.Utilities.Unity;
 
 using MapGeneration;
 
@@ -18,6 +20,7 @@ using PlayerRoles;
 using PlayerStatsSystem;
 
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace LabExtended.API
 {
@@ -29,8 +32,10 @@ namespace LabExtended.API
 
         IDamageObject
     {
-        internal static TickHandle _tickHandle;
+        public struct TeslaGateUpdateLoop { }
 
+        private static float _tickCooldown = 0f;
+        
         internal ExTeslaGate(TeslaGate baseValue) : base(baseValue) { }
 
         /// <summary>
@@ -250,7 +255,7 @@ namespace LabExtended.API
             Base.RpcPlayAnimation();
         }
 
-        internal void InternalTick()
+        private void Update()
         {
             if (IsDisabled || GameObject is null || !Base.isActiveAndEnabled)
                 return;
@@ -318,19 +323,35 @@ namespace LabExtended.API
             }
         }
 
-        internal static void TickGates()
+        private static void OnUpdate()
         {
+            if (TickRate > 0)
+            {
+                _tickCooldown -= Time.deltaTime;
+
+                if (_tickCooldown <= 0f)
+                    _tickCooldown = TickRate;
+                else
+                    return;
+            }
+            
             foreach (var gate in ExMap._gates)
             {
                 try
                 {
-                    gate.InternalTick();
+                    gate.Update();
                 }
                 catch (Exception ex)
                 {
                     ApiLog.Error("Extended API", $"Failed to update tesla gate {gate.NetId}!\n{ex.ToColoredString()}");
                 }
             }
+        }
+
+        [LoaderInitialize(1)]
+        private static void Init()
+        {
+            PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(TeslaGateUpdateLoop)) ? x : null);
         }
     }
 }

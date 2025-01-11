@@ -17,6 +17,7 @@ using LabExtended.API;
 using LabExtended.Core;
 using LabExtended.Utilities;
 using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Extensions;
 
 using PlayerRoles.FirstPersonControl.Spawnpoints;
@@ -84,6 +85,7 @@ namespace LabExtended.Patches.Events
 
                 var changedArgs = new PlayerChangedRoleArgs(player, prevRole, newRole, reason, spawnFlags, data, hasSpawnProtection);
 
+                InternalEvents.InternalHandleRoleChange(changedArgs);
                 HookRunner.RunEvent(changedArgs);
 
                 if (wasSet)

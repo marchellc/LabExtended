@@ -4,8 +4,9 @@ using GameCore;
 
 using LabExtended.API.Enums;
 using LabExtended.API.Internal;
-
+using LabExtended.Attributes;
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
 
 using LightContainmentZoneDecontamination;
@@ -656,7 +657,22 @@ namespace LabExtended.API
             #endregion
         }
 
-        internal static void OnRoundWait()
-            => _roundStart = null;
+        private static void OnRoundWait()
+        {
+            _roundStart = null;
+
+            IsScp079Recontained = false;
+            
+            StartedAt = DateTime.MinValue;
+            State = RoundState.WaitingForPlayers;
+
+            RoundNumber++;
+        }
+
+        [LoaderInitialize(1)]
+        private static void Init()
+        {
+            InternalEvents.OnRoundWaiting += OnRoundWait;
+        }
     }
 }

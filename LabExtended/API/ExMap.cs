@@ -9,15 +9,17 @@ using Interactables.Interobjects.DoorUtils;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
+
 using LabApi.Events.Arguments.ServerEvents;
+
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Prefabs;
 using LabExtended.API.Toys;
-
+using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Core.Networking;
-
+using LabExtended.Events;
 using LabExtended.Extensions;
 
 using LightContainmentZoneDecontamination;
@@ -46,12 +48,6 @@ namespace LabExtended.API
 {
     public static class ExMap
     {
-        static ExMap()
-        {
-            MirrorEvents.OnDestroy += OnIdentityDestroyed;
-            RagdollManager.ServerOnRagdollCreated += OnRagdollSpawned;
-        }
-
         internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
         internal static readonly LockedHashSet<BasicRagdoll> _ragdolls = new LockedHashSet<BasicRagdoll>();
         internal static readonly LockedHashSet<Generator> _generators = new LockedHashSet<Generator>();
@@ -496,7 +492,7 @@ namespace LabExtended.API
         }
         #endregion
 
-        internal static void GenerateMap()
+        private static void OnRoundWaiting()
         {
             try
             {
@@ -545,7 +541,8 @@ namespace LabExtended.API
             }
         }
 
-        internal static void OnIdentityDestroyed(NetworkIdentity identity)
+        // this is so stupid
+        private static void OnIdentityDestroyed(NetworkIdentity identity)
         {
             try
             {
@@ -570,12 +567,31 @@ namespace LabExtended.API
             }
         }
 
-        private static void OnRagdollSpawned(ReferenceHub owner, BasicRagdoll ragdoll)
+        private static void OnRagdollSpawned(BasicRagdoll ragdoll)
         {
             if (ragdoll is null || !ragdoll)
                 return;
 
             _ragdolls.Add(ragdoll);
+        }
+
+        private static void OnRagdollRemoved(BasicRagdoll ragdoll)
+        {
+            if (ragdoll is null || !ragdoll)
+                return;
+
+            _ragdolls.Remove(ragdoll);
+        }
+
+        [LoaderInitialize(1)]
+        private static void Init()
+        {
+            RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
+            RagdollManager.OnRagdollRemoved += OnRagdollRemoved;
+
+            MirrorEvents.OnDestroy += OnIdentityDestroyed;
+
+            InternalEvents.OnRoundWaiting += OnRoundWaiting;
         }
     }
 }

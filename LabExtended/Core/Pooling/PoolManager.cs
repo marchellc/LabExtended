@@ -1,3 +1,5 @@
+using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
@@ -57,7 +59,7 @@ public static class PoolManager
         ApiLog.Debug("Pools", $"Unregistered pool {poolBase.Name} (ID: &6{poolBase.Id}&r)");
     }
     
-    internal static void OnWaiting()
+    private static void OnRoundWaiting()
     {
         if (_pools.Count < 1 || !_pools.Any(x => x.Value.Count > 0))
         {
@@ -80,5 +82,11 @@ public static class PoolManager
                 }
             }
         }));
+    }
+
+    [LoaderInitialize(1)]
+    private static void Init()
+    {
+        InternalEvents.OnRoundWaiting += OnRoundWaiting;
     }
 }

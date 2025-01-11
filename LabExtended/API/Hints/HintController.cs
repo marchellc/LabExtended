@@ -6,8 +6,6 @@ using LabExtended.API.Enums;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
-using LabExtended.Core.Ticking;
-using LabExtended.Core.Pooling;
 
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -16,14 +14,18 @@ using NorthwoodLib.Pools;
 
 using System.Text;
 using LabExtended.Core.Pooling.Pools;
+using LabExtended.Events;
+using LabExtended.Utilities.Unity;
 using UnityEngine;
-
+using UnityEngine.PlayerLoop;
 using HintMessage = LabExtended.API.Messages.HintMessage;
 
 namespace LabExtended.API.Hints
 {
     public static class HintController
     {
+        public struct HintUpdateLoop { }
+        
         #region Temporary Hint Settings
         public const HintAlign TemporaryHintAlign = HintAlign.Center;
         public const float TemporaryHintVerticalOffset = -5f;
@@ -93,7 +95,6 @@ namespace LabExtended.API.Hints
             if (cache.Queue.Count < 1)
             {
                 cache.Queue.Add(new HintMessage(content, duration));
-                return;
             }
             else
             {
@@ -381,10 +382,6 @@ namespace LabExtended.API.Hints
                                 }
                             }
                         }
-                        else
-                        {
-                            continue;
-                        }
                     }
 
                     if (!anyAppended && !cache.WasClearedAfterEmpty)
@@ -421,7 +418,7 @@ namespace LabExtended.API.Hints
             return _cache[player] = new HintCache() { Player = player };
         }
 
-        internal static void OnJoined(ExPlayer player)
+        private static void OnJoined(ExPlayer player)
         {
             _cache.Add(player, new HintCache() { Player = player });
 
@@ -435,7 +432,7 @@ namespace LabExtended.API.Hints
             });
         }
 
-        internal static void OnLeft(ExPlayer player)
+        private static void OnLeft(ExPlayer player)
         {
             _elements.ForEach(x =>
             {
@@ -491,7 +488,12 @@ namespace LabExtended.API.Hints
         }
 
         [LoaderInitialize(1)]
-        internal static void InternalLoad()
-            => TickDistribution.UnityTick.CreateHandle(OnTick);
+        private static void Init()
+        {
+            InternalEvents.OnPlayerLeft += OnLeft;
+            InternalEvents.OnPlayerJoined += OnJoined;
+
+            PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnTick, typeof(HintUpdateLoop)) ? x : null);
+        }
     }
 }

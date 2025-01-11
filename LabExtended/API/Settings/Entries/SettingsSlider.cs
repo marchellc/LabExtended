@@ -7,16 +7,50 @@ namespace LabExtended.API.Settings.Entries
 {
     public class SettingsSlider : SettingsEntry, IWrapper<SSSliderSetting>
     {
-        public SettingsSlider(SSSliderSetting baseValue, string customId) : base(baseValue, customId)
+        private float _prevValue;
+
+        public SettingsSlider(
+            string customId,
+            string sliderLabel,
+
+            float minValue,
+            float maxValue,
+            float defaultValue = 0f,
+
+            bool isInteger = false,
+
+            string valueToStringFormat = "0.##",
+            string finalDisplayFormat = "{0}",
+            string sliderHint = null) : base(new SSSliderSetting(
+                SettingsManager.GetIntegerId(customId),
+                
+                sliderLabel,
+                minValue,
+                maxValue,
+                defaultValue,
+                isInteger,
+                valueToStringFormat,
+                finalDisplayFormat,
+                sliderHint), 
+            
+                customId)
+        {
+            Base = (SSSliderSetting)base.Base;
+            _prevValue = Base.DefaultValue;
+        }
+        
+        private SettingsSlider(SSSliderSetting baseValue, string customId) : base(baseValue, customId)
         {
             Base = baseValue;
+            _prevValue = baseValue.DefaultValue;
         }
-
-        public new SSSliderSetting Base { get; }
         
         public Action<SettingsSlider> OnMoved { get; set; }
 
+        public new SSSliderSetting Base { get; }
+
         public float Value => Base.SyncFloatValue;
+        public float PreviousValue => _prevValue;
 
         public bool ShouldSyncDrag
         {
@@ -52,8 +86,18 @@ namespace LabExtended.API.Settings.Entries
         internal override void InternalOnUpdated()
         {
             base.InternalOnUpdated();
+
+            if (_prevValue == Value)
+                return;
+
+            HandleMove(_prevValue, Value);
+            
             OnMoved.InvokeSafe(this);
+            
+            _prevValue = Value;
         }
+        
+        public virtual void HandleMove(float previousValue, float newValue) { }
 
         public static SettingsSlider Create(string customId, string sliderLabel, float minValue, float maxValue, float defaultValue = 0f, bool isInteger = false, string valueToStringFormat = "0.##", string finalDisplayFormat = "{0}", string sliderHint = null)
         {

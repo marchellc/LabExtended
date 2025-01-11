@@ -1,14 +1,18 @@
 ﻿using LabExtended.API;
 using LabExtended.Attributes;
-using LabExtended.Core.Ticking;
+using LabExtended.Utilities.Unity;
 
 using PlayerRoles;
+
+using UnityEngine.PlayerLoop;
 
 namespace LabExtended.Core.Networking.Synchronization.Role
 {
     public static class RoleSynchronizer
     {
-        public static void Synchronize()
+        public struct RoleSyncUpdateLoop { }
+        
+        private static void OnUpdate()
         {
             if (ExPlayer._allPlayers.Count < 1)
                 return;
@@ -49,8 +53,11 @@ namespace LabExtended.Core.Networking.Synchronization.Role
             }
         }
 
-        [LoaderInitialize(1)]
-        internal static void InternalLoad()
-            => ApiLoader.ApiConfig.TickSection.GetCustomOrDefault("RoleSync", TickDistribution.UnityTick).CreateHandle(TickDistribution.CreateWith(Synchronize, new TickOptions(TickFlags.Separate)));
+        [LoaderInitialize(2)]
+        private static void Init()
+        {
+            PlayerLoopHelper.ModifySystem(x =>
+                x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(RoleSyncUpdateLoop)) ? x : null);
+        }
     }
 }

@@ -16,12 +16,17 @@ namespace LabExtended.API.Prefabs
         /// <summary>
         /// Gets the prefab's name.
         /// </summary>
-        public string Name { get; }
+        public virtual string Name { get; }
+        
+        /// <summary>
+        /// Whether this is a custom prefab definition.
+        /// </summary>
+        public virtual bool IsCustom { get; }
 
         /// <summary>
         /// Gets the prefab's instance.
         /// </summary>
-        public GameObject GameObject
+        public virtual GameObject GameObject
         {
             get
             {
@@ -41,22 +46,17 @@ namespace LabExtended.API.Prefabs
         }
 
         /// <summary>
-        /// Creates a new instance from this prefab.
-        /// </summary>
-        public GameObject Instance => UnityEngine.Object.Instantiate(GameObject);
-
-        /// <summary>
         /// Spawns a new instance from this prefab.
         /// </summary>
         /// <param name="prefabSetup"></param>
         /// <returns></returns>
-        public GameObject Spawn(Action<GameObject> prefabSetup = null)
+        public virtual GameObject Spawn(Action<GameObject> prefabSetup = null)
         {
-            var instance = Instance;
+            var instance = CreateInstance();
 
             prefabSetup.InvokeSafe(instance);
 
-            NetworkServer.Spawn(instance);
+            SpawnInstance(instance.GetComponent<NetworkIdentity>());
             return instance;
         }
 
@@ -66,9 +66,9 @@ namespace LabExtended.API.Prefabs
         /// <typeparam name="T">Component type.</typeparam>
         /// <param name="prefabSetup"></param>
         /// <returns></returns>
-        public T Spawn<T>(Action<T> prefabSetup = null) where T : Component
+        public virtual T Spawn<T>(Action<T> prefabSetup = null) where T : Component
         {
-            var instance = Instance;
+            var instance = CreateInstance();
             var component = default(T);
 
             if ((component = instance.GetComponent<T>()) is null
@@ -78,10 +78,33 @@ namespace LabExtended.API.Prefabs
 
             prefabSetup.InvokeSafe(component);
 
-            NetworkServer.Spawn(instance);
+            SpawnInstance(instance.GetComponent<NetworkIdentity>());
             return component;
         }
 
-        internal PrefabDefinition(string name) => Name = name;
+        /// <summary>
+        /// Creates a new instance from this prefab.
+        /// </summary>
+        public virtual GameObject CreateInstance()
+            => UnityEngine.Object.Instantiate(GameObject);
+        
+        /// <summary>
+        /// Spawns an instantiated prefab instance.
+        /// </summary>
+        /// <param name="identity"></param>
+        public virtual void SpawnInstance(NetworkIdentity identity)
+            => NetworkServer.Spawn(identity.gameObject);
+
+        /// <summary>
+        /// This method is used only for custom definitions that require a different spawn method.
+        /// </summary>
+        /// <param name="identity">The network identity instance.</param>
+        /// <param name="position">The position to spawn at.</param>
+        /// <param name="scale">The scale to spawn at.</param>
+        /// <param name="rotation">The rotation to spawn with.</param>
+        public virtual void SetupInstance(NetworkIdentity identity, Vector3 position, Vector3 scale, Quaternion rotation) { }
+
+        public PrefabDefinition(string name) => Name = name;
+        public PrefabDefinition() { }
     }
 }

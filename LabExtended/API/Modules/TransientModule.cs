@@ -1,13 +1,15 @@
 ﻿using LabExtended.API.Collections.Locked;
 
-using LabExtended.Core;
-using LabExtended.Core.Ticking;
-using LabExtended.Core.Pooling.Pools;
-
+using LabExtended.Attributes;
 using LabExtended.Extensions;
+using LabExtended.Core;
+
 using LabExtended.Utilities.Generation;
+using LabExtended.Utilities.Unity;
 
 using NorthwoodLib.Pools;
+
+using UnityEngine;
 
 namespace LabExtended.API.Modules
 {
@@ -16,9 +18,8 @@ namespace LabExtended.API.Modules
     /// </summary>
     public class TransientModule : GenericModule<ExPlayer>
     {
-        static TransientModule()
-            => ApiLoader.ApiConfig.TickSection.GetCustomOrDefault("TransientModules", TickDistribution.UnityTick).CreateHandle(TickDistribution.CreateWith(UpdateModules));
-
+        public struct TransientModuleUpdateLoop { }
+        
         /// <summary>
         /// The reason for a module's removal.
         /// </summary>
@@ -41,7 +42,8 @@ namespace LabExtended.API.Modules
         }
 
         internal static readonly LockedDictionary<string, List<TransientModule>> _cachedModules = new LockedDictionary<string, List<TransientModule>>();
-        internal static DateTime _tickTimer = DateTime.MinValue;
+        internal static readonly Dictionary<string, List<TransientModule>> _removalDict = new Dictionary<string, List<TransientModule>>();
+        internal static float _tickTimer = 0f;
 
         internal DateTime? _addedAt;
         internal DateTime? _removedAt;
@@ -147,17 +149,22 @@ namespace LabExtended.API.Modules
             }
         }
 
-        private static void UpdateModules()
+        private static void OnUpdate()
         {
             if (TickDelay < 1)
                 return;
 
-            if ((DateTime.Now - _tickTimer).TotalMilliseconds < TickDelay)
-                return;
+            if (TickDelay > 0)
+            {
+                _tickTimer -= Time.deltaTime;
 
-            _tickTimer = DateTime.Now;
+                if (_tickTimer > 0f)
+                    return;
 
-            var modulesToRemove = DictionaryPool<string, List<TransientModule>>.Shared.Rent();
+                _tickTimer = TickDelay;
+            }
+
+            _removalDict.Clear();
 
             foreach (var modulePair in _cachedModules)
             {
@@ -176,8 +183,8 @@ namespace LabExtended.API.Modules
 
                     if (module.LifeTime.HasValue && module.TimeSinceRemoval >= module.LifeTime.Value)
                     {
-                        if (!modulesToRemove.TryGetValue(module.OwnerId, out var removedModules))
-                            modulesToRemove[module.OwnerId] = removedModules = ListPool<TransientModule>.Shared.Rent();
+                        if (!_removalDict.TryGetValue(module.OwnerId, out var removedModules))
+                            _removalDict[module.OwnerId] = removedModules = ListPool<TransientModule>.Shared.Rent();
 
                         if (!removedModules.Contains(module))
                             removedModules.Add(module);
@@ -186,9 +193,19 @@ namespace LabExtended.API.Modules
                         continue;
                     }
 
+                    if (module.UpdateDelay > 0f)
+                    {
+                        module._moduleTime -= Time.deltaTime;
+                        
+                        if (module._moduleTime > 0f)
+                            continue;
+
+                        module._moduleTime = module.UpdateDelay;
+                    }
+                    
                     try
                     {
-                        module.OnTick();
+                        module.Update();
                     }
                     catch (Exception ex)
                     {
@@ -197,7 +214,7 @@ namespace LabExtended.API.Modules
                 }
             }
 
-            foreach (var removedPair in modulesToRemove)
+            foreach (var removedPair in _removalDict)
             {
                 if (removedPair.Value is null)
                     continue;
@@ -210,8 +227,13 @@ namespace LabExtended.API.Modules
 
                 ListPool<TransientModule>.Shared.Return(removedPair.Value);
             }
+        }
 
-            DictionaryPool<string, List<TransientModule>>.Shared.Return(modulesToRemove);
+        [LoaderInitialize(1)]
+        private static void Init()
+        {
+            PlayerLoopHelper.ModifySystem(x =>
+                x.InjectAfter<ModuleUpdateLoop>(OnUpdate, typeof(TransientModuleUpdateLoop)) ? x : null);
         }
     }
 }

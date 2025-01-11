@@ -2,11 +2,12 @@
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
-using LabExtended.Core.Ticking;
 using LabExtended.Core.Pooling.Pools;
 
+using LabExtended.Events;
 using LabExtended.Events.Player;
 using LabExtended.Patches.Functions.Players;
+using LabExtended.Utilities.Unity;
 
 using Mirror;
 
@@ -20,36 +21,37 @@ using PlayerRoles.Visibility;
 using RelativePositioning;
 
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace LabExtended.Core.Networking.Synchronization.Position
 {
     public static class PositionSynchronizer
     {
+        private struct PositionUpdateLoop { }
+        
         private static NetworkWriter _writer = NetworkWriterPool.Get();
 
         private static float _sendTime = 0f;
 
-        private static bool _restarting;
-        private static bool _sending;
-        private static bool _debug;
-
         internal static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
         internal static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Shared.Rent();
 
-        public static bool ForceSendNextFrame { get; set; }
+        public static float SendRate => ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate > 0f 
+            ? ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate 
+            : FpcServerPositionDistributor.SendRate;
 
-        public static bool IsSending => _sending;
-
-        public static float SendRate => ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate > 0f ? ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate : FpcServerPositionDistributor.SendRate;
-
-        private static void Synchronize()
+        private static void OnUpdate()
         {
-            if (_sending || ExPlayer._players.Count < 1)
+            var sendRate = SendRate;
+
+            _sendTime -= sendRate;
+
+            if (_sendTime > 0f)
                 return;
 
-            _sending = true;
-
-            try
+            _sendTime = sendRate;
+            
+                        try
             {
                 for (int i = 0; i < ExPlayer._allPlayers.Count; i++)
                 {
@@ -105,7 +107,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                             if (!syncCache.TryGetValue(other, out var prevData))
                                 prevData = syncCache[other] = new PositionData();
 
-                            var position = other.Transform.position;
+                            var position = isInvisible ? FpcMotor.InvisiblePosition : other.Transform.position;
                             var posBit = false;
 
                             if (player.Position.FakedList.GlobalValue != Vector3.zero)
@@ -120,7 +122,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                                 posBit = true;
                             }
 
-                            var relative = new RelativePosition(other.Hub);
+                            var relative = new RelativePosition(position);
 
                             if (!posBit)
                                 posBit = prevData.Position != relative;
@@ -144,8 +146,10 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                                 _writer.WriteRelativePosition(relative);
 
                             if (lookBit)
+                            {
                                 _writer.WriteUShort(syncH);
                                 _writer.WriteUShort(syncV);
+                            }
                         }
                     });
 
@@ -156,73 +160,58 @@ namespace LabExtended.Core.Networking.Synchronization.Position
             {
                 ApiLog.Error("Position Synchronizer", $"Caught an error while synchronizing player positions:\n{ex.ToColoredString()}");
             }
-
-            _sending = false;
         }
 
-        private static void Update()
+        private static void OnPlayerRoleChange(PlayerChangedRoleArgs args)
         {
-            if (_sending)
+            if (args.PreviousRole is null || args.PreviousRole is not IFpcRole)
                 return;
-
-            var sendRate = SendRate;
-
-            _sendTime -= sendRate;
-
-            if (_sendTime > 0f && !ForceSendNextFrame)
-                return;
-
-            _sendTime = sendRate;
-
-            ForceSendNextFrame = false;
-
-            Synchronize();
-        }
-
-        internal static void InternalHandleRoleChange(PlayerChangedRoleArgs args)
-        {
-            if (_restarting || args.PreviousRole is null || args.PreviousRole is not IFpcRole)
-                return;
-
-            _sending = true;
+            
             _syncCache.ForEach(x => x.Value.Remove(args.Player));
-            _sending = false;
         }
 
-        internal static void InternalHandleLeave(ExPlayer player)
+        private static void OnSpawning(PlayerSpawningArgs args)
         {
-            if (_restarting)
-                return;
+            _syncCache.Remove(args.Player);
 
-            _sending = true;
+            foreach (var player in ExPlayer._allPlayers)
+            {
+                if (_syncCache.TryGetValue(player, out var cache))
+                    cache.Remove(args.Player);
+            }
+        }
 
+        private static void OnPlayerLeave(ExPlayer player)
+        {
             if (_syncCache.TryGetValue(player, out var syncCache))
                 DictionaryPool<ExPlayer, PositionData>.Shared.Return(syncCache);
 
             _syncCache.Remove(player);
             _syncCache.ForEach(x => x.Value.Remove(player));
-
-            _sending = false;
         }
 
-        internal static void InternalHandleRoundRestart()
+        private static void OnRoundRestart()
         {
-            _restarting = true;
-
             _validBuffer.Clear();
             _syncCache.Clear();
         }
 
-        internal static void InternalHandleWaiting()
+        [LoaderInitialize(3)]
+        private static void Init()
         {
-            _restarting = false;
-        }
+            PlayerLeavePatch.OnLeaving += OnPlayerLeave;
 
-        [LoaderInitialize(1)]
-        internal static void InternalLoad()
-        {
-            PlayerLeavePatch.OnLeaving += InternalHandleLeave;
-            ApiLoader.ApiConfig.TickSection.GetCustomOrDefault("PositionSync", TickDistribution.UnityTick).CreateHandle(TickDistribution.CreateWith(Update, new TickOptions(TickFlags.Separate)));
+            InternalEvents.OnRoleChanged += OnPlayerRoleChange;
+            InternalEvents.OnRoundRestart += OnRoundRestart;
+            InternalEvents.OnSpawning += OnSpawning;
+
+            PlayerLoopHelper.ModifySystem(x =>
+            {
+                if (!x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(PositionUpdateLoop)))
+                    return null;
+
+                return x;
+            });
         }
     }
 }

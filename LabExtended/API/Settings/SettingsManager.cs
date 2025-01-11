@@ -12,8 +12,9 @@ using LabExtended.API.Settings.Menus;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-using LabExtended.Events.Settings;
+using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Events.Settings;
 
 using NorthwoodLib.Pools;
 
@@ -35,12 +36,31 @@ namespace LabExtended.API.Settings
             get => ServerSpecificSettingsSync.Version;
             set => ServerSpecificSettingsSync.Version = value;
         }
+
+        public static event Action<ExPlayer, SettingsEntry> OnUpdated;
+        public static event Action<ExPlayer, SettingsEntry> OnCreated; 
         
         public static void SyncEntries(ExPlayer player)
             => player?.Connection?.Send(new SSSEntriesPack(GetEntries(player).Select(x => x.Base).ToArray(), Version));
 
+        // for some odd reason this just breaks if I remove debug lines??
         public static bool TryGetEntry(int generatedId, ExPlayer player, out SettingsEntry entry)
-            => TryGetEntry(x => x.AssignedId == generatedId && x.Player == player, out entry);
+            => TryGetEntry(x =>
+            {
+                if (x.AssignedId != generatedId)
+                {
+                    ApiLog.Debug("Settings API", $"ID comparison failed ({x.AssignedId} / {generatedId})");
+                    return false;
+                }
+
+                if (x.Player != player)
+                {
+                    ApiLog.Debug("Settings API", $"Player comparison failed ({x.Player.UserId} - {x.Player.GetHashCode()} / {player.UserId} - {player.GetHashCode()})");
+                    return false;
+                }
+
+                return true;
+            }, out entry);
         
         public static bool TryGetEntry(string customId, ExPlayer player, out SettingsEntry entry)
             => TryGetEntry(x => x.CustomId == customId && x.Player == player, out entry);
@@ -58,7 +78,7 @@ namespace LabExtended.API.Settings
         {
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
-
+            
             foreach (var idPair in idEntries)
             {
                 foreach (var entryPair in idPair.Value)
@@ -69,7 +89,7 @@ namespace LabExtended.API.Settings
                     return entryPair.Value;
                 }
             }
-
+            
             return null;
         }
         
@@ -155,7 +175,7 @@ namespace LabExtended.API.Settings
             SyncEntries(player);
         }
 
-        public static void AddSettings(ExPlayer player, IEnumerable<SettingsEntry> entries)
+        public static void AddSettings(ExPlayer player, IEnumerable<SettingsEntry> entries, string groupHeader = null, bool reducedHeaderPadding = false, string headerHint = null)
         {
             if (!player)
                 throw new ArgumentNullException(nameof(player));   
@@ -163,6 +183,14 @@ namespace LabExtended.API.Settings
             if (entries is null)
                 throw new ArgumentNullException(nameof(entries));
 
+            if (!string.IsNullOrWhiteSpace(groupHeader))
+            {
+                if (!idEntries.TryGetValue(groupHeader, out var savedIds))
+                    idEntries[groupHeader] = savedIds = new LockedDictionary<ExPlayer, SettingsEntry>();
+
+                savedIds[player] = new SettingsGroup(groupHeader, reducedHeaderPadding, headerHint);
+            }
+            
             foreach (var entry in entries)
             {
                 entry.Player = player;
@@ -238,6 +266,8 @@ namespace LabExtended.API.Settings
                                 idSettings[player] = builtSetting;
 
                                 HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting, null, player));
+
+                                OnCreated.InvokeSafe(player, builtSetting);
                                 
                                 builtList.Add(builtSetting.Base);
                             }
@@ -278,6 +308,8 @@ namespace LabExtended.API.Settings
                                         idSettings[player] = menuSetting;
 
                                         HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, builtMenu, player));
+
+                                        OnCreated.InvokeSafe(player, menuSetting);
                                         
                                         builtList.Add(menuSetting.Base);
                                     }
@@ -321,6 +353,8 @@ namespace LabExtended.API.Settings
             {
                 if (connection is null || !ExPlayer.TryGet(connection, out var player) || !player)
                     return;
+                
+                ApiLog.Debug("Settings API", $"Received status report from &3{player.Name} ({player.UserId})&r (&6Version={userStatusReport.Version}, TabOpen={userStatusReport.TabOpen}&r)");
 
                 if (allStatuses.TryGetValue(player, out var curReport))
                 {
@@ -344,6 +378,8 @@ namespace LabExtended.API.Settings
         {
             try
             {
+                ApiLog.Debug("Settings API", $"Received response, Id={clientResponse.Id}, Type={clientResponse.SettingType?.Name ?? "null"}, Payload={clientResponse.Payload?.Length ?? -1}");
+                
                 if (connection is null || !ExPlayer.TryGet(connection, out var player) || !player)
                 {
                     ApiLog.Debug("Settings API", $"Failed to retrieve player from connection &1{connection?.connectionId ?? -1}&r");
@@ -380,12 +416,16 @@ namespace LabExtended.API.Settings
                     return;
                 }
 
+                ApiLog.Debug("Settings API", $"Updating entry &1{entry.CustomId}&r ({entry.AssignedId}) (menu: {entry.Menu?.CustomId ?? "null"})");
+
                 using (var reader = NetworkReaderPool.Get(clientResponse.Payload))
                 {
                     entry.Base.DeserializeValue(reader);
                     entry.InternalOnUpdated();
 
                     HookRunner.RunEvent(new SettingsEntryUpdatedArgs(entry));
+
+                    OnUpdated.InvokeSafe(player, entry);
 
                     if (entry.Menu != null)
                     {
@@ -410,6 +450,10 @@ namespace LabExtended.API.Settings
                             case SettingsTextArea textArea:
                                 entry.Menu.OnTextInput(textArea);
                                 break;
+                            
+                            case SettingsKeyBind keyBind:
+                                entry.Menu.OnKeyBindPressed(keyBind);
+                                break;
                         }
                     }
                 }
@@ -421,10 +465,10 @@ namespace LabExtended.API.Settings
         }
 
         [LoaderInitialize(1)]
-        private static void OnLoad()
+        private static void Init()
         {
-            PlayerJoinPatch.OnJoined += OnPlayerJoined;
-            PlayerLeavePatch.OnLeaving += OnPlayerLeft;
+            InternalEvents.OnPlayerJoined += OnPlayerJoined;
+            InternalEvents.OnPlayerLeft += OnPlayerLeft;
         }
     }
 }

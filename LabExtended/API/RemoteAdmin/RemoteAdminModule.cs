@@ -6,10 +6,6 @@ using LabExtended.API.RemoteAdmin.Interfaces;
 
 using LabExtended.Core.Hooking;
 
-using LabExtended.Core.Ticking.Distributors.Unity;
-using LabExtended.Core.Ticking.Interfaces;
-using LabExtended.Core.Ticking.Timers;
-
 using LabExtended.Extensions;
 using LabExtended.Events.Player;
 using LabExtended.Utilities.Generation;
@@ -31,12 +27,6 @@ namespace LabExtended.API.RemoteAdmin
         private LockedHashSet<IRemoteAdminObject> _objects = new LockedHashSet<IRemoteAdminObject>();
         private DateTime _lastListRequestTime = DateTime.MinValue;
         private bool _wasOpen = false;
-
-        /// <inheritdoc/>
-        public override Type TickType { get; } = typeof(UnityTickDistributor);
-
-        /// <inheritdoc/>
-        public override ITickTimer TickTimer { get; } = new StaticTickTimer(8000);
 
         public bool IsRemoteAdminOpen { get; private set; }
 
@@ -73,10 +63,8 @@ namespace LabExtended.API.RemoteAdmin
             }
         }
 
-        public override void OnTick()
+        public override void Update()
         {
-            base.OnTick();
-
             IsRemoteAdminOpen = (DateTime.Now - _lastListRequestTime).TotalSeconds < 1.1 + CastParent.Ping;
 
             if (IsRemoteAdminOpen != _wasOpen)

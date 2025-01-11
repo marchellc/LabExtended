@@ -2,28 +2,22 @@
 using LabApi.Events.Handlers;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.ServerEvents;
+
 using LabExtended.API;
 using LabExtended.API.Enums;
 using LabExtended.API.Voice;
-using LabExtended.API.Hints;
 using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Collections;
 using LabExtended.API.CustomModules;
 
 using LabExtended.Core;
-using LabExtended.Core.Ticking;
-using LabExtended.Core.Ticking.Timers;
-using LabExtended.Core.Networking.Synchronization.Position;
 
 using LabExtended.Events.Player;
 
 using LabExtended.Attributes;
 using LabExtended.Commands;
-using LabExtended.Core.Pooling;
 using LabExtended.Extensions;
-
-using NorthwoodLib.Pools;
 
 using NetworkManagerUtils;
 
@@ -31,6 +25,17 @@ namespace LabExtended.Events
 {
     internal static class InternalEvents
     {
+        internal static event Action OnRoundRestart;
+        internal static event Action OnRoundWaiting;
+        internal static event Action OnRoundStarted;
+        internal static event Action OnRoundEnded;
+
+        internal static event Action<ExPlayer> OnPlayerJoined;
+        internal static event Action<ExPlayer> OnPlayerLeft; 
+        
+        internal static event Action<PlayerChangedRoleArgs> OnRoleChanged;
+        internal static event Action<PlayerSpawningArgs> OnSpawning; 
+        
         private static void InternalHandleRoundWaiting()
         {
             if (ExPlayer._hostPlayer != null)
@@ -39,37 +44,24 @@ namespace LabExtended.Events
                 ExPlayer._hostPlayer = null;
             }
             
-            ExMap.GenerateMap();
-            ExRound.OnRoundWait();
-            
             ExPlayer._preauthData.Clear();
             DamageInfo._wrappers.Clear();    
-
-            ExRound.RoundNumber++;
-
-            ExRound.IsScp079Recontained = false;
-
-            ExRound.StartedAt = DateTime.MinValue;
-            ExRound.State = RoundState.WaitingForPlayers;
 
             // No reason not to reset the NPC connection ID
             DummyNetworkConnection._idGenerator = 65535;
 
-            PositionSynchronizer.InternalHandleWaiting();
-            PoolManager.OnWaiting();
+            OnRoundWaiting.InvokeSafe();
             
             RoundEvents.InvokeWaiting();
         }
 
         private static void InternalHandleRoundRestart()
         {
-            if (ExTeslaGate._tickHandle.IsActive)
-                ExTeslaGate._tickHandle.IsPaused = true;
-            
-            ExMap._gates.Clear();
             ExRound.State = RoundState.Restarting;
-
-            PositionSynchronizer.InternalHandleRoundRestart();
+            ExMap._gates.Clear();
+            
+            OnRoundRestart.InvokeSafe();
+            
             RoundEvents.InvokeRestarted();
         }
 
@@ -78,17 +70,17 @@ namespace LabExtended.Events
             ExRound.StartedAt = DateTime.Now;
             ExRound.State = RoundState.InProgress;
 
-            if (ExTeslaGate._tickHandle.IsPaused)
-                ExTeslaGate._tickHandle.IsPaused = false;
-            else
-                ExTeslaGate._tickHandle = ApiLoader.ApiConfig.TickSection.GetCustomOrDefault("TeslaGates", TickDistribution.UnityTick).CreateHandle(TickDistribution.CreateWith(ExTeslaGate.TickGates, null, new DynamicTickTimer(() => ExTeslaGate.TickRate / TimeSpan.TicksPerMillisecond)));
-
+            OnRoundStarted.InvokeSafe();
+            
             RoundEvents.InvokeStarted();
         }
 
         private static void InternalHandleRoundEnd(RoundEndedEventArgs _)
         {
             ExRound.State = RoundState.Ended;
+
+            OnRoundEnded.InvokeSafe();
+            
             RoundEvents.InvokeEnded();
         }
 
@@ -141,8 +133,7 @@ namespace LabExtended.Events
                     ExPlayer._players.Add(player);
             }
 
-            if (!player.IsNpc && !player.IsServer)
-                HintController.OnJoined(player);
+            OnPlayerJoined.InvokeSafe(player);
 
             ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address} ({player.CountryCode})&r!");
         }
@@ -192,43 +183,22 @@ namespace LabExtended.Events
             else
                 ExPlayer._players.Remove(player);
 
-            ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
-
-            if (!player.IsNpc && !player.IsServer)
-                HintController.OnLeft(player);
-
             if (!string.IsNullOrWhiteSpace(player.UserId))
                 ExPlayer._preauthData.Remove(player.UserId);
+            
+            OnPlayerLeft.InvokeSafe(player);
+
+            ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
         }
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)
         {
-            if (args.Player is null)
-                return;
+            OnSpawning.InvokeSafe(args);
+        }
 
-            PositionSynchronizer._syncCache.Remove(args.Player);
-
-            foreach (var player in ExPlayer._allPlayers)
-            {
-                if (PositionSynchronizer._syncCache.TryGetValue(player, out var cache))
-                    cache.Remove(args.Player);
-            }
-
-            if (args.Player.Voice is null)
-                return;
-
-            var profilesToRemove = ListPool<VoiceProfile>.Shared.Rent();
-
-            foreach (var profile in args.Player.Voice.Profiles)
-            {
-                if (!profile.OnRoleChanged(args.NewRole))
-                    profilesToRemove.Add(profile);
-            }
-
-            foreach (var profile in profilesToRemove)
-                args.Player.Voice.RemoveProfile(profile);
-
-            ListPool<VoiceProfile>.Shared.Return(profilesToRemove);
+        internal static void InternalHandleRoleChange(PlayerChangedRoleArgs args)
+        {
+            OnRoleChanged.InvokeSafe(args);
         }
 
         [LoaderInitialize(1)]

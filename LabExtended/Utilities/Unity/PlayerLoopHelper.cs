@@ -37,16 +37,13 @@ namespace LabExtended.Utilities.Unity
         {
             System = DefaultSystem;
 
-            if (ApiLoader.ApiConfig.LoopSection.ModifyLoops)
+            ModifySystem(x =>
             {
-                ModifySystem(x =>
-                {
-                    x.InjectBefore<Initialization.ProfilerStartFrame>(InvokeBefore, typeof(CustomBeforePlayerLoop));
-                    x.InjectAfter<PostLateUpdate.UpdateVideo>(InvokeAfter, typeof(CustomAfterPlayerLoop));
+                x.InjectBefore<Initialization.ProfilerStartFrame>(InvokeBefore, typeof(CustomBeforePlayerLoop));
+                x.InjectAfter<PostLateUpdate.UpdateVideo>(InvokeAfter, typeof(CustomAfterPlayerLoop));
 
-                    return x;
-                });
-            }
+                return x;
+            });
 
             mirrorRuntimeInitialize();
         }
@@ -324,6 +321,38 @@ namespace LabExtended.Utilities.Unity
             ListPool<Type>.Shared.Return(removeList);
         }
 
+        public static List<string> GetLoopNames(this PlayerLoopSystem system)
+        {
+            var loops = new List<string>();
+
+            if (system.subSystemList != null)
+            {
+                var list = new Stack<PlayerLoopSystem>();
+
+                list.Push(system);
+
+                while (list.Count > 0)
+                {
+                    var sys = list.Pop();
+
+                    if (sys.type != null)
+                    {
+                        loops.Add(sys.type.FullName);
+                    }
+
+                    if (sys.subSystemList != null)
+                    {
+                        for (int i = 0; i < sys.subSystemList.Length; i++)
+                        {
+                            list.Push(sys.subSystemList[i]);
+                        }
+                    }
+                }
+            }
+
+            return loops;
+        }
+
         public static string GetPlayerLoopNames(this PlayerLoopSystem system, string indent = "    ")
         {
             var builder = StringBuilderPool.Shared.Rent();
@@ -369,21 +398,39 @@ namespace LabExtended.Utilities.Unity
         private static void InvokeBefore() => BeforeLoop.InvokeSafe();
 
         [LoaderInitialize(0)]
-        internal static void InternalLoad()
+        private static void Init()
         {
-            if (ApiLoader.ApiConfig.LoopSection.ModifyLoops)
+            ModifySystem(x =>
             {
-                ModifySystem(x =>
+                x.InjectBefore<Initialization.ProfilerStartFrame>(InvokeBefore, typeof(CustomBeforePlayerLoop));
+                x.InjectAfter<PostLateUpdate.UpdateVideo>(InvokeAfter, typeof(CustomAfterPlayerLoop));
+
+                return x;
+            });
+        }
+
+        [LoaderInitialize(10)]
+        private static void InitModify()
+        {
+            ModifySystem(x =>
+            {
+                var config = ApiLoader.ApiConfig.LoopSection;
+                var allLoops = x.GetLoopNames();
+
+                if (config.AllLoops.Count != allLoops.Count || !config.AllLoops.SequenceEqual(allLoops))
                 {
-                    x.InjectBefore<Initialization.ProfilerStartFrame>(InvokeBefore, typeof(CustomBeforePlayerLoop));
-                    x.InjectAfter<PostLateUpdate.UpdateVideo>(InvokeAfter, typeof(CustomAfterPlayerLoop));
-
-                    var config = ApiLoader.ApiConfig.LoopSection;
-
-                    x.RemoveSystems(s => !config.RequiredLoops.Contains(s.type.FullName) && !config.RequiredLoops.Contains(s.type.Name));
-                    return x;
-                });
-            }
+                    config.AllLoops = allLoops;
+                    
+                    ApiLoader.SaveConfig();
+                }
+                
+                if (!config.ModifyLoops)
+                    return null;
+                
+                x.RemoveSystems(s =>
+                    config.RemovedLoops.Contains(s.type.FullName) || config.RemovedLoops.Contains(s.type.Name));
+                return x;
+            });
         }
     }
 }
