@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      LAB_EX_REFERENCES: "/home/runner/work/refs"
+      LABEX_REFERENCES: "/home/runner/work/refs"
       SL_REFERENCES: "/home/runner/work/refs"
 
     steps:
