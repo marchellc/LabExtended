@@ -27,9 +27,9 @@ namespace LabExtended.API.Containers
     /// <summary>
     /// A class used to manage player inventories.
     /// </summary>
-    public class InventoryContainer
+    public class InventoryContainer : IDisposable
     {
-        internal readonly LockedHashSet<ItemPickupBase> _droppedItems = new LockedHashSet<ItemPickupBase>();
+        internal HashSet<ItemPickupBase> _droppedItems;
         internal CandyBag _bag;
 
         /// <summary>
@@ -40,6 +40,8 @@ namespace LabExtended.API.Containers
         {
             Inventory = inventory;
             UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
+
+            _droppedItems = HashSetPool<ItemPickupBase>.Shared.Rent();
         }
 
         public ItemBase this[ushort itemSerial]
@@ -100,7 +102,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets a list of all items that have been dropped by this player.
         /// </summary>
-        public IReadOnlyList<ItemPickupBase> DroppedItems => _droppedItems;
+        public IReadOnlyCollection<ItemPickupBase> DroppedItems => _droppedItems;
 
         /// <summary>
         /// Gets permissions of the currently held keycard. <i>(<see cref="KeycardPermissions.None"/> if the player isn't holding a keycard)</i>.
@@ -443,9 +445,22 @@ namespace LabExtended.API.Containers
         public void Synchronize()
             => Inventory.ServerSendItems();
 
+        public void Dispose()
+        {
+            if (_droppedItems != null)
+            {
+                HashSetPool<ItemPickupBase>.Shared.Return(_droppedItems);
+                _droppedItems = null;
+            }
+            
+            _bag?.Dispose();
+            _bag = null;
+        }
+
         public override string ToString()
             => (CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
 
+        #region Operators
         public static implicit operator ItemBase(InventoryContainer container)
             => container?.CurrentItem;
 
@@ -463,5 +478,6 @@ namespace LabExtended.API.Containers
 
         public static implicit operator string(InventoryContainer container)
             => (container?.CurrentItem?.ItemTypeId ?? ItemType.None).ToString();
+        #endregion
     }
 }

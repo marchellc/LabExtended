@@ -17,7 +17,8 @@ namespace LabExtended.API.Containers
     /// <summary>
     /// A class used to manage player rotation.
     /// </summary>
-    public class RotationContainer {
+    public class RotationContainer 
+    {
         /// <summary>
         /// Creates a new <see cref="RotationContainer"/> instance.
         /// </summary>
@@ -41,7 +42,8 @@ namespace LabExtended.API.Containers
         /// </summary>
         public ExPlayer DirectlyLookingAtPlayer
         {
-            get {
+            get 
+            {
                 PhysicsUtils.IsDirectlyLookingAtPlayer(Player, out var target);
                 return target;
             }

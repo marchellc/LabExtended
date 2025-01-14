@@ -11,12 +11,9 @@ using InventorySystem.Items.Pickups;
 
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
-using LabExtended.API.CustomModules;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
-using LabExtended.API.Modules;
 using LabExtended.API.RemoteAdmin;
-using LabExtended.API.Voice;
 
 using LabExtended.Core;
 using LabExtended.Core.Networking;
@@ -50,14 +47,23 @@ using Utils;
 using VoiceChat;
 
 using GameCore;
+
 using LabApi.Features.Wrappers;
+
+using LabExtended.API.Collections;
+using LabExtended.API.CustomVoice;
+
+using LabExtended.Commands;
+using LabExtended.Core.Pooling.Pools;
+
+using NorthwoodLib.Pools;
 
 namespace LabExtended.API
 {
     /// <summary>
     /// A wrapper for the <see cref="ReferenceHub"/> class.
     /// </summary>
-    public class ExPlayer : Module
+    public class ExPlayer
     {
         internal static readonly LockedHashSet<ExPlayer> _players = new LockedHashSet<ExPlayer>(byte.MaxValue);
         internal static readonly LockedHashSet<ExPlayer> _npcPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
@@ -469,12 +475,8 @@ namespace LabExtended.API
 
         private RemoteAdminIconType _forcedIcons;
 
-        internal RemoteAdminModule _raModule;
-        internal PlayerStorageModule _storage;
-        internal VoiceModule _voice;
-
-        internal readonly LockedDictionary<int, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
-        internal readonly LockedHashSet<ExPlayer> _invisibility;
+        internal Dictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+        internal HashSet<ExPlayer> _invisibility;
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with default switches.
@@ -489,7 +491,7 @@ namespace LabExtended.API
         /// <param name="component">The <see cref="ReferenceHub"/> component instance.</param>
         /// <param name="switches">The <see cref="SwitchContainer"/> instance.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public ExPlayer(ReferenceHub component, SwitchContainer switches) : base()
+        public ExPlayer(ReferenceHub component, SwitchContainer switches)
         {
             if (component is null)
                 throw new ArgumentNullException(nameof(component));
@@ -498,8 +500,8 @@ namespace LabExtended.API
 
             _forcedIcons = RemoteAdminIconType.None;
 
-            _sentRoles = new LockedDictionary<int, RoleTypeId>();
-            _invisibility = new LockedHashSet<ExPlayer>();
+            _sentRoles = DictionaryPool<uint, RoleTypeId>.Shared.Rent();
+            _invisibility = HashSetPool<ExPlayer>.Shared.Rent();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
 
@@ -511,7 +513,7 @@ namespace LabExtended.API
             Role = new RoleContainer(component.roleManager);
             Ammo = new AmmoContainer(component.inventory);
             Stats = new StatsContainer(component.playerStats);
-            Effects = new EffectContainer(component.playerEffectsController);
+            Effects = new EffectContainer(component.playerEffectsController, this);
 
             Position = new PositionContainer(this);
             Rotation = new RotationContainer(this);
@@ -522,6 +524,21 @@ namespace LabExtended.API
 
             Switches = switches;
 
+            TemporaryStorage = new PlayerStorage(false, this);
+
+            if (PlayerStorage._persistentStorage.TryGetValue(component.authManager.UserId, out var persistentStorage))
+            {
+                persistentStorage.Player = this;
+                PersistentStorage = persistentStorage;
+            }
+            else
+            {
+                PersistentStorage = new PlayerStorage(true, this);
+            }
+
+            RemoteAdmin = new RemoteAdminController(this);
+            Voice = new VoiceController(this);
+            
             if (_preauthData.TryGetValue(component.authManager.UserId, out var region))
                 CountryCode = region;
             else
@@ -533,8 +550,8 @@ namespace LabExtended.API
         /// </summary>
         public float VoicePitch
         {
-            get => _voice?.VoicePitch ?? 1f;
-            set => _voice!.VoicePitch = value;
+            get => Voice?.Pitch?.InstancePitch ?? 1f;
+            set => Voice!.Pitch!.InstancePitch = value;
         }
 
         /// <summary>
@@ -555,47 +572,57 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player's <see cref="RoleContainer"/>.
         /// </summary>
-        public RoleContainer Role { get; }
+        public RoleContainer Role { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="AmmoContainer"/>.
         /// </summary>
-        public AmmoContainer Ammo { get; }
+        public AmmoContainer Ammo { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="StatsContainer"/>.
         /// </summary>
-        public StatsContainer Stats { get; }
+        public StatsContainer Stats { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="EffectContainer"/>.
         /// </summary>
-        public EffectContainer Effects { get; }
+        public EffectContainer Effects { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="SwitchContainer"/>.
         /// </summary>
-        public SwitchContainer Switches { get; }
+        public SwitchContainer Switches { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="PositionContainer"/>.
         /// </summary>
-        public PositionContainer Position { get; }
+        public PositionContainer Position { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="RotationContainer"/>.
         /// </summary>
-        public RotationContainer Rotation { get; }
+        public RotationContainer Rotation { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="InventoryContainer"/>.
         /// </summary>
-        public InventoryContainer Inventory { get; }
+        public InventoryContainer Inventory { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="SubroutineContainer"/>.
         /// </summary>
-        public SubroutineContainer Subroutines { get; }
+        public SubroutineContainer Subroutines { get; internal set; }
+        
+        /// <summary>
+        /// Gets the player's temporary storage.
+        /// </summary>
+        public PlayerStorage TemporaryStorage { get; internal set; }
+        
+        /// <summary>
+        /// Gets the player's persistent storage.
+        /// </summary>
+        public PlayerStorage PersistentStorage { get; internal set; }
 
         /// <summary>
         /// Gets the player's <see cref="ReferenceHub"/> component.
@@ -623,19 +650,14 @@ namespace LabExtended.API
         public NetworkConnectionToClient Connection => _hub.connectionToClient;
 
         /// <summary>
-        /// Gets the player's <see cref="RemoteAdminModule"/>.
+        /// Gets the player's <see cref="RemoteAdminController"/>.
         /// </summary>
-        public RemoteAdminModule RemoteAdmin => _raModule;
+        public RemoteAdminController RemoteAdmin { get; internal set; }
 
         /// <summary>
-        /// Gets the player's <see cref="PlayerStorageModule"/>.
+        /// Gets the player's <see cref="VoiceController"/>.
         /// </summary>
-        public PlayerStorageModule Storage => _storage;
-
-        /// <summary>
-        /// Gets the player's <see cref="VoiceModule"/>.
-        /// </summary>
-        public VoiceModule Voice => _voice;
+        public VoiceController Voice { get; internal set; }
 
         /// <summary>
         /// Gets the currently spectated player.
@@ -658,19 +680,9 @@ namespace LabExtended.API
         public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
 
         /// <summary>
-        /// Gets a list of active <see cref="VoiceModifier"/>s.
-        /// </summary>
-        public IEnumerable<VoiceModifier> VoiceModifiers => _voice.Modifiers;
-
-        /// <summary>
-        /// Gets a list of active <see cref="VoiceProfile"/>s.
-        /// </summary>
-        public IEnumerable<VoiceProfile> VoiceProfiles => _voice.Profiles;
-
-        /// <summary>
         /// Gets a list of players that this player will be invisible to.
         /// </summary>
-        public LockedHashSet<ExPlayer> InvisibleToTargets => _invisibility;
+        public HashSet<ExPlayer> InvisibleToTargets => _invisibility;
 
         /// <summary>
         /// Gets the player's <see cref="UnityEngine.Transform"/>.
@@ -791,7 +803,7 @@ namespace LabExtended.API
         /// <summary>
         /// Whether or not the player has the Remote Admin panel open.
         /// </summary>
-        public bool HasRemoteAdminOpened => _raModule.IsRemoteAdminOpen;
+        public bool HasRemoteAdminOpened => RemoteAdmin.IsRemoteAdminOpen;
 
         /// <summary>
         /// Whether or not the player has access to Admin Chat.
@@ -1336,6 +1348,55 @@ namespace LabExtended.API
 
         internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
             => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
+
+        internal void Dispose()
+        {
+            Effects?.Dispose();
+            Effects = null;
+            
+            Inventory?.Dispose();
+            Inventory = null;
+            
+            RemoteAdmin?.Dispose();
+            RemoteAdmin = null;
+            
+            Voice?.Dispose();
+            Voice = null;
+            
+            TemporaryStorage?.Dispose();
+            TemporaryStorage = null;
+
+            if (PersistentStorage != null)
+            {
+                if (!PlayerStorage._persistentStorage.ContainsKey(UserId))
+                    PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
+
+                PersistentStorage = null;
+            }
+
+            if (_sentRoles != null)
+            {
+                DictionaryPool<uint, RoleTypeId>.Shared.Return(_sentRoles);
+                _sentRoles = null;
+            }
+
+            if (_invisibility != null)
+            {
+                HashSetPool<ExPlayer>.Shared.Return(_invisibility);
+                _invisibility = null;
+            }
+
+            CustomCommand._continuedContexts.Remove(NetId);
+            
+            foreach (var other in _allPlayers)
+            {
+                other._sentRoles.Remove(NetId);
+                other._invisibility.Remove(this);
+            }
+
+            foreach (var helper in PlayerCollection.m_Handlers)
+                helper.Remove(NetId);
+        }
         #endregion
 
         #region Operators

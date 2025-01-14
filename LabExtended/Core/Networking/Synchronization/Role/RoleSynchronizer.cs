@@ -44,10 +44,10 @@ namespace LabExtended.Core.Networking.Synchronization.Role
                     if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
                         role = RoleTypeId.Spectator;
 
-                    if (player._sentRoles.TryGetValue(other.PlayerId, out var sentRole) && sentRole == role)
+                    if (player._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == role)
                         continue;
 
-                    player._sentRoles[other.PlayerId] = role;
+                    player._sentRoles[other.NetId] = role;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, role, other.Hub));
                 }
             }

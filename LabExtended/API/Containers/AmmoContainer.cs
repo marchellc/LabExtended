@@ -1,6 +1,8 @@
 ﻿using InventorySystem;
 using InventorySystem.Items.Firearms.Ammo;
+
 using LabExtended.Extensions;
+
 using UnityEngine;
 
 namespace LabExtended.API.Containers

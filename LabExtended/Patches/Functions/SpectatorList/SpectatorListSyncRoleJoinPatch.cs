@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Functions.SpectatorList
 
                 new RoleSyncInfo(player.Hub, sentRole, receiver.Hub).Write(writer);
 
-                player._sentRoles[receiver.PlayerId] = sentRole;
+                player._sentRoles[receiver.NetId] = sentRole;
             }
 
             return false;

@@ -1,5 +1,9 @@
 ﻿using LabExtended.API;
 
+using UnityEngine;
+
+using VoiceChat.Networking;
+
 namespace LabExtended.Events.Player
 {
     /// <summary>
@@ -7,32 +11,57 @@ namespace LabExtended.Events.Player
     /// </summary>
     public class PlayerStoppedSpeakingArgs
     {
+        private DateTime? startTime;
+        private TimeSpan? duration;
+        
         /// <summary>
         /// The player who stopped speaking.
         /// </summary>
         public ExPlayer Player { get; }
+        
+        /// <summary>
+        /// The time when the player started speaking.
+        /// </summary>
+        public float StartTime { get; }
 
         /// <summary>
         /// The time when the player started speaking.
         /// </summary>
-        public DateTime StartedAt { get; }
+        public DateTime StartedAt
+        {
+            get
+            {
+                if (!startTime.HasValue)
+                    startTime = DateTime.Now.Subtract(SpeakingFor);
+
+                return startTime.Value;
+            }
+        }
 
         /// <summary>
         /// How long the player was speaking.
         /// </summary>
-        public TimeSpan SpeakingFor { get; }
+        public TimeSpan SpeakingFor
+        {
+            get
+            {
+                if (!duration.HasValue)
+                    duration = TimeSpan.FromSeconds(Time.realtimeSinceStartup - StartTime);
+
+                return duration.Value;
+            }
+        }
 
         /// <summary>
         /// An array of captured voice packets.
         /// </summary>
-        public IReadOnlyList<byte[]> Packets { get; }
+        public IReadOnlyDictionary<float, VoiceMessage> Packets { get; }
 
-        internal PlayerStoppedSpeakingArgs(ExPlayer player, DateTime startedAt, TimeSpan speakingFor, IReadOnlyList<byte[]> packets)
+        internal PlayerStoppedSpeakingArgs(ExPlayer player, float startTime, IReadOnlyDictionary<float, VoiceMessage> packets)
         {
             Player = player;
-            StartedAt = startedAt;
-            SpeakingFor = speakingFor;
             Packets = packets;
+            StartTime = startTime;
         }
     }
 }

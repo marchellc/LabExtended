@@ -1,18 +1,20 @@
 ﻿using InventorySystem.Items.Usables.Scp330;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.Wrappers;
+
+using NorthwoodLib.Pools;
 
 namespace LabExtended.API.Items.Candies
 {
-    public class CandyBag : Wrapper<Scp330Bag>
+    public class CandyBag : Wrapper<Scp330Bag>, IDisposable
     {
-        internal readonly LockedHashSet<CandyItem> _candies = new LockedHashSet<CandyItem>();
+        internal HashSet<CandyItem> _candies;
         internal CandyItem _selected;
 
         public CandyBag(Scp330Bag baseValue, ExPlayer owner) : base(baseValue)
         {
             Owner = owner;
+            _candies = HashSetPool<CandyItem>.Shared.Rent();
         }
 
         public ExPlayer Owner { get; }
@@ -75,7 +77,7 @@ namespace LabExtended.API.Items.Candies
             }
         }
 
-        public IReadOnlyList<CandyItem> Candies => _candies;
+        public IReadOnlyCollection<CandyItem> Candies => _candies;
         public IReadOnlyList<CandyKindID> Types => Base.Candies;
 
         public CandyKindID GetCandyType(int index)
@@ -122,5 +124,16 @@ namespace LabExtended.API.Items.Candies
 
         public void Drop(CandyItem item)
             => Base.DropCandy(item.Index);
+
+        public void Dispose()
+        {
+            _selected = null;
+            
+            if (_candies != null)
+            {
+                HashSetPool<CandyItem>.Shared.Return(_candies);
+                _candies = null;
+            }
+        }
     }
 }

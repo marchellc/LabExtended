@@ -22,49 +22,49 @@
 
     <ItemGroup>
       <Reference Include="Assembly-CSharp">
-        <HintPath>..\..\..\refs\Assembly-CSharp-publicized.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Assembly-CSharp-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Assembly-CSharp-firstpass">
-        <HintPath>..\..\..\refs\Assembly-CSharp-firstpass.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Assembly-CSharp-firstpass.dll</HintPath>
       </Reference>
       <Reference Include="CommandSystem.Core">
-        <HintPath>..\..\..\refs\CommandSystem.Core.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\CommandSystem.Core.dll</HintPath>
       </Reference>
       <Reference Include="LabApi">
-        <HintPath>..\..\..\refs\LabApi-publicized.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\LabApi-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Mirror">
-        <HintPath>..\..\..\refs\Mirror-publicized.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Mirror-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Mirror.Components">
-        <HintPath>..\..\..\refs\Mirror.Components.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Mirror.Components.dll</HintPath>
       </Reference>
       <Reference Include="NorthwoodLib">
-        <HintPath>..\..\..\refs\NorthwoodLib-publicized.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\NorthwoodLib-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Pooling">
-        <HintPath>..\..\..\refs\Pooling.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Pooling.dll</HintPath>
       </Reference>
       <Reference Include="Unity.TextMeshPro">
-        <HintPath>..\..\..\refs\Unity.TextMeshPro.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Unity.TextMeshPro.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine">
-        <HintPath>..\..\..\refs\UnityEngine.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\UnityEngine.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.AudioModule">
-        <HintPath>..\..\..\refs\UnityEngine.AudioModule.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\UnityEngine.AudioModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.CoreModule">
-        <HintPath>..\..\..\refs\UnityEngine.CoreModule.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\UnityEngine.CoreModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.PhysicsModule">
-        <HintPath>..\..\..\refs\UnityEngine.PhysicsModule.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\UnityEngine.PhysicsModule.dll</HintPath>
       </Reference>
       <Reference Include="UnityEngine.UI">
-        <HintPath>..\..\..\refs\UnityEngine.UI.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\UnityEngine.UI.dll</HintPath>
       </Reference>
       <Reference Include="YamlDotNet">
-        <HintPath>..\..\..\refs\YamlDotNet.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\YamlDotNet.dll</HintPath>
       </Reference>
     </ItemGroup>
 

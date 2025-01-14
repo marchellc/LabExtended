@@ -5,18 +5,12 @@ using LabApi.Events.Arguments.ServerEvents;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
-using LabExtended.API.Voice;
-using LabExtended.API.Modules;
-using LabExtended.API.RemoteAdmin;
-using LabExtended.API.Collections;
-using LabExtended.API.CustomModules;
 
 using LabExtended.Core;
 
 using LabExtended.Events.Player;
 
 using LabExtended.Attributes;
-using LabExtended.Commands;
 using LabExtended.Extensions;
 
 using NetworkManagerUtils;
@@ -38,11 +32,8 @@ namespace LabExtended.Events
         
         private static void InternalHandleRoundWaiting()
         {
-            if (ExPlayer._hostPlayer != null)
-            {
-                ExPlayer._hostPlayer.StopModule();
-                ExPlayer._hostPlayer = null;
-            }
+            ExPlayer._hostPlayer?.Dispose();
+            ExPlayer._hostPlayer = null;
             
             ExPlayer._preauthData.Clear();
             DamageInfo._wrappers.Clear();    
@@ -91,38 +82,6 @@ namespace LabExtended.Events
 
         internal static void InternalHandlePlayerJoin(ExPlayer player)
         {
-            if (TransientModule._cachedModules.TryGetValue(player.UserId, out var transientModules))
-            {
-                foreach (var module in transientModules)
-                {
-                    var type = module.GetType();
-
-                    if (!player._modules.ContainsKey(type))
-                    {
-                        player._modules[type] = module;
-
-                        module.Parent = player;
-                        module.StartModule();
-
-                        player.OnModuleAdded(module);
-
-                        ApiLog.Debug("Modules API", $"Re-added transient module &3{type.Name}&r (&6{module.ModuleId}&r) to player &3{player.Name}&r (&6{player.UserId}&r)!");
-                    }
-                    else
-                    {
-                        ApiLog.Warn("Extended API", $"Could not add transient module &3{type.Name}&r to player &3{player.Name}&r (&6{player.UserId}&r) - active instance found.");
-                    }
-                }
-            }
-
-            player._voice = player.AddModule<VoiceModule>();
-            player._raModule = player.AddModule<RemoteAdminModule>();
-
-            if (player._modules.TryGetValue(typeof(PlayerStorageModule), out var storageModule))
-                player._storage = (PlayerStorageModule)storageModule;
-            else
-                player._storage = player.AddModule<PlayerStorageModule>();
-
             if (!ExPlayer._allPlayers.Contains(player))
             {
                 ExPlayer._allPlayers.Add(player);
@@ -157,24 +116,8 @@ namespace LabExtended.Events
 
             if (ExPlayer._hostPlayer != null && ExPlayer._hostPlayer == player)
                 ExPlayer._hostPlayer = null;
-
-            player._sentRoles.Clear();
-            player._invisibility.Clear();
-
-            player.Inventory._droppedItems.Clear();
-
-            CustomCommand._continuedContexts.Remove(player.NetId);
-
-            foreach (var other in ExPlayer._allPlayers)
-            {
-                other._sentRoles.Remove(player.PlayerId);
-                other._invisibility.Remove(player);
-            }
-
-            foreach (var helper in PlayerCollection.m_Handlers)
-                helper.Remove(player.NetId);
-
-            player.StopModule();
+            
+            player.Dispose();
 
             ExPlayer._allPlayers.Remove(player);
 

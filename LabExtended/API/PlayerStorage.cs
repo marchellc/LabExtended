@@ -1,13 +1,58 @@
-﻿using LabExtended.API.Modules;
+﻿using LabExtended.Core.Pooling.Pools;
 
-namespace LabExtended.API.CustomModules
+namespace LabExtended.API
 {
     /// <summary>
     /// A transient module used for data storage between sessions.
     /// </summary>
-    public class PlayerStorageModule : TransientModule
+    public class PlayerStorage : IDisposable
     {
-        private readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
+        internal static readonly Dictionary<string, PlayerStorage> _persistentStorage = new Dictionary<string, PlayerStorage>();
+
+        private Dictionary<string, object> _storage;
+        
+        /// <summary>
+        /// Whether or not this storage is persistent.
+        /// </summary>
+        public bool IsPersistent { get; }
+
+        /// <summary>
+        /// Whether or not the player that owns this storage is online.
+        /// </summary>
+        public bool IsJoined => Player != null && Player;
+        
+        /// <summary>
+        /// Whether or not this storage is empty.
+        /// </summary>
+        public bool IsEmpty => _storage.Count == 0;
+        
+        /// <summary>
+        /// Amount of items currently in this storage.
+        /// </summary>
+        public int Count => _storage.Count;
+        
+        /// <summary>
+        /// Gets the player that this storage belongs to.
+        /// </summary>
+        public ExPlayer Player { get; internal set; }
+
+        /// <summary>
+        /// Gets or sets an item in storage.
+        /// </summary>
+        /// <param name="key">The item's key.</param>
+        public object this[string key]
+        {
+            get => _storage[key];
+            set => _storage[key] = value;
+        }
+
+        public PlayerStorage(bool isPersistent, ExPlayer player)
+        {
+            Player = player;
+            IsPersistent = isPersistent;
+
+            _storage = DictionaryPool<string, object>.Shared.Rent();
+        }
 
         /// <summary>
         /// Tries to retrieve the <paramref name="value"/> saved under the <paramref name="name"/>.
@@ -62,6 +107,24 @@ namespace LabExtended.API.CustomModules
         }
 
         /// <summary>
+        /// Gets the value saved under the <paramref name="name"/> (or creates a new one).
+        /// </summary>
+        /// <typeparam name="T">Type of the value to retrieve.</typeparam>
+        /// <param name="name">The name the value was saved under.</param>
+        /// <param name="factory">The method used to construct a new item instance.</param>
+        /// <returns>The saved value if found, otherwise <paramref name="defaultValue"/>.</returns>
+        public T GetOrAdd<T>(string name, Func<T> factory)
+        {
+            if (_storage.TryGetValue(name, out var cachedValue) && cachedValue != null && cachedValue is T castValue)
+                return castValue;
+
+            var value = factory();
+
+            _storage[name] = value;
+            return value;
+        }
+
+        /// <summary>
         /// Saves a <paramref name="value"/> under a specific <paramref name="name"/>.
         /// </summary>
         /// <param name="name">The name to save the <paramref name="value"/> under.</param>
@@ -82,5 +145,16 @@ namespace LabExtended.API.CustomModules
         /// <returns>Whether or not the value was succesfully removed.</returns>
         public bool Remove(string key)
             => _storage.Remove(key);
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            if (_storage != null)
+            {
+                DictionaryPool<string, object>.Shared.Return(_storage);
+
+                _storage = null;
+            }
+        }
     }
 }

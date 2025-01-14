@@ -1,11 +1,11 @@
 ﻿using LabExtended.API.Enums;
-using LabExtended.API.Modules;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
 using LabExtended.Core.Hooking;
 
+using LabExtended.Utilities;
 using LabExtended.Extensions;
 using LabExtended.Events.Player;
 using LabExtended.Utilities.Generation;
@@ -17,7 +17,7 @@ using System.Text;
 
 namespace LabExtended.API.RemoteAdmin
 {
-    public class RemoteAdminModule : GenericModule<ExPlayer>
+    public class RemoteAdminController : IDisposable
     {
         private static readonly UniqueStringGenerator _objectIdGenerator = new UniqueStringGenerator(10, false);
         private static readonly UniqueInt32Generator _listIdGenerator = new UniqueInt32Generator(6000, 11000);
@@ -29,24 +29,28 @@ namespace LabExtended.API.RemoteAdmin
         private bool _wasOpen = false;
 
         public bool IsRemoteAdminOpen { get; private set; }
+        
+        public ExPlayer Player { get; }
 
         public IReadOnlyList<IRemoteAdminObject> Objects => _objects;
 
-        public override void OnStarted()
+        public RemoteAdminController(ExPlayer player)
         {
-            base.OnStarted();
-
             _lastListRequestTime = DateTime.MinValue;
             _wasOpen = false;
+            
+            Player = player;
 
             foreach (var type in _globalObjects)
                 AddObject(type);
+
+            PlayerUpdateHelper.OnUpdate += Update;
         }
 
-        public override void OnStopped()
+        public void Dispose()
         {
-            base.OnStopped();
-
+            PlayerUpdateHelper.OnUpdate -= Update;
+            
             _lastListRequestTime = DateTime.MinValue;
             _wasOpen = false;
 
@@ -63,19 +67,6 @@ namespace LabExtended.API.RemoteAdmin
             }
         }
 
-        public override void Update()
-        {
-            IsRemoteAdminOpen = (DateTime.Now - _lastListRequestTime).TotalSeconds < 1.1 + CastParent.Ping;
-
-            if (IsRemoteAdminOpen != _wasOpen)
-            {
-                _wasOpen = IsRemoteAdminOpen;
-
-                if (IsRemoteAdminOpen)
-                    HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(CastParent));
-            }
-        }
-
         public void SendObjectHelp()
         {
             if (_objects.Count < 1)
@@ -89,13 +80,13 @@ namespace LabExtended.API.RemoteAdmin
 
             foreach (var button in RemoteAdminButtons.Buttons)
             {
-                button.Value.OnOpened(CastParent, builder, pos, list);
+                button.Value.OnOpened(Player, builder, pos, list);
                 pos += 26;
             }
 
             ListPool<IRemoteAdminObject>.Shared.Return(list);
 
-            CastParent.SendRemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
+            Player.SendRemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
         }
 
         public IRemoteAdminObject AddObject(Type objectType, string customId = null)
@@ -217,10 +208,10 @@ namespace LabExtended.API.RemoteAdmin
                 if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
                     continue;
 
-                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && CastParent.IsNorthwoodStaff)
+                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
                     continue;
 
-                if (!obj.GetVisiblity(CastParent))
+                if (!obj.GetVisiblity(Player))
                     continue;
 
                 if (obj.Icons != RemoteAdminIconType.None)
@@ -233,7 +224,7 @@ namespace LabExtended.API.RemoteAdmin
                 }
 
                 builder.Append($"({obj.ListId}) ");
-                builder.Append(obj.GetName(CastParent).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
+                builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
                 builder.AppendLine();
             }
         }
@@ -248,10 +239,10 @@ namespace LabExtended.API.RemoteAdmin
                 if (obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
                     continue;
 
-                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && CastParent.IsNorthwoodStaff)
+                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
                     continue;
 
-                if (!obj.GetVisiblity(CastParent))
+                if (!obj.GetVisiblity(Player))
                     continue;
 
                 if (obj.Icons != RemoteAdminIconType.None)
@@ -264,12 +255,25 @@ namespace LabExtended.API.RemoteAdmin
                 }
 
                 builder.Append($"({obj.ListId}) ");
-                builder.Append(obj.GetName(CastParent).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
+                builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
                 builder.AppendLine();
             }
         }
 
         internal void InternalRegisterRequest()
             => _lastListRequestTime = DateTime.Now;
+        
+        private void Update()
+        {
+            IsRemoteAdminOpen = (DateTime.Now - _lastListRequestTime).TotalSeconds < 1.1 + Player.Ping;
+
+            if (IsRemoteAdminOpen != _wasOpen)
+            {
+                _wasOpen = IsRemoteAdminOpen;
+
+                if (IsRemoteAdminOpen)
+                    HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(Player));
+            }
+        }
     }
 }

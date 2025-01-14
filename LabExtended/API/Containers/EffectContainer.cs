@@ -10,21 +10,27 @@ using LabExtended.Extensions;
 using NorthwoodLib.Pools;
 
 using System.Reflection;
+
+using LabExtended.API.CustomEffects;
 using LabExtended.Core.Pooling.Pools;
+
 using UnityEngine;
 
 namespace LabExtended.API.Containers
 {
-    public class EffectContainer
+    public class EffectContainer : IDisposable
     {
         private static readonly IEnumerable<PropertyInfo> _properties;
 
         static EffectContainer()
             => _properties = typeof(EffectContainer).FindProperties(x => (x.GetSetMethod(true)?.IsPrivate ?? false));
 
-        public Dictionary<Type, StatusEffectBase> Effects { get; }
+        public Dictionary<Type, StatusEffectBase> Effects { get; internal set; }
+        public Dictionary<Type, CustomEffect> CustomEffects { get; internal set; }
 
         public PlayerEffectsController Controller { get; }
+        
+        public ExPlayer Player { get; }
 
         public int Count => Effects.Count;
 
@@ -110,11 +116,14 @@ namespace LabExtended.API.Containers
             set => FogControl.SetFogType(value);
         }
 
-        public EffectContainer(PlayerEffectsController controller)
+        public EffectContainer(PlayerEffectsController controller, ExPlayer player)
         {
+            if (controller is null)
+                throw new ArgumentNullException(nameof(controller));
+            
             try
             {
-                var dict = new Dictionary<Type, StatusEffectBase>();
+                var dict = DictionaryPool<Type, StatusEffectBase>.Shared.Rent();
                 var props = ListPool<PropertyInfo>.Shared.Rent();
 
                 foreach (var effect in controller.AllEffects)
@@ -141,7 +150,9 @@ namespace LabExtended.API.Containers
                 }
 
                 Effects = dict;
+                Player = player;
                 Controller = controller;
+                CustomEffects = DictionaryPool<Type, CustomEffect>.Shared.Rent();
 
                 if (props.Count != _properties.Count())
                 {
@@ -461,6 +472,94 @@ namespace LabExtended.API.Containers
                 return null;
 
             return (T)effect;
+        }
+        
+        public bool HasCustomEffect<T>() where T : CustomEffect
+            => CustomEffects.ContainsKey(typeof(T));
+
+        public bool HasCustomEffectActive<T>() where T : CustomEffect
+            => CustomEffects.TryGetValue(typeof(T), out var effect) && effect.IsActive;
+
+        public bool TryGetCustomEffect<T>(out T effect) where T : CustomEffect
+        {
+            effect = null;
+            
+            if (!CustomEffects.TryGetValue(typeof(T), out var instance) || effect is not T effectInstance)
+                return false;
+            
+            effect = effectInstance;
+            return true;
+        }
+
+        public T GetCustomEffect<T>() where T : CustomEffect
+        {
+            if (!CustomEffects.TryGetValue(typeof(T), out var effect))
+                throw new KeyNotFoundException($"No effect found for type {typeof(T).Name}");
+            
+            return (T)effect;
+        }
+
+        public T GetOrAddCustomEffect<T>(bool enableEffect = false) where T : CustomEffect
+        {
+            if (!TryGetCustomEffect<T>(out var effect))
+                return AddCustomEffect<T>(enableEffect);
+
+            return effect;
+        }
+
+        public T AddCustomEffect<T>(bool enableEffect = false) where T : CustomEffect
+        {
+            if (CustomEffects.TryGetValue(typeof(T), out var activeEffect))
+                return (T)activeEffect;
+            
+            var effect = Activator.CreateInstance<T>();
+
+            CustomEffects.Add(typeof(T), effect);
+            
+            effect.Player = Player;
+            effect.Start();
+
+            if (enableEffect)
+                effect.Enable();
+            
+            return effect;
+        }
+
+        public bool RemoveCustomEffect<T>() where T : CustomEffect
+        {
+            if (!CustomEffects.TryGetValue(typeof(T), out var effect))
+                return false;
+            
+            CustomEffects.Remove(typeof(T));
+            
+            if (effect.IsActive)
+                effect.Disable();
+            
+            effect.Stop();
+            return true;
+        }
+
+        public void Dispose()
+        {
+            if (Effects != null)
+            {
+                DictionaryPool<Type, StatusEffectBase>.Shared.Return(Effects);
+                Effects = null;
+            }
+
+            if (CustomEffects != null)
+            {
+                foreach (var customEffect in CustomEffects)
+                {
+                    if (customEffect.Value.IsActive)
+                        customEffect.Value.Disable();
+
+                    customEffect.Value.Stop();
+                }
+                
+                DictionaryPool<Type, CustomEffect>.Shared.Return(CustomEffects);
+                CustomEffects = null;
+            }
         }
     }
 }

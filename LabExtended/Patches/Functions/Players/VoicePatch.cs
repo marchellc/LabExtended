@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Voice.Threading;
-using LabExtended.API;
+﻿using LabExtended.API;
 
 using LabExtended.Core;
 
@@ -14,10 +13,14 @@ using CentralAuth;
 
 using HarmonyLib;
 
+using LabExtended.Extensions;
+
 namespace LabExtended.Patches.Functions.Players
 {
     public static class VoicePatch
     {
+        public static event Action<ExPlayer, VoiceMessage> OnMessage;
+        
         [HarmonyPatch(typeof(VoiceTransceiver), nameof(VoiceTransceiver.ServerReceiveMessage))]
         public static bool Prefix(VoiceMessage msg, NetworkConnection conn)
         {
@@ -30,42 +33,9 @@ namespace LabExtended.Patches.Functions.Players
             if (!ExPlayer.TryGet(msg.Speaker, out var speaker))
                 return false;
 
-            if (!ApiLoader.ApiConfig.VoiceSection.DisableCustomVoice)
-            {
-                if (ThreadedVoiceChat.IsRunning)
-                {
-                    ThreadedVoiceChat.Receive(speaker, ref msg);
-                    return false;
-                }
-
-                speaker._voice.ReceiveMessage(ref msg);
-                return false;
-            }
-
-            var sendChannel = voiceRole.VoiceModule.ValidateSend(msg.Channel);
-
-            if (sendChannel is VoiceChatChannel.None)
-                return false;
-
-            voiceRole.VoiceModule.CurrentChannel = sendChannel;
-
-            foreach (var hub in ReferenceHub.AllHubs)
-            {
-                if (hub.Mode != ClientInstanceMode.ReadyClient)
-                    continue;
-
-                if (hub.roleManager.CurrentRole is not IVoiceRole recvRole)
-                    continue;
-
-                var recvChannel = recvRole.VoiceModule.ValidateReceive(msg.Speaker, sendChannel);
-
-                if (recvChannel is VoiceChatChannel.None)
-                    continue;
-
-                msg.Channel = recvChannel;
-                hub.connectionToClient.Send(msg);
-            }
-
+            OnMessage.InvokeSafe(speaker, msg);
+            
+            speaker.Voice.Pitch.ProcessMessage(ref msg);
             return false;
         }
     }
