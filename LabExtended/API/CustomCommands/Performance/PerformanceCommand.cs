@@ -1,4 +1,5 @@
-﻿using CommandSystem;
+﻿#define ENABLE_PROFILER
+using CommandSystem;
 
 using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
@@ -8,7 +9,12 @@ using NorthwoodLib.Pools;
 
 using System.Diagnostics;
 
+using LabExtended.Core;
+
+using Unity.Profiling;
+
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace LabExtended.API.CustomCommands.Performance
 {
@@ -16,6 +22,8 @@ namespace LabExtended.API.CustomCommands.Performance
     [CommandHandler(typeof(GameConsoleCommandHandler))]
     public class PerformanceCommand : CustomCommand
     {
+        public static Dictionary<string, Recorder> recorders = new Dictionary<string, Recorder>();
+        
         public override string Command => "performance";
         public override string Description => "Shows your server's performance stats.";
 
@@ -24,6 +32,37 @@ namespace LabExtended.API.CustomCommands.Performance
         public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
         {
             base.OnCommand(sender, ctx, args);
+
+            if (recorders.Count == 0)
+            {
+                ApiLog.Debug("Performance Command", $"Setting up profiler recorders");
+                
+                var categories = new ProfilerCategory[Profiler.GetCategoriesCount()];
+                
+                ApiLog.Debug("Performance Command", $"Category array: {categories.Length}");
+                
+                Profiler.GetAllCategories(categories);
+                
+                ApiLog.Debug("Performance Command", $"Retrieved categories");
+
+                for (int i = 0; i < categories.Length; i++)
+                {
+                    var category = categories[i];
+                    
+                    ApiLog.Debug("Performance Command", $"Category: {category.Name}");
+
+                    var recorder = Recorder.Get(category.Name);
+
+                    if (recorder is null)
+                    {
+                        ApiLog.Debug("Performance Command", $"Recorder for category {category.Name} not found");
+                        continue;
+                    }
+                    
+                    recorder.enabled = true;
+                    recorders.Add(category.Name, recorder);
+                }
+            }
 
             var builder = StringBuilderPool.Shared.Rent();
             var proc = Process.GetCurrentProcess();
@@ -41,6 +80,18 @@ namespace LabExtended.API.CustomCommands.Performance
             builder.AppendLine($"- Frame Time (how long it takes to execute a single frame): {stim * 1000} ms");
             builder.AppendLine($"- Targeted Frame Rate (maximum amount of frames per second): {sftt} TPS");
             builder.AppendLine($"- Memory Usage: {(global::Mirror.Utils.PrettyBytes(smemcur))} (Max Used: {(global::Mirror.Utils.PrettyBytes(proc.PeakWorkingSet64))})");
+
+            builder.AppendLine($"- Unity Profilers ({recorders.Count}):");
+
+            foreach (var recorder in recorders)
+            {
+                if (!recorder.Value.enabled)
+                    continue;
+                
+                recorder.Value.CollectFromAllThreads();
+                
+                builder.AppendLine($"   - {recorder.Key}: {recorder.Value.elapsedNanoseconds / 1000000} ms ({recorder.Value.sampleBlockCount})");
+            }
 
             ctx.RespondOk(StringBuilderPool.Shared.ToStringReturn(builder));
         }

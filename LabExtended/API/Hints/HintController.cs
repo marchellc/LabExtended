@@ -6,18 +6,21 @@ using LabExtended.API.Enums;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
 
+using LabExtended.Events;
 using LabExtended.Extensions;
+
 using LabExtended.Utilities;
+using LabExtended.Utilities.Unity;
 
 using NorthwoodLib.Pools;
 
 using System.Text;
-using LabExtended.Core.Pooling.Pools;
-using LabExtended.Events;
-using LabExtended.Utilities.Unity;
+
 using UnityEngine;
 using UnityEngine.PlayerLoop;
+
 using HintMessage = LabExtended.API.Messages.HintMessage;
 
 namespace LabExtended.API.Hints

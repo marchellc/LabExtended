@@ -77,6 +77,8 @@ public static class MultiThreadDispatcher
 
         operation.Target = target;
         operation.Callback = callback;
+        
+        Dispatch(operation);
     }
     
     public static void DispatchOnMainThread(this Func<object> target, Action<Exception, object> callback = null)
@@ -89,6 +91,8 @@ public static class MultiThreadDispatcher
         operation.Target = target;
         operation.Callback = callback;
         operation.IsMainThread = true;
+        
+        Dispatch(operation);
     }
     
     public static void Dispatch(MultiThreadOperation threadOperation)

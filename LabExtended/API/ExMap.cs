@@ -546,6 +546,9 @@ namespace LabExtended.API
         {
             try
             {
+                if (identity is null)
+                    return;
+                
                 _generators.RemoveWhere(x => x.NetId == identity.netId);
                 _airlocks.RemoveWhere(x => x.NetId == identity.netId);
                 _ragdolls.RemoveWhere(x => x.netId == identity.netId);
@@ -556,7 +559,15 @@ namespace LabExtended.API
                 _toys.RemoveWhere(x => x.NetId == identity.netId);
 
                 foreach (var player in ExPlayer.AllPlayers)
+                {
+                    if (!player)
+                        continue;
+                    
+                    if (player.Inventory is null || player.Inventory._droppedItems is null)
+                        continue;
+                    
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
+                }
 
                 if (identity.TryGetComponent<IInteractable>(out var interactable))
                     InteractableCollider.AllInstances.Remove(interactable);
