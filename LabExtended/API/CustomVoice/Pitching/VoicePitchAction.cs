@@ -15,8 +15,6 @@ public class VoicePitchAction : IVoicePitchAction, IDisposable
 
     private long gRover;
     private long gInit;
-    
-    public volatile VoiceController voiceController;
 
     public void Modify(ref VoicePitchPacket packet)
     {
@@ -24,7 +22,7 @@ public class VoicePitchAction : IVoicePitchAction, IDisposable
         
         packet.Decoder.Decode(packet.Data, packet.Length, data);
 
-        PitchShift(voiceController.Pitch.ActivePitch, 480U, 48000, data);
+        PitchShift(packet.Pitch, 480U, 48000, data);
 
         packet.Length = packet.Encoder.Encode(data, packet.Data, 480);
     }

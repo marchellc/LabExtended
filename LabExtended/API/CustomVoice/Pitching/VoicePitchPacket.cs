@@ -9,8 +9,10 @@ public class VoicePitchPacket
 
     public volatile byte[] Data;
     public volatile int Length;
+    public volatile float Pitch;
 
     public volatile ExPlayer Speaker;
+    public volatile VoiceController Controller;
 
     public volatile OpusEncoder Encoder;
     public volatile OpusDecoder Decoder;

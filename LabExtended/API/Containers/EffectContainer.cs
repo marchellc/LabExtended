@@ -13,7 +13,8 @@ using System.Reflection;
 
 using LabExtended.API.CustomEffects;
 using LabExtended.Core.Pooling.Pools;
-
+using LabExtended.Events;
+using LabExtended.Events.Player;
 using UnityEngine;
 
 namespace LabExtended.API.Containers
@@ -152,7 +153,10 @@ namespace LabExtended.API.Containers
                 Effects = dict;
                 Player = player;
                 Controller = controller;
+                
                 CustomEffects = DictionaryPool<Type, CustomEffect>.Shared.Rent();
+
+                InternalEvents.OnSpawning += OnRoleChanged;
 
                 if (props.Count != _properties.Count())
                 {
@@ -539,6 +543,19 @@ namespace LabExtended.API.Containers
             return true;
         }
 
+        public void RemoveCustomEffects()
+        {
+            foreach (var customEffect in CustomEffects)
+            {
+                if (customEffect.Value.IsActive)
+                    customEffect.Value.Disable();
+
+                customEffect.Value.Stop();
+            }
+            
+            CustomEffects.Clear();
+        }
+
         public void Dispose()
         {
             if (Effects != null)
@@ -559,6 +576,23 @@ namespace LabExtended.API.Containers
                 
                 DictionaryPool<Type, CustomEffect>.Shared.Return(CustomEffects);
                 CustomEffects = null;
+            }
+
+            InternalEvents.OnSpawning -= OnRoleChanged;
+        }
+
+        private void OnRoleChanged(PlayerSpawningArgs args)
+        {
+            if (!Player || args.Player != Player)
+                return;
+            
+            foreach (var effect in CustomEffects)
+            {
+                if (!effect.Value.IsActive)
+                    continue;
+                
+                if (!effect.Value.OnRoleChanged(args.NewRole))
+                    effect.Value.Disable();
             }
         }
     }

@@ -8,7 +8,7 @@ using LabExtended.Utilities.Unity;
 
 using LabExtended.API.CustomVoice.Profiles;
 using LabExtended.API.CustomVoice.Pitching;
-
+using LabExtended.Extensions;
 using UnityEngine;
 
 using VoiceChat;
@@ -18,6 +18,8 @@ namespace LabExtended.API.CustomVoice;
 
 public class VoiceController : IDisposable
 {
+    public static event Action<VoiceController> OnJoined; 
+    
     private Dictionary<float, VoiceMessage> _speakingPackets;
     private Dictionary<float, VoiceMessage> _sessionPackets;
     private Dictionary<Type, VoiceProfile> _profiles;
@@ -50,6 +52,118 @@ public class VoiceController : IDisposable
 
         PlayerLoopHelper.AfterLoop += UpdateSpeaking;
         InternalEvents.OnSpawning += HandleSpawn;
+        
+        OnJoined.InvokeSafe(this);
+    }
+    
+    public bool HasProfile<T>(out T profile) where T : VoiceProfile
+    {
+        profile = null;
+        
+        if (!Profiles.TryGetValue(typeof(T), out var instance) || instance is not T castInstance)
+            return false;
+        
+        profile = castInstance;
+        return true;
+    }
+    
+    public bool HasProfile<T>() where T : VoiceProfile
+        => Profiles.ContainsKey(typeof(T));
+    
+    public bool HasProfile(Type profileType)
+        => Profiles.ContainsKey(profileType);
+    
+    public bool HasProfile(Type profileType, out VoiceProfile profile)
+        => Profiles.TryGetValue(profileType, out profile);
+    
+    public bool HasProfile(VoiceProfile profile)
+        => Profiles.ContainsKey(profile.GetType());
+
+    public T GetProfile<T>() where T : VoiceProfile
+    {
+        if (HasProfile<T>(out var profile))
+            return profile;
+        
+        throw new Exception($"No profile found for {typeof(T).Name}");
+    }
+
+    public T GetOrAddProfile<T>(bool newEnableProfile = false) where T : VoiceProfile
+    {
+        if (HasProfile<T>(out var profile))
+            return profile;
+
+        return AddProfile<T>(newEnableProfile);
+    }
+
+    public T AddProfile<T>(bool enableProfile = false) where T : VoiceProfile
+        => (T)AddProfile(typeof(T), enableProfile);
+
+    public VoiceProfile GetOrAddProfile(Type profileType, bool newEnableProfile = false)
+    {
+        if (profileType is null)
+            throw new ArgumentNullException(nameof(profileType));
+
+        if (HasProfile(profileType, out var profile))
+            return profile;
+        
+        return AddProfile(profileType, newEnableProfile);
+    }
+
+    public VoiceProfile AddProfile(Type profileType, bool enableProfile = false)
+    {
+        if (profileType is null)
+            throw new ArgumentNullException(nameof(profileType));
+        
+        if (Profiles.ContainsKey(profileType))
+            throw new Exception($"Profile {profileType.Name} already added");
+        
+        var profile = Activator.CreateInstance(profileType) as VoiceProfile;
+
+        if (profile is null)
+            throw new Exception($"Type {profileType.FullName} could not be cast to VoiceProfile");
+
+        profile.Player = Player;
+        profile.Start();
+
+        if (enableProfile)
+        {
+            profile.Enable();
+            profile.IsActive = true;
+        }
+
+        _profiles.Add(profileType, profile);
+        return profile;
+    }
+    
+    public bool RemoveProfile<T>() where T : VoiceProfile
+        => RemoveProfile(typeof(T));
+
+    public bool RemoveProfile(Type profileType)
+    {
+        if (profileType is null)
+            throw new ArgumentNullException(nameof(profileType));
+
+        if (!Profiles.TryGetValue(profileType, out var profile))
+            return false;
+        
+        if (profile.IsActive)
+            profile.Disable();
+        
+        profile.Stop();
+        return _profiles.Remove(profileType);
+    }
+
+    public void RemoveProfiles()
+    {
+        foreach (var profile in _profiles)
+        {
+            if (profile.Value.IsActive)
+                profile.Value.Disable();
+
+            profile.Value.Stop();
+        }
+        
+        _profiles.Clear();
     }
     
     public void Dispose()
@@ -63,18 +177,29 @@ public class VoiceController : IDisposable
         if (_speakingPackets != null)
         {
             DictionaryPool<float, VoiceMessage>.Shared.Return(_speakingPackets);
+            
             _speakingPackets = null;
         }
         
         if (_sessionPackets != null)
         {
             DictionaryPool<float, VoiceMessage>.Shared.Return(_sessionPackets);
+            
             _sessionPackets = null;
         }
 
         if (_profiles != null)
-        {
+        {        
+            foreach (var profile in _profiles)
+            {
+                if (profile.Value.IsActive)
+                    profile.Value.Disable();
+
+                profile.Value.Stop();
+            }
+            
             DictionaryPool<Type, VoiceProfile>.Shared.Return(_profiles);
+            
             _profiles = null;
         }
     }
@@ -89,8 +214,8 @@ public class VoiceController : IDisposable
 
         var time = Time.realtimeSinceStartup;
 
-        _speakingPackets[time] = msg;
-        _sessionPackets[time] = msg;
+        _speakingPackets.Add(time, msg);
+        _sessionPackets.Add(time, msg);
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
 

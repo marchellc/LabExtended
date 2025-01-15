@@ -1,4 +1,6 @@
-﻿namespace LabExtended.API.CustomEffects;
+﻿using PlayerRoles;
+
+namespace LabExtended.API.CustomEffects;
 
 public class CustomEffect
 {
@@ -11,19 +13,31 @@ public class CustomEffect
     
     public virtual void ApplyEffects() { }
     public virtual void RemoveEffects() { }
+    
+    public virtual bool RoleChanged(RoleTypeId newRole) => false;
 
     internal virtual void OnApplyEffects() => ApplyEffects();
     internal virtual void OnRemoveEffects() => RemoveEffects();
+    
+    internal virtual bool OnRoleChanged(RoleTypeId newRole) => RoleChanged(newRole);
 
     public void Enable()
     {
+        if (IsActive)
+            return;
+        
         IsActive = true;
+        
         OnApplyEffects();
     }
 
     public void Disable()
     {
+        if (!IsActive)
+            return;
+        
         IsActive = false;
+        
         OnRemoveEffects();
     }
 }

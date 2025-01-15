@@ -29,6 +29,8 @@ namespace LabExtended.API
     {
         private static RoundLock? _roundLockTracking;
         private static RoundLock? _lobbyLockTracking;
+        
+        private static Vector3? _roundStartPosition;
 
         private static GameObject _roundStart;
         
@@ -355,6 +357,22 @@ namespace LabExtended.API
         /// </summary>
         public static void RestartSilently()
             => Restart(true, ServerStatic.NextRoundAction.DoNothing);
+
+        /// <summary>
+        /// Hides the background while in "Waiting for players"
+        /// </summary>
+        public static void HideRoundStartBackground()
+        {
+            _roundStartPosition ??= RoundStartBackground.transform.position;
+            _roundStart.transform.position = Vector3.zero;
+        }
+
+        /// <summary>
+        /// Shows the background while in "Waiting for players"
+        /// <remarks>This method CANNOT be used without first hiding the screen, it will throw a null reference exception!</remarks>
+        /// </summary>
+        public static void ShowRoundStartBackground()
+            => _roundStart.transform.position = _roundStartPosition.Value;
 
         /// <summary>
         /// Generates round-start player role list.

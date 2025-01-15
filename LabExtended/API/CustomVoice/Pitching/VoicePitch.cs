@@ -69,7 +69,6 @@ public class VoicePitch : IDisposable
         voiceController = controller;
         
         voicePitchAction = new VoicePitchAction();
-        voicePitchAction.voiceController = voiceController;
 
         opusDecoder = new OpusDecoder();
         opusEncoder = new OpusEncoder(OpusApplicationType.Voip);
@@ -125,6 +124,38 @@ public class VoicePitch : IDisposable
         pitchQueue.Enqueue(newPacket);
     }
 
+    public void PitchCustom(byte[] originalData, int originalLength, float pitchFactor, Action<VoicePitchPacket> onProcessed)
+    {
+        if (originalData is null)
+            throw new ArgumentNullException(nameof(originalData));
+        
+        if (originalLength < 0 || originalLength > originalData.Length)
+            throw new ArgumentOutOfRangeException(nameof(originalData));
+        
+        if (onProcessed is null)
+            throw new ArgumentNullException(nameof(onProcessed));
+        
+        var newBuffer = new byte[originalData.Length];
+        
+        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalLength);
+
+        var newPacket = GetPacket();
+
+        newPacket.Length = originalLength;
+        newPacket.Data = newBuffer;
+
+        newPacket.Action = voicePitchAction;
+        newPacket.Speaker = voiceController.Player;
+
+        newPacket.Decoder = opusDecoder;
+        newPacket.Encoder = opusEncoder;
+
+        newPacket.OnProcessed = onProcessed;
+        newPacket.Pitch = pitchFactor;
+        
+        pitchQueue.Enqueue(newPacket);
+    }
+
     private void ProcessPitch(ref VoiceMessage message)
     {
         var newBuffer = new byte[message.Data.Length];
@@ -143,6 +174,7 @@ public class VoicePitch : IDisposable
         newPacket.Encoder = opusEncoder;
 
         newPacket.OnProcessed = onVoicePitched;
+        newPacket.Pitch = ActivePitch;
         
         pitchQueue.Enqueue(newPacket);
     }
@@ -173,9 +205,9 @@ public class VoicePitch : IDisposable
     {
         try
         {
-            while (pitchQueue.TryDequeue(out var packet))
+            while (outputQueue.TryDequeue(out var packet))
             {
-                if (packet.OnProcessed is null)
+                if (packet.OnProcessed is null || packet.Controller?.Pitch is null || packet.Controller.Pitch.IsDisposed)
                     continue;
                 
                 packet.OnProcessed.InvokeSafe(packet);
@@ -197,7 +229,7 @@ public class VoicePitch : IDisposable
             {
                 while (pitchQueue.TryDequeue(out var packet))
                 {
-                    if (packet.Action is null)
+                    if (packet.Action is null || packet.Controller?.Pitch is null || packet.Controller.Pitch.IsDisposed)
                         continue;
 
                     packet.Action.Modify(ref packet);
@@ -212,38 +244,19 @@ public class VoicePitch : IDisposable
         }
     }
 
-    private static VoicePitchPacket GetPacket()
+    public static VoicePitchPacket GetPacket()
     {
         if (!packetPool.TryDequeue(out var packet))
             return new VoicePitchPacket();
 
         return packet;
     }
-    
-    // default send code
-    /*
-            var sendChannel = voiceRole.VoiceModule.ValidateSend(msg.Channel);
 
-            if (sendChannel is VoiceChatChannel.None)
-                return false;
-
-            voiceRole.VoiceModule.CurrentChannel = sendChannel;
-
-            foreach (var hub in ReferenceHub.AllHubs)
-            {
-                if (hub.Mode != ClientInstanceMode.ReadyClient)
-                    continue;
-
-                if (hub.roleManager.CurrentRole is not IVoiceRole recvRole)
-                    continue;
-
-                var recvChannel = recvRole.VoiceModule.ValidateReceive(msg.Speaker, sendChannel);
-
-                if (recvChannel is VoiceChatChannel.None)
-                    continue;
-
-                msg.Channel = recvChannel;
-                hub.connectionToClient.Send(msg);
-            }
-     */
+    public static void ReturnPacket(VoicePitchPacket packet)
+    {
+        if (packet is null)
+            throw new ArgumentNullException(nameof(packet));
+        
+        packetPool.Enqueue(packet);
+    }
 }
