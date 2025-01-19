@@ -30,11 +30,26 @@ namespace LabExtended.API
         /// Amount of items currently in this storage.
         /// </summary>
         public int Count => _storage.Count;
+
+        /// <summary>
+        /// Gets the amount of times this storage was re-added to a specific player.
+        /// </summary>
+        public int Lifes { get; internal set; } = 0;
         
         /// <summary>
         /// Gets the player that this storage belongs to.
         /// </summary>
         public ExPlayer Player { get; internal set; }
+        
+        /// <summary>
+        /// Gets the time when the player left. (only for a permanent storage)
+        /// </summary>
+        public DateTime LeaveTime { get; internal set; }
+        
+        /// <summary>
+        /// Gets the time when the player joined.
+        /// </summary>
+        public DateTime JoinTime { get; internal set; }
 
         /// <summary>
         /// Gets or sets an item in storage.

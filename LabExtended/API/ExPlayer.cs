@@ -555,6 +555,9 @@ namespace LabExtended.API
             {
                 PersistentStorage = TemporaryStorage;
             }
+            
+            PersistentStorage.JoinTime = DateTime.Now;
+            PersistentStorage.Lifes++;
 
             _allPlayers.Add(this);
 
@@ -1305,6 +1308,35 @@ namespace LabExtended.API
         public void MakeVisibleFor(ExPlayer player)
             => _invisibility.Remove(player);
 
+        public T GetComponent<T>()
+            => GameObject.TryFindComponent<T>(out var component) ? component : default;
+
+        public T AddComponent<T>()
+            => (T)(object)GameObject.AddComponent(typeof(T));
+
+        public T GetOrAddComponent<T>()
+            => GameObject.TryFindComponent<T>(out var component) ? component : (T)(object)GameObject.AddComponent(typeof(T));
+
+        public bool RemoveComponent<T>()
+        {
+            if (GameObject.TryFindComponent<T>(out var component))
+            {
+                UnityEngine.Object.Destroy((UnityEngine.Object)(object)component);
+                return true;
+            }
+
+            return false;
+        }
+        
+        public bool TryGetComponent<T>(out T component)
+            => GameObject.TryFindComponent<T>(out component);
+
+        public void Send(ArraySegment<byte> data, int channel = 0)
+            => Connection?.Send(data, channel);
+        
+        public void Send<T>(T message, int channel = 0) where T : struct, NetworkMessage
+            => Connection?.Send(message, channel);
+
         #region Helper Methods
         private void SetScale(Vector3 scale)
         {
@@ -1424,6 +1456,7 @@ namespace LabExtended.API
                 if (!PlayerStorage._persistentStorage.ContainsKey(UserId))
                     PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
 
+                PersistentStorage.LeaveTime = DateTime.Now;
                 PersistentStorage = null;
             }
 
