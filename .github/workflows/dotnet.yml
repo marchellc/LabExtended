@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      LAB_EX_REFERENCES: "/home/runner/work/refs"
+      LABEX_REFERENCES: "/home/runner/work/refs"
       SL_REFERENCES: "/home/runner/work/refs"
 
     steps:
@@ -35,10 +35,10 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release --no-restore --property WarningLevel=0
     - name: Create artifacts
-      run: mkdir /home/runner/work/artifacts/ && cp ./LabExtended/bin/Release/net48/LabExtended.dll /home/runner/work/artifacts
+      run: mkdir /home/runner/work/artifacts/ && cp ./LabExtended/bin/Release/net48/0LabExtended.dll /home/runner/work/artifacts
     - name: Upload artifacts
       uses: actions/upload-artifact@v4.3.4
       with:
         name: labextended
-        path: /home/runner/work/artifacts/LabExtended.dll
+        path: /home/runner/work/artifacts/0LabExtended.dll
         overwrite: true
