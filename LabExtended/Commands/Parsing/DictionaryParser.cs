@@ -1,4 +1,5 @@
 ﻿using LabExtended.Extensions;
+using LabExtended.API;
 
 using System.Collections;
 
@@ -8,6 +9,8 @@ namespace LabExtended.Commands.Parsing
     {
         public string Name => $"Dictionary (a list of key [{KeyParser.Name}] and value [{ValueParser.Name}] pairs)";
         public string Description => $"A list of key and value pairs (formatting: key=value,key2=value2,key3=value3)";
+
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
 
         public Interfaces.ICommandParser KeyParser { get; }
         public Interfaces.ICommandParser ValueParser { get; }
@@ -27,7 +30,7 @@ namespace LabExtended.Commands.Parsing
             GenericType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
         }
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             result = null;
             failureMessage = null;
@@ -51,13 +54,18 @@ namespace LabExtended.Commands.Parsing
                     return false;
                 }
 
-                if (!KeyParser.TryParse(pair[0].Trim(), out var keyFailureMessage, out var keyElement))
+                var key = pair[0].Trim();
+                var text = pair[1].Trim();
+                
+                if (!CommandPropertyParser.TryParse(sender, KeyParser, key, out var keyElement) 
+                    && !KeyParser.TryParse(sender, key, out var keyFailureMessage, out keyElement))
                 {
                     failureMessage = $"Internal parser failed to parse pair key at index {i} ({pairs[i]}): {keyFailureMessage}";
                     return false;
                 }
 
-                if (!ValueParser.TryParse(pair[1].Trim(), out var valueFailureMessage, out var valueElement))
+                if (!CommandPropertyParser.TryParse(sender, ValueParser, text, out var valueElement)
+                    && !ValueParser.TryParse(sender, text, out var valueFailureMessage, out valueElement))
                 {
                     failureMessage = $"Internal parser failed to parse pair value at index {i} ({pairs[i]}): {valueFailureMessage}";
                     return false;

@@ -7,7 +7,9 @@ namespace LabExtended.Commands.Parsing
         public string Name => "Player";
         public string Description => "A player (you can specify a player's user ID, player ID, name, network ID or IP).";
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
+        
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             failureMessage = null;
             result = null;

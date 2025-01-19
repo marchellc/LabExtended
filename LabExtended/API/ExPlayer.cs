@@ -580,6 +580,11 @@ namespace LabExtended.API
             get => Voice?.Pitch?.InstancePitch ?? 1f;
             set => Voice!.Pitch!.InstancePitch = value;
         }
+        
+        /// <summary>
+        /// Gets the time of the player joining.
+        /// </summary>
+        public DateTime JoinTime { get; } = DateTime.Now;
 
         /// <summary>
         /// Gets or sets the icons that will always be shown in the Remote Admin player list.

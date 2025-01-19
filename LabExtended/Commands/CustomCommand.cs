@@ -11,8 +11,10 @@ using LabExtended.Commands.Responses;
 using NorthwoodLib.Pools;
 
 using System.Reflection;
+
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
+
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
@@ -94,7 +96,7 @@ namespace LabExtended.Commands
                 {
                     var args = new object[_customParams.Length];
 
-                    if (!CommandParser.TryParseCustomArgs(arg, _args, args, out var failedArg, out var failedReason))
+                    if (!CommandParser.TryParseCustomArgs(player, arg, _args, args, out var failedArg, out var failedReason))
                     {
                         response = $"Failed while parsing command parameter '{failedArg.Name}': {failedReason}";
                         return false;
@@ -110,7 +112,7 @@ namespace LabExtended.Commands
                     var collection = new ArgumentCollection();
                     var context = new CommandContext(arg, arguments.Array, collection, this, player);
 
-                    if (!CommandParser.TryParseDefaultArgs(arg, _args, collection, out var failedArg, out var failedReason))
+                    if (!CommandParser.TryParseDefaultArgs(player, arg, _args, collection, out var failedArg, out var failedReason))
                     {
                         response = $"Failed while parsing command parameter '{failedArg.Name}': {failedReason}";
                         return false;

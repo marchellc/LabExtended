@@ -149,13 +149,13 @@ namespace LabExtended.Commands
         public static bool TryGetParser(Type type, out ICommandParser parser)
             => (parser = FromType(type)) != null;
 
-        public static bool TryParseDefaultArgs(string arg, ArgumentDefinition[] args, ArgumentCollection collection, out ArgumentDefinition failedArg, out string failedReason)
-            => InternalParseArgs(arg, args, (parsedArg, parsedValue) => collection.Add(parsedArg.Name, parsedValue), () => collection.Size, out failedArg, out failedReason);
+        public static bool TryParseDefaultArgs(ExPlayer sender, string arg, ArgumentDefinition[] args, ArgumentCollection collection, out ArgumentDefinition failedArg, out string failedReason)
+            => InternalParseArgs(sender, arg, args, (parsedArg, parsedValue) => collection.Add(parsedArg.Name, parsedValue), () => collection.Size, out failedArg, out failedReason);
 
-        public static bool TryParseCustomArgs(string arg, ArgumentDefinition[] args, object[] parsedArgs, out ArgumentDefinition failedArg, out string failedReason)
+        public static bool TryParseCustomArgs(ExPlayer sender, string arg, ArgumentDefinition[] args, object[] parsedArgs, out ArgumentDefinition failedArg, out string failedReason)
         {
             var list = ListPool<object>.Shared.Rent();
-            var success = InternalParseArgs(arg, args, (parsedArg, parsedValue) => list.Add(parsedValue), () => list.Count, out failedArg, out failedReason);
+            var success = InternalParseArgs(sender, arg, args, (parsedArg, parsedValue) => list.Add(parsedValue), () => list.Count, out failedArg, out failedReason);
 
             for (int i = 0; i < list.Count; i++)
                 parsedArgs[i + 1] = list[i];
@@ -177,7 +177,7 @@ namespace LabExtended.Commands
         internal static char GetMatch(char character)
             => Quotes.TryGetValue(character, out var match) ? match : '\"';
 
-        internal static bool InternalParseArgs(string arg, ArgumentDefinition[] args, Action<ArgumentDefinition, object> setArgumentValue, Func<int> countArgs, out ArgumentDefinition failedArg, out string failedReason)
+        internal static bool InternalParseArgs(ExPlayer sender, string arg, ArgumentDefinition[] args, Action<ArgumentDefinition, object> setArgumentValue, Func<int> countArgs, out ArgumentDefinition failedArg, out string failedReason)
         {
             failedArg = null;
             failedReason = null;
@@ -304,8 +304,9 @@ namespace LabExtended.Commands
                     {
                         break;
                     }
-
-                    if (!curArg.Parser.TryParse(argString, out var failureMessage, out var result))
+                    
+                    if (!CommandPropertyParser.TryParse(sender, curArg.Parser, argString, out var result)
+                        && !curArg.Parser.TryParse(sender, argString, out var failureMessage, out result))
                     {
                         StringBuilderPool.Shared.Return(curBuilder);
 
@@ -325,7 +326,8 @@ namespace LabExtended.Commands
 
             if (curArg != null && ((countArgs() + 1) >= args.Length))
             {
-                if (!curArg.Parser.TryParse(curBuilder.ToString(), out var failureMessage, out var remainderResult))
+                if (!CommandPropertyParser.TryParse(sender, curArg.Parser, curBuilder.ToString(), out var remainderResult)
+                    && !curArg.Parser.TryParse(sender, curBuilder.ToString(), out var failureMessage, out remainderResult))
                 {
                     StringBuilderPool.Shared.Return(curBuilder);
 

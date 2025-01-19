@@ -10,7 +10,9 @@ namespace LabExtended.Commands.Parsing
         public string Name => "A list of players.";
         public string Description => "A list of players, to view the full usage use the 'formatting playerlist' command.";
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
+        
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             result = null;
             failureMessage = null;

@@ -306,7 +306,7 @@ namespace LabExtended.Extensions
 
         public static string GetBefore(this string input, char c)
         {
-            int start = input.IndexOf(c);
+            var start = input.IndexOf(c);
 
             if (start > 0)
                 input = input.Substring(0, start);
@@ -314,6 +314,16 @@ namespace LabExtended.Extensions
             return input;
         }
 
+        public static string GetAfter(this string input, char c)
+        {
+            var start = input.IndexOf(c);
+
+            if (start > 0)
+                input = input.Substring(start, input.Length - start);
+
+            return input;
+        }
+        
         public static string RemoveBracketsOnEndOfName(this string name)
         {
             int bracketStart = name.IndexOf('(') - 1;

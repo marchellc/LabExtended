@@ -1,6 +1,9 @@
 ﻿using LabExtended.Core.Pooling.Pools;
+using LabExtended.Utilities;
+using LabExtended.API;
 
 using System.Drawing;
+using System.Reflection;
 
 using Color = UnityEngine.Color;
 
@@ -11,7 +14,52 @@ namespace LabExtended.Commands.Parsing
         public string Name => "Color";
         public string Description => "Color can be specified by it's hex value (ex. #ff0000 for red) or by it's RGB values (ex. 1r 2g 3b - at least one of these has to be specified).";
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
+
+        public ColorParser()
+        {
+            var dict = new Dictionary<string, Func<ExPlayer, object>>();
+            var target = typeof(Color);
+
+            void Register(MethodInfo getter, string name)
+            {
+                if (getter is null || getter.IsStatic)
+                    return;
+                
+                var method = FastReflection.ForMethod(getter);
+                
+                dict.Add(name, player => method(player, Array.Empty<object>()));
+            }
+            
+            foreach (var property in typeof(ExPlayer).GetProperties())
+            {
+                if (dict.ContainsKey(property.Name))
+                    continue;
+
+                if (property.PropertyType != target)
+                {
+                    // support for containers
+                    foreach (var insideProperty in property.PropertyType.GetProperties())
+                    {
+                        var name = insideProperty.Name;
+
+                        if (dict.ContainsKey(name))
+                            name = $"{property.Name}.{name}".ToLower();
+                        
+                        if (insideProperty.PropertyType == target)
+                            Register(insideProperty.GetGetMethod(false), name);
+                    }
+                }
+                else
+                {
+                    Register(property.GetGetMethod(false), property.Name.ToLower());
+                }
+            }
+
+            PlayerProperties = dict;
+        }
+        
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             result = null;
             failureMessage = null;

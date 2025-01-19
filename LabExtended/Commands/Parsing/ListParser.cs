@@ -1,4 +1,5 @@
 ﻿using LabExtended.Extensions;
+using LabExtended.API;
 
 using System.Collections;
 
@@ -8,6 +9,8 @@ namespace LabExtended.Commands.Parsing
     {
         public string Name => $"A list of items ({ElementParser.Name})";
         public string Description => $"A list of items (string separated by a comma (item1,item2,item3))";
+        
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
 
         public Interfaces.ICommandParser ElementParser { get; }
 
@@ -22,7 +25,7 @@ namespace LabExtended.Commands.Parsing
             GenericType = typeof(List<>).MakeGenericType(ElementType);
         }
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -38,7 +41,8 @@ namespace LabExtended.Commands.Parsing
             {
                 try
                 {
-                    if (!ElementParser.TryParse(values[i], out var elementFailureMessage, out var elementResult))
+                    if (!CommandPropertyParser.TryParse(sender, ElementParser, values[i], out var elementResult)
+                        && !ElementParser.TryParse(sender, values[i], out var elementFailureMessage, out elementResult))
                     {
                         failureMessage = $"Internal parser failed to parse element at index {i}: {elementFailureMessage}";
                         result = null;

@@ -1,5 +1,14 @@
-﻿using LabExtended.API.CustomCommands.Formatting;
+﻿using HarmonyLib;
+
+using LabExtended.API;
+using LabExtended.API.CustomCommands.Formatting;
+
 using LabExtended.Extensions;
+
+using LabExtended.Utilities;
+using LabExtended.Utilities.Values;
+
+using System.Reflection;
 
 namespace LabExtended.Commands.Parsing
 {
@@ -10,6 +19,8 @@ namespace LabExtended.Commands.Parsing
 
         public Type EnumType { get; }
         public Type UnderlyingType { get; }
+        
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; }
 
         public EnumParser(Type enumType)
         {
@@ -18,9 +29,93 @@ namespace LabExtended.Commands.Parsing
 
             if (!FormattingEnumCommand.EnumTypes.Contains(enumType))
                 FormattingEnumCommand.EnumTypes.Add(enumType);
+            
+            var dict = new Dictionary<string, Func<ExPlayer, object>>();
+            var generic = typeof(EnumValue<>).MakeGenericType(enumType);
+
+            void Register(MethodInfo getter, string name)
+            {
+                if (getter is null || getter.IsStatic)
+                    return;
+                
+                var method = FastReflection.ForMethod(getter);
+                
+                dict.Add(name, player => method(player, Array.Empty<object>()));
+            }
+            
+            foreach (var property in typeof(ExPlayer).GetProperties())
+            {
+                if (dict.ContainsKey(property.Name))
+                    continue;
+
+                if (property.PropertyType != enumType && property.PropertyType != generic)
+                {
+                    // support for containers
+                    foreach (var insideProperty in property.PropertyType.GetProperties())
+                    {
+                        var name = insideProperty.Name;
+
+                        if (dict.ContainsKey(name))
+                            name = $"{property.Name}.{name}".ToLower();
+
+                        if (insideProperty.PropertyType == enumType)
+                        {
+                            Register(insideProperty.GetGetMethod(false), name);
+                        }
+                        else if (insideProperty.PropertyType == generic)
+                        {
+                            var enumGetter = insideProperty.GetGetMethod(false);
+                    
+                            if (enumGetter is null)
+                                continue;
+
+                            var enumValue = FastReflection.ForMethod(enumGetter);
+                            var valueProperty = generic.PropertyGetter("Value");
+                    
+                            if (valueProperty is null)
+                                continue;
+
+                            var valueGetter = FastReflection.ForMethod(valueProperty);
+                    
+                            dict.Add(name.ToLower(), player =>
+                            {
+                                var value = enumValue(player, Array.Empty<object>());
+                                return valueGetter(value, Array.Empty<object>());
+                            });
+                        }
+                    }
+                }
+                else if (property.PropertyType == enumType)
+                {
+                    Register(property.GetGetMethod(false), property.Name.ToLower());
+                }
+                else
+                {
+                    var enumGetter = property.GetGetMethod(false);
+                    
+                    if (enumGetter is null)
+                        continue;
+
+                    var enumValue = FastReflection.ForMethod(enumGetter);
+                    var valueProperty = generic.PropertyGetter("Value");
+                    
+                    if (valueProperty is null)
+                        continue;
+
+                    var valueGetter = FastReflection.ForMethod(valueProperty);
+                    
+                    dict.Add(property.Name.ToLower(), player =>
+                    {
+                        var value = enumValue(player, Array.Empty<object>());
+                        return valueGetter(value, Array.Empty<object>());
+                    });
+                }
+            }
+
+            PlayerProperties = dict;
         }
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             result = null;
             failureMessage = null;

@@ -1,4 +1,5 @@
-﻿using LabExtended.Core.Pooling.Pools;
+﻿using LabExtended.API;
+using LabExtended.Core.Pooling.Pools;
 
 using UnityEngine;
 
@@ -9,7 +10,13 @@ namespace LabExtended.Commands.Parsing
         public string Name => "4-axis quaternion";
         public string Description => "A 4-axis quaternion. Formatted as follows: 'numX numY numZ numW' (replace num with a real number)";
 
-        public bool TryParse(string value, out string failureMessage, out object result)
+        public Dictionary<string, Func<ExPlayer, object>> PlayerProperties { get; } =
+            new Dictionary<string, Func<ExPlayer, object>>()
+            {
+                ["rotation"] = player => player.Rotation.Rotation
+            };
+
+        public bool TryParse(ExPlayer sender, string value, out string failureMessage, out object result)
         {
             failureMessage = null;
             result = null;
