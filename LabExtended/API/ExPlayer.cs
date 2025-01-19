@@ -496,6 +496,9 @@ namespace LabExtended.API
             if (component is null)
                 throw new ArgumentNullException(nameof(component));
 
+            if (_allPlayers.Any(x => x._hub && x._hub == component))
+                throw new Exception("Attempted to insert a duplicate ExPlayer instance");
+
             _hub = component;
 
             _forcedIcons = RemoteAdminIconType.None;
@@ -505,8 +508,10 @@ namespace LabExtended.API
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
 
-            InfoArea = new EnumValue<PlayerInfoArea>(() => _hub.nicknameSync.Network_playerInfoToShow, value => _hub.nicknameSync.Network_playerInfoToShow = value);
-            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(_hub), value => VoiceChatMutes.SetFlags(_hub, value));
+            InfoArea = new EnumValue<PlayerInfoArea>(() => _hub.nicknameSync.Network_playerInfoToShow,
+                value => _hub.nicknameSync.Network_playerInfoToShow = value);
+            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(_hub),
+                value => VoiceChatMutes.SetFlags(_hub, value));
 
             ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => _forcedIcons, value => _forcedIcons = value);
 
@@ -526,27 +531,49 @@ namespace LabExtended.API
 
             TemporaryStorage = new PlayerStorage(false, this);
 
-            if (PlayerStorage._persistentStorage.TryGetValue(component.authManager.UserId, out var persistentStorage))
-            {
-                persistentStorage.Player = this;
-                PersistentStorage = persistentStorage;
-            }
-            else
-            {
-                PersistentStorage = new PlayerStorage(true, this);
-            }
-
             RemoteAdmin = new RemoteAdminController(this);
             Voice = new VoiceController(this);
-            
-            if (_preauthData.TryGetValue(component.authManager.UserId, out var region))
-                CountryCode = region;
+
+            if (!string.IsNullOrWhiteSpace(component.authManager.UserId))
+            {
+                if (PlayerStorage._persistentStorage.TryGetValue(component.authManager.UserId, out var persistentStorage))
+                {
+                    persistentStorage.Player = this;
+                    PersistentStorage = persistentStorage;
+                }
+                else
+                {
+                    PersistentStorage = new PlayerStorage(true, this);
+                }
+
+                if (_preauthData.TryGetValue(component.authManager.UserId, out var region))
+                    CountryCode = region;
+                else
+                    CountryCode = string.Empty;
+            }
             else
-                CountryCode = string.Empty;
+            {
+                PersistentStorage = TemporaryStorage;
+            }
+
+            _allPlayers.Add(this);
+
+            if (IsNpc)
+            {
+                _npcPlayers.Add(this);
+            }
+            else if (!IsServer)
+            {
+                _players.Add(this);
+            }
+            else
+            {
+                _hostPlayer = this;
+            }
         }
 
         /// <summary>
-        /// Gets or sets this player's current voice pitch. <b>This is very CPU intensive and should be used sparely.</b>
+        /// Gets or sets this player's current voice pitch.
         /// </summary>
         public float VoicePitch
         {
@@ -1351,18 +1378,39 @@ namespace LabExtended.API
 
         internal void Dispose()
         {
+            if (_hostPlayer != null && _hostPlayer == this)
+                _hostPlayer = null;
+            
+            _allPlayers.Remove(this);
+
+            if (IsNpc)
+                _npcPlayers.Remove(this);
+            else if (!IsServer)
+                _players.Remove(this);
+
+            if (!string.IsNullOrWhiteSpace(UserId))
+                _preauthData.Remove(UserId);
+            
+            CustomCommand._continuedContexts.Remove(NetId);
+
+            foreach (var other in _allPlayers)
+            {
+                other._sentRoles?.Remove(NetId);
+                other._invisibility?.Remove(this);
+            }
+
             Effects?.Dispose();
             Effects = null;
-            
+
             Inventory?.Dispose();
             Inventory = null;
-            
+
             RemoteAdmin?.Dispose();
             RemoteAdmin = null;
-            
+
             Voice?.Dispose();
             Voice = null;
-            
+
             TemporaryStorage?.Dispose();
             TemporaryStorage = null;
 
@@ -1386,17 +1434,10 @@ namespace LabExtended.API
                 _invisibility = null;
             }
 
-            CustomCommand._continuedContexts.Remove(NetId);
-            
-            foreach (var other in _allPlayers)
-            {
-                other._sentRoles.Remove(NetId);
-                other._invisibility.Remove(this);
-            }
-
             foreach (var helper in PlayerCollection.m_Handlers)
                 helper.Remove(NetId);
         }
+
         #endregion
 
         #region Operators

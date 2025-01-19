@@ -39,7 +39,7 @@ namespace LabExtended.Events
             DamageInfo._wrappers.Clear();    
 
             // No reason not to reset the NPC connection ID
-            DummyNetworkConnection._idGenerator = 65535;
+            DummyNetworkConnection._idGenerator = ushort.MaxValue;
 
             OnRoundWaiting.InvokeSafe();
             
@@ -82,19 +82,10 @@ namespace LabExtended.Events
 
         internal static void InternalHandlePlayerJoin(ExPlayer player)
         {
-            if (!ExPlayer._allPlayers.Contains(player))
-            {
-                ExPlayer._allPlayers.Add(player);
-
-                if (player.IsNpc)
-                    ExPlayer._npcPlayers.Add(player);
-                else
-                    ExPlayer._players.Add(player);
-            }
-
             OnPlayerJoined.InvokeSafe(player);
 
-            ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address} ({player.CountryCode})&r!");
+            if (!player.IsServer && !player.IsNpc)
+                ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address} ({player.CountryCode})&r!");
         }
 
         internal static void InternalHandlePlayerLeave(ExPlayer player)
@@ -113,25 +104,13 @@ namespace LabExtended.Events
                     ApiLog.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
                 }
             }
-
-            if (ExPlayer._hostPlayer != null && ExPlayer._hostPlayer == player)
-                ExPlayer._hostPlayer = null;
+            
+            OnPlayerLeft.InvokeSafe(player);
             
             player.Dispose();
 
-            ExPlayer._allPlayers.Remove(player);
-
-            if (player.IsNpc)
-                ExPlayer._npcPlayers.Remove(player);
-            else
-                ExPlayer._players.Remove(player);
-
-            if (!string.IsNullOrWhiteSpace(player.UserId))
-                ExPlayer._preauthData.Remove(player.UserId);
-            
-            OnPlayerLeft.InvokeSafe(player);
-
-            ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
+            if (!player.IsServer && !player.IsNpc)
+                ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
         }
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)

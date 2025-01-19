@@ -8,6 +8,7 @@ using UserSettings.ServerSpecific;
 using LabExtended.API.Collections.Locked;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
+using LabExtended.API.Settings.Entries.Dropdown;
 using LabExtended.API.Settings.Menus;
 
 using LabExtended.Core;
@@ -453,6 +454,10 @@ namespace LabExtended.API.Settings
                             
                             case SettingsKeyBind keyBind:
                                 entry.Menu.OnKeyBindPressed(keyBind);
+                                break;
+                            
+                            case SettingsDropdown dropdown:
+                                entry.Menu.OnDropdownSelected(dropdown, dropdown.TryGetOption(dropdown.SelectedIndex, out var option) ? option : null);
                                 break;
                         }
                     }

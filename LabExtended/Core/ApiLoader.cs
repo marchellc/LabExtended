@@ -177,7 +177,7 @@ namespace LabExtended.Core
             
             HookManager.RegisterAll(typeof(ApiLoader).Assembly);
 
-            ApiLog.Info("Extended Loader", $"Waiting for PluginAPI ..");
+            ApiLog.Info("Extended Loader", $"Waiting for LabAPI ..");
 
             LogPatch.OnLogging += LogHandler;
             LogPatch.Enable();

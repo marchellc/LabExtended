@@ -42,7 +42,8 @@ public abstract class DurationCustomEffect : UpdatingCustomEffect
         Remaining = GetDuration();
         IsActive = Remaining > 0f;
         
-        base.OnApplyEffects();
+        if (IsActive)
+            base.OnApplyEffects();
     }
 
     internal override void OnRemoveEffects()

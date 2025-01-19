@@ -21,7 +21,7 @@ namespace LabExtended.Core.Networking.Synchronization.Role
             {
                 var player = ExPlayer._allPlayers[i];
 
-                if (player is null || !player)
+                if (player is null || !player || player.Role is null || player._sentRoles is null)
                     continue;
 
                 for (int x = 0; x < ExPlayer._allPlayers.Count; x++)
@@ -29,7 +29,7 @@ namespace LabExtended.Core.Networking.Synchronization.Role
                     var other = ExPlayer._allPlayers[x];
                     var role = player.Role.Type;
 
-                    if (other is null || !other)
+                    if (other is null || !other || other.Role is null)
                         continue;
 
                     if (player.Role.Role is IObfuscatedRole obfuscatedRole)
