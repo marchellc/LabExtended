@@ -8,6 +8,7 @@ using InventorySystem.Items.Armor;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
+using LabExtended.API.CustomRoles;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
@@ -58,7 +59,18 @@ namespace LabExtended.Patches.Events
                 {
                     ListPool<ItemType>.Shared.Return(itemsToAdd);
                     DictionaryPool<ItemType, ushort>.Shared.Return(ammoToAdd);
+                    
                     return false;
+                }
+
+                var customRoles = CustomRole.GetRoles(ply);
+
+                foreach (var customRole in customRoles)
+                {
+                    if (!customRole.IsEnabled)
+                        continue;
+                    
+                    customRole.OnGrantingInventory(grantingArgs);
                 }
 
                 if (grantingArgs.DropPreviousItems)

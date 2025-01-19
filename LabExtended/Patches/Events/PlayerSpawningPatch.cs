@@ -4,6 +4,7 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.API.CustomRoles;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
@@ -49,6 +50,26 @@ namespace LabExtended.Patches.Events
                     || (!__instance._anySet || (spawningEv.NewRole is RoleTypeId.None && spawningEv.ChangeReason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)
                 {
+                    foreach (var customRole in CustomRole.GetRoles(player))
+                    {
+                        if (!customRole.IsEnabled)
+                        {
+                            if (customRole.EnableRole(spawningEv.ChangeReason, player.Role, spawningEv.NewRole))
+                                customRole.InternalEnable();
+                            else
+                                continue;
+                        }
+                        else if (!customRole.EnableRole(spawningEv.ChangeReason, player.Role, spawningEv.NewRole))
+                        {
+                            customRole.InternalDisable();
+                        }
+
+                        customRole.OnSpawning(spawningEv);
+                        
+                        if (!spawningEv.IsAllowed)
+                            return false;
+                    }
+                    
                     player.Stats._healthOverride = null;
 
                     if (!player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath && spawningEv.NewRole is RoleTypeId.Spectator && spawningEv.ChangeReason is RoleChangeReason.Died))
@@ -56,7 +77,7 @@ namespace LabExtended.Patches.Events
 
                     if (!player.Role.FakedList.KeepOnRoleChange || (!player.Role.FakedList.KeepOnDeath && spawningEv.NewRole is RoleTypeId.Spectator && spawningEv.ChangeReason is RoleChangeReason.Died))
                         player.Role.FakedList.ClearValues();
-
+                    
                     newRole = spawningEv.NewRole;
                     reason = spawningEv.ChangeReason;
                     spawnFlags = spawningEv.SpawnFlags;
