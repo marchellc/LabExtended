@@ -7,8 +7,6 @@ namespace LabExtended.API.Containers
 {
     public class StatsContainer
     {
-        internal float? _healthOverride;
-
         internal StatsContainer(PlayerStats playerStats)
         {
             Stats = playerStats;
@@ -33,18 +31,34 @@ namespace LabExtended.API.Containers
         public HumeShieldStat HumeShield { get; }
 
         public float MinAhp => Ahp.MinValue;
-        public float MaxAhp => Ahp.MaxValue;
-
         public float MinVigor => Vigor.MinValue;
-        public float MaxVigor => Vigor.MaxValue;
-
-        public float MinStamina => Stamina.MinValue;
-        public float MaxStamina => Stamina.MaxValue;
-
         public float MinHealth => Health.MinValue;
-
+        public float MinStamina => Stamina.MinValue;
         public float MinHumeShield => HumeShield.MinValue;
-        public float MaxHumeShield => HumeShield.MaxValue;
+
+        public float MaxAhp
+        {
+            get => Ahp.MaxValue;
+            set => Ahp.MaxValue = value;
+        }
+
+        public float MaxVigor
+        {
+            get => Vigor.MaxValue;
+            set => Vigor.MaxValue = value;
+        }
+
+        public float MaxStamina
+        {
+            get => Stamina.MaxValue;
+            set => Stamina.MaxValue = value;
+        }
+
+        public float MaxHumeShield
+        {
+            get => HumeShield.MaxValue;
+            set => HumeShield.MaxValue = value;
+        }
 
         public float CurAhp
         {
@@ -74,12 +88,6 @@ namespace LabExtended.API.Containers
         {
             get => HumeShield.CurValue;
             set => HumeShield.CurValue = value;
-        }
-
-        public float MaxHealth
-        {
-            get => _healthOverride.HasValue ? _healthOverride.Value : Health.MaxValue;
-            set => _healthOverride = value;
         }
 
         public bool UsesHumeShield => Stats._hub.roleManager.CurrentRole is IHumeShieldedRole;

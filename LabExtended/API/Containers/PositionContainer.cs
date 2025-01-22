@@ -17,6 +17,11 @@ namespace LabExtended.API.Containers
     public class PositionContainer
     {
         /// <summary>
+        /// Gets the default gravity value.
+        /// </summary>
+        public static Vector2 DefaultGravity => FpcGravityController.DefaultGravity;
+        
+        /// <summary>
         /// Creates a new <see cref="PositionContainer"/> instance.
         /// </summary>
         /// <param name="player">Targeted player.</param>
@@ -89,6 +94,15 @@ namespace LabExtended.API.Containers
         }
 
         /// <summary>
+        /// Gets or sets the player's gravity.
+        /// </summary>
+        public Vector2 Gravity
+        {
+            get => Player.Role.GravityController?.Gravity ?? Vector2.zero;
+            set => Player.Role.GravityController!.Gravity = value;
+        }
+
+        /// <summary>
         /// Gets the player's current relative position.
         /// </summary>
         public RelativePosition Relative
@@ -101,11 +115,13 @@ namespace LabExtended.API.Containers
         /// Gets the player's current ground position, where player is actually standing on.<br />
         /// Returns <see langword="null" /> when Player isn't grounded.
         /// </summary>
-        public Vector3? GroundPosition {
-            get {
-                if (PhysicsUtils.TryGetGroundPosition(Player, out var groundPosition)) {
+        public Vector3? GroundPosition 
+        {
+            get 
+            {
+                if (PhysicsUtils.TryGetGroundPosition(Player, out var groundPosition))
                     return groundPosition;
-                }
+                
                 return null;
             }
         }
@@ -152,6 +168,22 @@ namespace LabExtended.API.Containers
         /// <returns>The distance.</returns>
         public float DistanceTo(GameObject gameObject)
             => Vector3.Distance(gameObject.transform.position, Position);
+
+        /// <summary>
+        /// Resets gravity to it's default for all players.
+        /// </summary>
+        public static void ResetGravity()
+            => SetGravity(DefaultGravity);
+        
+        /// <summary>
+        /// Sets gravity for all players.
+        /// </summary>
+        /// <param name="gravity">The gravity to set.</param>
+        public static void SetGravity(Vector2 gravity)
+        {
+            foreach (var player in ExPlayer.Players)
+                player.Position.Gravity = gravity;
+        }
 
         /// <summary>
         /// Converts the specified <see cref="PositionContainer"/> instance to a <see cref="Vector3"/>.

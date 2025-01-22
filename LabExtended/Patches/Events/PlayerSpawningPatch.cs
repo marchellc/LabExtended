@@ -69,8 +69,6 @@ namespace LabExtended.Patches.Events
                         if (!spawningEv.IsAllowed)
                             return false;
                     }
-                    
-                    player.Stats._healthOverride = null;
 
                     if (!player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath && spawningEv.NewRole is RoleTypeId.Spectator && spawningEv.ChangeReason is RoleChangeReason.Died))
                         player.Position.FakedList.ClearValues();

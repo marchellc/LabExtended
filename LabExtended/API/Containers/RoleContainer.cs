@@ -142,6 +142,7 @@ namespace LabExtended.API.Containers
         #region Fpc Stuff
         public FirstPersonMovementModule MovementModule => FpcRole?.FpcModule;
 
+        public FpcGravityController GravityController => Motor?.GravityController;
         public FpcStateProcessor StateProcessor => MovementModule?.StateProcessor;
         public FpcMouseLook MouseLook => MovementModule?.MouseLook;
         public FpcNoclip NoClip => MovementModule?.Noclip;
