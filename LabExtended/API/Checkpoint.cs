@@ -22,26 +22,26 @@ namespace LabExtended.API
 
         public CheckpointDoor.CheckpointSequenceStage Stage
         {
-            get => Base._currentSequence;
-            set => Base._currentSequence = value;
+            get => Base.CurrentSequence;
+            set => Base.CurrentSequence = value;
         }
 
         public float MainTimer
         {
-            get => Base._mainTimer;
-            set => Base._mainTimer = value;
+            get => Base.MainTimer;
+            set => Base.MainTimer = value;
         }
 
         public float WaitTime
         {
-            get => Base._waitTime;
-            set => Base._waitTime = value;
+            get => Base.WaitTime;
+            set => Base.WaitTime = value;
         }
 
         public float WarningTime
         {
-            get => Base._warningTime;
-            set => Base._warningTime = value;
+            get => Base.WarningTime;
+            set => Base.WarningTime = value;
         }
 
         public new float Health

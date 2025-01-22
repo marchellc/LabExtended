@@ -54,7 +54,7 @@ namespace LabExtended.Patches.Events
                 pickup.Info.WeightKg = prefab.Weight;
                 pickup.Info.Locked = true;
 
-                __instance._content.Add(pickup);
+                __instance.Content.Add(pickup);
 
                 if (pickup is IPickupDistributorTrigger pickupDistributorTrigger)
                     pickupDistributorTrigger.OnDistributed();

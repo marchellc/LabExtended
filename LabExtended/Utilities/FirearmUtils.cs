@@ -289,7 +289,7 @@ public static class FirearmUtils
         {
             reloaderModuleBase.SendRpc(x =>
             {
-                x.WriteSubheader(AnimatorReloaderModuleBase.MessageHeader.Reload);
+                x.WriteSubheader(AnimatorReloaderModuleBase.ReloaderMessageHeader.Reload);
 
                 if (reloaderModuleBase._randomize)
                     x.WriteByte((byte)UnityEngine.Random.Range(byte.MinValue, byte.MaxValue + 1));
