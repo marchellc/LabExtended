@@ -19,7 +19,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the default gravity value.
         /// </summary>
-        public static Vector2 DefaultGravity => FpcGravityController.DefaultGravity;
+        public static Vector3 DefaultGravity => FpcGravityController.DefaultGravity;
         
         /// <summary>
         /// Creates a new <see cref="PositionContainer"/> instance.
@@ -85,7 +85,7 @@ namespace LabExtended.API.Containers
         }
 
         /// <summary>
-        /// Gets the player's current position.
+        /// Gets or sets the player's current position.
         /// </summary>
         public Vector3 Position
         {
@@ -96,14 +96,14 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets the player's gravity.
         /// </summary>
-        public Vector2 Gravity
+        public Vector3 Gravity
         {
-            get => Player.Role.GravityController?.Gravity ?? Vector2.zero;
+            get => Player.Role.GravityController?.Gravity ?? Vector3.zero;
             set => Player.Role.GravityController!.Gravity = value;
         }
 
         /// <summary>
-        /// Gets the player's current relative position.
+        /// Gets or sets the player's current relative position.
         /// </summary>
         public RelativePosition Relative
         {
@@ -126,6 +126,10 @@ namespace LabExtended.API.Containers
             }
         }
 
+        /// <summary>
+        /// Sets the player's position.
+        /// </summary>
+        /// <param name="position">The position to set.</param>
         public void Set(Vector3 position)
             => Player.Hub.TryOverridePosition(position);
 
@@ -179,7 +183,7 @@ namespace LabExtended.API.Containers
         /// Sets gravity for all players.
         /// </summary>
         /// <param name="gravity">The gravity to set.</param>
-        public static void SetGravity(Vector2 gravity)
+        public static void SetGravity(Vector3 gravity)
         {
             foreach (var player in ExPlayer.Players)
                 player.Position.Gravity = gravity;
