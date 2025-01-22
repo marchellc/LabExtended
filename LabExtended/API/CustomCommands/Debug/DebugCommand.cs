@@ -17,6 +17,7 @@ namespace LabExtended.API.CustomCommands.Debug
         {
             RegisterCommand(new SetSwitchCommand());
             RegisterCommand(new SetGravityCommand());
+            RegisterCommand(new SetPitchCommand());
             RegisterCommand(new SettingsTestCommand());
             RegisterCommand(new ListPlayersCommand());
         }

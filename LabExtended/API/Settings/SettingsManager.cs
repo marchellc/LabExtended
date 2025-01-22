@@ -421,7 +421,11 @@ namespace LabExtended.API.Settings
 
                 using (var reader = NetworkReaderPool.Get(clientResponse.Payload))
                 {
-                    entry.Base.DeserializeValue(reader);
+                    if (entry is ICustomReaderSetting customReaderSetting)
+                        customReaderSetting.Read(reader);
+                    else
+                        entry.Base.DeserializeValue(reader);
+                    
                     entry.InternalOnUpdated();
 
                     HookRunner.RunEvent(new SettingsEntryUpdatedArgs(entry));

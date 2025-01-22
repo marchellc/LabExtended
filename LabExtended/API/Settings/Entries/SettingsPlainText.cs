@@ -1,13 +1,15 @@
 ﻿using LabExtended.API.Interfaces;
 using LabExtended.Extensions;
-
+using Mirror;
 using TMPro;
 
 using UserSettings.ServerSpecific;
 
 namespace LabExtended.API.Settings.Entries
 {
-    public class SettingsPlainText : SettingsEntry, IWrapper<SSPlaintextSetting>
+    public class SettingsPlainText : SettingsEntry, 
+                                     IWrapper<SSPlaintextSetting>,
+                                     ICustomReaderSetting
     {
         private string _prevText;
 
@@ -67,6 +69,22 @@ namespace LabExtended.API.Settings.Entries
 
         public void Clear()
             => Player?.Connection?.Send(new SSSUpdateMessage(Base, null));
+
+        public void Read(NetworkReader reader)
+        {
+            var text = reader.ReadString();
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Base.SyncInputText = string.Empty;
+                return;
+            }
+            
+            if (text.Length > CharacterLimit)
+                text = text.Substring(0, CharacterLimit);
+            
+            Base.SyncInputText = text;
+        }
 
         /// <inheritdoc />
         internal override void InternalOnUpdated()
