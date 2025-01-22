@@ -55,9 +55,9 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// An array of captured voice packets.
         /// </summary>
-        public IReadOnlyDictionary<float, VoiceMessage> Packets { get; }
+        public IReadOnlyDictionary<DateTime, VoiceMessage> Packets { get; }
 
-        internal PlayerStoppedSpeakingArgs(ExPlayer player, float startTime, IReadOnlyDictionary<float, VoiceMessage> packets)
+        internal PlayerStoppedSpeakingArgs(ExPlayer player, float startTime, IReadOnlyDictionary<DateTime, VoiceMessage> packets)
         {
             Player = player;
             Packets = packets;

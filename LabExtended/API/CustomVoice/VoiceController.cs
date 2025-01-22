@@ -20,8 +20,9 @@ public class VoiceController : IDisposable
 {
     public static event Action<VoiceController> OnJoined; 
     
-    private Dictionary<float, VoiceMessage> _speakingPackets;
-    private Dictionary<float, VoiceMessage> _sessionPackets;
+    private Dictionary<DateTime, VoiceMessage> _speakingPackets;
+    private Dictionary<DateTime, VoiceMessage> _sessionPackets;
+    
     private Dictionary<Type, VoiceProfile> _profiles;
 
     private bool _wasSpeaking;
@@ -33,10 +34,10 @@ public class VoiceController : IDisposable
     public bool IsOnline => Player != null && Player;
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
 
-    public VoiceFlags Flags { get; set; } = VoiceFlags.None;
+    public bool CanReceiveSelf { get; set; }
 
-    public IReadOnlyDictionary<float, VoiceMessage> SpeakingPackets => _speakingPackets;
-    public IReadOnlyDictionary<float, VoiceMessage> SessionPackets => _sessionPackets;
+    public IReadOnlyDictionary<DateTime, VoiceMessage> SpeakingPackets => _speakingPackets;
+    public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
     
     public IReadOnlyDictionary<Type, VoiceProfile> Profiles => _profiles;
 
@@ -46,8 +47,8 @@ public class VoiceController : IDisposable
         
         Pitch = new VoicePitch(this);
 
-        _speakingPackets = DictionaryPool<float, VoiceMessage>.Shared.Rent();
-        _sessionPackets = DictionaryPool<float, VoiceMessage>.Shared.Rent();
+        _speakingPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
+        _sessionPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
         _profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
         PlayerLoopHelper.AfterLoop += UpdateSpeaking;
@@ -176,14 +177,14 @@ public class VoiceController : IDisposable
         
         if (_speakingPackets != null)
         {
-            DictionaryPool<float, VoiceMessage>.Shared.Return(_speakingPackets);
+            DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_speakingPackets);
             
             _speakingPackets = null;
         }
         
         if (_sessionPackets != null)
         {
-            DictionaryPool<float, VoiceMessage>.Shared.Return(_sessionPackets);
+            DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_sessionPackets);
             
             _sessionPackets = null;
         }
@@ -212,7 +213,7 @@ public class VoiceController : IDisposable
         if (msg.SpeakerNull || msg.Speaker is null || msg.Speaker.netId != Player.NetId)
             return;
 
-        var time = Time.realtimeSinceStartup;
+        var time = DateTime.Now;
 
         _speakingPackets.Add(time, msg);
         _sessionPackets.Add(time, msg);
@@ -305,10 +306,10 @@ public class VoiceController : IDisposable
     {
         if (receiver.Role.VoiceModule is null)
             return VoiceChatChannel.None;
-        
-        if (receiver == Player && (Flags & VoiceFlags.CanReceiveSelf) != 0)
-            messageChannel = VoiceChatChannel.RoundSummary;
 
+        if (receiver == Player)
+            return CanReceiveSelf ? VoiceChatChannel.RoundSummary : VoiceChatChannel.None;
+        
         return receiver.Role.VoiceModule.ValidateReceive(Player.Hub, messageChannel);
     }
 }

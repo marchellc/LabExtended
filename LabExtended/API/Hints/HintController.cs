@@ -77,9 +77,6 @@ namespace LabExtended.API.Hints
             _builder = StringBuilderPool.Shared.Rent();
 
             EmptyMessage = new global::Hints.HintMessage(_emptyHint);
-
-            if (ApiLoader.ApiConfig.HintSection.EnableTestElement)
-                AddElement<TestElement>();
         }
 
         public static void PauseHints(ExPlayer player)
@@ -211,9 +208,12 @@ namespace LabExtended.API.Hints
             {
                 element.IsActive = true;
                 element.OnEnabled();
+                
+                ApiLog.Debug("Hint API", $"Added element &1{element.Id}&r (&6{element.GetType().Name}&r)");
                 return true;
             }
 
+            ApiLog.Debug("Hint API", $"Failed to add element &1{element.Id}&r (&6{element.GetType().Name}&r)");
             return false;
         }
         
@@ -429,15 +429,21 @@ namespace LabExtended.API.Hints
 
         private static void OnJoined(ExPlayer player)
         {
+            ApiLog.Debug("Hint API", $"Player &1{player.Name}&r joined");
+            
             _cache.Add(player, new HintCache() { Player = player });
 
             _elements.ForEach(x =>
-            {
+            {                
+                ApiLog.Debug("Hint API", $"Validating whitelist in element &1{x.GetType().Name}&r (IsGlobal={x.IsGlobal})");
+                
                 if (!x.IsGlobal && !x.ValidateWhitelist(player))
                     return;
 
                 x.Whitelist.Add(player);
                 x.OnWhitelistAdded(player);
+                
+                ApiLog.Debug("Hint API", $"Added to whitelist");
             });
         }
 
@@ -503,6 +509,11 @@ namespace LabExtended.API.Hints
             InternalEvents.OnPlayerJoined += OnJoined;
 
             PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnTick, typeof(HintUpdateLoop)) ? x : null);
+            
+            if (ApiLoader.ApiConfig.HintSection.EnableTestElement)
+                AddElement<TestElement>();
+            
+            ApiLog.Debug("Hint API", $"Initialized");
         }
     }
 }
