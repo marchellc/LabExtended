@@ -140,6 +140,9 @@ namespace LabExtended.Patches.Functions
           if (num3 > 0)
             ++num8;
 
+          if (num8 <= 0f)
+            summary._roundEnded = true;
+
           if (summary.ExtraTargets > 0)
           {
             if (summary._roundEnded)

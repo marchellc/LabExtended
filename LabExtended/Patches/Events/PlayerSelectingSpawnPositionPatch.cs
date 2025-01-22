@@ -11,6 +11,7 @@ using LabExtended.API;
 using LabExtended.API.CustomRoles;
 
 using LabExtended.Attributes;
+using LabExtended.Core;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 
@@ -22,48 +23,64 @@ public static class PlayerSelectingSpawnPositionPatch
     [HarmonyPatch(typeof(RoleSpawnpointManager), nameof(RoleSpawnpointManager.SetPosition))]
     public static bool Prefix(ReferenceHub hub, PlayerRoleBase newRole)
     {
-        if (newRole is not IFpcRole fpcRole || fpcRole.SpawnpointHandler is null)
-            return false;
-
-        if (!ExPlayer.TryGet(hub, out var player))
-            return false;
-
-        if (!fpcRole.SpawnpointHandler.TryGetSpawnpoint(out var spawnPoint, out var spawnRot))
-            return false;
-        
-        var selectingPositionArgs = new PlayerSelectingSpawnPositionArgs(player, spawnPoint, spawnRot);
-
-        if (!HookRunner.RunEvent(selectingPositionArgs, true))
-            return false;
-
-        foreach (var customRole in CustomRole.GetRoles(player))
+        try
         {
-            if (!customRole.IsEnabled)
-                continue;
-            
-            customRole.OnSelectingPosition(selectingPositionArgs);
-
-            if (!selectingPositionArgs.IsAllowed)
+            if (hub is null)
                 return false;
-        }
 
-        var spawningArgs = new PlayerSpawningEventArgs(hub, newRole, true, selectingPositionArgs.Position, selectingPositionArgs.Rotation);
-        
-        PlayerEvents.OnSpawning(spawningArgs);
+            if (newRole is not IFpcRole fpcRole || fpcRole.SpawnpointHandler is null)
+                return false;
 
-        if (!spawningArgs.IsAllowed)
-            return false;
+            if (!ExPlayer.TryGet(hub, out var player))
+                return false;
 
-        if (!newRole.ServerSpawnFlags.HasFlag(RoleSpawnFlags.UseSpawnpoint))
-        {
+            if (!fpcRole.SpawnpointHandler.TryGetSpawnpoint(out var spawnPoint, out var spawnRot))
+                return false;
+
+            var selectingPositionArgs = new PlayerSelectingSpawnPositionArgs(player, spawnPoint, spawnRot);
+
+            if (!HookRunner.RunEvent(selectingPositionArgs, true))
+                return false;
+
+            foreach (var customRole in CustomRole.GetRoles(player))
+            {
+                if (customRole is null)
+                    continue;
+                
+                if (!customRole.IsEnabled)
+                    continue;
+
+                customRole.OnSelectingPosition(selectingPositionArgs);
+
+                if (!selectingPositionArgs.IsAllowed)
+                    return false;
+            }
+
+            var spawningArgs = new PlayerSpawningEventArgs(hub, newRole, true, selectingPositionArgs.Position, selectingPositionArgs.Rotation);
+
+            PlayerEvents.OnSpawning(spawningArgs);
+
+            if (!spawningArgs.IsAllowed)
+                return false;
+
+            if (!newRole.ServerSpawnFlags.HasFlag(RoleSpawnFlags.UseSpawnpoint))
+            {
+                PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, true, spawningArgs.SpawnLocation, spawningArgs.HorizontalRotation));
+                return false;
+            }
+
+            hub.transform.position = spawningArgs.SpawnLocation;
+            
+            if (fpcRole.FpcModule != null && fpcRole.FpcModule.MouseLook != null)
+                fpcRole.FpcModule.MouseLook.CurrentHorizontal = spawningArgs.HorizontalRotation;
+
             PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, true, spawningArgs.SpawnLocation, spawningArgs.HorizontalRotation));
             return false;
         }
-
-        hub.transform.position = spawningArgs.SpawnLocation;
-        fpcRole.FpcModule.MouseLook!.CurrentHorizontal = spawningArgs.HorizontalRotation;
-
-        PlayerEvents.OnSpawned(new PlayerSpawnedEventArgs(hub, newRole, true, spawningArgs.SpawnLocation, spawningArgs.HorizontalRotation));
-        return false;
+        catch (Exception ex)
+        {
+            ApiLog.Error("PlayerSelectingSpawnPositionPatch", ex);
+            return false;
+        }
     }
 }
