@@ -19,6 +19,7 @@ namespace LabExtended.API.Settings.Entries.Dropdown
             SSDropdownSetting.DropdownEntryType dropdownEntryType, 
             Action<SettingsDropdown> dropdownBuilder = null, 
             string dropdownHint = null)
+        
             : base(new SSDropdownSetting(
                     SettingsManager.GetIntegerId(customId),
 
@@ -31,6 +32,9 @@ namespace LabExtended.API.Settings.Entries.Dropdown
                 customId)
         {
             Base = (SSDropdownSetting)base.Base;
+         
+            dropdownBuilder.InvokeSafe(this);
+            
             Base.Options = Options.Select(x => x.Text).ToArray();
 
             _prevSelectedIndex = Base.DefaultOptionIndex;
@@ -72,6 +76,9 @@ namespace LabExtended.API.Settings.Entries.Dropdown
                 return Options[SelectedIndex];
             }
         }
+        
+        public void SyncOptions()
+            => Base.Options = Options.Select(x => x.Text).ToArray();
 
         public SettingsDropdown AddOption<T>(T optionValue, string optionText)
             => AddOption(new SettingsDropdownOption<T>(optionValue, optionText));

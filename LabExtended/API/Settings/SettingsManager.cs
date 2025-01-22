@@ -284,15 +284,17 @@ namespace LabExtended.API.Settings
 
                                 builtMenu.Player = player;
                                 
-                                if (!string.IsNullOrWhiteSpace(builtMenu.MenuLabel))
-                                    builtList.Add(new SSGroupHeader(builtMenu.MenuLabel));
-                                
                                 builtMenu.BuildMenu(menuList);
 
                                 builtMenu.Settings.Clear();
                                 builtMenu.Settings.AddRange(menuList);
 
                                 ListPool<SettingsEntry>.Shared.Return(menuList);
+                                
+                                if (!idEntries.TryGetValue(builtMenu.CustomId, out var menuHeader))
+                                    idEntries.Add(builtMenu.CustomId, menuHeader = new LockedDictionary<ExPlayer, SettingsEntry>());
+                                
+                                menuHeader[player] = new SettingsGroup(builtMenu.Header, builtMenu.HeaderReducedPadding, builtMenu.HeaderHint);
 
                                 for (int y = 0; y < builtMenu.Settings.Count; y++)
                                 {
@@ -461,7 +463,7 @@ namespace LabExtended.API.Settings
                                 break;
                             
                             case SettingsDropdown dropdown:
-                                entry.Menu.OnDropdownSelected(dropdown, dropdown.TryGetOption(dropdown.SelectedIndex, out var option) ? option : null);
+                                entry.Menu.OnDropdownSelected(dropdown, dropdown.SelectedOption);
                                 break;
                         }
                     }

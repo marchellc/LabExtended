@@ -50,7 +50,7 @@ namespace LabExtended.API.CustomCommands.Debug.Settings
     public class TestMenu : SettingsMenu
     {
         public override string CustomId { get; } = "testMenu";
-        public override string MenuLabel { get; } = "Test Menu";
+        public override string Header { get; } = "Test Menu";
 
         public override void BuildMenu(List<SettingsEntry> settings)
         {
