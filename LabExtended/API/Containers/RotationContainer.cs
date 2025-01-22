@@ -261,44 +261,8 @@ namespace LabExtended.API.Containers
         /// </summary>
         /// <param name="compressedHorizontal">The horizontal axis to set.</param>
         /// <param name="compressedVertical">The vertical axis to set.</param>
-        /// <param name="sendPosition">Whether or not to send a position.</param>
-        /// <param name="positionToSend">The position to send.</param>
-        public void Set(ushort compressedHorizontal, ushort compressedVertical, bool sendPosition = false, RelativePosition? positionToSend = null)
-            => Player.Connection.WriteMessageToConnection<FpcPositionMessage>(writer => InternalWrite(writer, compressedHorizontal, compressedVertical, sendPosition, positionToSend));
-
-        private void InternalWrite(NetworkWriter writer, ushort horizontal, ushort vertical, bool writePosition, RelativePosition? positionToSend)
-        {
-            var module = Player.Role.MovementModule;
-
-            if (module is null)
-                throw new Exception($"The player's movement module is null!");
-
-            Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7, out var b8);
-
-            var b = Misc.BoolsToByte(b1, b2, b3, b4, b5, true, writePosition, module.IsGrounded);
-            var pos = positionToSend.HasValue ? positionToSend.Value : Player.Position.Relative;
-            var id = Player.Hub.Network_playerId;
-
-            writer.WriteUShort(2); // Data count
-
-            writer.WriteRecyclablePlayerId(id);
-            writer.WriteByte(b); // Included data
-
-            if (writePosition)
-                writer.WriteRelativePosition(pos);
-
-            writer.WriteUShort(horizontal++);
-            writer.WriteUShort(vertical++);
-
-            writer.WriteRecyclablePlayerId(id);
-            writer.WriteByte(b);
-
-            if (writePosition)
-                writer.WriteRelativePosition(pos);
-
-            writer.WriteUShort(--horizontal);
-            writer.WriteUShort(--vertical);
-        }
+        public void Set(ushort compressedHorizontal, ushort compressedVertical)
+            => Player.Connection.Send(new FpcRotationOverrideMessage(new Vector2(compressedVertical, compressedHorizontal)));
 
         /// <summary>
         /// Converts the specified <see cref="RotationContainer"/> to a <see cref="Quaternion"/>.
