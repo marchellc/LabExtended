@@ -17,7 +17,7 @@ using LabExtended.Utilities.Unity;
 using NorthwoodLib.Pools;
 
 using System.Text;
-
+using LabExtended.API.Hints.Elements;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 
@@ -77,6 +77,9 @@ namespace LabExtended.API.Hints
             _builder = StringBuilderPool.Shared.Rent();
 
             EmptyMessage = new global::Hints.HintMessage(_emptyHint);
+
+            if (ApiLoader.ApiConfig.HintSection.EnableTestElement)
+                AddElement<TestElement>();
         }
 
         public static void PauseHints(ExPlayer player)
@@ -287,12 +290,15 @@ namespace LabExtended.API.Hints
         {
             try
             {
-                _curTime -= Time.deltaTime;
+                if (ApiLoader.ApiConfig.HintSection.UpdateInterval > 0f)
+                {
+                    _curTime -= Time.deltaTime;
 
-                if (_curTime > 0f)
-                    return;
+                    if (_curTime > 0f)
+                        return;
 
-                _curTime = ApiLoader.ApiConfig.HintSection.UpdateInterval;
+                    _curTime = ApiLoader.ApiConfig.HintSection.UpdateInterval;
+                }
 
                 if (_elements.Count < 1 || ExPlayer.Count < 1)
                     return;
