@@ -1,18 +1,19 @@
 ﻿using LabExtended.Attributes;
-using LabExtended.Patches.Functions.Players;
 
 using Mirror;
 
 using UserSettings.ServerSpecific;
 
-using LabExtended.API.Collections.Locked;
+using LabExtended.API.Settings.Menus;
+using LabExtended.API.Settings.Interfaces;
+
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
-using LabExtended.API.Settings.Menus;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
+
 using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Events.Settings;
@@ -23,14 +24,11 @@ namespace LabExtended.API.Settings
 {
     public static class SettingsManager
     {
-        private static LockedList<SettingsBuilder> allBuilders = new LockedList<SettingsBuilder>();
-        private static LockedDictionary<ExPlayer, SSSUserStatusReport> allStatuses = new LockedDictionary<ExPlayer, SSSUserStatusReport>();
-        private static LockedDictionary<string, LockedDictionary<ExPlayer, SettingsEntry>> idEntries = new LockedDictionary<string, LockedDictionary<ExPlayer, SettingsEntry>>();
+        private static readonly List<SettingsBuilder> allBuilders = new List<SettingsBuilder>();
+        private static readonly List<SettingsEntry> allEntries = new List<SettingsEntry>();
 
         public static IReadOnlyList<SettingsBuilder> AllBuilders => allBuilders;
-        public static IReadOnlyDictionary<ExPlayer, SSSUserStatusReport> AllStatuses => allStatuses;
-
-        public static IEnumerable<SettingsEntry> AllEntries => idEntries.SelectMany(x => x.Value.Values);
+        public static IEnumerable<SettingsEntry> AllEntries => allEntries;
         
         public static int Version
         {
@@ -39,65 +37,101 @@ namespace LabExtended.API.Settings
         }
 
         public static event Action<ExPlayer, SettingsEntry> OnUpdated;
-        public static event Action<ExPlayer, SettingsEntry> OnCreated; 
-        
+        public static event Action<ExPlayer, SettingsEntry> OnCreated;
+
         public static void SyncEntries(ExPlayer player)
-            => player?.Connection?.Send(new SSSEntriesPack(GetEntries(player).Select(x => x.Base).ToArray(), Version));
+        {
+            if (!player)
+                throw new ArgumentNullException(nameof(player));
+            
+            var list = ListPool<ServerSpecificSettingBase>.Shared.Rent();
 
-        // for some odd reason this just breaks if I remove debug lines??
-        public static bool TryGetEntry(int generatedId, ExPlayer player, out SettingsEntry entry)
-            => TryGetEntry(x =>
+            foreach (var settingsEntry in player.settingsIdLookup)
             {
-                if (x.AssignedId != generatedId)
-                {
-                    ApiLog.Debug("Settings API", $"ID comparison failed ({x.AssignedId} / {generatedId})");
-                    return false;
-                }
+                if (settingsEntry.Value is null || settingsEntry.Value.Base is null)
+                    continue;
+                
+                if (!settingsEntry.Value.Player)
+                    continue;
+                
+                if (settingsEntry.Value.IsHidden)
+                    continue;
 
-                if (x.Player != player)
-                {
-                    ApiLog.Debug("Settings API", $"Player comparison failed ({x.Player.UserId} - {x.Player.GetHashCode()} / {player.UserId} - {player.GetHashCode()})");
-                    return false;
-                }
+                if (settingsEntry.Value.Menu != null && !settingsEntry.Value.Menu.IsActive)
+                    continue;
+                
+                list.Add(settingsEntry.Value.Base);
+            }
 
-                return true;
-            }, out entry);
+            player.Send(new SSSEntriesPack(ListPool<ServerSpecificSettingBase>.Shared.ToArrayReturn(list), Version));
+        }
+
+        public static bool TryGetMenu<TMenu>(ExPlayer player, out TMenu menu) where TMenu : SettingsMenu
+        {
+            if (!player)
+                throw new ArgumentNullException(nameof(player));
+
+            menu = null;
+
+            foreach (var value in player.settingsMenuLookup)
+            {
+                if (value.Value is TMenu menuItem)
+                {
+                    menu = menuItem;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        public static bool TryGetMenu(string menuId, ExPlayer player, out SettingsMenu menu)
+            => player.settingsMenuLookup.TryGetValue(menuId, out menu);
+        
+        public static bool TryGetEntry(int generatedId, ExPlayer player, out SettingsEntry entry)
+            => player.settingsAssignedIdLookup.TryGetValue(generatedId, out entry);
         
         public static bool TryGetEntry(string customId, ExPlayer player, out SettingsEntry entry)
-            => TryGetEntry(x => x.CustomId == customId && x.Player == player, out entry);
+            => player.settingsIdLookup.TryGetValue(customId, out entry);
         
-        public static bool TryGetEntry(Predicate<SettingsEntry> predicate, out SettingsEntry entry)
+        public static bool TryGetEntry(Func<SettingsEntry, bool> predicate, out SettingsEntry entry)
             => (entry = GetEntry(predicate)) != null;
-        
+
+        public static TMenu GetMenu<TMenu>(ExPlayer player) where TMenu : SettingsMenu
+        {
+            if (!player)
+                throw new ArgumentNullException(nameof(player));
+
+            foreach (var menu in player.settingsMenuLookup)
+            {
+                if (menu.Value is TMenu value)
+                    return value;
+            }
+
+            throw new Exception($"Could not find a menu of type {typeof(TMenu).Name}");
+        }
+
+        public static SettingsMenu GetMenu(string menuId, ExPlayer player)
+            => player.settingsMenuLookup[menuId];
+
         public static SettingsEntry GetEntry(string customId, ExPlayer player)
-            => GetEntry(x => x.CustomId == customId && x.Player == player);
+            => player.settingsIdLookup[customId];
         
         public static SettingsEntry GetEntry(int generatedId, ExPlayer player)
-            => GetEntry(x => x.AssignedId == generatedId && x.Player == player);
+            => player.settingsAssignedIdLookup[generatedId];
         
-        public static SettingsEntry GetEntry(Predicate<SettingsEntry> predicate)
+        public static SettingsEntry GetEntry(Func<SettingsEntry, bool> predicate)
         {
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
             
-            foreach (var idPair in idEntries)
-            {
-                foreach (var entryPair in idPair.Value)
-                {
-                    if (!predicate(entryPair.Value))
-                        continue;
-                    
-                    return entryPair.Value;
-                }
-            }
-            
-            return null;
+            return allEntries.TryGetFirst(x => predicate(x), out var entry) ? entry : null;
         }
         
-        public static List<SettingsEntry> GetEntries(int generatedId)
+        public static IEnumerable<SettingsEntry> GetEntries(int generatedId)
             => GetEntries(x => x.AssignedId == generatedId);
 
-        public static List<SettingsEntry> GetEntries(string customId)
+        public static IEnumerable<SettingsEntry> GetEntries(string customId)
         {
             if (string.IsNullOrWhiteSpace(customId))   
                 throw new ArgumentNullException(nameof(customId));
@@ -105,33 +139,20 @@ namespace LabExtended.API.Settings
             return GetEntries(x => x.CustomId == customId);
         }
         
-        public static List<SettingsEntry> GetEntries(ExPlayer player)
+        public static IEnumerable<SettingsEntry> GetEntries(ExPlayer player)
         {
             if (player is null || !player)
                 throw new ArgumentNullException(nameof(player));
-            
-            return GetEntries(x => x.Player == player);
+
+            return player.settingsIdLookup.Values;
         }
 
-        public static List<SettingsEntry> GetEntries(Predicate<SettingsEntry> predicate)
+        public static IEnumerable<SettingsEntry> GetEntries(Func<SettingsEntry, bool> predicate)
         {
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate)); 
             
-            var list = new List<SettingsEntry>();
-
-            foreach (var idPair in idEntries)
-            {
-                foreach (var entryPair in idPair.Value)
-                {
-                    if (!predicate(entryPair.Value))
-                        continue;
-                    
-                    list.Add(entryPair.Value);
-                }
-            }
-            
-            return list;
+            return allEntries.Where(predicate);
         }
 
         public static void AddBuilder(SettingsBuilder settingsBuilder)
@@ -158,6 +179,60 @@ namespace LabExtended.API.Settings
             return allBuilders.Any(x => !string.IsNullOrWhiteSpace(x.CustomId) && x.CustomId == builderId);
         }
 
+        public static void AddMenu(ExPlayer player, SettingsMenu menu)
+        {
+            if (!player)
+                throw new ArgumentNullException(nameof(player));
+
+            if (menu is null)
+                throw new ArgumentNullException(nameof(menu));
+
+            if (player.settingsMenuLookup.ContainsKey(menu.CustomId))
+                throw new Exception($"A menu with the same ID already exists for {player.Name} ({player.UserId})");
+
+            var entries = ListPool<SettingsEntry>.Shared.Rent();
+            var curCount = player.settingsIdLookup.Count;
+            
+            menu.Player = player;
+            menu.BuildMenu(entries);
+
+            menu.Entries = ListPool<SettingsEntry>.Shared.ToArrayReturn(entries);
+            
+            player.settingsMenuLookup.Add(menu.CustomId, menu);
+
+            if (!string.IsNullOrEmpty(menu.Header))
+            {
+                var menuHeader = new SettingsGroup(menu.Header, menu.HeaderReducedPadding, menu.HeaderHint);
+
+                menuHeader.Menu = menu;
+                menuHeader.Player = player;
+
+                player.settingsIdLookup.Add(menuHeader.CustomId, menuHeader);
+                player.settingsAssignedIdLookup.Add(menuHeader.AssignedId, menuHeader);
+            }
+
+            for (int y = 0; y < menu.Entries.Length; y++)
+            {
+                var menuSetting = menu.Entries[y];
+
+                if (menuSetting != null)
+                {
+                    menuSetting.Player = player;
+                    menuSetting.Menu = menu;
+
+                    player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
+                    player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
+
+                    HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, menu, player));
+
+                    OnCreated.InvokeSafe(player, menuSetting);
+                }
+            }
+            
+            if (curCount != player.settingsIdLookup.Count)
+                SyncEntries(player);
+        }
+
         public static void AddSetting(ExPlayer player, SettingsEntry entry)
         {
             if (!player)
@@ -166,12 +241,16 @@ namespace LabExtended.API.Settings
             if (entry is null)
                 throw new ArgumentNullException(nameof(entry));
 
+            if (player.settingsIdLookup.ContainsKey(entry.CustomId))
+                throw new Exception($"An entry with the same custom ID ({entry.CustomId}) already exists for player {player.Name} ({player.UserId})");
+
+            if (player.settingsAssignedIdLookup.ContainsKey(entry.AssignedId))
+                throw new Exception($"An entry with the same assigned ID ({entry.AssignedId}) already exists for player {player.Name} ({player.UserId})");
+
             entry.Player = player;
-
-            if (!idEntries.TryGetValue(entry.CustomId, out var entries))
-                idEntries.Add(entry.CustomId, entries = new LockedDictionary<ExPlayer, SettingsEntry>());
-
-            entries[player] = entry;
+            
+            player.settingsIdLookup.Add(entry.CustomId, entry);
+            player.settingsAssignedIdLookup.Add(entry.AssignedId, entry);
 
             SyncEntries(player);
         }
@@ -186,20 +265,18 @@ namespace LabExtended.API.Settings
 
             if (!string.IsNullOrWhiteSpace(groupHeader))
             {
-                if (!idEntries.TryGetValue(groupHeader, out var savedIds))
-                    idEntries[groupHeader] = savedIds = new LockedDictionary<ExPlayer, SettingsEntry>();
-
-                savedIds[player] = new SettingsGroup(groupHeader, reducedHeaderPadding, headerHint);
+                var header = new SettingsGroup(groupHeader, reducedHeaderPadding, headerHint);
+                
+                player.settingsIdLookup[header.CustomId] = header;
+                player.settingsAssignedIdLookup[header.AssignedId] = header;
             }
             
             foreach (var entry in entries)
             {
                 entry.Player = player;
-
-                if (!idEntries.TryGetValue(entry.CustomId, out var savedEntries))
-                    idEntries.Add(entry.CustomId, savedEntries = new LockedDictionary<ExPlayer, SettingsEntry>());
-
-                savedEntries[player] = entry;
+                
+                player.settingsIdLookup.Add(entry.CustomId, entry);
+                player.settingsAssignedIdLookup.Add(entry.AssignedId, entry);
             }
 
             SyncEntries(player);
@@ -207,21 +284,18 @@ namespace LabExtended.API.Settings
 
         public static bool HasSettingsOpen(ExPlayer player)
         {
-            if (!player)
+            if (!player || !player.sssReport.HasValue)
                 return false;
 
-            if (!allStatuses.TryGetValue(player, out var status))
-                return false;
-
-            return status.TabOpen;
+            return player.sssReport.Value.TabOpen;
         }
 
         public static int GetUserVersion(ExPlayer player)
         {
-            if (!player || !allStatuses.TryGetValue(player, out var status))
+            if (!player || !player.sssReport.HasValue)
                 return 0;
 
-            return status.Version;
+            return player.sssReport.Value.Version;
         }
 
         public static int GetIntegerId(string customId)
@@ -260,11 +334,9 @@ namespace LabExtended.API.Settings
                             if (builtSetting != null)
                             {
                                 builtSetting.Player = player;
-
-                                if (!idEntries.TryGetValue(builtSetting.CustomId, out var idSettings))
-                                    idEntries.Add(builtSetting.CustomId, idSettings = new LockedDictionary<ExPlayer, SettingsEntry>());
                                 
-                                idSettings[player] = builtSetting;
+                                player.settingsIdLookup.Add(builtSetting.CustomId, builtSetting);
+                                player.settingsAssignedIdLookup.Add(builtSetting.AssignedId, builtSetting);
 
                                 HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting, null, player));
 
@@ -283,33 +355,32 @@ namespace LabExtended.API.Settings
                                 var menuList = ListPool<SettingsEntry>.Shared.Rent();
 
                                 builtMenu.Player = player;
-                                
                                 builtMenu.BuildMenu(menuList);
 
-                                builtMenu.Settings.Clear();
-                                builtMenu.Settings.AddRange(menuList);
-
-                                ListPool<SettingsEntry>.Shared.Return(menuList);
+                                builtMenu.Entries = ListPool<SettingsEntry>.Shared.ToArrayReturn(menuList);
                                 
-                                if (!idEntries.TryGetValue(builtMenu.CustomId, out var menuHeader))
-                                    idEntries.Add(builtMenu.CustomId, menuHeader = new LockedDictionary<ExPlayer, SettingsEntry>());
+                                player.settingsMenuLookup.Add(builtMenu.CustomId, builtMenu);
                                 
-                                menuHeader[player] = new SettingsGroup(builtMenu.Header, builtMenu.HeaderReducedPadding, builtMenu.HeaderHint);
+                                var menuHeader = new SettingsGroup(builtMenu.Header, builtMenu.HeaderReducedPadding, builtMenu.HeaderHint);
 
-                                for (int y = 0; y < builtMenu.Settings.Count; y++)
+                                menuHeader.Menu = builtMenu;
+                                menuHeader.Player = player;
+                                
+                                player.settingsIdLookup.Add(menuHeader.CustomId, menuHeader);
+                                player.settingsAssignedIdLookup.Add(menuHeader.AssignedId, menuHeader);
+                                
+                                for (int y = 0; y < builtMenu.Entries.Length; y++)
                                 {
-                                    var menuSetting = builtMenu.Settings[y];
+                                    var menuSetting = builtMenu.Entries[y];
 
                                     if (menuSetting != null)
                                     {
                                         menuSetting.Player = player;
                                         menuSetting.Menu = builtMenu;
                                         
-                                        if (!idEntries.TryGetValue(menuSetting.CustomId, out var idSettings))
-                                            idEntries.Add(menuSetting.CustomId, idSettings = new LockedDictionary<ExPlayer, SettingsEntry>());
+                                        player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
+                                        player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
                                         
-                                        idSettings[player] = menuSetting;
-
                                         HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, builtMenu, player));
 
                                         OnCreated.InvokeSafe(player, menuSetting);
@@ -330,23 +401,13 @@ namespace LabExtended.API.Settings
                 }
 
                 if (builtList.Count > 0)
-                    player.Connection.Send(
-                        new SSSEntriesPack(ListPool<ServerSpecificSettingBase>.Shared.ToArrayReturn(builtList),
-                            Version));
+                    SyncEntries(player);
                 else
                     ListPool<ServerSpecificSettingBase>.Shared.Return(builtList);
             }
             catch (Exception ex)
             {
                 ApiLog.Error("Settings API", $"Failed while building settings for player &1{player.Name}&r ({player.UserId})&r:\n{ex.ToColoredString()}");
-            }
-        }
-
-        private static void OnPlayerLeft(ExPlayer player)
-        {
-            foreach (var idPair in idEntries)
-            {
-                idPair.Value.Remove(player);
             }
         }
 
@@ -359,17 +420,17 @@ namespace LabExtended.API.Settings
                 
                 ApiLog.Debug("Settings API", $"Received status report from &3{player.Name} ({player.UserId})&r (&6Version={userStatusReport.Version}, TabOpen={userStatusReport.TabOpen}&r)");
 
-                if (allStatuses.TryGetValue(player, out var curReport))
+                if (player.sssReport.HasValue)
                 {
-                    HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, curReport));
+                    HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, player.sssReport.Value));
 
-                    allStatuses[player] = userStatusReport;
+                    player.sssReport = userStatusReport;
                     return;
                 }
                 
                 HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, null));
-                
-                allStatuses.Add(player, userStatusReport);
+
+                player.sssReport = userStatusReport;
             }
             catch (Exception ex)
             {
@@ -479,7 +540,6 @@ namespace LabExtended.API.Settings
         private static void Init()
         {
             InternalEvents.OnPlayerJoined += OnPlayerJoined;
-            InternalEvents.OnPlayerLeft += OnPlayerLeft;
         }
     }
 }

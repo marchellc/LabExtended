@@ -245,14 +245,14 @@ namespace LabExtended.Core.Networking
 
             var msgData = ReturnWriterAndData(writer);
 
-            for (int i = 0; i < ExPlayer._players.Count; i++)
+            for (int i = 0; i < ExPlayer.Players.Count; i++)
             {
-                var player = ExPlayer._players[i];
+                var player = ExPlayer.Players[i];
 
                 if (predicate != null && !predicate.InvokeSafe(player))
                     continue;
 
-                player.Connection.Send(msgData);
+                player.Send(msgData);
             }
         }
 

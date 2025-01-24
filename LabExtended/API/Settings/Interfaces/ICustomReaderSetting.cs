@@ -1,6 +1,6 @@
 ﻿using Mirror;
 
-namespace LabExtended.API.Settings;
+namespace LabExtended.API.Settings.Interfaces;
 
 public interface ICustomReaderSetting
 {

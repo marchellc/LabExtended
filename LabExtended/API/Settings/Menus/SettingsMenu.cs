@@ -9,15 +9,17 @@ namespace LabExtended.API.Settings.Menus
     public abstract class SettingsMenu
     {
         public abstract string CustomId { get; }
-        
         public abstract string Header { get; }
         
         public virtual string HeaderHint { get; }
+        
         public virtual bool HeaderReducedPadding { get; }
         
         public ExPlayer Player { get; internal set; }
+        
+        public bool IsActive { get; internal set; }
 
-        public LockedList<SettingsEntry> Settings { get; } = new LockedList<SettingsEntry>();
+        public SettingsEntry[] Entries { get; internal set; }
 
         public abstract void BuildMenu(List<SettingsEntry> settings);
 
@@ -31,5 +33,31 @@ namespace LabExtended.API.Settings.Menus
         public virtual void OnPlainTextUpdated(SettingsPlainText plainText) { }
         public virtual void OnSliderMoved(SettingsSlider slider) { }
         public virtual void OnTextInput(SettingsTextArea textArea) { }
+
+        public void HideMenu()
+        {
+            if (!IsActive)
+                return;
+
+            if (!Player)
+                return;
+
+            IsActive = false;
+            
+            SettingsManager.SyncEntries(Player);
+        }
+        
+        public void ShowMenu()
+        {
+            if (!IsActive)
+                return;
+
+            if (!Player)
+                return;
+
+            IsActive = true;
+            
+            SettingsManager.SyncEntries(Player);
+        }
     }
 }

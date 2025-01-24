@@ -18,7 +18,7 @@ namespace LabExtended.Patches.Functions.Scp106
         {
             var count = 0;
 
-            foreach (var player in ExPlayer._allPlayers)
+            foreach (var player in ExPlayer.AllPlayers)
             {
                 if (!player.Switches.CanBePocketDimensionItemTarget)
                     continue;

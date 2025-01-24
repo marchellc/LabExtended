@@ -54,6 +54,7 @@ namespace LabExtended.API.Hints
         public static IReadOnlyList<HintElement> Elements => _elements;
 
         public static int ElementCount => _elements.Count;
+        
         public static long TickNumber => _tickNum;
         public static float TickTime => _curTime;
 
@@ -79,10 +80,10 @@ namespace LabExtended.API.Hints
         }
 
         public static void PauseHints(ExPlayer player)
-            => player._hintCache.IsPaused = true;
+            => player.hintCache.IsPaused = true;
 
         public static void ResumeHints(ExPlayer player)
-            => player._hintCache.IsPaused = false;
+            => player.hintCache.IsPaused = false;
         
         public static void Show(ExPlayer player, string content, ushort duration, bool isPriority = false)
         {
@@ -92,24 +93,24 @@ namespace LabExtended.API.Hints
             if (string.IsNullOrWhiteSpace(content))
                 throw new ArgumentNullException(nameof(content));
             
-            if (player._hintCache.Queue.Count < 1)
+            if (player.hintCache.Queue.Count < 1)
             {
-                player._hintCache.Queue.Add(new HintMessage(content, duration));
+                player.hintCache.Queue.Add(new HintMessage(content, duration));
             }
             else
             {
                 if (isPriority)
                 {
-                    var curHint = player._hintCache.Queue[0];
+                    var curHint = player.hintCache.Queue[0];
 
-                    player._hintCache.RemoveCurrent();
+                    player.hintCache.RemoveCurrent();
                     
-                    player._hintCache.Queue.Insert(0, new HintMessage(content, duration));
-                    player._hintCache.Queue.Add(curHint);
+                    player.hintCache.Queue.Insert(0, new HintMessage(content, duration));
+                    player.hintCache.Queue.Add(curHint);
                 }
                 else
                 {
-                    player._hintCache.Queue.Add(new HintMessage(content, duration));
+                    player.hintCache.Queue.Add(new HintMessage(content, duration));
                 }
             }
         }
@@ -294,14 +295,12 @@ namespace LabExtended.API.Hints
                 else
                     _tickNum++;
 
-                foreach (var player in ExPlayer._players)
+                foreach (var player in ExPlayer.Players)
                 {
-                    if (!player)
+                    if (!player || player.hintCache is null)
                         continue;
-                    
-                    player._hintCache ??= ObjectPool<HintCache>.Shared.Rent(x => x.Player = player, () => new HintCache());
 
-                    if (player._hintCache.IsPaused)
+                    if (player.hintCache.IsPaused)
                         continue;
 
                     _builder.Clear();
@@ -309,18 +308,18 @@ namespace LabExtended.API.Hints
 
                     var anyAppended = false;
 
-                    player._hintCache.RefreshRatio();
+                    player.hintCache.RefreshRatio();
 
-                    if (player._hintCache.CurrentMessage is null || player._hintCache.UpdateTime())
-                        player._hintCache.NextMessage();
+                    if (player.hintCache.CurrentMessage is null || player.hintCache.UpdateTime())
+                        player.hintCache.NextMessage();
 
-                    if (player._hintCache.CurrentMessage != null)
+                    if (player.hintCache.CurrentMessage != null)
                     {
-                        player._hintCache.ParseTemp();
+                        player.hintCache.ParseTemp();
 
-                        if (player._hintCache.TempData.Count > 0)
+                        if (player.hintCache.TempData.Count > 0)
                         {
-                            AppendMessages(player._hintCache.TempData, TemporaryHintAlign, 0f, _builder);
+                            AppendMessages(player.hintCache.TempData, TemporaryHintAlign, 0f, _builder);
                             anyAppended = true;
                         }
                     }
@@ -377,16 +376,16 @@ namespace LabExtended.API.Hints
 
                             if (element.Data.Count > 0)
                             {
-                                AppendMessages(element.Data, element.GetAlignment(player), player._hintCache.LeftOffset, _builder);
+                                AppendMessages(element.Data, element.GetAlignment(player), player.hintCache.LeftOffset, _builder);
                                 anyAppended = true;
                             }
                         }
                     }
 
-                    if (!anyAppended && !player._hintCache.WasClearedAfterEmpty)
+                    if (!anyAppended && !player.hintCache.WasClearedAfterEmpty)
                     {
-                        player.Connection.Send(EmptyMessage);
-                        player._hintCache.WasClearedAfterEmpty = true;
+                        player.Send(EmptyMessage);
+                        player.hintCache.WasClearedAfterEmpty = true;
 
                         continue;
                     }
@@ -397,9 +396,8 @@ namespace LabExtended.API.Hints
                     _hintBuffer.Text = _hintBufferParam.Value;
                     _hintBuffer.DurationScalar = ApiLoader.ApiConfig.HintSection.HintDuration;
 
-                    player.Connection.Send(CurMessage);
-
-                    player._hintCache.WasClearedAfterEmpty = false;
+                    player.Send(CurMessage);
+                    player.hintCache.WasClearedAfterEmpty = false;
                 }
             }
             catch (Exception ex)

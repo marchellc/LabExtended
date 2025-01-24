@@ -413,7 +413,7 @@ namespace LabExtended.API
                 RoleAssigner._spawned = true;
                 RoleAssigner.LateJoinTimer.Restart();
 
-                var players = new List<ExPlayer>(ExPlayer._allPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
+                var players = new List<ExPlayer>(ExPlayer.AllPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
                 var scps = 0;
 
                 for (int i = 0; i < players.Count; i++)

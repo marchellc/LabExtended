@@ -9,7 +9,6 @@ using InventorySystem.Disarming;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
 using LabExtended.API.Enums;
 using LabExtended.API.Hints;
@@ -52,11 +51,14 @@ using LabApi.Features.Wrappers;
 
 using LabExtended.API.Collections;
 using LabExtended.API.CustomVoice;
-
+using LabExtended.API.Settings.Entries;
+using LabExtended.API.Settings.Menus;
 using LabExtended.Commands;
+using LabExtended.Core.Networking.Synchronization.Position;
 using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
+using UserSettings.ServerSpecific;
 
 namespace LabExtended.API
 {
@@ -65,44 +67,44 @@ namespace LabExtended.API
     /// </summary>
     public class ExPlayer
     {
-        internal static readonly List<ExPlayer> _players = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> _npcPlayers = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> _allPlayers = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> _ghostedPlayers = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> players = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> npcPlayers = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> allPlayers = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> ghostedPlayers = new List<ExPlayer>(byte.MaxValue);
         
-        internal static readonly Dictionary<string, string> _preauthData = new Dictionary<string, string>(byte.MaxValue);
+        internal static readonly Dictionary<string, string> preauthData = new Dictionary<string, string>(byte.MaxValue);
 
-        internal static ExPlayer _hostPlayer;
+        internal static ExPlayer? hostPlayer;
 
         /// <summary>
         /// Gets a list of all players on the server.
         /// </summary>
-        public static IReadOnlyList<ExPlayer> Players => _players;
+        public static IReadOnlyList<ExPlayer> Players => players;
 
         /// <summary>
         /// Gets a list of all NPC players on the server.
         /// </summary>
-        public static IReadOnlyList<ExPlayer> NpcPlayers => _npcPlayers;
+        public static IReadOnlyList<ExPlayer> NpcPlayers => npcPlayers;
 
         /// <summary>
         /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
         /// </summary>
-        public static IReadOnlyList<ExPlayer> AllPlayers => _allPlayers;
+        public static IReadOnlyList<ExPlayer> AllPlayers => allPlayers;
 
         /// <summary>
         /// Gets a count of all players on the server.
         /// </summary>
-        public static int Count => _players.Count;
+        public static int Count => players.Count;
 
         /// <summary>
         /// Gets a count of all NPCs on the server.
         /// </summary>
-        public static int NpcCount => _npcPlayers.Count;
+        public static int NpcCount => npcPlayers.Count;
 
         /// <summary>
         /// Gets a count of all players on the server (including real players, NPCs and the server player).
         /// </summary>
-        public static int AllCount => _allPlayers.Count;
+        public static int AllCount => allPlayers.Count;
 
         /// <summary>
         /// Gets the host player.
@@ -111,23 +113,23 @@ namespace LabExtended.API
         {
             get
             {
-                if (_hostPlayer is null)
+                if (hostPlayer is null)
                 {
                     if (!ReferenceHub.TryGetHostHub(out var hostHub))
                         throw new Exception($"Failed to fetch the host ReferenceHub.");
 
-                    _hostPlayer = new ExPlayer(hostHub);
+                    hostPlayer = new(hostHub);
+                    
+                    hostPlayer.Switches.IsVisibleInRemoteAdmin = false;
+                    hostPlayer.Switches.IsVisibleInSpectatorList = false;
 
-                    _hostPlayer.Switches.IsVisibleInRemoteAdmin = false;
-                    _hostPlayer.Switches.IsVisibleInSpectatorList = false;
+                    hostPlayer.Switches.ShouldSendPosition = false;
+                    hostPlayer.Switches.ShouldReceivePositions = false;
 
-                    _hostPlayer.Switches.ShouldSendPosition = false;
-                    _hostPlayer.Switches.ShouldReceivePositions = false;
-
-                    _allPlayers.Add(_hostPlayer);
+                    allPlayers.Add(hostPlayer);
                 }
 
-                return _hostPlayer;
+                return hostPlayer;
             }
         }
 
@@ -157,8 +159,8 @@ namespace LabExtended.API
 
             npcHub.roleManager.ServerSetRole(RoleTypeId.None, RoleChangeReason.None, RoleSpawnFlags.All);
 
-            _npcPlayers.Add(npcPlayer);
-            _allPlayers.Add(npcPlayer);
+            npcPlayers.Add(npcPlayer);
+            allPlayers.Add(npcPlayer);
 
             return npcPlayer;
         }
@@ -170,12 +172,12 @@ namespace LabExtended.API
         /// <param name="hub">The <see cref="ReferenceHub"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(ReferenceHub hub)
-            => _allPlayers.FirstOrDefault(p => p._hub != null && p._hub == hub);
+            => AllPlayers.FirstOrDefault(p => p.hub != null && p.hub == hub);
 
         /// <summary>
-        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="PluginAPI.Core.Player"/>.
+        /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="LabApi.Features.Wrappers.Player"/>.
         /// </summary>
-        /// <param name="player">The <see cref="PluginAPI.Core.Player"/> instance to get a player of.</param>
+        /// <param name="player">The <see cref="LabApi.Features.Wrappers.Player"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(Player player)
             => Get(player.ReferenceHub);
@@ -186,7 +188,7 @@ namespace LabExtended.API
         /// <param name="gameObject">The <see cref="UnityEngine.GameObject"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(GameObject gameObject)
-            => _allPlayers.FirstOrDefault(p => p.GameObject != null && p.GameObject == gameObject);
+            => AllPlayers.FirstOrDefault(p => p.GameObject != null && p.GameObject == gameObject);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="Collider"/>.
@@ -213,7 +215,7 @@ namespace LabExtended.API
         /// <param name="connection">The <see cref="NetworkConnection"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(NetworkConnection connection)
-            => _allPlayers.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
+            => AllPlayers.FirstOrDefault(p => p.Connection != null && p.Connection == connection);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="NetworkIdentity"/>.
@@ -229,7 +231,7 @@ namespace LabExtended.API
         /// <param name="peer">The <see cref="NetPeer"/> instance to get a player of.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(NetPeer peer)
-            => _players.FirstOrDefault(p => p.Peer != null && p.Peer == peer);
+            => Players.FirstOrDefault(p => p.Peer != null && p.Peer == peer);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ItemBase"/>.
@@ -269,7 +271,7 @@ namespace LabExtended.API
         /// <param name="playerId">The player ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(int playerId)
-            => _allPlayers.FirstOrDefault(p => p.PlayerId == playerId);
+            => AllPlayers.FirstOrDefault(p => p.PlayerId == playerId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a network ID.
@@ -277,7 +279,7 @@ namespace LabExtended.API
         /// <param name="networkId">The network ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(uint networkId)
-            => _allPlayers.FirstOrDefault(p => p.NetId == networkId);
+            => AllPlayers.FirstOrDefault(p => p.NetId == networkId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a connection ID.
@@ -285,7 +287,7 @@ namespace LabExtended.API
         /// <param name="connectionId">The connection ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByConnectionId(int connectionId)
-            => _allPlayers.FirstOrDefault(p => p.ConnectionId == connectionId);
+            => AllPlayers.FirstOrDefault(p => p.ConnectionId == connectionId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a user ID.
@@ -293,7 +295,7 @@ namespace LabExtended.API
         /// <param name="userId">The user ID to find.</param>
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer GetByUserId(string userId)
-            => _allPlayers.FirstOrDefault(p => p.UserId == userId || p.ClearUserId == userId);
+            => AllPlayers.FirstOrDefault(p => p.UserId == userId || p.ClearUserId == userId);
 
         /// <summary>
         /// Gets an <see cref="ExPlayer"/> instance by a user ID, player ID, network ID, IP or name.
@@ -303,7 +305,7 @@ namespace LabExtended.API
         /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
         public static ExPlayer Get(string nameOrId, double minNameScore = 0.85)
         {
-            foreach (var player in _allPlayers)
+            foreach (var player in AllPlayers)
             {
                 if (player.IsServer)
                     continue;
@@ -329,7 +331,7 @@ namespace LabExtended.API
             => (player = Get(hub)) != null;
 
         /// <summary>
-        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="PluginAPI.Core.Player"/>.
+        /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="LabApi.Features.Wrappers.Player"/>.
         /// </summary>
         /// <param name="apiPlayer">The instance to find.</param>
         /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
@@ -443,7 +445,7 @@ namespace LabExtended.API
         /// <param name="predicate">The predicate.</param>
         /// <returns>A list of all matching players.</returns>
         public static IEnumerable<ExPlayer> Get(Func<ExPlayer, bool> predicate)
-            => _players.Where(predicate);
+            => Players.Where(predicate);
 
         /// <summary>
         /// Gets a list of all players. in the specified <paramref name="team"/>.
@@ -470,14 +472,22 @@ namespace LabExtended.API
             => Get(n => n.Role.Type == role);
         #endregion
 
-        private NetPeer _peer;
-        private ReferenceHub _hub;
+        private NetPeer peer;
+        private ReferenceHub hub;
 
-        private RemoteAdminIconType _forcedIcons;
+        private RemoteAdminIconType forcedIcons;
 
-        internal Dictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
-        internal HashSet<ExPlayer> _invisibility;
-        internal HintCache _hintCache;
+        internal SSSUserStatusReport? sssReport;
+        
+        internal Dictionary<uint, RoleTypeId> sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+
+        internal Dictionary<string, SettingsMenu> settingsMenuLookup;
+        internal Dictionary<string, SettingsEntry> settingsIdLookup;
+        internal Dictionary<int, SettingsEntry> settingsAssignedIdLookup;
+        
+        internal HashSet<ExPlayer> invisibility;
+        
+        internal HintCache hintCache;
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with default switches.
@@ -497,24 +507,29 @@ namespace LabExtended.API
             if (component is null)
                 throw new ArgumentNullException(nameof(component));
 
-            if (_allPlayers.Any(x => x._hub && x._hub == component))
+            if (AllPlayers.Any(x => x.hub && x.hub == component))
                 throw new Exception("Attempted to insert a duplicate ExPlayer instance");
 
-            _hub = component;
+            hub = component;
 
-            _forcedIcons = RemoteAdminIconType.None;
+            forcedIcons = RemoteAdminIconType.None;
 
-            _sentRoles = DictionaryPool<uint, RoleTypeId>.Shared.Rent();
-            _invisibility = HashSetPool<ExPlayer>.Shared.Rent();
+            sentRoles = DictionaryPool<uint, RoleTypeId>.Shared.Rent();
+            
+            settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
+            settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
+            settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
+            
+            invisibility = HashSetPool<ExPlayer>.Shared.Rent();
 
-            LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out _peer);
+            LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out peer);
 
-            InfoArea = new EnumValue<PlayerInfoArea>(() => _hub.nicknameSync.Network_playerInfoToShow,
-                value => _hub.nicknameSync.Network_playerInfoToShow = value);
-            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(_hub),
-                value => VoiceChatMutes.SetFlags(_hub, value));
+            InfoArea = new EnumValue<PlayerInfoArea>(() => hub.nicknameSync.Network_playerInfoToShow,
+                value => hub.nicknameSync.Network_playerInfoToShow = value);
+            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(hub),
+                value => VoiceChatMutes.SetFlags(hub, value));
 
-            ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => _forcedIcons, value => _forcedIcons = value);
+            ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => forcedIcons, value => forcedIcons = value);
 
             Role = new RoleContainer(component.roleManager);
             Ammo = new AmmoContainer(component.inventory);
@@ -547,7 +562,7 @@ namespace LabExtended.API
                     PersistentStorage = new PlayerStorage(true, this);
                 }
 
-                if (_preauthData.TryGetValue(component.authManager.UserId, out var region))
+                if (preauthData.TryGetValue(component.authManager.UserId, out var region))
                     CountryCode = region;
                 else
                     CountryCode = string.Empty;
@@ -560,19 +575,19 @@ namespace LabExtended.API
             PersistentStorage.JoinTime = DateTime.Now;
             PersistentStorage.Lifes++;
 
-            _allPlayers.Add(this);
+            allPlayers.Add(this);
 
             if (IsNpc)
             {
-                _npcPlayers.Add(this);
+                npcPlayers.Add(this);
             }
             else if (!IsServer)
             {
-                _players.Add(this);
+                players.Add(this);
             }
             else
             {
-                _hostPlayer = this;
+                hostPlayer = this;
             }
         }
 
@@ -663,27 +678,27 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player's <see cref="ReferenceHub"/> component.
         /// </summary>
-        public ReferenceHub Hub => _hub;
+        public ReferenceHub Hub => hub;
 
         /// <summary>
         /// Gets the player's <see cref="UnityEngine.GameObject"/>.
         /// </summary>
-        public GameObject GameObject => _hub.gameObject;
+        public GameObject GameObject => hub.gameObject;
 
         /// <summary>
         /// Gets the player's <see cref="NetPeer"/> (<see langword="null"/> if the player is an NPC).
         /// </summary>
-        public NetPeer Peer => _peer;
+        public NetPeer Peer => peer;
 
         /// <summary>
         /// Gets the player's <see cref="NetworkIdentity"/>.
         /// </summary>
-        public NetworkIdentity Identity => _hub.netIdentity;
+        public NetworkIdentity Identity => hub.netIdentity;
 
         /// <summary>
         /// Gets the player's <see cref="NetworkConnection"/>.
         /// </summary>
-        public NetworkConnectionToClient Connection => _hub.connectionToClient;
+        public NetworkConnectionToClient Connection => hub.connectionToClient;
 
         /// <summary>
         /// Gets the player's <see cref="RemoteAdminController"/>.
@@ -698,7 +713,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the currently spectated player.
         /// </summary>
-        public ExPlayer SpectatedPlayer => _players.FirstOrDefault(p => p.IsSpectatedBy(this));
+        public ExPlayer SpectatedPlayer => Players.FirstOrDefault(p => p.IsSpectatedBy(this));
 
         /// <summary>
         /// Gets the SCP-079 camera this player is currently using.
@@ -708,32 +723,32 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player's connection state <i>(always <see cref="ConnectionState.Disconnected"/> for NPC players)</i>.
         /// </summary>
-        public ConnectionState ConnectionState => _peer?.ConnectionState ?? ConnectionState.Disconnected;
+        public ConnectionState ConnectionState => peer?.ConnectionState ?? ConnectionState.Disconnected;
 
         /// <summary>
         /// Gets a list of players that are currently spectating this player.
         /// </summary>
-        public IEnumerable<ExPlayer> SpectatingPlayers => _players.Where(IsSpectatedBy);
+        public IEnumerable<ExPlayer> SpectatingPlayers => Players.Where(IsSpectatedBy);
 
         /// <summary>
         /// Gets a list of players that this player will be invisible to.
         /// </summary>
-        public HashSet<ExPlayer> InvisibleToTargets => _invisibility;
+        public HashSet<ExPlayer> InvisibleToTargets => invisibility;
 
         /// <summary>
         /// Gets the player's <see cref="UnityEngine.Transform"/>.
         /// </summary>
-        public Transform Transform => _hub.transform;
+        public Transform Transform => hub.transform;
 
         /// <summary>
         /// Gets the player's camera's <see cref="UnityEngine.Transform"/>.
         /// </summary>
-        public Transform CameraTransform => _hub.PlayerCameraReference;
+        public Transform CameraTransform => hub.PlayerCameraReference;
 
         /// <summary>
         /// Gets the player's current velocity.
         /// </summary>
-        public Vector3 Velocity => _hub.GetVelocity();
+        public Vector3 Velocity => hub.GetVelocity();
 
         /// <summary>
         /// Gets the player's <see cref="Footprinting.Footprint"/>.
@@ -743,43 +758,43 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player's network ID.
         /// </summary>
-        public uint NetId => _hub.netId;
+        public uint NetId => hub.netId;
 
         /// <summary>
         /// Gets the player's network latency. <i>(-1 for NPCs)</i>
         /// </summary>
-        public int Ping => _peer?.Ping ?? -1;
+        public int Ping => peer?.Ping ?? -1;
 
         /// <summary>
         /// Gets the player's network trip time. <i>(-1 for NPCs)</i>
         /// </summary>
-        public int TripTime => _peer?._avgRtt ?? -1;
+        public int TripTime => peer?._avgRtt ?? -1;
 
         /// <summary>
         /// Gets the player's player ID.
         /// <para>You should <b>never</b> change this unless you know what you are doing.</para>
         /// </summary>
-        public int PlayerId => _hub.Network_playerId.Value;
+        public int PlayerId => hub.Network_playerId.Value;
 
         /// <summary>
         /// Gets the player's network connection ID.
         /// </summary>
-        public int ConnectionId => _hub.connectionToClient.connectionId;
+        public int ConnectionId => hub.connectionToClient.connectionId;
 
         /// <summary>
         /// Gets the player's screen's aspect ratio.
         /// </summary>
-        public float ScreenAspectRatio => _hub.aspectRatioSync.AspectRatio;
+        public float ScreenAspectRatio => hub.aspectRatioSync.AspectRatio;
 
         /// <summary>
         /// Gets the player's X axis screen edge.
         /// </summary>
-        public float ScreenEdgeX => _hub.aspectRatioSync.XScreenEdge;
+        public float ScreenEdgeX => hub.aspectRatioSync.XScreenEdge;
 
         /// <summary>
         /// Gets the player's screen's X and Y axis.
         /// </summary>
-        public float ScreenXPlusY => _hub.aspectRatioSync.XplusY;
+        public float ScreenXPlusY => hub.aspectRatioSync.XplusY;
 
         /// <summary>
         /// Whether or not the player is a NPC.
@@ -789,12 +804,12 @@ namespace LabExtended.API
         /// <summary>
         /// Whether or not the player is connected.
         /// </summary>
-        public bool IsOnline => _peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
+        public bool IsOnline => peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
 
         /// <summary>
         /// Whether or not the player is disconnected.
         /// </summary>
-        public bool IsOffline => _peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
+        public bool IsOffline => peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
 
         /// <summary>
         /// Whether or not the player is the server player.
@@ -819,22 +834,22 @@ namespace LabExtended.API
         /// <summary>
         /// Whether or not the player is a Northwood Staff member.
         /// </summary>
-        public bool IsNorthwoodStaff => _hub.authManager.NorthwoodStaff;
+        public bool IsNorthwoodStaff => hub.authManager.NorthwoodStaff;
 
         /// <summary>
         /// Whether or not the player is a Northwood Global Moderator.
         /// </summary>
-        public bool IsNorthwoodModerator => _hub.authManager.RemoteAdminGlobalAccess;
+        public bool IsNorthwoodModerator => hub.authManager.RemoteAdminGlobalAccess;
 
         /// <summary>
         /// Whether or not the player has a custom name applied.
         /// </summary>
-        public bool HasCustomName => _hub.nicknameSync.HasCustomName;
+        public bool HasCustomName => hub.nicknameSync.HasCustomName;
 
         /// <summary>
         /// Whether or not the player has access to the Remote Admin panel.
         /// </summary>
-        public bool HasRemoteAdminAccess => _hub.serverRoles.RemoteAdmin;
+        public bool HasRemoteAdminAccess => hub.serverRoles.RemoteAdmin;
 
         /// <summary>
         /// Whether or not the player has the Remote Admin panel open.
@@ -844,17 +859,17 @@ namespace LabExtended.API
         /// <summary>
         /// Whether or not the player has access to Admin Chat.
         /// </summary>
-        public bool HasAdminChatAccess => _hub.serverRoles.AdminChatPerms;
+        public bool HasAdminChatAccess => hub.serverRoles.AdminChatPerms;
 
         /// <summary>
         /// Whether or not the player has sent the Do Not Track flag.
         /// </summary>
-        public bool DoNotTrack => _hub.authManager.DoNotTrack;
+        public bool DoNotTrack => hub.authManager.DoNotTrack;
 
         /// <summary>
         /// Gets the player's IP address.
         /// </summary>
-        public string Address => _hub.connectionToClient.address;
+        public string Address => hub.connectionToClient.address;
 
         /// <summary>
         /// Gets the player's ISO 3166-1 alpha-2 country code (empty string for NPCs).
@@ -876,13 +891,13 @@ namespace LabExtended.API
         /// </summary>
         public bool IsDisarmed
         {
-            get => _hub.inventory.IsDisarmed();
+            get => hub.inventory.IsDisarmed();
             set
             {
                 if (value)
-                    _hub.inventory.SetDisarmedStatus(Host.Hub.inventory);
+                    hub.inventory.SetDisarmedStatus(Host.Hub.inventory);
                 else
-                    _hub.inventory.SetDisarmedStatus(null);
+                    hub.inventory.SetDisarmedStatus(null);
             }
         }
 
@@ -891,13 +906,13 @@ namespace LabExtended.API
         /// </summary>
         public bool IsInvisible
         {
-            get => _ghostedPlayers.Contains(this);
+            get => ghostedPlayers.Contains(this);
             set
             {
                 if (value)
-                    _ghostedPlayers.Add(this);
+                    ghostedPlayers.Add(this);
                 else
-                    _ghostedPlayers.Remove(this);
+                    ghostedPlayers.Remove(this);
             }
         }
 
@@ -924,8 +939,8 @@ namespace LabExtended.API
         /// </summary>
         public bool IsInOverwatch
         {
-            get => _hub.serverRoles.IsInOverwatch;
-            set => _hub.serverRoles.IsInOverwatch = value;
+            get => hub.serverRoles.IsInOverwatch;
+            set => hub.serverRoles.IsInOverwatch = value;
         }
 
         /// <summary>
@@ -933,13 +948,13 @@ namespace LabExtended.API
         /// </summary>
         public bool IsNoclipPermitted
         {
-            get => FpcNoclip.IsPermitted(_hub);
+            get => FpcNoclip.IsPermitted(hub);
             set
             {
                 if (value)
-                    FpcNoclip.PermitPlayer(_hub);
+                    FpcNoclip.PermitPlayer(hub);
                 else
-                    FpcNoclip.UnpermitPlayer(_hub);
+                    FpcNoclip.UnpermitPlayer(hub);
             }
         }
 
@@ -957,8 +972,8 @@ namespace LabExtended.API
         /// </summary>
         public bool HasBypassMode
         {
-            get => _hub.serverRoles.BypassMode;
-            set => _hub.serverRoles.BypassMode = value;
+            get => hub.serverRoles.BypassMode;
+            set => hub.serverRoles.BypassMode = value;
         }
 
         /// <summary>
@@ -966,8 +981,8 @@ namespace LabExtended.API
         /// </summary>
         public bool HasGodMode
         {
-            get => _hub.characterClassManager.GodMode;
-            set => _hub.characterClassManager.GodMode = value;
+            get => hub.characterClassManager.GodMode;
+            set => hub.characterClassManager.GodMode = value;
         }
 
         /// <summary>
@@ -975,8 +990,8 @@ namespace LabExtended.API
         /// </summary>
         public float InfoViewRange
         {
-            get => _hub.nicknameSync.NetworkViewRange;
-            set => _hub.nicknameSync.NetworkViewRange = value;
+            get => hub.nicknameSync.NetworkViewRange;
+            set => hub.nicknameSync.NetworkViewRange = value;
         }
 
         /// <summary>
@@ -984,8 +999,8 @@ namespace LabExtended.API
         /// </summary>
         public byte KickPower
         {
-            get => _hub.serverRoles.Group?.KickPower ?? 0;
-            set => _hub.serverRoles.Group!.KickPower = value;
+            get => hub.serverRoles.Group?.KickPower ?? 0;
+            set => hub.serverRoles.Group!.KickPower = value;
         }
 
         /// <summary>
@@ -993,8 +1008,8 @@ namespace LabExtended.API
         /// </summary>
         public string UserId
         {
-            get => _hub.authManager.UserId;
-            set => _hub.authManager.UserId = value;
+            get => hub.authManager.UserId;
+            set => hub.authManager.UserId = value;
         }
 
         /// <summary>
@@ -1002,8 +1017,8 @@ namespace LabExtended.API
         /// </summary>
         public string Name
         {
-            get => _hub.nicknameSync.Network_myNickSync;
-            set => _hub.nicknameSync.Network_myNickSync = value;
+            get => hub.nicknameSync.Network_myNickSync;
+            set => hub.nicknameSync.Network_myNickSync = value;
         }
 
         /// <summary>
@@ -1011,8 +1026,8 @@ namespace LabExtended.API
         /// </summary>
         public string DisplayName
         {
-            get => _hub.nicknameSync.Network_displayName;
-            set => _hub.nicknameSync.Network_displayName = value;
+            get => hub.nicknameSync.Network_displayName;
+            set => hub.nicknameSync.Network_displayName = value;
         }
 
         /// <summary>
@@ -1020,20 +1035,20 @@ namespace LabExtended.API
         /// </summary>
         public string CustomInfo
         {
-            get => _hub.nicknameSync.Network_customPlayerInfoString;
+            get => hub.nicknameSync.Network_customPlayerInfoString;
             set
             {
                 if (string.IsNullOrWhiteSpace(value) || !ValidateCustomInfo(value))
                 {
-                    _hub.nicknameSync.Network_customPlayerInfoString = string.Empty;
-                    _hub.nicknameSync.Network_playerInfoToShow &= ~PlayerInfoArea.CustomInfo;
+                    hub.nicknameSync.Network_customPlayerInfoString = string.Empty;
+                    hub.nicknameSync.Network_playerInfoToShow &= ~PlayerInfoArea.CustomInfo;
                 }
                 else
                 {
-                    if (!_hub.nicknameSync.Network_playerInfoToShow.Any(PlayerInfoArea.CustomInfo))
-                        _hub.nicknameSync.Network_playerInfoToShow |= PlayerInfoArea.CustomInfo;
+                    if (!hub.nicknameSync.Network_playerInfoToShow.Any(PlayerInfoArea.CustomInfo))
+                        hub.nicknameSync.Network_playerInfoToShow |= PlayerInfoArea.CustomInfo;
 
-                    _hub.nicknameSync.Network_customPlayerInfoString = value;
+                    hub.nicknameSync.Network_customPlayerInfoString = value;
                 }
             }
         }
@@ -1043,8 +1058,8 @@ namespace LabExtended.API
         /// </summary>
         public ClientInstanceMode InstanceMode
         {
-            get => _hub.authManager.InstanceMode;
-            set => _hub.authManager.InstanceMode = value;
+            get => hub.authManager.InstanceMode;
+            set => hub.authManager.InstanceMode = value;
         }
 
         /// <summary>
@@ -1063,8 +1078,8 @@ namespace LabExtended.API
         {
             get
             {
-                if (_forcedIcons != RemoteAdminIconType.None)
-                    return _forcedIcons;
+                if (forcedIcons != RemoteAdminIconType.None)
+                    return forcedIcons;
 
                 var icons = RemoteAdminIconType.None;
 
@@ -1096,7 +1111,7 @@ namespace LabExtended.API
         /// </summary>
         public Vector3 Scale
         {
-            get => _hub.transform.localScale;
+            get => hub.transform.localScale;
             set => SetScale(value);
         }
 
@@ -1222,7 +1237,7 @@ namespace LabExtended.API
         /// <param name="content">Text of the message.</param>
         /// <param name="color">Color of the message (used in a color tag).</param>
         public void SendConsoleMessage(object content, string color = "red")
-            => _hub.gameConsoleTransmission.SendToClient(content.ToString(), color);
+            => hub.gameConsoleTransmission.SendToClient(content.ToString(), color);
 
         /// <summary>
         /// Sends a message into the "Request Data" section of the Remote Admin panel.
@@ -1268,7 +1283,7 @@ namespace LabExtended.API
             if (!HasRemoteAdminAccess)
                 return;
 
-            _hub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
+            hub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
         }
 
         /// <summary>
@@ -1277,7 +1292,7 @@ namespace LabExtended.API
         /// <param name="command">The command to bind to the key.</param>
         /// <param name="key">The key to bind the command to.</param>
         public void SendCommandKeyBind(string command, KeyCode key)
-            => _hub.characterClassManager.TargetChangeCmdBinding(key, command);
+            => hub.characterClassManager.TargetChangeCmdBinding(key, command);
 
         /// <summary>
         /// Whether or not the target player is invisible to ther player.
@@ -1289,7 +1304,7 @@ namespace LabExtended.API
             if (IsInvisible)
                 return true;
 
-            if (_invisibility.Contains(otherPlayer))
+            if (invisibility.Contains(otherPlayer))
                 return true;
 
             return false;
@@ -1300,14 +1315,14 @@ namespace LabExtended.API
         /// </summary>
         /// <param name="player">The player to make this player invisible for.</param>
         public void MakeInvisibleFor(ExPlayer player)
-            => _invisibility.Add(player);
+            => invisibility.Add(player);
 
         /// <summary>
         /// Makes this player visible to the targeted player.
         /// </summary>
         /// <param name="player">The player to make this player visible for.</param>
         public void MakeVisibleFor(ExPlayer player)
-            => _invisibility.Remove(player);
+            => invisibility.Remove(player);
 
         public T GetComponent<T>()
             => GameObject.TryFindComponent<T>(out var component) ? component : default;
@@ -1341,13 +1356,13 @@ namespace LabExtended.API
         #region Helper Methods
         private void SetScale(Vector3 scale)
         {
-            if (scale == _hub.transform.localScale)
+            if (scale == hub.transform.localScale)
                 return;
 
-            _hub.transform.localScale = scale;
+            hub.transform.localScale = scale;
 
-            foreach (var target in _players)
-                MirrorMethods.SendSpawnMessage(_hub.netIdentity, target.Connection);
+            foreach (var target in Players)
+                MirrorMethods.SendSpawnMessage(hub.netIdentity, target.Connection);
         }
 
         // Taken from EXILED
@@ -1416,34 +1431,34 @@ namespace LabExtended.API
 
         internal void Dispose()
         {
-            if (_hostPlayer != null && _hostPlayer == this)
-                _hostPlayer = null;
+            if (hostPlayer != null && hostPlayer == this)
+                hostPlayer = null;
             
-            _allPlayers.Remove(this);
+            allPlayers.Remove(this);
             
             if (IsNpc)
-                _npcPlayers.Remove(this);
+                npcPlayers.Remove(this);
             else if (!IsServer)
-                _players.Remove(this);
+                players.Remove(this);
 
             if (!string.IsNullOrWhiteSpace(UserId))
-                _preauthData.Remove(UserId);
+                preauthData.Remove(UserId);
             
             foreach (var helper in PlayerCollection.m_Handlers)
                 helper.Remove(NetId);
             
-            foreach (var other in _allPlayers)
+            foreach (var other in allPlayers)
             {
-                other._sentRoles?.Remove(NetId);
-                other._invisibility?.Remove(this);
+                other.sentRoles?.Remove(NetId);
+                other.invisibility?.Remove(this);
             }
             
             CustomCommand._continuedContexts.Remove(NetId);
             
-            if (_hintCache != null)
-                ObjectPool<HintCache>.Shared.Return(_hintCache);
+            if (hintCache != null)
+                ObjectPool<HintCache>.Shared.Return(hintCache);
 
-            _hintCache = null;
+            hintCache = null;
 
             Effects?.Dispose();
             Effects = null;
@@ -1469,16 +1484,16 @@ namespace LabExtended.API
                 PersistentStorage = null;
             }
 
-            if (_sentRoles != null)
+            if (sentRoles != null)
             {
-                DictionaryPool<uint, RoleTypeId>.Shared.Return(_sentRoles);
-                _sentRoles = null;
+                DictionaryPool<uint, RoleTypeId>.Shared.Return(sentRoles);
+                sentRoles = null;
             }
 
-            if (_invisibility != null)
+            if (invisibility != null)
             {
-                HashSetPool<ExPlayer>.Shared.Return(_invisibility);
-                _invisibility = null;
+                HashSetPool<ExPlayer>.Shared.Return(invisibility);
+                invisibility = null;
             }
         }
 

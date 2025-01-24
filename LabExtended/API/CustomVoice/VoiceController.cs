@@ -220,9 +220,9 @@ public class VoiceController : IDisposable
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
 
-        for (int i = 0; i < ExPlayer._players.Count; i++)
+        for (int i = 0; i < ExPlayer.Players.Count; i++)
         {
-            var player = ExPlayer._players[i];
+            var player = ExPlayer.Players[i];
             var send = true;
             
             if (!player)

@@ -51,23 +51,23 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 
             _sendTime = sendRate;
             
-                        try
+            try
             {
-                for (int i = 0; i < ExPlayer._allPlayers.Count; i++)
+                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
                 {
-                    var player = ExPlayer._allPlayers[i];
+                    var player = ExPlayer.AllPlayers[i];
 
                     if (!player.Switches.ShouldReceivePositions)
                         continue;
 
-                    var ghosted = ExPlayer._ghostedPlayers.Contains(player);
+                    var ghosted = ExPlayer.ghostedPlayers.Contains(player);
                     var hasRole = player.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole);
 
                     _validBuffer.Clear();
 
-                    for (int x = 0; x < ExPlayer._allPlayers.Count; x++)
+                    for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
                     {
-                        var other = ExPlayer._allPlayers[x];
+                        var other = ExPlayer.AllPlayers[x];
 
                         if (!other.Switches.ShouldSendPosition)
                             continue;
@@ -101,7 +101,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 
                             var isInvisible = hasRole && customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
 
-                            if (!isInvisible && (ghosted || other._invisibility.Contains(player)))
+                            if (!isInvisible && (ghosted || other.invisibility.Contains(player)))
                                 isInvisible = true;
 
                             if (!syncCache.TryGetValue(other, out var prevData))
@@ -153,7 +153,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                         }
                     });
 
-                    player.Connection.Send(_writer.ToArraySegment());
+                    player.Send(_writer.ToArraySegment());
                 }
             }
             catch (Exception ex)
@@ -174,7 +174,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
         {
             _syncCache.Remove(args.Player);
 
-            foreach (var player in ExPlayer._allPlayers)
+            foreach (var player in ExPlayer.AllPlayers)
             {
                 if (_syncCache.TryGetValue(player, out var cache))
                     cache.Remove(args.Player);

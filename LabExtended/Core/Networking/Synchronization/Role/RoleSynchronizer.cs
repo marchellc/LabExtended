@@ -14,19 +14,19 @@ namespace LabExtended.Core.Networking.Synchronization.Role
         
         private static void OnUpdate()
         {
-            if (ExPlayer._allPlayers.Count < 1)
+            if (ExPlayer.AllPlayers.Count < 1)
                 return;
 
-            for (int i = 0; i < ExPlayer._allPlayers.Count; i++)
+            for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
             {
-                var player = ExPlayer._allPlayers[i];
+                var player = ExPlayer.AllPlayers[i];
 
-                if (player is null || !player || player.Role is null || player._sentRoles is null)
+                if (player is null || !player || player.Role is null || player.sentRoles is null)
                     continue;
 
-                for (int x = 0; x < ExPlayer._allPlayers.Count; x++)
+                for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
                 {
-                    var other = ExPlayer._allPlayers[x];
+                    var other = ExPlayer.AllPlayers[x];
                     var role = player.Role.Type;
 
                     if (other is null || !other || other.Role is null)
@@ -44,10 +44,10 @@ namespace LabExtended.Core.Networking.Synchronization.Role
                     if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
                         role = RoleTypeId.Spectator;
 
-                    if (player._sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == role)
+                    if (player.sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == role)
                         continue;
 
-                    player._sentRoles[other.NetId] = role;
+                    player.sentRoles[other.NetId] = role;
                     other.Connection.Send(new RoleSyncInfo(player.Hub, role, other.Hub));
                 }
             }

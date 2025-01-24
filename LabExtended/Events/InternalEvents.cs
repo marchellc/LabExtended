@@ -32,10 +32,10 @@ namespace LabExtended.Events
         
         private static void InternalHandleRoundWaiting()
         {
-            ExPlayer._hostPlayer?.Dispose();
-            ExPlayer._hostPlayer = null;
+            ExPlayer.hostPlayer?.Dispose();
+            ExPlayer.hostPlayer = null;
             
-            ExPlayer._preauthData.Clear();
+            ExPlayer.preauthData.Clear();
             DamageInfo._wrappers.Clear();    
 
             // No reason not to reset the NPC connection ID
@@ -77,7 +77,7 @@ namespace LabExtended.Events
 
         private static void InternalHandlePlayerAuth(PlayerPreAuthenticatingEventArgs ev)
         {
-            ExPlayer._preauthData[ev.UserId] = ev.Region;
+            ExPlayer.preauthData[ev.UserId] = ev.Region;
         }
 
         internal static void InternalHandlePlayerJoin(ExPlayer player)

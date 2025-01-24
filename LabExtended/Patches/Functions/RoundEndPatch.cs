@@ -68,9 +68,9 @@ namespace LabExtended.Patches.Functions
         {
           var newList = new RoundSummary.SumInfo_ClassList();
 
-          for (int i = 0; i < ExPlayer._players.Count; i++)
+          for (int i = 0; i < ExPlayer.Players.Count; i++)
           {
-            var player = ExPlayer._players[i];
+            var player = ExPlayer.Players[i];
 
             if (!player || !player.Switches.CanBlockRoundEnd)
               continue;

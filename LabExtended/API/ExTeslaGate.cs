@@ -269,7 +269,7 @@ namespace LabExtended.API
             var shouldIdle = false;
             var shouldTrigger = false;
 
-            foreach (var player in ExPlayer._players)
+            foreach (var player in ExPlayer.Players)
             {
                 if (!player.Switches.CanTriggerTesla)
                     continue;

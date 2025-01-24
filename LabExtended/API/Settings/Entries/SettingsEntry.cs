@@ -14,6 +14,8 @@ namespace LabExtended.API.Settings.Entries
         public SettingsMenu Menu { get; internal set; }
 
         public string CustomId { get; }
+        
+        public bool IsHidden { get; set; }
 
         public int AssignedId
         {

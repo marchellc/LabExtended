@@ -21,9 +21,9 @@ namespace LabExtended.Patches.Functions.SpectatorList
             if (receiver is null)
                 return true;
 
-            writer.WriteUShort((ushort)ExPlayer._allPlayers.Count);
+            writer.WriteUShort((ushort)ExPlayer.AllPlayers.Count);
 
-            foreach (var player in ExPlayer._allPlayers)
+            foreach (var player in ExPlayer.AllPlayers)
             {
                 var sentRole = player.Role.Type;
                 var fakedRole = player.InternalGetRoleForJoinedPlayer(receiver);
@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Functions.SpectatorList
 
                 new RoleSyncInfo(player.Hub, sentRole, receiver.Hub).Write(writer);
 
-                player._sentRoles[receiver.NetId] = sentRole;
+                player.sentRoles[receiver.NetId] = sentRole;
             }
 
             return false;
