@@ -1495,6 +1495,24 @@ namespace LabExtended.API
                 HashSetPool<ExPlayer>.Shared.Return(invisibility);
                 invisibility = null;
             }
+
+            if (settingsIdLookup != null)
+            {
+                DictionaryPool<string, SettingsEntry>.Shared.Return(settingsIdLookup);
+                settingsIdLookup = null;
+            }
+
+            if (settingsAssignedIdLookup != null)
+            {
+                DictionaryPool<int, SettingsEntry>.Shared.Return(settingsAssignedIdLookup);
+                settingsAssignedIdLookup = null;
+            }
+
+            if (settingsMenuLookup != null)
+            {
+                DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
+                settingsMenuLookup = null;
+            }
         }
 
         #endregion

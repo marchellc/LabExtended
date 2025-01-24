@@ -26,9 +26,11 @@ namespace LabExtended.API.Settings
     {
         private static readonly List<SettingsBuilder> allBuilders = new List<SettingsBuilder>();
         private static readonly List<SettingsEntry> allEntries = new List<SettingsEntry>();
+        private static readonly List<SettingsMenu> allMenus = new List<SettingsMenu>();
 
         public static IReadOnlyList<SettingsBuilder> AllBuilders => allBuilders;
-        public static IEnumerable<SettingsEntry> AllEntries => allEntries;
+        public static IReadOnlyList<SettingsEntry> AllEntries => allEntries;
+        public static IReadOnlyList<SettingsMenu> AllMenus => allMenus;
         
         public static int Version
         {
@@ -44,26 +46,63 @@ namespace LabExtended.API.Settings
             if (!player)
                 throw new ArgumentNullException(nameof(player));
             
+            ApiLog.Debug("Settings API", $"Synchronizing entries for player &3{player.Name}&r (&6{player.UserId}&r)");
+            
             var list = ListPool<ServerSpecificSettingBase>.Shared.Rent();
+            var headers = ListPool<string>.Shared.Rent();
 
             foreach (var settingsEntry in player.settingsIdLookup)
             {
-                if (settingsEntry.Value is null || settingsEntry.Value.Base is null)
-                    continue;
-                
-                if (!settingsEntry.Value.Player)
-                    continue;
-                
-                if (settingsEntry.Value.IsHidden)
-                    continue;
+                ApiLog.Debug("Settings API", $"Processing entry &1{settingsEntry.Key}&r");
 
-                if (settingsEntry.Value.Menu != null && !settingsEntry.Value.Menu.IsActive)
+                if (settingsEntry.Value is null || settingsEntry.Value.Base is null)
+                {
+                    ApiLog.Debug("Settings API", $"Value or it's base is null (Base={settingsEntry.Value.Base is null})");
                     continue;
+                }
+
+                if (!settingsEntry.Value.Player)
+                {
+                    ApiLog.Debug("Settings API", $"Entry player is null");
+                    continue;
+                }
+
+                if (settingsEntry.Value.IsHidden)
+                {
+                    ApiLog.Debug("Settings API", $"Entry is hidden");
+                    continue;
+                }
+
+                if (settingsEntry.Value.Menu != null)
+                {
+                    ApiLog.Debug("Settings API", $"Entry belongs to menu");
+
+                    if (settingsEntry.Value.Menu.IsHidden)
+                    {
+                        ApiLog.Debug("Settings API", $"Entry parent menu is hidden");
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(settingsEntry.Value.Menu.Header) &&
+                        !headers.Contains(settingsEntry.Value.Menu.CustomId))
+                    {
+                        headers.Add(settingsEntry.Value.Menu.CustomId);
+                        list.Add(new SSGroupHeader(settingsEntry.Value.Menu.Header, settingsEntry.Value.Menu.HeaderReducedPadding, settingsEntry.Value.Menu.HeaderHint));
+                        
+                        ApiLog.Debug("Settings API", $"Added group header &1{settingsEntry.Value.Menu.Header}&r (&6{settingsEntry.Value.Menu.CustomId}&r)");
+                    }
+                }
                 
                 list.Add(settingsEntry.Value.Base);
+                
+                ApiLog.Debug("Settings API", $"Added entry &1{settingsEntry.Value.CustomId}&r (&6{settingsEntry.Value.AssignedId}&r)");
             }
+            
+            ApiLog.Debug("Settings API", $"Sending &1{list.Count}&r entries");
 
             player.Send(new SSSEntriesPack(ListPool<ServerSpecificSettingBase>.Shared.ToArrayReturn(list), Version));
+            
+            ListPool<string>.Shared.Return(headers);
         }
 
         public static bool TryGetMenu<TMenu>(ExPlayer player, out TMenu menu) where TMenu : SettingsMenu
@@ -306,12 +345,29 @@ namespace LabExtended.API.Settings
             return customId.GetStableHashCode();
         }
 
+        private static void OnPlayerLeft(ExPlayer player)
+        {
+            foreach (var menu in player.settingsMenuLookup.Values)
+            {
+                if (menu is IDisposable disposable)
+                    disposable.Dispose();
+
+                allMenus.Remove(menu);
+            }
+            
+            foreach (var entry in player.settingsIdLookup.Values)
+            {
+                if (entry is IDisposable disposable)
+                    disposable.Dispose();
+
+                allEntries.Remove(entry);
+            }
+        }
+
         private static void OnPlayerJoined(ExPlayer player)
         {
             try
             {
-                var builtList = ListPool<ServerSpecificSettingBase>.Shared.Rent();
-
                 for (int i = 0; i < allBuilders.Count; i++)
                 {
                     try
@@ -333,6 +389,18 @@ namespace LabExtended.API.Settings
 
                             if (builtSetting != null)
                             {
+                                if (player.settingsAssignedIdLookup.ContainsKey(builtSetting.AssignedId))
+                                {
+                                    ApiLog.Warn("Settings API", $"Skipping settings entry &1{builtSetting.CustomId}&r due to a duplicate ID ({builtSetting.AssignedId}).");
+                                    continue;
+                                }
+
+                                if (player.settingsIdLookup.ContainsKey(builtSetting.CustomId))
+                                {
+                                    ApiLog.Warn("Settings API", $"Skipping settings entry &1{builtSetting.CustomId}&r due to a duplicate ID");
+                                    continue;
+                                }
+                                
                                 builtSetting.Player = player;
                                 
                                 player.settingsIdLookup.Add(builtSetting.CustomId, builtSetting);
@@ -341,8 +409,6 @@ namespace LabExtended.API.Settings
                                 HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting, null, player));
 
                                 OnCreated.InvokeSafe(player, builtSetting);
-                                
-                                builtList.Add(builtSetting.Base);
                             }
                         }
 
@@ -352,6 +418,12 @@ namespace LabExtended.API.Settings
 
                             if (builtMenu != null)
                             {
+                                if (player.settingsMenuLookup.ContainsKey(builtMenu.CustomId))
+                                {
+                                    ApiLog.Warn("Settings API", $"Skipping settings menu &1{builtMenu.CustomId}&r due to a duplicate ID.");
+                                    continue;
+                                }
+                                
                                 var menuList = ListPool<SettingsEntry>.Shared.Rent();
 
                                 builtMenu.Player = player;
@@ -360,15 +432,7 @@ namespace LabExtended.API.Settings
                                 builtMenu.Entries = ListPool<SettingsEntry>.Shared.ToArrayReturn(menuList);
                                 
                                 player.settingsMenuLookup.Add(builtMenu.CustomId, builtMenu);
-                                
-                                var menuHeader = new SettingsGroup(builtMenu.Header, builtMenu.HeaderReducedPadding, builtMenu.HeaderHint);
 
-                                menuHeader.Menu = builtMenu;
-                                menuHeader.Player = player;
-                                
-                                player.settingsIdLookup.Add(menuHeader.CustomId, menuHeader);
-                                player.settingsAssignedIdLookup.Add(menuHeader.AssignedId, menuHeader);
-                                
                                 for (int y = 0; y < builtMenu.Entries.Length; y++)
                                 {
                                     var menuSetting = builtMenu.Entries[y];
@@ -377,6 +441,18 @@ namespace LabExtended.API.Settings
                                     {
                                         menuSetting.Player = player;
                                         menuSetting.Menu = builtMenu;
+
+                                        if (player.settingsIdLookup.ContainsKey(menuSetting.CustomId))
+                                        {
+                                            ApiLog.Warn("Settings API", $"Skipping menu settings entry &1{menuSetting.CustomId}&r due to a duplicate ID.");
+                                            continue;
+                                        }
+
+                                        if (player.settingsAssignedIdLookup.ContainsKey(menuSetting.AssignedId))
+                                        {
+                                            ApiLog.Warn("Settings API", $"Skipping menu settings entry &1{menuSetting.CustomId}&r due to a duplicate ID.");
+                                            continue;
+                                        }
                                         
                                         player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                                         player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
@@ -384,8 +460,6 @@ namespace LabExtended.API.Settings
                                         HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, builtMenu, player));
 
                                         OnCreated.InvokeSafe(player, menuSetting);
-                                        
-                                        builtList.Add(menuSetting.Base);
                                     }
                                 }
                             }
@@ -400,10 +474,14 @@ namespace LabExtended.API.Settings
                     }
                 }
 
-                if (builtList.Count > 0)
+                if (player.settingsIdLookup.Count > 0)
+                {
                     SyncEntries(player);
-                else
-                    ListPool<ServerSpecificSettingBase>.Shared.Return(builtList);
+                    
+                    ApiLog.Debug("Settings API", $"Built &1{player.settingsIdLookup.Count}&r setting entries " +
+                                                 $"and &1{player.settingsMenuLookup.Count}&r menu(s) for player " +
+                                                 $"&1{player.Name}&r (&6{player.UserId}&r)");
+                }
             }
             catch (Exception ex)
             {
@@ -417,8 +495,6 @@ namespace LabExtended.API.Settings
             {
                 if (connection is null || !ExPlayer.TryGet(connection, out var player) || !player)
                     return;
-                
-                ApiLog.Debug("Settings API", $"Received status report from &3{player.Name} ({player.UserId})&r (&6Version={userStatusReport.Version}, TabOpen={userStatusReport.TabOpen}&r)");
 
                 if (player.sssReport.HasValue)
                 {
@@ -539,6 +615,7 @@ namespace LabExtended.API.Settings
         [LoaderInitialize(1)]
         private static void Init()
         {
+            InternalEvents.OnPlayerLeft += OnPlayerLeft;
             InternalEvents.OnPlayerJoined += OnPlayerJoined;
         }
     }

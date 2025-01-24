@@ -17,7 +17,7 @@ namespace LabExtended.API.Settings.Menus
         
         public ExPlayer Player { get; internal set; }
         
-        public bool IsActive { get; internal set; }
+        public bool IsHidden { get; internal set; }
 
         public SettingsEntry[] Entries { get; internal set; }
 
@@ -36,26 +36,26 @@ namespace LabExtended.API.Settings.Menus
 
         public void HideMenu()
         {
-            if (!IsActive)
+            if (IsHidden)
                 return;
 
             if (!Player)
                 return;
 
-            IsActive = false;
+            IsHidden = true;
             
             SettingsManager.SyncEntries(Player);
         }
         
         public void ShowMenu()
         {
-            if (!IsActive)
+            if (!IsHidden)
                 return;
 
             if (!Player)
                 return;
 
-            IsActive = true;
+            IsHidden = false;
             
             SettingsManager.SyncEntries(Player);
         }
