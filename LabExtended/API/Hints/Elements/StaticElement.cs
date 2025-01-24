@@ -12,10 +12,10 @@ namespace LabExtended.API.Hints.Elements
         public StaticElement(Action<StaticElement> update) 
             => Update = update;
 
-        public override void TickElement()
+        public override void OnUpdate()
             => Update.InvokeSafe(this);
 
-        public override string BuildContent(ExPlayer _)
-            => Content;
+        public override bool OnDraw(ExPlayer _)
+            => true;
     }
 }

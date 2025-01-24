@@ -95,7 +95,7 @@ namespace LabExtended.Utilities
         public static float AvgCharWidth(int pixelSize)
             => 0.06f * (pixelSize - 1f);
 
-        internal static void GetMessages(string content, LockedHashSet<HintData> messages, float vOffset, bool autoLineWrap, int pixelLineSpacing)
+        internal static void GetMessages(string content, ICollection<HintData> messages, float vOffset, bool autoLineWrap, int pixelLineSpacing)
         {
             var matches = NewLineRegex.Matches(content);
             int clock = 0;

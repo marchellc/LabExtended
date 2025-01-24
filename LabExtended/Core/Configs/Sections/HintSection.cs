@@ -9,8 +9,5 @@ namespace LabExtended.Core.Configs.Sections
 
         [Description("Duration of the displayed hint.")]
         public float HintDuration { get; set; } = 2.5f;
-        
-        [Description("Whether or not to show the testing element.")]
-        public bool EnableTestElement { get; set; }
     }
 }

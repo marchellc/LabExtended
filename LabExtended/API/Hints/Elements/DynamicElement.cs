@@ -5,15 +5,15 @@ namespace LabExtended.API.Hints.Elements
     public class DynamicElement : HintElement
     {
         public DynamicElement() { }
-        public DynamicElement(Func<ExPlayer, string> content, Action<DynamicElement> update) => (Content, Update) = (content, update);
+        public DynamicElement(Func<ExPlayer, bool> content, Action<DynamicElement> update) => (Content, Update) = (content, update);
 
-        public Func<ExPlayer, string> Content { get; set; }
+        public Func<ExPlayer, bool> Content { get; set; }
         public Action<DynamicElement> Update { get; set; }
 
-        public override void TickElement()
+        public override void OnUpdate()
             => Update.InvokeSafe(this);
 
-        public override string BuildContent(ExPlayer player)
+        public override bool OnDraw(ExPlayer player)
             => Content(player);
     }
 }

@@ -65,12 +65,12 @@ namespace LabExtended.API
     /// </summary>
     public class ExPlayer
     {
-        internal static readonly LockedHashSet<ExPlayer> _players = new LockedHashSet<ExPlayer>(byte.MaxValue);
-        internal static readonly LockedHashSet<ExPlayer> _npcPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
-        internal static readonly LockedHashSet<ExPlayer> _allPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
-        internal static readonly LockedHashSet<ExPlayer> _ghostedPlayers = new LockedHashSet<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> _players = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> _npcPlayers = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> _allPlayers = new List<ExPlayer>(byte.MaxValue);
+        internal static readonly List<ExPlayer> _ghostedPlayers = new List<ExPlayer>(byte.MaxValue);
         
-        internal static readonly LockedDictionary<string, string> _preauthData = new LockedDictionary<string, string>(byte.MaxValue);
+        internal static readonly Dictionary<string, string> _preauthData = new Dictionary<string, string>(byte.MaxValue);
 
         internal static ExPlayer _hostPlayer;
 
@@ -477,6 +477,7 @@ namespace LabExtended.API
 
         internal Dictionary<uint, RoleTypeId> _sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
         internal HashSet<ExPlayer> _invisibility;
+        internal HintCache _hintCache;
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with default switches.
@@ -1419,7 +1420,7 @@ namespace LabExtended.API
                 _hostPlayer = null;
             
             _allPlayers.Remove(this);
-
+            
             if (IsNpc)
                 _npcPlayers.Remove(this);
             else if (!IsServer)
@@ -1428,13 +1429,21 @@ namespace LabExtended.API
             if (!string.IsNullOrWhiteSpace(UserId))
                 _preauthData.Remove(UserId);
             
-            CustomCommand._continuedContexts.Remove(NetId);
-
+            foreach (var helper in PlayerCollection.m_Handlers)
+                helper.Remove(NetId);
+            
             foreach (var other in _allPlayers)
             {
                 other._sentRoles?.Remove(NetId);
                 other._invisibility?.Remove(this);
             }
+            
+            CustomCommand._continuedContexts.Remove(NetId);
+            
+            if (_hintCache != null)
+                ObjectPool<HintCache>.Shared.Return(_hintCache);
+
+            _hintCache = null;
 
             Effects?.Dispose();
             Effects = null;
@@ -1471,9 +1480,6 @@ namespace LabExtended.API
                 HashSetPool<ExPlayer>.Shared.Return(_invisibility);
                 _invisibility = null;
             }
-
-            foreach (var helper in PlayerCollection.m_Handlers)
-                helper.Remove(NetId);
         }
 
         #endregion

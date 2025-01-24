@@ -1,6 +1,7 @@
 ﻿using Hints;
 
 using LabExtended.API.Collections.Locked;
+using LabExtended.API.Hints.Elements;
 using LabExtended.API.Enums;
 
 using LabExtended.Attributes;
@@ -17,7 +18,7 @@ using LabExtended.Utilities.Unity;
 using NorthwoodLib.Pools;
 
 using System.Text;
-using LabExtended.API.Hints.Elements;
+
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 
@@ -36,8 +37,7 @@ namespace LabExtended.API.Hints
         public const bool TemporaryHintAutoWrap = true;
         #endregion
 
-        private static volatile LockedHashSet<HintElement> _elements;
-        private static volatile LockedDictionary<ExPlayer, HintCache> _cache;
+        private static volatile List<HintElement> _elements;
 
         private static volatile TextHint _hintBuffer;
         private static volatile StringHintParameter _hintBufferParam;
@@ -62,8 +62,7 @@ namespace LabExtended.API.Hints
 
         static HintController()
         {
-            _elements = new LockedHashSet<HintElement>(byte.MaxValue);
-            _cache = new LockedDictionary<ExPlayer, HintCache>(byte.MaxValue);
+            _elements = new List<HintElement>();
 
             _hintBufferParam = new StringHintParameter(string.Empty);
             _hintBuffer = new TextHint(string.Empty, new HintParameter[] { _hintBufferParam });
@@ -80,11 +79,11 @@ namespace LabExtended.API.Hints
         }
 
         public static void PauseHints(ExPlayer player)
-            => GetOrAddCache(player).IsPaused = true;
+            => player._hintCache.IsPaused = true;
 
         public static void ResumeHints(ExPlayer player)
-            => GetOrAddCache(player).IsPaused = false;
-
+            => player._hintCache.IsPaused = false;
+        
         public static void Show(ExPlayer player, string content, ushort duration, bool isPriority = false)
         {
             if (!player)
@@ -92,26 +91,25 @@ namespace LabExtended.API.Hints
 
             if (string.IsNullOrWhiteSpace(content))
                 throw new ArgumentNullException(nameof(content));
-
-            var cache = GetOrAddCache(player);
-
-            if (cache.Queue.Count < 1)
+            
+            if (player._hintCache.Queue.Count < 1)
             {
-                cache.Queue.Add(new HintMessage(content, duration));
+                player._hintCache.Queue.Add(new HintMessage(content, duration));
             }
             else
             {
                 if (isPriority)
                 {
-                    var curHint = cache.Queue[0];
+                    var curHint = player._hintCache.Queue[0];
 
-                    cache.RemoveCurrent();
-                    cache.Queue.Insert(0, new HintMessage(content, duration));
-                    cache.Queue.Add(curHint);
+                    player._hintCache.RemoveCurrent();
+                    
+                    player._hintCache.Queue.Insert(0, new HintMessage(content, duration));
+                    player._hintCache.Queue.Add(curHint);
                 }
                 else
                 {
-                    cache.Queue.Add(new HintMessage(content, duration));
+                    player._hintCache.Queue.Add(new HintMessage(content, duration));
                 }
             }
         }
@@ -122,10 +120,8 @@ namespace LabExtended.API.Hints
             {
                 x.IsActive = false;
 
-                x.Whitelist.Dispose();
-                x.Data.Clear();
-
                 x.Id = 0;
+                
                 x._tickNum = 0;
                 x._prevCompiled = null;
 
@@ -169,9 +165,6 @@ namespace LabExtended.API.Hints
             if (!_elements.Remove(element))
                 return false;
 
-            element.Whitelist.Dispose();
-            element.Data.Clear();
-
             element.Id = 0;
 
             element._prevCompiled = null;
@@ -196,27 +189,20 @@ namespace LabExtended.API.Hints
             if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            element.Whitelist.Clear();
-            element.Data.Clear();
-
             element.Id = _idClock++;
 
             element._prevCompiled = null;
             element._tickNum = 0;
 
-            if (_elements.Add(element))
-            {
-                element.IsActive = true;
-                element.OnEnabled();
-                
-                ApiLog.Debug("Hint API", $"Added element &1{element.Id}&r (&6{element.GetType().Name}&r)");
-                return true;
-            }
+            _elements.Add(element);
+            
+            element.OnEnabled();
+            element.IsActive = true;
 
-            ApiLog.Debug("Hint API", $"Failed to add element &1{element.Id}&r (&6{element.GetType().Name}&r)");
-            return false;
+            ApiLog.Debug("Hint API", $"Added element &1{element.Id}&r (&6{element.GetType().Name}&r)");
+            return true;
         }
-        
+
         public static IEnumerable<HintElement> GetElements(Predicate<HintElement> predicate)
         {
             if (predicate is null)
@@ -308,12 +294,14 @@ namespace LabExtended.API.Hints
                 else
                     _tickNum++;
 
-                foreach (var pair in _cache)
+                foreach (var player in ExPlayer._players)
                 {
-                    var player = pair.Key;
-                    var cache = pair.Value;
+                    if (!player)
+                        continue;
+                    
+                    player._hintCache ??= ObjectPool<HintCache>.Shared.Rent(x => x.Player = player, () => new HintCache());
 
-                    if (!player || cache.IsPaused)
+                    if (player._hintCache.IsPaused)
                         continue;
 
                     _builder.Clear();
@@ -321,18 +309,18 @@ namespace LabExtended.API.Hints
 
                     var anyAppended = false;
 
-                    cache.RefreshRatio();
+                    player._hintCache.RefreshRatio();
 
-                    if (cache.CurrentMessage is null || cache.UpdateTime())
-                        cache.NextMessage();
+                    if (player._hintCache.CurrentMessage is null || player._hintCache.UpdateTime())
+                        player._hintCache.NextMessage();
 
-                    if (cache.CurrentMessage != null)
+                    if (player._hintCache.CurrentMessage != null)
                     {
-                        cache.ParseTemp();
+                        player._hintCache.ParseTemp();
 
-                        if (cache.TempData.Count > 0)
+                        if (player._hintCache.TempData.Count > 0)
                         {
-                            AppendMessages(cache.TempData, TemporaryHintAlign, 0f, _builder);
+                            AppendMessages(player._hintCache.TempData, TemporaryHintAlign, 0f, _builder);
                             anyAppended = true;
                         }
                     }
@@ -345,58 +333,60 @@ namespace LabExtended.API.Hints
                         if (element._tickNum != _tickNum)
                         {
                             element._tickNum = _tickNum;
-                            element.TickElement();
+                            element.OnUpdate();
                         }
 
-                        if (!element.IsGlobal && !element.Whitelist.Contains(player))
+                        element.Builder.Clear();
+
+                        if (!element.OnDraw(player))
                             continue;
 
-                        var content = element.BuildContent(player);
+                        var content = element.Builder.ToString();
 
-                        if (!string.IsNullOrWhiteSpace(content))
+                        if (element.Builder.Length < 1)
+                            continue;
+
+                        if (!element.ShouldParse)
                         {
-                            if (element.IsRaw)
+                            _builder.Append(content);
+                        }
+                        else
+                        {
+                            if (element._prevCompiled is null || element._prevCompiled != content)
                             {
-                                _builder.Append(content);
+                                element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
+                                element.Data.Clear();
+
+                                element._prevCompiled = content;
+
+                                content = content
+                                    .Replace("\r\n", "\n")
+                                    .Replace("\\n", "\n")
+                                    .Replace("<br>", "\n")
+                                    .TrimEnd();
+
+                                HintUtils.TrimStartNewLines(ref content, out var count);
+
+                                var offset = element.GetVerticalOffset(player);
+
+                                if (offset == 0f)
+                                    offset = -count;
+
+                                HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap, element.GetPixelSpacing(player));
                             }
-                            else
+
+                            if (element.Data.Count > 0)
                             {
-                                if (element._prevCompiled is null || element._prevCompiled != content)
-                                {
-                                    element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
-                                    element.Data.Clear();
-
-                                    element._prevCompiled = content;
-
-                                    content = content
-                                        .Replace("\r\n", "\n")
-                                        .Replace("\\n", "\n")
-                                        .Replace("<br>", "\n")
-                                        .TrimEnd();
-
-                                    HintUtils.TrimStartNewLines(ref content, out var count);
-
-                                    var offset = element.GetVerticalOffset(player);
-
-                                    if (offset == 0f)
-                                        offset = -count;
-
-                                    HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap, element.GetPixelSpacing(player));
-                                }
-
-                                if (element.Data.Count > 0)
-                                {
-                                    AppendMessages(element.Data, element.Align, cache.LeftOffset, _builder);
-                                    anyAppended = true;
-                                }
+                                AppendMessages(element.Data, element.GetAlignment(player), player._hintCache.LeftOffset, _builder);
+                                anyAppended = true;
                             }
                         }
                     }
 
-                    if (!anyAppended && !cache.WasClearedAfterEmpty)
+                    if (!anyAppended && !player._hintCache.WasClearedAfterEmpty)
                     {
                         player.Connection.Send(EmptyMessage);
-                        cache.WasClearedAfterEmpty = true;
+                        player._hintCache.WasClearedAfterEmpty = true;
 
                         continue;
                     }
@@ -409,56 +399,13 @@ namespace LabExtended.API.Hints
 
                     player.Connection.Send(CurMessage);
 
-                    cache.WasClearedAfterEmpty = false;
+                    player._hintCache.WasClearedAfterEmpty = false;
                 }
             }
             catch (Exception ex)
             {
                 ApiLog.Error("Hint Controller", ex);
             }
-        }
-
-        private static HintCache GetOrAddCache(ExPlayer player)
-        {
-            if (_cache.TryGetValue(player, out var cache))
-                return cache;
-
-            ApiLog.Warn("Hint Controller", $"Player &3{player.Name} {player.UserId}&r did not have a HintCache.");
-            return _cache[player] = new HintCache() { Player = player };
-        }
-
-        private static void OnJoined(ExPlayer player)
-        {
-            ApiLog.Debug("Hint API", $"Player &1{player.Name}&r joined");
-            
-            _cache.Add(player, new HintCache() { Player = player });
-
-            _elements.ForEach(x =>
-            {                
-                ApiLog.Debug("Hint API", $"Validating whitelist in element &1{x.GetType().Name}&r (IsGlobal={x.IsGlobal})");
-                
-                if (!x.IsGlobal && !x.ValidateWhitelist(player))
-                    return;
-
-                x.Whitelist.Add(player);
-                x.OnWhitelistAdded(player);
-                
-                ApiLog.Debug("Hint API", $"Added to whitelist");
-            });
-        }
-
-        private static void OnLeft(ExPlayer player)
-        {
-            _elements.ForEach(x =>
-            {
-                if (!x.IsGlobal && !x.Whitelist.Contains(player))
-                    return;
-
-                x.Whitelist.Remove(player);
-                x.OnWhitelistRemoved(player);
-            });
-
-            _cache.Remove(player);
         }
 
         private static void AppendMessages(IEnumerable<HintData> hints, HintAlign align, float leftOffset, StringBuilder builder)
@@ -505,15 +452,7 @@ namespace LabExtended.API.Hints
         [LoaderInitialize(1)]
         private static void Init()
         {
-            InternalEvents.OnPlayerLeft += OnLeft;
-            InternalEvents.OnPlayerJoined += OnJoined;
-
             PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnTick, typeof(HintUpdateLoop)) ? x : null);
-            
-            if (ApiLoader.ApiConfig.HintSection.EnableTestElement)
-                AddElement<TestElement>();
-            
-            ApiLog.Debug("Hint API", $"Initialized");
         }
     }
 }
