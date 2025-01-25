@@ -30,8 +30,8 @@ namespace LabExtended.Patches.Events
             FastEvents.DefineEvent<PlayerRoleManager.RoleChanged>(typeof(PlayerRoleManager),
                 nameof(PlayerRoleManager.OnRoleChanged));
         
-        [HookPatch(typeof(PlayerChangedRoleArgs))]
-        [HookPatch(typeof(PlayerChangingRoleArgs))]
+        [HookPatch(typeof(PlayerChangedRoleArgs), true)]
+        [HookPatch(typeof(PlayerChangingRoleArgs), true)]
         [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.InitializeNewRole))]
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId targetId, RoleChangeReason reason, RoleSpawnFlags spawnFlags = RoleSpawnFlags.All, NetworkReader data = null)
         {

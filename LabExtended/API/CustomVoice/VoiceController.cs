@@ -8,6 +8,7 @@ using LabExtended.Utilities.Unity;
 
 using LabExtended.API.CustomVoice.Profiles;
 using LabExtended.API.CustomVoice.Pitching;
+using LabExtended.Core;
 using LabExtended.Extensions;
 using UnityEngine;
 
@@ -34,14 +35,12 @@ public class VoiceController : IDisposable
     public bool IsOnline => Player != null && Player;
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
 
-    public bool CanReceiveSelf { get; set; }
-
     public IReadOnlyDictionary<DateTime, VoiceMessage> SpeakingPackets => _speakingPackets;
     public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
     
     public IReadOnlyDictionary<Type, VoiceProfile> Profiles => _profiles;
 
-    public VoiceController(ExPlayer player)
+    internal VoiceController(ExPlayer player)
     {
         Player = player;
         
@@ -56,16 +55,17 @@ public class VoiceController : IDisposable
         
         OnJoined.InvokeSafe(this);
     }
-    
+
     public bool HasProfile<T>(out T profile) where T : VoiceProfile
     {
+        if (Profiles.TryGetValue(typeof(T), out var instance))
+        {
+            profile = (T)instance;
+            return true;
+        }
+
         profile = null;
-        
-        if (!Profiles.TryGetValue(typeof(T), out var instance) || instance is not T castInstance)
-            return false;
-        
-        profile = castInstance;
-        return true;
+        return false;
     }
     
     public bool HasProfile<T>() where T : VoiceProfile
@@ -178,14 +178,12 @@ public class VoiceController : IDisposable
         if (_speakingPackets != null)
         {
             DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_speakingPackets);
-            
             _speakingPackets = null;
         }
         
         if (_sessionPackets != null)
         {
             DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_sessionPackets);
-            
             _sessionPackets = null;
         }
 
@@ -236,7 +234,7 @@ public class VoiceController : IDisposable
                     continue;
 
                 var result = profile.Value.Receive(ref msg);
-                
+
                 if (result is VoiceProfileResult.None)
                     continue;
 
@@ -250,19 +248,22 @@ public class VoiceController : IDisposable
                 }
             }
 
-            if (!send)
+            if (!send || msg.Channel is VoiceChatChannel.None)
                 continue;
             
-            player.Connection.Send(msg);
+            player.Send(msg);
         }
     }
 
     private void HandleSpawn(PlayerSpawningArgs args)
     {
+        if (!Player || !args.Player || args.Player != Player)
+            return;
+        
         foreach (var profile in _profiles)
         {
             if (!profile.Value.OnChangingRole(args.NewRole))
-            {
+            {        
                 if (profile.Value.IsActive)
                 {
                     profile.Value.IsActive = false;
@@ -284,7 +285,7 @@ public class VoiceController : IDisposable
     {
         if (IsSpeaking == _wasSpeaking)
             return;
-
+        
         if (_wasSpeaking)
         {
             HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(Player, _speakingTime, _speakingPackets));
@@ -304,11 +305,8 @@ public class VoiceController : IDisposable
     
     private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)
     {
-        if (receiver.Role.VoiceModule is null)
+        if (receiver.Role.VoiceModule is null || receiver == Player)
             return VoiceChatChannel.None;
-
-        if (receiver == Player)
-            return CanReceiveSelf ? VoiceChatChannel.RoundSummary : VoiceChatChannel.None;
         
         return receiver.Role.VoiceModule.ValidateReceive(Player.Hub, messageChannel);
     }

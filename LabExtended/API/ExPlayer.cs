@@ -51,6 +51,7 @@ using LabApi.Features.Wrappers;
 
 using LabExtended.API.Collections;
 using LabExtended.API.CustomVoice;
+using LabExtended.API.Hints.Elements;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Menus;
 using LabExtended.Commands;
@@ -486,6 +487,7 @@ namespace LabExtended.API
         internal Dictionary<int, SettingsEntry> settingsAssignedIdLookup;
         
         internal HashSet<ExPlayer> invisibility;
+        internal HashSet<PersonalElement> elements;
         
         internal HintCache hintCache;
 
@@ -521,6 +523,7 @@ namespace LabExtended.API
             settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
             
             invisibility = HashSetPool<ExPlayer>.Shared.Rent();
+            elements = HashSetPool<PersonalElement>.Shared.Rent();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out peer);
 
@@ -574,6 +577,10 @@ namespace LabExtended.API
             
             PersistentStorage.JoinTime = DateTime.Now;
             PersistentStorage.Lifes++;
+
+            hintCache = ObjectPool<HintCache>.Shared.Rent(null, () => new HintCache());
+            hintCache.Player = this;
+            hintCache.RefreshRatio();
 
             allPlayers.Add(this);
 
@@ -1512,6 +1519,14 @@ namespace LabExtended.API
             {
                 DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
                 settingsMenuLookup = null;
+            }
+
+            if (elements != null)
+            {
+                elements.ForEach(x => x.OnDisabled());
+                
+                HashSetPool<PersonalElement>.Shared.Return(elements);
+                elements = null;
             }
         }
 

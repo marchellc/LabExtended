@@ -26,8 +26,8 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerGrantingInventoryPatch
     {
-        [HookPatch(typeof(PlayerGrantedInventoryArgs))]
-        [HookPatch(typeof(PlayerGrantingInventoryArgs))]
+        [HookPatch(typeof(PlayerGrantedInventoryArgs), true)]
+        [HookPatch(typeof(PlayerGrantingInventoryArgs), true)]
         [HarmonyPatch(typeof(InventoryItemProvider), nameof(InventoryItemProvider.RoleChanged))]
         public static bool Prefix(ReferenceHub ply, PlayerRoleBase prevRole, PlayerRoleBase newRole)
         {

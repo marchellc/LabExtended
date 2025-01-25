@@ -25,7 +25,7 @@ namespace LabExtended.Patches.Events
             FastEvents.DefineEvent<PlayerRoleManager.ServerRoleSet>(typeof(PlayerRoleManager),
                 nameof(PlayerRoleManager.OnServerRoleSet));
 
-        [HookPatch(typeof(PlayerSpawningArgs))]
+        [HookPatch(typeof(PlayerSpawningArgs), true)]
         [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.ServerSetRole))]
         public static bool Prefix(PlayerRoleManager __instance, RoleTypeId newRole, RoleChangeReason reason, RoleSpawnFlags spawnFlags)
         {

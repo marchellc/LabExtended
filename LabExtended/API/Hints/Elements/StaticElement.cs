@@ -16,6 +16,12 @@ namespace LabExtended.API.Hints.Elements
             => Update.InvokeSafe(this);
 
         public override bool OnDraw(ExPlayer _)
-            => true;
+        {
+            if (Content is null)
+                return false;
+            
+            Builder.AppendLine(Content);
+            return true;
+        }
     }
 }
