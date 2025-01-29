@@ -148,6 +148,7 @@ namespace LabExtended.Core
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
             
             ApiPatcher.ApplyPatches(typeof(ApiLoader).Assembly);
+            ApiCommands.InternalRegisterCommands();
 
             typeof(ApiLoader).Assembly.InvokeStaticMethods(x => x.HasAttribute<LoaderInitializeAttribute>(), x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
 

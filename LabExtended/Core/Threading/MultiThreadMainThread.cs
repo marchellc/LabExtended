@@ -14,11 +14,13 @@ public static class MultiThreadMainThread
     public struct MultiThreadUpdateLoop { }
 
     private static volatile ConcurrentQueue<MultiThreadOperation> _pendingOperations = new ConcurrentQueue<MultiThreadOperation>();
+    private static volatile TaskScheduler _taskScheduler;
+    
     private static Stopwatch _timeWatch = new Stopwatch();
 
     public static MultiThreadSection Config => ApiLoader.ApiConfig.MultiThreadSection;
-    
-    public static TaskScheduler MainTaskScheduler { get; } = TaskScheduler.FromCurrentSynchronizationContext();
+
+    public static TaskScheduler MainTaskScheduler => _taskScheduler;
 
     internal static void ProcessOperation(MultiThreadOperation threadOperation)
     {
@@ -37,6 +39,8 @@ public static class MultiThreadMainThread
 
             return x;
         });
+        
+        _taskScheduler = TaskScheduler.FromCurrentSynchronizationContext();
     }
 
     private static void Process(MultiThreadOperation operation)

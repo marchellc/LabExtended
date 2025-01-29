@@ -30,6 +30,9 @@ namespace LabExtended.API.Hints
         
         public virtual bool ShouldParse { get; } = true;
         public virtual bool ShouldWrap { get; } = true;
+        public virtual bool ShouldCache { get; } = true;
+        
+        public virtual bool OverridesOthers { get; }
 
         public virtual void OnUpdate() { }
         public virtual bool OnDraw(ExPlayer player) => false;

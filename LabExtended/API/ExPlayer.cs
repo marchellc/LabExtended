@@ -582,6 +582,9 @@ namespace LabExtended.API
             hintCache.Player = this;
             hintCache.RefreshRatio();
 
+            if (!IsServer)
+                HintController.AddElement<PersonalImageElement>(this);
+
             allPlayers.Add(this);
 
             if (IsNpc)

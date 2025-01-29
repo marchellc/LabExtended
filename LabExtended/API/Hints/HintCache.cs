@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.Core.Pooling;
+﻿using LabExtended.Core.Pooling;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 

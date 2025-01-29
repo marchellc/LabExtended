@@ -1,5 +1,7 @@
 ﻿using LabExtended.API;
 
+using LabExtended.Commands.CustomData;
+
 using LabExtended.Commands.Parsing.PlayerList;
 using LabExtended.Commands.Parsing.PlayerList.Nodes;
 
@@ -21,6 +23,22 @@ namespace LabExtended.Commands.Parsing
             {
                 failureMessage = $"String cannot be empty or white-spaced.";
                 return false;
+            }
+
+            if (value == "*")
+            {
+                result = new PlayerListData(new List<ExPlayer>(ExPlayer.Players));
+                return true;
+            }
+
+            if (value == "*!")
+            {
+                var list = new PlayerListData(new List<ExPlayer>(ExPlayer.Players));
+
+                list.Remove(sender);
+                
+                result = list;
+                return true;
             }
 
             try

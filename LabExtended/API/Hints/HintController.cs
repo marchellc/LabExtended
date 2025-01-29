@@ -18,7 +18,8 @@ using LabExtended.Utilities.Unity;
 using NorthwoodLib.Pools;
 
 using System.Text;
-
+using LabApi.Loader.Features.Paths;
+using LabExtended.Commands.Contexts;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 
@@ -37,6 +38,8 @@ namespace LabExtended.API.Hints
         public const bool TemporaryHintAutoWrap = true;
         #endregion
 
+        public const ushort MaxHintTextLength = ushort.MaxValue;
+
         private static volatile List<HintElement> _elements;
 
         private static volatile TextHint _hintBuffer;
@@ -50,6 +53,9 @@ namespace LabExtended.API.Hints
         private static int _idClock;
         private static long _tickNum;
         private static float _curTime;
+
+        internal static bool isDebugEnabled;
+        internal static bool isManual;
 
         public static IReadOnlyList<HintElement> Elements => _elements;
 
@@ -466,11 +472,11 @@ namespace LabExtended.API.Hints
             return target.elements.TryGetFirst(x => predicate(x), out element);
         }
 
-        private static void OnTick()
+        internal static void OnTick()
         {
             try
             {
-                if (ApiLoader.ApiConfig.HintSection.UpdateInterval > 0f)
+                if (!isManual && ApiLoader.ApiConfig.HintSection.UpdateInterval > 0f)
                 {
                     _curTime -= Time.deltaTime;
 
@@ -485,21 +491,45 @@ namespace LabExtended.API.Hints
                 else
                     _tickNum++;
 
-                if (_elements.Count < 1 || ExPlayer.Count < 1)
+                if (!isManual && ExPlayer.Count < 1)
+                {
+                    if (isDebugEnabled)
+                        ApiLog.Debug("Hint API", $"[Tick {_tickNum}] No players online");
+                    
                     return;
+                }
 
+                if (isDebugEnabled)
+                    ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Processing");
+                
                 foreach (var player in ExPlayer.Players)
                 {
                     if (!player || player.hintCache is null)
+                    {
+                        if (isDebugEnabled)
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Encountered null player or cache");
+                        
                         continue;
+                    }
 
                     if (player.hintCache.IsPaused)
+                    {
+                        if (isDebugEnabled)
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Hint cache is paused");
+                        
                         continue;
+                    }
 
                     _builder.Clear();
                     _builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
 
                     var anyAppended = false;
+                    var anyOverride = false;
+                    
+                    var overrideParse = false;
+                    
+                    if (isDebugEnabled)
+                        ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Processing main message");
 
                     player.hintCache.RefreshRatio();
 
@@ -516,11 +546,24 @@ namespace LabExtended.API.Hints
                             anyAppended = true;
                         }
                     }
+                    
+                    if (isDebugEnabled)
+                        ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Processed ({anyAppended})");
 
                     void ProcessElement(HintElement element)
                     {
+                        if (isDebugEnabled)
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Processing element {element.GetType().Name}");
+
                         if (!element.IsActive)
+                        {
+                            if (isDebugEnabled)
+                                ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Element disabled");
+
                             return;
+                        }
+                        
+                        element.Builder.Clear();
 
                         if (element._tickNum != _tickNum)
                         {
@@ -528,21 +571,63 @@ namespace LabExtended.API.Hints
                             element.OnUpdate();
                         }
 
-                        element.Builder.Clear();
+                        if (isDebugEnabled)
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Calling OnDraw");
 
                         if (!element.OnDraw(player) || element.Builder.Length < 1)
+                        {
+                            if (isDebugEnabled)
+                                ApiLog.Debug("Hint API", $"[Tick {_tickNum}] OnDraw failed or builder empty ({element.Builder.Length})");
+
                             return;
+                        }
+
+                        if ((_builder.Length + element.Builder.Length) >= MaxHintTextLength)
+                        {
+                            ApiLog.Warn("Hint API", $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Name}&r (&6{player.UserId}&r) " +
+                                                    $"due to it exceeding maximum allowed limit (&1{_builder.Length + element.Builder.Length}&r / &2{MaxHintTextLength}&r)");
+
+                            return;
+                        }
                         
                         var content = element.Builder.ToString();
 
+                        if (isDebugEnabled)
+                        {
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Built content");
+                            File.WriteAllText(Path.Combine(PathManager.LabApi.FullName, $"{player.UserId}_{element.GetType().Name}_{_tickNum}_hint_debug.txt"), content);
+                        }
+
+                        if (element.OverridesOthers)
+                        {
+                            if (isDebugEnabled)
+                                ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Element override active");
+                            
+                            anyOverride = true;
+                            
+                            _builder.Clear();
+
+                            if (element.ShouldParse)
+                                _builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
+                            else
+                                overrideParse = true;
+                        }
+
                         if (!element.ShouldParse)
                         {
+                            if (isDebugEnabled)
+                                ApiLog.Debug("Hint API", $"[Tick {_tickNum}] ShouldParse false");
+                            
                             _builder.Append(content);
+                            anyAppended = true;
                         }
                         else
                         {
-                            if (element._prevCompiled is null || element._prevCompiled != content)
+                            if (!element.ShouldCache || element._prevCompiled is null || element._prevCompiled != content)
                             {
+                                if (isDebugEnabled)
+                                    ApiLog.Debug("Hint API", $"[Tick {_tickNum}] ShouldCache is false or cache is not up to date");
+                                
                                 element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
                                 element.Data.Clear();
 
@@ -563,6 +648,9 @@ namespace LabExtended.API.Hints
 
                                 HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap, element.GetPixelSpacing(player));
                             }
+                            
+                            if (isDebugEnabled)
+                                ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Data: {element.Data.Count}");
 
                             if (element.Data.Count > 0)
                             {
@@ -573,27 +661,63 @@ namespace LabExtended.API.Hints
                     }
 
                     foreach (var element in _elements)
+                    {
+                        if (anyOverride)
+                            break;
+                        
                         ProcessElement(element);
-                    
+                    }
+
                     foreach (var personalElement in player.elements)
+                    {
+                        if (anyOverride)
+                            break;
+                        
                         ProcessElement(personalElement);
+                    }
+                    
+                    if (isDebugEnabled)
+                        ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Finishing builder {_builder.Length}");
 
                     if (!anyAppended && !player.hintCache.WasClearedAfterEmpty)
                     {
+                        if (isDebugEnabled)
+                            ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Empty, sending empty");
+                        
                         player.Send(EmptyMessage);
                         player.hintCache.WasClearedAfterEmpty = true;
 
                         continue;
                     }
-
-                    _builder.Append("<voffset=0><line-height=2100%>\n~");
+                    
+                    if (!overrideParse)
+                        _builder.Append("<voffset=0><line-height=2100%>\n~");
 
                     _hintBufferParam.Value = _builder.ToString();
+                    
                     _hintBuffer.Text = _hintBufferParam.Value;
                     _hintBuffer.DurationScalar = ApiLoader.ApiConfig.HintSection.HintDuration;
+                    
+                    if (isDebugEnabled)
+                        File.WriteAllText(Path.Combine(PathManager.LabApi.FullName, $"{player.UserId}_hint_debug_{_tickNum}.txt"), _hintBuffer.Text);
+
+                    if (_hintBuffer.Text.Length >= MaxHintTextLength)
+                    {
+                        if (!player.hintCache.WasClearedAfterEmpty)
+                        {
+                            player.Send(EmptyMessage);
+                            player.hintCache.WasClearedAfterEmpty = true;
+                        }
+
+                        ApiLog.Warn("Hint API", $"The compiled hint is too big! (&1{_hintBuffer.Text.Length}&r / &2{MaxHintTextLength}&r)");
+                        continue;
+                    }
 
                     player.Send(CurMessage);
                     player.hintCache.WasClearedAfterEmpty = false;
+                    
+                    if (isDebugEnabled)
+                        ApiLog.Debug("Hint API", $"[Tick {_tickNum}] Sent current");
                 }
             }
             catch (Exception ex)
@@ -647,6 +771,7 @@ namespace LabExtended.API.Hints
         private static void Init()
         {
             PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnTick, typeof(HintUpdateLoop)) ? x : null);
+            isDebugEnabled = ApiLoader.ApiConfig.HintSection.WriteDebug;
         }
     }
 }

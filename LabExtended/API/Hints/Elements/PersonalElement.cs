@@ -6,7 +6,7 @@ public class PersonalElement : HintElement
 {
     public ExPlayer Player { get; internal set; }
 
-    public virtual HintAlign Align { get; } = HintElement.DefaultHintAlign;
+    public virtual HintAlign Alignment { get; } = HintElement.DefaultHintAlign;
 
     public virtual float VerticalOffset { get; } = HintElement.DefaultVerticalOffset;
 
@@ -14,7 +14,7 @@ public class PersonalElement : HintElement
     
     public virtual bool OnDraw() => false;
 
-    public override HintAlign GetAlignment(ExPlayer player) => Align;
+    public override HintAlign GetAlignment(ExPlayer player) => Alignment;
     public override int GetPixelSpacing(ExPlayer player) => PixelSpacing;
     public override float GetVerticalOffset(ExPlayer player) => VerticalOffset;
 

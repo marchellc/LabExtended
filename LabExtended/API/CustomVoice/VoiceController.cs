@@ -21,7 +21,6 @@ public class VoiceController : IDisposable
 {
     public static event Action<VoiceController> OnJoined; 
     
-    private Dictionary<DateTime, VoiceMessage> _speakingPackets;
     private Dictionary<DateTime, VoiceMessage> _sessionPackets;
     
     private Dictionary<Type, VoiceProfile> _profiles;
@@ -34,10 +33,8 @@ public class VoiceController : IDisposable
 
     public bool IsOnline => Player != null && Player;
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
-
-    public IReadOnlyDictionary<DateTime, VoiceMessage> SpeakingPackets => _speakingPackets;
-    public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
     
+    public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
     public IReadOnlyDictionary<Type, VoiceProfile> Profiles => _profiles;
 
     internal VoiceController(ExPlayer player)
@@ -45,8 +42,7 @@ public class VoiceController : IDisposable
         Player = player;
         
         Pitch = new VoicePitch(this);
-
-        _speakingPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
+        
         _sessionPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
         _profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
@@ -175,12 +171,6 @@ public class VoiceController : IDisposable
         Pitch?.Dispose();
         Pitch = null;
         
-        if (_speakingPackets != null)
-        {
-            DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_speakingPackets);
-            _speakingPackets = null;
-        }
-        
         if (_sessionPackets != null)
         {
             DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_sessionPackets);
@@ -211,10 +201,7 @@ public class VoiceController : IDisposable
         if (msg.SpeakerNull || msg.Speaker is null || msg.Speaker.netId != Player.NetId)
             return;
 
-        var time = DateTime.Now;
-
-        _speakingPackets.Add(time, msg);
-        _sessionPackets.Add(time, msg);
+        _sessionPackets.Add(DateTime.Now, msg);
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
 
@@ -288,12 +275,12 @@ public class VoiceController : IDisposable
         
         if (_wasSpeaking)
         {
-            HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(Player, _speakingTime, _speakingPackets));
-            VoiceEvents.InvokeOnStoppedSpeaking(Player, _speakingTime, _speakingPackets);
+            HookRunner.RunEvent(new PlayerStoppedSpeakingArgs(Player, _speakingTime, _sessionPackets));
+            VoiceEvents.InvokeOnStoppedSpeaking(Player, _speakingTime, _sessionPackets);
         }
         else
         {
-            _speakingPackets.Clear();
+            _sessionPackets.Clear();
             _speakingTime = Time.realtimeSinceStartup;
 
             HookRunner.RunEvent(new PlayerStartedSpeakingArgs(Player));
