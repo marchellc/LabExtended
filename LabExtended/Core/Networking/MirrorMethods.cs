@@ -16,8 +16,6 @@ namespace LabExtended.Core.Networking
 {
     public static class MirrorMethods
     {
-        private static ReusableValue<NetworkWriterPooled> _writer;
-
         public static volatile LockedHashSet<Tuple<Type, Func<object, object[], object>>> Writers;
         public static volatile LockedHashSet<Tuple<string, string>> RpcFullNames;
         public static volatile LockedHashSet<Tuple<string, ulong>> DirtyBits;
@@ -28,8 +26,6 @@ namespace LabExtended.Core.Networking
         {
             try
             {
-                _writer = new ReusableValue<NetworkWriterPooled>(NetworkWriterPool.Get(), NetworkWriterPool.Get, null, x => x.Dispose());
-
                 Writers = new LockedHashSet<Tuple<Type, Func<object, object[], object>>>();
                 DirtyBits = new LockedHashSet<Tuple<string, ulong>>();
                 RpcFullNames = new LockedHashSet<Tuple<string, string>>();
@@ -239,7 +235,7 @@ namespace LabExtended.Core.Networking
                 throw new ArgumentNullException(nameof(identity));
 
             var msg = identity.GetSpawnMessage(customPos, customScale, customRot, payload);
-            var writer = RentWriter();
+            var writer = NetworkWriterPool.Get();
 
             writer.Write(msg);
 
@@ -345,7 +341,7 @@ namespace LabExtended.Core.Networking
 
             if (customWriter != null)
             {
-                var writer = RentWriter();
+                var writer = NetworkWriterPool.Get();
 
                 customWriter.InvokeSafe(writer, true);
 
@@ -375,7 +371,7 @@ namespace LabExtended.Core.Networking
 
             if (customWriter != null)
             {
-                var writer = RentWriter();
+                var writer = NetworkWriterPool.Get();
 
                 customWriter.InvokeSafe(writer, true);
 
@@ -553,11 +549,12 @@ namespace LabExtended.Core.Networking
 
             var bitMask = GetSyncVarBit(propertyName);
 
-            var varWriter = RentWriter();
-            var segmentWriter = RentWriter();
+            var varWriter = NetworkWriterPool.Get();
+            var segmentWriter = NetworkWriterPool.Get();
 
             WriteCustomSyncVars(varWriter, behaviour, bitMask, x => syncWriter.Item2(null, new object[] { x, customValue }), segmentWriter);
-            ReturnWriter(segmentWriter);
+            
+            NetworkWriterPool.Return(segmentWriter);
 
             var data = ReturnWriterAndData(varWriter);
 
@@ -574,11 +571,11 @@ namespace LabExtended.Core.Networking
 
             var bitMask = GetSyncVarBit(propertyName);
 
-            var varWriter = RentWriter();
-            var segmentWriter = RentWriter();
+            var varWriter = NetworkWriterPool.Get();
+            var segmentWriter = NetworkWriterPool.Get();
 
             WriteCustomSyncVars(varWriter, behaviour, bitMask, x => x.Write(customValue), segmentWriter);
-            ReturnWriter(segmentWriter);
+            NetworkWriterPool.Return(segmentWriter);
 
             var data = ReturnWriterAndData(varWriter);
 
@@ -593,11 +590,12 @@ namespace LabExtended.Core.Networking
             if (behaviour is null)
                 throw new ArgumentNullException(nameof(behaviour));
 
-            var varWriter = RentWriter();
-            var segmentWriter = RentWriter();
+            var varWriter = NetworkWriterPool.Get();
+            var segmentWriter = NetworkWriterPool.Get();
 
             WriteCustomSyncVars(varWriter, behaviour, bitMask, writeSyncVars, segmentWriter);
-            ReturnWriter(segmentWriter);
+            
+            NetworkWriterPool.Return(segmentWriter);
 
             var data = ReturnWriterAndData(varWriter);
 
@@ -615,7 +613,7 @@ namespace LabExtended.Core.Networking
             var wasNull = segmentWriter is null;
 
             if (segmentWriter is null)
-                segmentWriter = RentWriter();
+                segmentWriter = NetworkWriterPool.Get();
 
             if (segmentWriter.Position != 0)
                 segmentWriter.Reset();
@@ -648,7 +646,7 @@ namespace LabExtended.Core.Networking
             writer.WriteArraySegmentAndSize(segmentWriter.ToArraySegment());
 
             if (wasNull)
-                ReturnWriter(segmentWriter);
+                NetworkWriterPool.Return(segmentWriter);
         }
 
         public static void WriteToConnection(this NetworkConnection connection, Action<NetworkWriter> customWriter, int channelId = 0)
@@ -675,7 +673,7 @@ namespace LabExtended.Core.Networking
             if (customWriter is null)
                 throw new ArgumentNullException(nameof(customWriter));
 
-            var writer = RentWriter();
+            var writer = NetworkWriterPool.Get();
 
             writer.WriteUShort(NetworkMessageId<T>.Id);
             customWriter.InvokeSafe(writer, true);
@@ -694,7 +692,7 @@ namespace LabExtended.Core.Networking
             if (!connection.isReady)
                 throw new Exception($"Cannot write to a connection that is not ready");
 
-            var writer = RentWriter();
+            var writer = NetworkWriterPool.Get();
 
             writer.WriteUShort(NetworkMessageId<T>.Id);
             customWriter.InvokeSafe(writer, true);
@@ -729,21 +727,10 @@ namespace LabExtended.Core.Networking
             if (customWriter is null)
                 throw new ArgumentNullException(nameof(customWriter));
 
-            var writer = RentWriter();
+            var writer = NetworkWriterPool.Get();
 
             customWriter.InvokeSafe(writer, true);
             return ReturnWriterAndData(writer);
-        }
-
-        public static NetworkWriterPooled RentWriter()
-            => _writer.Rent();
-
-        public static void ReturnWriter(NetworkWriterPooled writer)
-        {
-            if (writer is null)
-                throw new ArgumentNullException(nameof(writer));
-
-            _writer.Return(writer);
         }
 
         public static ArraySegment<byte> ReturnWriterAndData(NetworkWriterPooled writer)
@@ -753,7 +740,7 @@ namespace LabExtended.Core.Networking
 
             var data = writer.ToArraySegment();
 
-            _writer.Return(writer);
+            NetworkWriterPool.Return(writer);
             return data;
         }
     }

@@ -44,7 +44,7 @@ namespace LabExtended.Commands.Parsing
                     if (!CommandPropertyParser.TryParse(sender, ElementParser, values[i], out var elementResult)
                         && !ElementParser.TryParse(sender, values[i], out var elementFailureMessage, out elementResult))
                     {
-                        failureMessage = $"Internal parser failed to parse element at index {i}: {elementFailureMessage}";
+                        failureMessage = $"Internal parser failed to parse hintElement at index {i}: {elementFailureMessage}";
                         result = null;
 
                         return false;
@@ -54,7 +54,7 @@ namespace LabExtended.Commands.Parsing
                 }
                 catch (Exception ex)
                 {
-                    failureMessage = $"Internal parser caught an error while trying to parse element at index {i}:\n{ex}";
+                    failureMessage = $"Internal parser caught an error while trying to parse hintElement at index {i}:\n{ex}";
                     result = null;
                     return false;
                 }

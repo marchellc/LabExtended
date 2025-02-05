@@ -1,8 +1,11 @@
 ﻿using CommandSystem;
 
-using LabExtended.API.CustomCommands.Hints.Image;
 using LabExtended.API.CustomCommands.Hints.Refresh;
+using LabExtended.API.CustomCommands.Hints.Image;
+using LabExtended.API.CustomCommands.Hints.Loop;
+using LabExtended.API.CustomCommands.Hints.Pause;
 using LabExtended.API.CustomCommands.Hints.Show;
+using LabExtended.API.CustomCommands.Hints.Stop;
 
 using LabExtended.Commands;
 
@@ -19,8 +22,11 @@ public class HintsCommand : VanillaParentCommandBase
     {
         base.LoadGeneratedCommands();
         
-        RegisterCommand(new ShowCommand());
         RegisterCommand(new ImageCommand());
+        RegisterCommand(new LoopCommand());
+        RegisterCommand(new PauseCommand());
         RegisterCommand(new RefreshCommand());
+        RegisterCommand(new ShowCommand());
+        RegisterCommand(new StopCommand());
     }
 }

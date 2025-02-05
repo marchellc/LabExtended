@@ -1,15 +1,15 @@
 ﻿using LabExtended.Extensions;
 
-namespace LabExtended.API.Hints.Elements;
+namespace LabExtended.API.Hints.Elements.Personal;
 
-public class PersonalStaticElement : PersonalElement
+public class PersonalStaticHintElement : PersonalHintElement
 {
     public string Content { get; set; }
 
-    public Action<PersonalStaticElement> Update { get; set; }
+    public Action<PersonalStaticHintElement> Update { get; set; }
 
-    public PersonalStaticElement() { }
-    public PersonalStaticElement(Action<PersonalStaticElement> update) 
+    public PersonalStaticHintElement() { }
+    public PersonalStaticHintElement(Action<PersonalStaticHintElement> update) 
         => Update = update;
 
     public override void OnUpdate()

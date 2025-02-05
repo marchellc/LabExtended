@@ -2,14 +2,14 @@
 
 namespace LabExtended.API.Hints.Elements
 {
-    public class StaticElement : HintElement
+    public class StaticHintElement : HintElement
     {
         public string Content { get; set; }
 
-        public Action<StaticElement> Update { get; set; }
+        public Action<StaticHintElement> Update { get; set; }
 
-        public StaticElement() { }
-        public StaticElement(Action<StaticElement> update) 
+        public StaticHintElement() { }
+        public StaticHintElement(Action<StaticHintElement> update) 
             => Update = update;
 
         public override void OnUpdate()

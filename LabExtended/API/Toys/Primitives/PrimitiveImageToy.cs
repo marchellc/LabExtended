@@ -1,8 +1,6 @@
-﻿using LabExtended.Extensions;
+﻿using LabExtended.Core;
 
 using Mirror;
-
-using NorthwoodLib.Pools;
 
 using UnityEngine;
 
@@ -13,6 +11,8 @@ public class PrimitiveImageToy : IDisposable
     private GameObject parent;
     private PrimitiveToy[][] pixels;
 
+    private bool isStatic = true;
+    
     private Color? color;
     
     public int Height { get; }
@@ -53,6 +53,26 @@ public class PrimitiveImageToy : IDisposable
             parent.transform.rotation = value;
         }
     }
+
+    public bool IsStatic
+    {
+        get => isStatic;
+        set
+        {
+            if (value == isStatic)
+                return;
+
+            isStatic = value;
+            
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    pixels[x][y].IsStatic = value;
+                }    
+            }
+        }
+    }
     
     private PrimitiveImageToy(GameObject parent, PrimitiveToy[][] pixels, int height, int width)
     {
@@ -67,18 +87,39 @@ public class PrimitiveImageToy : IDisposable
     {
         if (frame is null)
             throw new ArgumentNullException(nameof(frame));
-        
-        for (int x = 0; x < frame.GetLength(0); x++)
+
+        try
         {
-            for (int y = 0; y < frame.GetLength(1); y++)
+            for (int row = 0; row < Width; row++)
             {
-                var color = frame[x, y];
-                
-                if (color == null)
-                    continue;
-                
-                pixels[x][y].Color = color.Value;
+                try
+                {
+                    for (int col = 0; col < Height; col++)
+                    {
+                        try
+                        {
+                            var color = frame[row, col];
+
+                            if (color == null)
+                                continue;
+
+                            pixels[row][col].Color = color.Value;
+                        }
+                        catch (Exception ex)
+                        {
+                            ApiLog.Error("Primitive Image Toy", ex);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Primitive Image Toy", ex);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("Primitive Image Toy", ex);
         }
     }
     
@@ -97,12 +138,12 @@ public class PrimitiveImageToy : IDisposable
     {
         if (pixels != null)
         {
-            foreach (var array in pixels)
+            for (int x = 0; x < Width; x++)
             {
-                foreach (var pixel in array)
+                for (int y = 0; y < Height; y++)
                 {
-                    NetworkServer.Destroy(pixel.GameObject);
-                }
+                    NetworkServer.Destroy(pixels[x][y].GameObject);
+                }    
             }
 
             pixels = null;
@@ -124,7 +165,9 @@ public class PrimitiveImageToy : IDisposable
             throw new ArgumentOutOfRangeException(nameof(width));
 
         var parent = new GameObject($"PrimitiveImageParent_{DateTime.Now.Ticks}");
-        var pixels = ListPool<PrimitiveToy[]>.Shared.Rent();
+        var pixels = new List<List<PrimitiveToy>>();
+        
+        UnityEngine.Object.DontDestroyOnLoad(parent);
         
         var size = scale * 0.05f;
         var centerDelta = scale * 0.05f * width / 2f;
@@ -132,7 +175,9 @@ public class PrimitiveImageToy : IDisposable
         for (int i = height; i > 0; i--)
         {
             var yAxis = i * 0.05f * scale;
-            var list = ListPool<PrimitiveToy>.Shared.Rent();
+            var list = new List<PrimitiveToy>();
+            
+            pixels.Add(list);
             
             for (int y = width; y > 0; y--)
             {
@@ -140,7 +185,7 @@ public class PrimitiveImageToy : IDisposable
                 {
                     x.MovementSmoothing = 0;
                     x.Type = PrimitiveType.Cube;
-                    x.IsStatic = false;
+                    x.IsStatic = true;
 
                     var transform = x.Transform;
                     
@@ -152,11 +197,13 @@ public class PrimitiveImageToy : IDisposable
 
                 list.Add(primitive);
             }
-            
-            pixels.Add(ListPool<PrimitiveToy>.Shared.ToArrayReturn(list));
         }
 
-        var pixelsArray = ListPool<PrimitiveToy[]>.Shared.ToArrayReturn(pixels);
+        var pixelsArray = pixels.Select(x => x.ToArray()).ToArray();
+        
+        pixels.ForEach(x => x.Clear());
+        pixels.Clear();
+        
         return new PrimitiveImageToy(parent, pixelsArray, height, width);
     }
 }

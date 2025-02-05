@@ -16,26 +16,21 @@ using LabExtended.Core.Threading;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
-namespace LabExtended.API.CustomCommands.Hints.Image;
+namespace LabExtended.API.CustomCommands.Image.Play;
 
-public class ImageCommand : CustomCommand
+public class PlayCommand : CustomCommand
 {
-    public override string Command { get; } = "image";
-    public override string Description { get; } = "Shows an image.";
+    public override string Command { get; } = "play";
+    public override string Description { get; } = "Starts image playback.";
 
     public override ArgumentDefinition[] BuildArgs()
     {
         return GetArgs(x =>
         {
-            x.WithArg<PlayerListData>("Players", "The players to show the image.");
-            
+            x.WithArg<int>("ID", "ID of the primitive to display the image on.");
             x.WithArg<string>("Link", "Link to the image.");
-
-            x.WithArg<int>("Size", "Size of pixels (33 default).");
-            x.WithArg<int>("Line Height", "Height of each line (75 default).");
-            x.WithArg<int>("Height", "The height of the image.");
-            x.WithArg<int>("Width", "The width of the image.");
             x.WithArg<int>("Fps", "Frames per second");
+            x.WithOptional("Clear on Finish", "Whether or not to set a white frame when playback is finished.", true);
         });
     }
 
@@ -43,13 +38,16 @@ public class ImageCommand : CustomCommand
     {
         base.OnCommand(sender, ctx, args);
         
-        var players = args.Get<PlayerListData>("Players");
+        var id = args.Get<int>("ID");
         var link = args.Get<string>("Link");
-        var size = args.Get<int>("Size");
-        var lineHeight = args.Get<int>("Line Height");
-        var height = args.Get<int>("Height");
-        var width = args.Get<int>("Width");
         var fps = args.Get<int>("Fps");
+        var clear = args.Get<bool>("Clear on Finish");
+
+        if (!ImageCommand.SpawnedImages.TryGetValue(id, out var image))
+        {
+            ctx.RespondFail($"No image with ID {id}");
+            return;
+        }
         
         ctx.RespondOk($"Downloading image from {link}...");
 
@@ -63,9 +61,9 @@ public class ImageCommand : CustomCommand
                 await client.DownloadFileTaskAsync(link, path);
 
                 var image = System.Drawing.Image.FromFile(path);
-                var frames = image.ExtractFrames(width, height);
+                var frames = image.ExtractFrames(image.Width, image.Height);
 
-                return ImageUtils.ToHintFrames(frames, size <= 0 ? 33 : size, lineHeight <= 0 ? 75 : height);
+                return ImageUtils.ToPrimitiveFrames(frames);
             }
             catch (Exception ex)
             {
@@ -82,23 +80,12 @@ public class ImageCommand : CustomCommand
 
             try
             {
-                ctx.Message($"Extracted {task.Result.Length} frame(s)");
+                ctx.Message($"Extracted {task.Result.Count} frame(s)");
 
-                foreach (var player in players)
-                {
-                    if (!player)
-                        continue;
-
-                    if (!player.TryGetHintElement<PersonalImageElement>(out var personalImageElement))
-                    {
-                        player.AddHintElement(new PersonalImageElement());
-                        personalImageElement = player.GetHintElement<PersonalImageElement>();
-                    }
-
-                    personalImageElement.Play(task.Result, fps);
-                }
-
-                ctx.Message($"Image shown to {players.Count} player(s).");
+                image.ClearOnFinish = clear;
+                image.Play(task.Result, fps <= 0 ? null : fps);
+                
+                ctx.Message($"Started playback.");
             }
             catch (Exception ex)
             {

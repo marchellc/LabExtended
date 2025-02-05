@@ -4,13 +4,10 @@ namespace LabExtended.Core.Configs.Sections
 {
     public class HintSection
     {
-        [Description("The delay between each hint update.")]
-        public float UpdateInterval { get; set; } = 0.6f;
+        [Description("The delay between each hint update (in milliseconds).")]
+        public int UpdateInterval { get; set; } = 500;
 
         [Description("Duration of the displayed hint.")]
         public float HintDuration { get; set; } = 2.5f;
-        
-        [Description("Whether or not to write a debug file.")]
-        public bool WriteDebug { get; set; }
     }
 }

@@ -4,6 +4,13 @@ using LabExtended.API.Hints;
 using LabExtended.Core.Pooling.Pools;
 
 using System.Text.RegularExpressions;
+using Hints;
+using LabExtended.API;
+using LabExtended.Attributes;
+using LabExtended.Core.Networking;
+using LabExtended.Utilities.Values;
+using Mirror;
+using Utils.Networking;
 
 namespace LabExtended.Utilities
 {
@@ -13,6 +20,18 @@ namespace LabExtended.Utilities
         public static readonly Regex NewLineRegex = new Regex("\\n|(<[^>]*>)+|\\s*[^<\\s\\r\\n]+[^\\S\\r\\n]*|\\s*", RegexOptions.Compiled);
 
         public const int PixelsPerEm = 35;
+
+        public static void WriteHintData(this NetworkWriter writer, float duration, string text)
+        {
+            writer.WriteUShort(NetworkMessageId<HintMessage>.Id); // message ID
+            writer.WriteByte(1); // hint type (text hint)
+            writer.WriteFloat(duration); // hint duration
+            writer.WriteInt(-1); // effect array length (-1 for null)
+            writer.WriteInt(1); // parameter array length
+            writer.WriteByte(0); // string parameter type
+            writer.WriteString(string.Empty); // string parameter value
+            writer.WriteString(text); // text hint value
+        }
 
         public static void ManageSize(ref string line, out int biggestSize, out int size, out bool isEnded)
         {

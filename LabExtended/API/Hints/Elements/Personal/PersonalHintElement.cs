@@ -1,8 +1,8 @@
 ﻿using LabExtended.API.Enums;
 
-namespace LabExtended.API.Hints.Elements;
+namespace LabExtended.API.Hints.Elements.Personal;
 
-public class PersonalElement : HintElement
+public class PersonalHintElement : HintElement
 {
     public ExPlayer Player { get; internal set; }
 

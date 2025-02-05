@@ -52,6 +52,7 @@ using LabApi.Features.Wrappers;
 using LabExtended.API.Collections;
 using LabExtended.API.CustomVoice;
 using LabExtended.API.Hints.Elements;
+using LabExtended.API.Hints.Elements.Personal;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Menus;
 using LabExtended.Commands;
@@ -487,7 +488,7 @@ namespace LabExtended.API
         internal Dictionary<int, SettingsEntry> settingsAssignedIdLookup;
         
         internal HashSet<ExPlayer> invisibility;
-        internal HashSet<PersonalElement> elements;
+        internal HashSet<PersonalHintElement> elements;
         
         internal HintCache hintCache;
 
@@ -523,7 +524,7 @@ namespace LabExtended.API
             settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
             
             invisibility = HashSetPool<ExPlayer>.Shared.Rent();
-            elements = HashSetPool<PersonalElement>.Shared.Rent();
+            elements = HashSetPool<PersonalHintElement>.Shared.Rent();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out peer);
 
@@ -578,12 +579,7 @@ namespace LabExtended.API
             PersistentStorage.JoinTime = DateTime.Now;
             PersistentStorage.Lifes++;
 
-            hintCache = ObjectPool<HintCache>.Shared.Rent(null, () => new HintCache());
-            hintCache.Player = this;
-            hintCache.RefreshRatio();
-
-            if (!IsServer)
-                HintController.AddElement<PersonalImageElement>(this);
+            hintCache = ObjectPool<HintCache>.Shared.Rent(x => x.Player = this, () => new HintCache());
 
             allPlayers.Add(this);
 
@@ -1075,7 +1071,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the player's last voice channel.
         /// </summary>
-        public VoiceChatChannel VoiceChannel
+        public VoiceChatChannel LastVoiceChannel
         {
             get => Role.VoiceModule?.CurrentChannel ?? VoiceChatChannel.None;
             set => Role.VoiceModule!.CurrentChannel = value;
@@ -1212,19 +1208,13 @@ namespace LabExtended.API
             => global::Broadcast.Singleton?.TargetClearElements(Connection);
 
         /// <summary>
-        /// Clears all hints.
-        /// </summary>
-        public void ClearHints()
-            => Connection.Send(HintController.EmptyMessage);
-
-        /// <summary>
         /// Sends a new hint.
         /// </summary>
         /// <param name="content">Text of the hint.</param>
         /// <param name="duration">Duration of the hint.</param>
         /// <param name="isPriority">Whether or not to show the hint immediately.</param>
         public void SendHint(object content, ushort duration, bool isPriority = false)
-            => HintController.Show(this, content.ToString(), duration, isPriority);
+            => HintController.ShowHint(this, content.ToString(), duration, isPriority);
 
         /// <summary>
         /// Sends a new broadcast-
@@ -1359,7 +1349,7 @@ namespace LabExtended.API
 
         public void Send(ArraySegment<byte> data, int channel = 0)
             => Connection?.Send(data, channel);
-        
+
         public void Send<T>(T message, int channel = 0) where T : struct, NetworkMessage
             => Connection?.Send(message, channel);
 
@@ -1528,7 +1518,7 @@ namespace LabExtended.API
             {
                 elements.ForEach(x => x.OnDisabled());
                 
-                HashSetPool<PersonalElement>.Shared.Return(elements);
+                HashSetPool<PersonalHintElement>.Shared.Return(elements);
                 elements = null;
             }
         }

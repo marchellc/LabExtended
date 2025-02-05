@@ -1,22 +1,22 @@
-﻿using LabExtended.Utilities;
-
-using UnityEngine;
+﻿using System.Diagnostics;
+using LabExtended.Core;
+using LabExtended.Utilities;
 
 namespace LabExtended.API.Toys.Primitives;
 
 public class PrimitiveDynamicImage : IDisposable
 {
-    private int prevFrameIndex = -2;
+    private int prevFrameIndex = -1;
     
-    private int frameIndex = -2;
-    private int framesPerSecond = 60;
+    private int frameIndex = 0;
+    private int framesPerSecond = 24;
 
-    private float targetFrameDelay = 1f / 60;
-    private float currentFrameDelay = 0f;
+    private float targetFrameDelay = 1000f / 24;
     
     public List<UnityEngine.Color?[,]> Frames { get; private set; }
     
     public PrimitiveImageToy Toy { get; private set; }
+    public Stopwatch Watch { get; private set; }
 
     public int FramesPerSecond
     {
@@ -27,27 +27,20 @@ public class PrimitiveDynamicImage : IDisposable
                 throw new ArgumentOutOfRangeException(nameof(value));
                                 
             framesPerSecond = value;
-            targetFrameDelay = 1f / value;
+            targetFrameDelay = 1000f / value;
         }
     }
-
-    public float FrameDelay => targetFrameDelay;
     
     public int FrameIndex => frameIndex;
     public int FrameCount => Frames.Count;
     
-    public int NextFrameIndex => frameIndex + 1;
-    
-    public bool IsFinished => !IsPlaying || frameIndex + 1 >= Frames.Count;
-    public bool IsPlaying => Toy != null && Frames != null && frameIndex != -2;
+    public bool IsPlaying => Watch.IsRunning;
     
     public bool IsPaused { get; set; }
+    public bool IsLooping { get; set; }
     
     public bool ClearOnFinish { get; set; }
     public bool DestroyOnFinish { get; set; }
-    
-    public UnityEngine.Color?[,] CurrentFrame => Frames[FrameIndex];
-    public UnityEngine.Color?[,] NextFrame => Frames[NextFrameIndex];
     
     public TimeSpan Duration => Frames != null ? TimeSpan.FromSeconds(FrameCount / FramesPerSecond) : TimeSpan.Zero;
     public TimeSpan Remaining => Frames != null && IsPlaying ? TimeSpan.FromSeconds((FrameCount - (FrameIndex + 1)) / FramesPerSecond) : TimeSpan.Zero;
@@ -58,6 +51,7 @@ public class PrimitiveDynamicImage : IDisposable
             throw new ArgumentNullException(nameof(toy));
         
         Toy = toy;
+        Watch = new Stopwatch();
 
         PlayerUpdateHelper.OnUpdate += OnUpdate;
     }
@@ -70,16 +64,35 @@ public class PrimitiveDynamicImage : IDisposable
         if (frames.Count == 0)
             throw new ArgumentException("Frames cannot be empty", nameof(frames));
         
-        Frames = frames;
+        Reset();
         
         if (frameRate.HasValue && frameRate.Value > 0)
             FramesPerSecond = frameRate.Value;
+        else
+            FramesPerSecond = 24;
 
-        frameIndex = -1;
+        Frames = frames;
+        
+        Watch.Reset();
+        Watch.Start();
+    }
+
+    public void Reset()
+    {
+        if (Watch.IsRunning)
+            Watch.Reset();
+        
+        Frames?.Clear();
+        Frames = null;
+
+        frameIndex = 0;
+        prevFrameIndex = -1;
     }
 
     public void Dispose()
     {
+        Reset();
+        
         PlayerUpdateHelper.OnUpdate -= OnUpdate;
         
         if (Toy != null)
@@ -88,24 +101,24 @@ public class PrimitiveDynamicImage : IDisposable
             Toy = null;
         }
     }
-    
+
     private void OnUpdate()
     {
         if (!IsPlaying)
             return;
-        
-        currentFrameDelay -= Time.deltaTime;
 
-        if (currentFrameDelay > 0f)
+        if (Watch.ElapsedMilliseconds < targetFrameDelay)
             return;
 
-        currentFrameDelay = targetFrameDelay;
+        Watch.Restart();
 
-        if (!IsPaused)
+        if (frameIndex >= Frames.Count)
         {
-            frameIndex++;
-
-            if (frameIndex >= Frames.Count)
+            if (IsLooping)
+            {
+                frameIndex = 0;
+            }
+            else
             {
                 OnFinished();
                 return;
@@ -115,14 +128,13 @@ public class PrimitiveDynamicImage : IDisposable
         if (prevFrameIndex != frameIndex)
         {
             prevFrameIndex = frameIndex;
-            Toy.SetFrame(Frames[frameIndex]);
+            Toy.SetFrame(Frames[IsPaused ? frameIndex : frameIndex++]);
         }
     }
-    
+
     private void OnFinished()
     {
-        frameIndex = prevFrameIndex = -2;
-        currentFrameDelay = 0f;
+        Reset();
 
         if (DestroyOnFinish)
         {
@@ -135,5 +147,5 @@ public class PrimitiveDynamicImage : IDisposable
     }
     
     public override string ToString()
-        => $"PrimitiveDynamicImage (Height={Toy?.Height ?? -1}; Width={Toy?.Width ?? -1}; Frames={Frames?.Count} ?? -1; TargetDelay={targetFrameDelay}; CurrentDelay={currentFrameDelay}; Fps={FramesPerSecond}; CurrentIndex={frameIndex}; Duration={Duration}; Remaining={Remaining}; IsPaused={IsPaused})";
+        => $"PrimitiveDynamicImage (Height={Toy?.Height ?? -1}; Width={Toy?.Width ?? -1}; Frames={Frames?.Count ?? -1}; TargetDelay={targetFrameDelay}; CurrentDelay={(Watch.IsRunning ? Watch.ElapsedMilliseconds : -1)}; Fps={FramesPerSecond}; CurrentIndex={frameIndex}; Duration={Duration}; Remaining={Remaining}; IsPaused={IsPaused})";
 }

@@ -16,7 +16,7 @@ namespace LabExtended.API.Hints
 
         internal long _tickNum = 0;
         internal string _prevCompiled = null;
-
+        
         public int Id { get; internal set; }
         
         public string CustomId { get; set; }

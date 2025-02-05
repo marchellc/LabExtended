@@ -117,7 +117,7 @@ namespace LabExtended.Commands
                         return new ListParser(new EnumParser(elementType), elementType);
 
                     if (elementType is null || !TryGetParser(elementType, out var elementParser))
-                        throw new Exception($"Missing parser for list element type: {elementType?.FullName ?? "null"} ({type.FullName})");
+                        throw new Exception($"Missing parser for list hintElement type: {elementType?.FullName ?? "null"} ({type.FullName})");
 
                     return _definedParsers[type] = new ListParser(elementParser, elementType);
                 }
