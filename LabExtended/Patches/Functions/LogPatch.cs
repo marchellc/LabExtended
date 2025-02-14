@@ -1,15 +1,13 @@
 ﻿using HarmonyLib;
 
+using LabExtended.Core;
+using LabExtended.Attributes;
+
 namespace LabExtended.Patches.Functions
 {
     [HarmonyPatch(typeof(ServerConsole), nameof(ServerConsole.AddLog))]
     public static class LogPatch
     {
-        public static Harmony Harmony = new Harmony($"labextended.loader.patch.{DateTime.Now.Ticks}");
-
-        public static void Enable()
-            => Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
-
         public static event Action<string> OnLogging;
 
         public static bool Prefix(string q, ConsoleColor color)
@@ -28,5 +26,8 @@ namespace LabExtended.Patches.Functions
 
             return false;
         }
+        
+        [LoaderInitialize(-1)]
+        private static void OnInit() => ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
     }
 }

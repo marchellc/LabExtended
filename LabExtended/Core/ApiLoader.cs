@@ -40,8 +40,8 @@ namespace LabExtended.Core
         
         public static ApiLoader Loader { get; private set; }
 
-        public static string SerializedBaseConfig => YamlParser.Serializer.Serialize(BaseConfig ??= new BaseConfig());
-        public static string SerializedApiConfig => YamlParser.Serializer.Serialize(ApiConfig ??= new ApiConfig());
+        public static string SerializedBaseConfig => YamlParser.Serializer.Serialize(BaseConfig ??= new());
+        public static string SerializedApiConfig => YamlParser.Serializer.Serialize(ApiConfig ??= new());
         
         public override string Name { get; } = "LabExtended";
         public override string Author { get; } = "marchellcx";
@@ -101,11 +101,8 @@ namespace LabExtended.Core
             {
                 try
                 {
-                    if (plugin is null)
-                        continue;
-                    
-                    if (!string.IsNullOrWhiteSpace(plugin?.Name) && plugin.Name == LoaderName)
-                        continue;
+                    if (plugin is null) continue;
+                    if (!string.IsNullOrWhiteSpace(plugin?.Name) && plugin.Name == LoaderName) continue;
 
                     var type = plugin.GetType();
                     var assembly = type.Assembly;
@@ -124,15 +121,13 @@ namespace LabExtended.Core
                             HookManager.RegisterAll(asmType, null);
                         }
                     }
-
+                    
                     var loadMethod = type.FindMethod("ExtendedLoad");
 
                     if (loadMethod != null)
                     {
-                        if (loadMethod.IsStatic)
-                            loadMethod.Invoke(null, null);
-                        else
-                            loadMethod.Invoke(plugin, null);
+                        if (loadMethod.IsStatic) loadMethod.Invoke(null, null);
+                        else loadMethod.Invoke(plugin, null);
                     }
 
                     ApiLog.Info("Extended Loader", $"Loaded plugin &3{plugin.Name}&r!");
@@ -148,7 +143,6 @@ namespace LabExtended.Core
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
             
             ApiPatcher.ApplyPatches(typeof(ApiLoader).Assembly);
-            ApiCommands.InternalRegisterCommands();
 
             typeof(ApiLoader).Assembly.InvokeStaticMethods(x => x.HasAttribute<LoaderInitializeAttribute>(), x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
 
@@ -160,7 +154,7 @@ namespace LabExtended.Core
         {
             ApiLog.Info("Extended Loader", $"Loading version &1{ApiVersion.Version}&r ..");
 
-            DirectoryPath = Path.Combine(PathManager.Plugins.FullName, "LabExtended");
+            DirectoryPath = Path.Combine(PathManager.Configs.FullName, "LabExtended");
 
             BaseConfigPath = Path.Combine(DirectoryPath, "config.yml");
             ApiConfigPath = Path.Combine(DirectoryPath, "api_config.yml");
@@ -173,15 +167,17 @@ namespace LabExtended.Core
 
             ApiLog.Info("Extended Loader", $"Config files have been loaded.");
 
-            if (!ApiVersion.CheckCompatibility())
-                return;
+            if (!ApiVersion.CheckCompatibility()) return;
             
             HookManager.RegisterAll(typeof(ApiLoader).Assembly);
 
             ApiLog.Info("Extended Loader", $"Waiting for LabAPI ..");
 
             LogPatch.OnLogging += LogHandler;
-            LogPatch.Enable();
+            
+            typeof(ApiLoader).Assembly.InvokeStaticMethods(x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute)
+                                                                && attribute.Priority < 0, 
+                                            y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
         }
 
         private static void LogHandler(string logMessage)

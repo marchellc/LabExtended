@@ -32,7 +32,7 @@ namespace LabExtended.Extensions
             }
         }
 
-        public static void InvokeStaticMethods(this Assembly assembly, Func<MethodInfo, bool> predicate, Func<MethodInfo, ushort> prioritySelector, bool isDescending, params object[] args)
+        public static void InvokeStaticMethods(this Assembly assembly, Func<MethodInfo, bool> predicate, Func<MethodInfo, int> prioritySelector, bool isDescending, params object[] args)
         {
             var types = assembly.GetTypes();
             var methods = ListPool<MethodInfo>.Shared.Rent();

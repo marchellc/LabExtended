@@ -1,8 +1,7 @@
 ﻿using HarmonyLib;
 
-using LabExtended.API.Collections.Locked;
-using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
+using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using System.Diagnostics;
@@ -12,15 +11,13 @@ namespace LabExtended.Core
 {
     public static class ApiPatcher
     {
-        public static Harmony Harmony { get; private set; }
+        public static Harmony Harmony { get; } = new($"labextended.patcher.{DateTime.Now.Ticks}");
 
-        public static Stopwatch Stopwatch { get; } = new Stopwatch();
+        public static Stopwatch Stopwatch { get; } = new();
 
-        public static LockedDictionary<Assembly, List<Tuple<MethodInfo, MethodBase>>> AssemblyPatches { get; } = new LockedDictionary<Assembly, List<Tuple<MethodInfo, MethodBase>>>();
-        public static LockedDictionary<Type, List<Tuple<MethodBase, MethodInfo>>> EventPatches { get; } = new LockedDictionary<Type, List<Tuple<MethodBase, MethodInfo>>>();
-        public static LockedDictionary<MethodInfo, MethodBase> OtherPatches { get; } = new LockedDictionary<MethodInfo, MethodBase>();
-
-        public static bool IsLoaded => Harmony != null;
+        public static Dictionary<Assembly, List<Tuple<MethodInfo, MethodBase>>> AssemblyPatches { get; } = new();
+        public static Dictionary<Type, List<Tuple<MethodBase, MethodInfo>>> EventPatches { get; } = new();
+        public static Dictionary<MethodInfo, MethodBase> OtherPatches { get; } = new();
 
         public static void ApplyPatches(Assembly assembly)
         {
@@ -32,11 +29,6 @@ namespace LabExtended.Core
                 ApiLog.Info("API Patcher", $"Patching assembly &1{assembly.GetName().Name}&r");
 
                 Stopwatch.Restart();
-
-                if (Harmony is null)
-                    Harmony = new Harmony($"labextended.patcher.{DateTime.Now.Ticks}");
-                else
-                    Harmony.UnpatchAll();
 
                 var types = assembly.GetTypes();
                 var config = ApiLoader.ApiConfig?.PatchSection;
