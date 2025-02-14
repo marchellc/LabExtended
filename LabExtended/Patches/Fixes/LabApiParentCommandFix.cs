@@ -1,4 +1,6 @@
-﻿using CommandSystem;
+﻿using System.Reflection;
+
+using CommandSystem;
 
 using HarmonyLib;
 
@@ -6,13 +8,13 @@ using LabApi.Features.Console;
 using LabApi.Loader;
 
 using LabExtended.Attributes;
+using LabExtended.Extensions;
 using LabExtended.Core;
 
 using static LabApi.Loader.CommandLoader;
 
 namespace LabExtended.Patches.Fixes;
 
-[HarmonyPatch(typeof(CommandLoader), nameof(TryRegisterCommand), typeof(Type), typeof(Type), typeof(ICommand), typeof(string))]
 public static class LabApiParentCommandFix
 {
     public static bool Prefix(Type commandType, Type commandHandlerType, out ICommand? command, string logName, ref bool __result)
@@ -48,5 +50,30 @@ public static class LabApiParentCommandFix
     }
 
     [LoaderInitialize(-1)]
-    private static void OnInit() => ApiPatcher.Harmony.CreateClassProcessor(typeof(LabApiParentCommandFix)).Patch();
+    private static void OnInit()
+    {
+        MethodInfo method = null;
+
+        foreach (var other in typeof(CommandLoader).GetAllMethods())
+        {
+            if (!other.IsStatic) continue;
+            if (other.Name != "TryRegisterCommand") continue;
+
+            var parameters = other.GetAllParameters();
+            
+            if (parameters.Length < 2) continue;
+            if (parameters[0].ParameterType != typeof(Type) || parameters[1].ParameterType != typeof(Type)) continue;
+            
+            method = other;
+            break;
+        }
+
+        if (method is null)
+        {
+            ApiLog.Error("LabApiParentCommandFix", $"Failed to find target method");
+            return;
+        }
+
+        ApiPatcher.Harmony.Patch(method, new HarmonyMethod(typeof(LabApiParentCommandFix).Method("Prefix")));
+    }
 }

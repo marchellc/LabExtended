@@ -138,13 +138,17 @@ namespace LabExtended.Core
                 }
             }
 
-            loadedAssemblies.ForEach(x => x.InvokeStaticMethods(y => y.HasAttribute<LoaderInitializeAttribute>(), y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
+            loadedAssemblies.ForEach(x => x.InvokeStaticMethods(
+                y => y.HasAttribute<LoaderInitializeAttribute>(), 
+                y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
 
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
             
             ApiPatcher.ApplyPatches(typeof(ApiLoader).Assembly);
 
-            typeof(ApiLoader).Assembly.InvokeStaticMethods(x => x.HasAttribute<LoaderInitializeAttribute>(), x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+            typeof(ApiLoader).Assembly.InvokeStaticMethods(
+                x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0, 
+                x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
 
             ApiLog.Info("Extended Loader", $"Loading finished!");
         }
@@ -159,8 +163,7 @@ namespace LabExtended.Core
             BaseConfigPath = Path.Combine(DirectoryPath, "config.yml");
             ApiConfigPath = Path.Combine(DirectoryPath, "api_config.yml");
 
-            if (!Directory.Exists(DirectoryPath))
-                Directory.CreateDirectory(DirectoryPath);
+            if (!Directory.Exists(DirectoryPath)) Directory.CreateDirectory(DirectoryPath);
 
             LoadConfig();
             SaveConfig();
@@ -175,16 +178,14 @@ namespace LabExtended.Core
 
             LogPatch.OnLogging += LogHandler;
             
-            typeof(ApiLoader).Assembly.InvokeStaticMethods(x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute)
-                                                                && attribute.Priority < 0, 
-                                            y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+            typeof(ApiLoader).Assembly.InvokeStaticMethods(
+                x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, 
+                x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
         }
 
         private static void LogHandler(string logMessage)
         {
-            if (logMessage is null || !logMessage.EndsWith(LoadFinishedMessage))
-                return;
-
+            if (logMessage is null || !logMessage.EndsWith(LoadFinishedMessage)) return;
             LogPoint();
         }
     }
