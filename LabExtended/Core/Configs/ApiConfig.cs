@@ -30,9 +30,6 @@ namespace LabExtended.Core.Configs
         [Description("Patching options.")]
         public PatchSection PatchSection { get; set; } = new PatchSection();
 
-        [Description("Tick distribution configuration.")]
-        public TickSection TickSection { get; set; } = new TickSection();
-
         [Description("Unity Engine Player Loop configuration.")]
         public LoopSection LoopSection { get; set; } = new LoopSection();
 
