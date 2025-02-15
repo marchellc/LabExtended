@@ -41,7 +41,6 @@ namespace LabExtended.API.Hints
         public const ushort MaxHintTextLength = 65534;
 
         private static volatile List<HintElement> elements;
-        
         private static volatile StringBuilder builder;
         
         private static NetworkWriter writer;
@@ -54,12 +53,18 @@ namespace LabExtended.API.Hints
         private static int idClock;
         private static float updateInterval;
         private static long tickNum;
-        
-        internal static bool isManual;
+
+        internal static volatile bool sendNextFrame;
 
         public static IReadOnlyList<HintElement> Elements => elements;
 
         public static int ElementCount => elements.Count;
+
+        public static bool SendNextFrame
+        {
+            get => sendNextFrame;
+            set => sendNextFrame = value;
+        }
 
         static HintController()
         {
@@ -78,14 +83,12 @@ namespace LabExtended.API.Hints
             builder = StringBuilderPool.Shared.Rent();
         }
 
-        public static void PauseHints(this ExPlayer player)
-            => player.hintCache.IsPaused = true;
-
-        public static void ResumeHints(this ExPlayer player)
-            => player.hintCache.IsPaused = false;
+        public static void PauseHints(this ExPlayer player) => player.hintCache.IsPaused = true;
+        public static void ResumeHints(this ExPlayer player) => player.hintCache.IsPaused = false;
+        public static void ToggleHints(this ExPlayer player) => player.hintCache.IsPaused = !player.hintCache.IsPaused;
         
-        public static void ToggleHints(this ExPlayer player)
-            => player.hintCache.IsPaused = !player.hintCache.IsPaused;
+        public static void ForceSendHints() => SendNextFrame = true;
+        public static void ForceSendHints(this ExPlayer player) => SendNextFrame = true;
         
         public static void ShowHint(this ExPlayer player, string content, ushort duration, bool isPriority = false)
         {
@@ -474,28 +477,21 @@ namespace LabExtended.API.Hints
         {
             try
             {
-                if (!isManual && ExPlayer.Count < 1)
-                    return;
-                
-                if (!isManual && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval)
-                    return;
+                if (ExPlayer.Count < 1) return;
+                if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) return;
 
                 float lowestRate = ApiLoader.ApiConfig.HintSection.UpdateInterval;
                 
                 watch.Restart();
 
-                if (tickNum + 1 >= long.MaxValue)
-                    tickNum = 0;
+                if (tickNum + 1 >= long.MaxValue) tickNum = 0;
 
                 tickNum++;
                 
                 foreach (var player in ExPlayer.Players)
                 {
-                    if (!player || player.hintCache is null)
-                        continue;
-
-                    if (player.hintCache.IsPaused)
-                        continue;
+                    if (!player || player.hintCache is null) continue;
+                    if (player.hintCache.IsPaused) continue;
 
                     builder.Clear();
                     builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
@@ -523,8 +519,7 @@ namespace LabExtended.API.Hints
 
                     void ProcessElement(HintElement element)
                     {
-                        if (!element.IsActive)
-                            return;
+                        if (!element.IsActive) return;
                         
                         element.Builder.Clear();
 
@@ -534,8 +529,7 @@ namespace LabExtended.API.Hints
                             element.OnUpdate();
                         }
 
-                        if (!element.OnDraw(player) || element.Builder.Length < 1)
-                            return;
+                        if (!element.OnDraw(player) || element.Builder.Length < 1) return;
 
                         if ((builder.Length + element.Builder.Length) >= MaxHintTextLength)
                         {
@@ -600,24 +594,20 @@ namespace LabExtended.API.Hints
                         {
                             var requestedInterval = hintRateModifier.ModifyRate(lowestRate);
 
-                            if (requestedInterval >= 0 && requestedInterval < lowestRate)
+                            if (requestedInterval >= 0f && requestedInterval < lowestRate)
                                 lowestRate = requestedInterval;
                         }
                     }
 
                     foreach (var element in elements)
                     {
-                        if (anyOverride)
-                            break;
-                        
+                        if (anyOverride) break;
                         ProcessElement(element);
                     }
 
                     foreach (var personalElement in player.elements)
                     {
-                        if (anyOverride)
-                            break;
-                        
+                        if (anyOverride) break;
                         ProcessElement(personalElement);
                     }
                     
@@ -662,6 +652,8 @@ namespace LabExtended.API.Hints
             {
                 ApiLog.Error("Hint API", ex);
             }
+            
+            sendNextFrame = false;
         }
 
         private static void AppendMessages(IEnumerable<HintData> hints, HintAlign align, float leftOffset, StringBuilder builder)

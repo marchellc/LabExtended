@@ -14,10 +14,8 @@ public class RefreshCommand : CustomCommand
     public override void OnCommand(ExPlayer sender, ICommandContext ctx, ArgumentCollection args)
     {
         base.OnCommand(sender, ctx, args);
-
-        HintController.isManual = true;
-        HintController.OnTick();
-        HintController.isManual = false;
+        
+        HintController.ForceSendHints();
         
         ctx.RespondOk($"Tick complete.");
     }

@@ -15,6 +15,8 @@ using Interactables.Interobjects.DoorUtils;
 
 using LabApi.Features.Wrappers;
 
+using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
+
 namespace LabExtended.API
 {
     public class Elevator : Wrapper<ElevatorChamber>,

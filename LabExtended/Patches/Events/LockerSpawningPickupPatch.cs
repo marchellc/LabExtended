@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Events
                 return false;
 
             var spawned = 0;
-            var spawnPoint = __instance._spawnpoint;
+            var spawnPoint = __instance.Spawnpoint;
 
             var locker = ExMap.Lockers.FirstOrDefault(locker => locker.Chambers.Contains(__instance));
             var spawningArgs = new LockerSpawningPickupArgs(locker, __instance, spawnPoint, amount, id);
@@ -71,8 +71,8 @@ namespace LabExtended.Patches.Events
                     SpawnablesDistributorBase.BodiesToUnfreeze.Add(rigidbody);
                 }
 
-                if (__instance._spawnOnFirstChamberOpening)
-                    __instance._toBeSpawned.Add(pickup);
+                if (__instance.SpawnOnFirstChamberOpening)
+                    __instance.ToBeSpawned.Add(pickup);
                 else
                     ItemDistributor.SpawnPickup(pickup);
             }

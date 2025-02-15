@@ -34,9 +34,9 @@ namespace LabExtended.Patches.Functions.Players
             if (serverActive && isEnabling)
             {
                 var receivingArgs =
-                    new PlayerReceivingEffectEventArgs(player.Hub, __instance, value, __instance.Duration);
+                    new PlayerEffectUpdatingEventArgs(player.Hub, __instance, value, __instance.Duration);
 
-                PlayerEvents.OnReceivingEffect(receivingArgs);
+                PlayerEvents.OnUpdatingEffect(receivingArgs);
 
                 if (!receivingArgs.IsAllowed)
                     return false;
@@ -59,7 +59,7 @@ namespace LabExtended.Patches.Functions.Players
 
             __instance.IntensityChanged(prevIntensity, value);
 
-            PlayerEvents.OnReceivedEffect(new PlayerReceivedEffectEventArgs(player.Hub, __instance, value, __instance.Duration));
+            PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(player.Hub, __instance, value, __instance.Duration));
             return false;
         }
     }
