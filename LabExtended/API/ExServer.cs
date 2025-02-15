@@ -1,7 +1,9 @@
 ﻿using GameCore;
 
 using LabExtended.Core;
-
+using LabExtended.Utilities;
+using LabExtended.Attributes;
+using LabExtended.Utilities.Unity;
 using MEC;
 
 using Mirror;
@@ -17,6 +19,9 @@ namespace LabExtended.API
 {
     public static class ExServer
     {
+        private static volatile float deltaTime;
+        private static volatile float tps;
+        
         /// <summary>
         /// Gets the server's version.
         /// </summary>
@@ -68,14 +73,14 @@ namespace LabExtended.API
         public static ushort Port => ServerStatic.ServerPort;
 
         /// <summary>
-        /// Gets the servers actual tick rate.
+        /// Gets the servers actual tick rate (rounded).
         /// </summary>
-        public static double Tps => Math.Round(1f / Time.smoothDeltaTime);
+        public static float Tps => tps;
 
         /// <summary>
-        /// Gets the amount of time required for each frame.
+        /// Gets the amount of time required for last frame.
         /// </summary>
-        public static double FrameTime => Math.Round(1f / Time.deltaTime);
+        public static float FrameTime => deltaTime;
 
         /// <summary>
         /// Gets the amount of active players.
@@ -260,5 +265,17 @@ namespace LabExtended.API
         /// </summary>
         public static void MakePrivate()
             => ExecuteCommand("!private");
+
+        private static void UpdateTickRateAndTime()
+        {
+            var delta = Time.deltaTime;
+            var tps = Mathf.Round(1f / Time.smoothDeltaTime);
+            
+            Interlocked.Exchange(ref deltaTime, delta);
+            Interlocked.Exchange(ref ExServer.tps, tps);
+        }
+
+        [LoaderInitialize(1)]
+        private static void OnInit() => PlayerLoopHelper.AfterLoop += UpdateTickRateAndTime;
     }
 }

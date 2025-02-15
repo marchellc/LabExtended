@@ -12,12 +12,11 @@ namespace LabExtended.Core
         public static Version Version { get; } = new Version(Major, Minor, Build, Patch);
         public static Version Game { get; } = new Version(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision);
 
-        public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 0, 2));
+        public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 0, 3));
 
         public static bool CheckCompatibility()
         {
-            if (ApiLoader.BaseConfig.SkipGameCompatibility)
-                return true;
+            if (ApiLoader.BaseConfig.SkipGameCompatibility) return true;
 
             if (Compatibility.HasValue && !Compatibility.Value.InRange(Game))
             {

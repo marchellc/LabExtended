@@ -8,12 +8,7 @@ using NorthwoodLib.Pools;
 
 using System.Diagnostics;
 
-using LabExtended.Core;
-
-using Unity.Profiling;
-
 using UnityEngine;
-using UnityEngine.Profiling;
 
 namespace LabExtended.API.CustomCommands.Performance
 {

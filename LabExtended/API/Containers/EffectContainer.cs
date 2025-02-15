@@ -13,8 +13,10 @@ using System.Reflection;
 
 using LabExtended.API.CustomEffects;
 using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Events;
 using LabExtended.Events.Player;
+
 using UnityEngine;
 
 namespace LabExtended.API.Containers

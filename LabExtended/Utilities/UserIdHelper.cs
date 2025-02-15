@@ -1,6 +1,5 @@
 ﻿using CentralAuth;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.Extensions;
 
 namespace LabExtended.Utilities
@@ -12,65 +11,42 @@ namespace LabExtended.Utilities
 
         public struct UserIdInfo
         {
-            public string FullId;
-            public string ClearId;
+            public string FullId { get; internal set; }
+            public string ClearId { get; internal set; }
 
-            public string Type;
+            public string Type { get; internal set; }
 
-            public ulong ParsedId;
+            public ulong ParsedId { get; internal set; }
 
-            public bool IsServer;
-            public bool IsNorthwood;
-            public bool IsPatreon;
-            public bool IsDiscord;
-            public bool IsSteam;
-            public bool IsPlayer;
-            public bool IsParsable;
-            public bool IsDummy;
+            public bool IsServer { get; internal set; }
+            public bool IsNorthwood { get; internal set; }
+            public bool IsPatreon { get; internal set; }
+            public bool IsDiscord { get; internal set; }
+            public bool IsSteam { get; internal set; }
+            public bool IsPlayer { get; internal set; }
+            public bool IsParsable { get; internal set; }
+            public bool IsDummy { get; internal set; }
 
-            public bool IsMatch(string otherQuery)
-                => !string.IsNullOrWhiteSpace(FullId) && GetInfo(otherQuery).FullId == FullId;
-
-            public bool IsMatch(UserIdInfo otherInfo)
-                => !string.IsNullOrWhiteSpace(FullId) && !string.IsNullOrWhiteSpace(otherInfo.FullId) && otherInfo.FullId == FullId;
+            public bool IsMatch(string otherQuery) => !string.IsNullOrWhiteSpace(FullId) && GetInfo(otherQuery).FullId == FullId;
+            public bool IsMatch(UserIdInfo otherInfo) => !string.IsNullOrWhiteSpace(FullId) && !string.IsNullOrWhiteSpace(otherInfo.FullId) && otherInfo.FullId == FullId;
         }
 
-        private static volatile LockedHashSet<Tuple<string, UserIdInfo>> queries = new LockedHashSet<Tuple<string, UserIdInfo>>();
+        public static string GetClearId(string query) => GetInfo(query).ClearId;
+        public static string GetFullId(string query) => GetInfo(query).FullId;
 
-        public static string GetClearId(string query)
-            => GetInfo(query).ClearId;
+        public static ulong GetParsedId(string query) => GetInfo(query).ParsedId;
 
-        public static string GetFullId(string query)
-            => GetInfo(query).FullId;
+        public static string GetIdType(string query) => GetInfo(query).Type;
 
-        public static ulong GetParsedId(string query)
-            => GetInfo(query).ParsedId;
-
-        public static string GetIdType(string query)
-            => GetInfo(query).Type;
-
-        public static bool IsServerId(string query)
-            => GetInfo(query).IsServer;
-
-        public static bool IsPlayerId(string query)
-            => GetInfo(query).IsPlayer;
-
-        public static bool IsNorthwoodId(string query)
-            => GetInfo(query).IsNorthwood;
-
-        public static bool IsSteamId(string query)
-            => GetInfo(query).IsSteam;
-
-        public static bool IsDiscordId(string query)
-            => GetInfo(query).IsDiscord;
+        public static bool IsServerId(string query) => GetInfo(query).IsServer;
+        public static bool IsPlayerId(string query) => GetInfo(query).IsPlayer;
+        public static bool IsNorthwoodId(string query) => GetInfo(query).IsNorthwood;
+        public static bool IsSteamId(string query) => GetInfo(query).IsSteam;
+        public static bool IsDiscordId(string query) => GetInfo(query).IsDiscord;
 
         public static UserIdInfo GetInfo(string query)
         {
-            if (string.IsNullOrWhiteSpace(query))
-                throw new ArgumentNullException(nameof(query));
-
-            if (queries.TryGetFirst(x => x.Item1 == query, out var previousResult))
-                return previousResult.Item2;
+            if (string.IsNullOrWhiteSpace(query)) throw new ArgumentNullException(nameof(query));
 
             query = query.Trim();
 
@@ -106,7 +82,6 @@ namespace LabExtended.Utilities
                     info.IsParsable = false;
                 }
 
-                queries.Add(new Tuple<string, UserIdInfo>(query, info));
                 return info;
             }
             else
@@ -141,8 +116,6 @@ namespace LabExtended.Utilities
                     }
 
                     info.ParsedId = 0;
-
-                    queries.Add(new Tuple<string, UserIdInfo>(query, info));
                     return info;
                 }
                 else
@@ -185,7 +158,6 @@ namespace LabExtended.Utilities
                         info.ParsedId = 0;
                     }
 
-                    queries.Add(new Tuple<string, UserIdInfo>(query, info));
                     return info;
                 }
             }

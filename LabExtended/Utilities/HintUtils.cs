@@ -128,8 +128,7 @@ namespace LabExtended.Utilities
 
             foreach (Match match in matches)
             {
-                if (!match.Success)
-                    continue;
+                if (!match.Success) continue;
 
                 var text = match.Value;
 

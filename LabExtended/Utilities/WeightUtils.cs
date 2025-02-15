@@ -25,19 +25,16 @@ namespace LabExtended.Utilities
 
         public static T[] GetRandomWeightedArray<T>(this IEnumerable<T> items, int minCount, Func<T, float> weightPicker, bool allowDuplicates = false, bool validateWeight = false)
         {
-            if (items is null)
-                throw new ArgumentNullException(nameof(items));
+            if (items is null) throw new ArgumentNullException(nameof(items));
 
             var count = items.Count();
 
-            if (count < minCount)
-                throw new Exception($"Not enough items in collection ({count} / {minCount}).");
+            if (count < minCount) throw new Exception($"Not enough items in collection ({count} / {minCount}).");
 
             var array = new T[minCount];
             var total = items.Sum(x => weightPicker(x));
 
-            if (total != 100f && validateWeight)
-                throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
+            if (total != 100f && validateWeight) throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
 
             var list = ListPool<T>.Shared.Rent(items);
             var selected = ListPool<int>.Shared.Rent();
@@ -60,19 +57,16 @@ namespace LabExtended.Utilities
 
         public static List<T> GetRandomWeightedList<T>(this IEnumerable<T> items, int minCount, Func<T, float> weightPicker, bool allowDuplicates = false, bool validateWeight = false)
         {
-            if (items is null)
-                throw new ArgumentNullException(nameof(items));
+            if (items is null) throw new ArgumentNullException(nameof(items));
 
             var count = items.Count();
 
-            if (count < minCount)
-                throw new Exception($"Not enough items in collection ({count} / {minCount}).");
+            if (count < minCount) throw new Exception($"Not enough items in collection ({count} / {minCount}).");
 
             var chosen = new List<T>(minCount);
             var total = items.Sum(x => weightPicker(x));
 
-            if (total != 100f && validateWeight)
-                throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
+            if (total != 100f && validateWeight) throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
 
             var list = ListPool<T>.Shared.Rent(items);
             var selected = ListPool<int>.Shared.Rent();
@@ -95,19 +89,16 @@ namespace LabExtended.Utilities
 
         public static HashSet<T> GetRandomWeightedHashSet<T>(this IEnumerable<T> items, int minCount, Func<T, float> weightPicker, bool allowDuplicates = false, bool validateWeight = false)
         {
-            if (items is null)
-                throw new ArgumentNullException(nameof(items));
+            if (items is null) throw new ArgumentNullException(nameof(items));
 
             var count = items.Count();
 
-            if (count < minCount)
-                throw new Exception($"Not enough items in collection ({count} / {minCount}).");
+            if (count < minCount) throw new Exception($"Not enough items in collection ({count} / {minCount}).");
 
             var chosen = new HashSet<T>(minCount);
             var total = items.Sum(x => weightPicker(x));
 
-            if (total != 100f && validateWeight)
-                throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
+            if (total != 100f && validateWeight) throw new InvalidOperationException($"Cannot pick from list; it's chance sum is not equal to a hundred ({total}).");
 
             var list = ListPool<T>.Shared.Rent(items);
             var selected = ListPool<int>.Shared.Rent();
@@ -130,8 +121,7 @@ namespace LabExtended.Utilities
 
         public static T GetRandomWeighted<T>(this IEnumerable<T> items, Func<T, float> weightPicker, bool validateWeight = false)
         {
-            if (items is null)
-                throw new ArgumentNullException(nameof(items));
+            if (items is null) throw new ArgumentNullException(nameof(items));
 
             var list = ListPool<T>.Shared.Rent(items);
 

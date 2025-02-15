@@ -15,11 +15,8 @@ public static class ImageUtils
     {
         int i = 0;
         
-        if (hex[0] == '#') 
-            i = 1;
-
-        if (hex.Length -i != 6) 
-            throw new Exception("Invalid hex format. Expected #RRGGBB.");
+        if (hex[0] == '#') i = 1;
+        if (hex.Length -i != 6) throw new Exception("Invalid hex format. Expected #RRGGBB.");
 
         int r = int.Parse(hex.Substring(i, 2), System.Globalization.NumberStyles.HexNumber);
         int g = int.Parse(hex.Substring(i + 2, 2), System.Globalization.NumberStyles.HexNumber);

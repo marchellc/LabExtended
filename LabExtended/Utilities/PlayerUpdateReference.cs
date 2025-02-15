@@ -34,10 +34,8 @@ public class PlayerUpdateReference
 
     public void Toggle()
     {
-        if (IsEnabled)
-            Disable();
-        else
-            Enable();
+        if (IsEnabled) Disable();
+        else Enable();
     }
 
     public override string ToString()

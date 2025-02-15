@@ -17,6 +17,9 @@ namespace LabExtended.Core.Configs
 
         [Description("Pooling API configuration.")]
         public PoolSection PoolSection { get; set; } = new PoolSection();
+        
+        [Description("Optimization features.")]
+        public OptimizationSection OptimizationSection { get; set; } = new OptimizationSection();
 
         [Description("Multi Threading configuration.")]
         public MultiThreadSection MultiThreadSection { get; set; } = new MultiThreadSection();

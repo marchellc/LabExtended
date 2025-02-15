@@ -62,14 +62,9 @@
         {
             var str = "(";
 
-            if (Minimal != null)
-                str += $"Min={Minimal} ";
-
-            if (Maximal != null)
-                str += $"Max={Maximal} ";
-
-            if (Specific != null)
-                str += $"{Specific}";
+            if (Minimal != null) str += $"Min={Minimal} ";
+            if (Maximal != null) str += $"Max={Maximal} ";
+            if (Specific != null) str += $"{Specific}";
 
             return (str + ")").Trim();
         }

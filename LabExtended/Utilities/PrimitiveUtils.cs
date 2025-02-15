@@ -50,14 +50,18 @@ namespace LabExtended.Utilities
             {
                 x.Base.NetworkPrimitiveType = PrimitiveType.Cube;
                 x.Base.NetworkPrimitiveFlags = flags;
+                
                 x.Base.NetworkMaterialColor = startColor;
+                x.Base.NetworkScale = x.Transform.localScale = startCubeScale;
             });
 
             var endCube = PrimitiveToy.Spawn(endPosition, x =>
             {
                 x.Base.NetworkPrimitiveType = PrimitiveType.Cube;
                 x.Base.NetworkPrimitiveFlags = flags;
+                
                 x.Base.NetworkMaterialColor = endColor;
+                x.Base.NetworkScale = x.Transform.localScale = endCubeScale; 
             });
 
             var line = SpawnLine(startPosition, endPosition, lineSize, lineCol, flags, lineType);
