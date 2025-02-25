@@ -139,7 +139,7 @@ namespace LabExtended.Core
             }
 
             loadedAssemblies.ForEach(x => x.InvokeStaticMethods(
-                y => y.HasAttribute<LoaderInitializeAttribute>(), 
+                y => y.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0, 
                 y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
 
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
@@ -185,7 +185,9 @@ namespace LabExtended.Core
 
         private static void LogHandler(string logMessage)
         {
-            if (logMessage is null || !logMessage.EndsWith(LoadFinishedMessage)) return;
+            if (logMessage is null || !logMessage.EndsWith(LoadFinishedMessage))
+                return;
+            
             LogPoint();
         }
     }

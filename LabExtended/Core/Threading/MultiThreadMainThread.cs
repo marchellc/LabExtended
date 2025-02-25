@@ -21,6 +21,34 @@ public static class MultiThreadMainThread
     public static MultiThreadSection Config => ApiLoader.ApiConfig.MultiThreadSection;
 
     public static TaskScheduler MainTaskScheduler => _taskScheduler;
+    
+    public static void ContinueWithOnMain(this Task task, Action<Task> continuation)
+        => task.ContinueWith(continuation, MainTaskScheduler);
+
+    public static void ContinueWithOnMain<T>(this Task<T> task, Action<Task<T>> continuation)
+        => task.ContinueWith(continuation, MainTaskScheduler);
+
+    public static Task RunOnMainThread(this Action action)
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+        
+        var task = new Task(action);
+        
+        task.Start(MainTaskScheduler);
+        return task;
+    }
+
+    public static Task<T> RunOnMainThread<T>(this Func<T> func)
+    {
+        if (func is null)
+            throw new ArgumentNullException(nameof(func));
+        
+        var task = new Task<T>(func);
+        
+        task.Start(MainTaskScheduler);
+        return task;
+    }
 
     internal static void ProcessOperation(MultiThreadOperation threadOperation)
     {
