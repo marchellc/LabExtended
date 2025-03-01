@@ -6,6 +6,10 @@ using InventorySystem.Configs;
 using InventorySystem.Items;
 using InventorySystem.Items.Armor;
 using InventorySystem.Items.Pickups;
+using InventorySystem.Items.Usables.Scp1344;
+
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 
 using LabExtended.API;
 using LabExtended.API.CustomRoles;
@@ -53,8 +57,20 @@ namespace LabExtended.Patches.Events
                     ammoToAdd.AddRange(startingInv.Ammo);
                 }
 
-                var grantingArgs = new PlayerGrantingInventoryArgs(player, true, !dropItems || !hasEscaped, hasEscaped, dropItems, itemsToAdd, ammoToAdd);
+                var receivingArgs = new PlayerReceivingLoadoutEventArgs(ply, itemsToAdd, ammoToAdd, !hasEscaped || !dropItems);
+                
+                PlayerEvents.OnReceivingLoadout(receivingArgs);
 
+                if (!receivingArgs.IsAllowed)
+                {
+                    ListPool<ItemType>.Shared.Return(itemsToAdd);
+                    DictionaryPool<ItemType, ushort>.Shared.Return(ammoToAdd);
+
+                    return false;
+                }
+                
+                var grantingArgs = new PlayerGrantingInventoryArgs(player, true, !dropItems || !hasEscaped, hasEscaped, dropItems, itemsToAdd, ammoToAdd);
+                
                 if (!HookRunner.RunEvent(grantingArgs, true))
                 {
                     ListPool<ItemType>.Shared.Return(itemsToAdd);
@@ -62,7 +78,7 @@ namespace LabExtended.Patches.Events
                     
                     return false;
                 }
-
+                
                 var customRoles = CustomRole.GetRoles(ply);
 
                 foreach (var customRole in customRoles)
@@ -72,46 +88,62 @@ namespace LabExtended.Patches.Events
                     
                     customRole.OnGrantingInventory(grantingArgs);
                 }
+                
+                if (receivingArgs.InventoryReset || grantingArgs.ShouldResetInventory)
+                {
+                    while (ply.inventory.UserInventory.Items.Count > 0)
+                        ply.inventory.ServerRemoveItem(ply.inventory.UserInventory.Items.ElementAt(0).Key, null);
+                    
+                    ply.inventory.UserInventory.ReserveAmmo.Clear();
+                    ply.inventory.SendAmmoNextFrame = true;
+                }
 
                 if (grantingArgs.DropPreviousItems)
                 {
                     if (ply.inventory.TryGetBodyArmor(out var bodyArmor))
                         bodyArmor.DontRemoveExcessOnDrop = true;
 
-                    while (ply.inventory.UserInventory.Items.Count > 0)
-                        previousItems.Add(ply.inventory.ServerDropItem(ply.inventory.UserInventory.Items.ElementAt(0).Key));
+                    var itemCount = ply.inventory.UserInventory.Items.Count(x => x.Value is not Scp1344Item);
+                    var removedCount = 0;
+
+                    while (removedCount != itemCount)
+                    {
+                        var nextItem = ply.inventory.UserInventory.Items.ElementAt(0);
+
+                        if (nextItem.Value is Scp1344Item scp1344)
+                        {
+                            scp1344.Status = Scp1344Status.Idle;
+                            continue;
+                        }
+
+                        removedCount++;
+                        
+                        previousItems.Add(ply.inventory.ServerDropItem(nextItem.Key));
+                    }
 
                     InventoryItemProvider.PreviousInventoryPickups[ply] = previousItems;
-                }
-
-                if (grantingArgs.ShouldResetInventory)
-                {
-                    while (ply.inventory.UserInventory.Items.Count > 0)
-                        ply.inventory.ServerRemoveItem(ply.inventory.UserInventory.Items.ElementAt(0).Key, null);
-
-                    ply.inventory.UserInventory.ReserveAmmo.Clear();
-                    ply.inventory.ServerSendAmmo();
                 }
 
                 var addedItems = ListPool<ItemBase>.Shared.Rent();
 
                 if (grantingArgs.ShouldGrantInventory)
                 {
+                    foreach (var ammoType in ammoToAdd)
+                        ply.inventory.ServerAddAmmo(ammoType.Key, ammoType.Value);
+                    
                     foreach (var itemType in itemsToAdd)
                     {
                         var item = ply.inventory.ServerAddItem(itemType, ItemAddReason.StartingItem);
-
-                        if (item is null)
-                            continue;
+                        if (item is null) continue;
 
                         addedItems.Add(item);
+                        
+                        InventoryItemProvider.OnItemProvided.InvokeSafe(ply, item);
                     }
-
-                    foreach (var ammoType in ammoToAdd)
-                        ply.inventory.ServerAddAmmo(ammoType.Key, ammoType.Value);
                 }
 
                 HookRunner.RunEvent(new PlayerGrantedInventoryArgs(player, hasEscaped, addedItems, previousItems, ammoToAdd));
+                PlayerEvents.OnReceivedLoadout(new PlayerReceivedLoadoutEventArgs(ply, itemsToAdd, ammoToAdd, receivingArgs.InventoryReset));
 
                 if (previousItems.Count < 1)
                 {

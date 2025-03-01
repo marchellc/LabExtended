@@ -1,8 +1,6 @@
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
-using LabExtended.API.Collections.Locked;
-
 using LabExtended.Core.Hooking.Binders;
 using LabExtended.Core.Hooking.Enums;
 using LabExtended.Core.Hooking.Executors;
@@ -19,8 +17,8 @@ namespace LabExtended.Core.Hooking
 {
     public static class HookManager
     {
-        internal static readonly LockedDictionary<Type, List<HookInfo>> _activeHooks = new LockedDictionary<Type, List<HookInfo>>();
-        internal static readonly LockedDictionary<Type, List<HookDelegateObject>> _activeDelegates = new LockedDictionary<Type, List<HookDelegateObject>>();
+        internal static readonly Dictionary<Type, List<HookInfo>> _activeHooks = new();
+        internal static readonly Dictionary<Type, List<HookDelegateObject>> _activeDelegates = new();
 
         public static bool AnyRegistered(Type eventType)
             => eventType != null && (

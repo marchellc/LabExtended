@@ -12,7 +12,6 @@ using InventorySystem.Items.ThrowableProjectiles;
 
 using LabApi.Events.Arguments.ServerEvents;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.Enums;
 using LabExtended.API.Prefabs;
 using LabExtended.API.Toys;
@@ -51,29 +50,18 @@ namespace LabExtended.API
 {
     public static class ExMap
     {
-        internal static readonly LockedHashSet<ItemPickupBase> _pickups = new LockedHashSet<ItemPickupBase>();
-        internal static readonly LockedHashSet<BasicRagdoll> _ragdolls = new LockedHashSet<BasicRagdoll>();
-        internal static readonly LockedHashSet<Generator> _generators = new LockedHashSet<Generator>();
-        internal static readonly LockedHashSet<ExTeslaGate> _gates = new LockedHashSet<ExTeslaGate>();
-        internal static readonly LockedHashSet<Elevator> _elevators = new LockedHashSet<Elevator>();
-        internal static readonly LockedHashSet<Airlock> _airlocks = new LockedHashSet<Airlock>();
-        internal static readonly LockedHashSet<AdminToy> _toys = new LockedHashSet<AdminToy>();
-        internal static readonly LockedHashSet<Locker> _lockers = new LockedHashSet<Locker>();
-        internal static readonly LockedHashSet<Camera> _cams = new LockedHashSet<Camera>();
-        internal static readonly LockedHashSet<Door> _doors = new LockedHashSet<Door>();
+        public static List<ItemPickupBase> Pickups { get; } = new();
+        public static List<BasicRagdoll> Ragdolls { get; } = new();
+        public static List<Generator> Generators { get; } = new();
+        public static List<ExTeslaGate> TeslaGates { get; } = new();
+        public static List<Elevator> Elevators { get; } = new();
+        public static List<Airlock> Airlocks { get; } = new();
+        public static List<Locker> Lockers { get; } = new();
+        public static List<Camera> Cameras { get; } = new();
+        public static List<AdminToy> Toys { get; } = new();
+        public static List<Door> Doors { get; } = new();
 
-        public static IReadOnlyList<ItemPickupBase> Pickups => _pickups;
-        public static IReadOnlyList<BasicRagdoll> Ragdolls => _ragdolls;
-        public static IReadOnlyList<Generator> Generators => _generators;
-        public static IReadOnlyList<ExTeslaGate> TeslaGates => _gates;
-        public static IReadOnlyList<Elevator> Elevators => _elevators;
-        public static IReadOnlyList<Airlock> Airlocks => _airlocks;
-        public static IReadOnlyList<Locker> Lockers => _lockers;
-        public static IReadOnlyList<Camera> Cameras => _cams;
-        public static IReadOnlyList<AdminToy> Toys => _toys;
-        public static IReadOnlyList<Door> Doors => _doors;
-
-        public static IEnumerable<LockerChamber> LockerChambers => _lockers.SelectMany(x => x.Chambers);
+        public static IEnumerable<LockerChamber> LockerChambers => Lockers.SelectMany(x => x.Chambers);
 
         public static IEnumerable<Elevator> MovingElevators => GetElevators(x => x.IsMoving);
         public static IEnumerable<Elevator> ReadyElevators => GetElevators(x => x.Base.IsReady);
@@ -82,20 +70,20 @@ namespace LabExtended.API
         public static IEnumerable<Door> ClosedDoors => GetDoors(x => !x.IsOpened);
         public static IEnumerable<Door> MovingDoors => GetDoors(x => x.IsMoving);
 
-        public static IEnumerable<Generator> ActivatedGenerators => _generators.Where(x => x.IsEngaged);
-        public static IEnumerable<Generator> ActivatingGenerators => _generators.Where(x => x.IsActivating);
+        public static IEnumerable<Generator> ActivatedGenerators => Generators.Where(x => x.IsEngaged);
+        public static IEnumerable<Generator> ActivatingGenerators => Generators.Where(x => x.IsActivating);
 
-        public static IEnumerable<Generator> OpenGenerators => _generators.Where(x => x.IsOpen);
-        public static IEnumerable<Generator> ClosedGenerators => _generators.Where(x => !x.IsOpen);
+        public static IEnumerable<Generator> OpenGenerators => Generators.Where(x => x.IsOpen);
+        public static IEnumerable<Generator> ClosedGenerators => Generators.Where(x => !x.IsOpen);
 
         public static IEnumerable<Camera> ActiveCameras => GetCameras(x => x.IsUsed);
         public static IEnumerable<Camera> InactiveCameras => GetCameras(x => !x.IsUsed);
 
-        public static IEnumerable<LightToy> LightToys => _toys.Where<LightToy>();
-        public static IEnumerable<TargetToy> TargetToys => _toys.Where<TargetToy>();
-        public static IEnumerable<PrimitiveToy> PrimitiveToys => _toys.Where<PrimitiveToy>();
+        public static IEnumerable<LightToy> LightToys => Toys.Where<LightToy>();
+        public static IEnumerable<TargetToy> TargetToys => Toys.Where<TargetToy>();
+        public static IEnumerable<PrimitiveToy> PrimitiveToys => Toys.Where<PrimitiveToy>();
 
-        public static IEnumerable<Toys.SpeakerToy> SpeakerToys => _toys.Where<Toys.SpeakerToy>();
+        public static IEnumerable<Toys.SpeakerToy> SpeakerToys => Toys.Where<Toys.SpeakerToy>();
 
         public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
         public static IEnumerable<NetIdWaypoint> NetIdWaypoints => NetIdWaypoint.AllNetWaypoints.Where(x => x != null);
@@ -176,7 +164,7 @@ namespace LabExtended.API
 
             var bonesRagdoll = SpawnRagdoll(RoleTypeId.Scp3114, position, scale, velocity, rotation, true, ExPlayer.Host, new Scp3114DamageHandler(ragdollInstance, false)) as DynamicRagdoll;
 
-            _ragdolls.Remove(ragdollInstance);
+            Ragdolls.Remove(ragdollInstance);
 
             NetworkServer.Destroy(ragdollInstance.gameObject);
 
@@ -217,7 +205,7 @@ namespace LabExtended.API
             if (spawn)
                 NetworkServer.Spawn(ragdoll.gameObject);
 
-            _ragdolls.Add(ragdoll);
+            Ragdolls.Add(ragdoll);
             return ragdoll;
         }
 
@@ -340,22 +328,22 @@ namespace LabExtended.API
 
         #region Toys
         public static IEnumerable<T> GetToys<T>(Predicate<T> predicate) where T : AdminToy
-    => _toys.Where<T>(toy => predicate(toy));
+            => Toys.Where<T>(toy => predicate(toy));
 
         public static IEnumerable<AdminToy> GetToys(Predicate<AdminToy> predicate)
-            => _toys.Where(toy => predicate(toy));
+            => Toys.Where(toy => predicate(toy));
 
         public static T GetToy<T>(AdminToyBase adminToyBase) where T : AdminToy
         {
             if (adminToyBase is null)
                 return null;
 
-            if (_toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
+            if (Toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
                 return (T)toy;
 
             toy = AdminToy.Create(adminToyBase);
 
-            _toys.Add(toy);
+            Toys.Add(toy);
             return (T)toy;
         }
 
@@ -364,12 +352,12 @@ namespace LabExtended.API
             if (adminToyBase is null)
                 return null;
 
-            if (_toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
+            if (Toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
                 return toy;
 
             toy = AdminToy.Create(adminToyBase);
 
-            _toys.Add(toy);
+            Toys.Add(toy);
             return toy;
         }
         #endregion
@@ -402,27 +390,27 @@ namespace LabExtended.API
 
         #region Elevators
         public static IEnumerable<Elevator> GetElevators(Predicate<Elevator> predicate)
-            => _elevators.Where(x => predicate(x));
+            => Elevators.Where(x => predicate(x));
 
         public static Elevator GetElevator(Vector3 position)
             => GetElevator(x => x.Contains(position));
 
         public static Elevator GetElevator(Predicate<Elevator> predicate)
-            => _elevators.FirstOrDefault(x => predicate(x));
+            => Elevators.FirstOrDefault(x => predicate(x));
 
         public static Elevator GetElevator(ElevatorGroup group)
-            => _elevators.FirstOrDefault(p => p.Group == group);
+            => Elevators.FirstOrDefault(p => p.Group == group);
 
         public static Elevator GetElevator(ElevatorChamber chamber)
         {
             if (chamber is null)
                 return null;
 
-            if (!_elevators.TryGetFirst(x => x.Base == chamber, out var wrapper))
+            if (!Elevators.TryGetFirst(x => x.Base == chamber, out var wrapper))
             {
                 wrapper = new Elevator(chamber);
 
-                _elevators.Add(wrapper);
+                Elevators.Add(wrapper);
                 return wrapper;
             }
 
@@ -441,10 +429,10 @@ namespace LabExtended.API
             => GetDoors(x => x.Type == type);
 
         public static IEnumerable<Door> GetDoors(Predicate<Door> predicate)
-            => _doors.Where(x => predicate(x));
+            => Doors.Where(x => predicate(x));
 
         public static Door GetDoor(Predicate<Door> predicate)
-            => _doors.FirstOrDefault(x => predicate(x));
+            => Doors.FirstOrDefault(x => predicate(x));
 
         public static Door GetDoor(Collider collider)
         {
@@ -475,11 +463,11 @@ namespace LabExtended.API
             if (door is null)
                 return null;
 
-            if (!_doors.TryGetFirst(x => x.Base == door, out var wrapper))
+            if (!Doors.TryGetFirst(x => x.Base == door, out var wrapper))
             {
                 wrapper = new Door(door, Door.GetDoorType(door));
 
-                _doors.Add(wrapper);
+                Doors.Add(wrapper);
                 return wrapper;
             }
 
@@ -501,41 +489,30 @@ namespace LabExtended.API
             {
                 AmbientSoundPlayer = ExPlayer.Host.GameObject.GetComponent<AmbientSoundPlayer>();
 
-                _generators.Clear();
-                _elevators.Clear();
-                _ragdolls.Clear();
-                _airlocks.Clear();
-                _pickups.Clear();
-                _lockers.Clear();
-                _doors.Clear();
-                _gates.Clear();
-                _toys.Clear();
-                _cams.Clear();
+                TeslaGates.Clear();
+                Generators.Clear();
+                Elevators.Clear();
+                Ragdolls.Clear();
+                Airlocks.Clear();
+                Pickups.Clear();
+                Lockers.Clear();
+                Cameras.Clear();
+                Doors.Clear();
+                Toys.Clear();
 
-                foreach (var gate in TeslaGate.AllGates)
-                    _gates.Add(new ExTeslaGate(gate));
-
-                foreach (var door in DoorVariant.AllDoors)
-                    _doors.Add(new Door(door, Door.GetDoorType(door)));
-
-                foreach (var airlock in UnityEngine.Object.FindObjectsOfType<AirlockController>())
-                    _airlocks.Add(new Airlock(airlock));
-
-                foreach (var elevator in ElevatorChamber.AllChambers)
-                    _elevators.Add(new Elevator(elevator));
-
-                foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>())
-                    _lockers.Add(locker);
-
-                foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>())
-                    _toys.Add(AdminToy.Create(toy));
+                foreach (var gate in TeslaGate.AllGates) TeslaGates.Add(new ExTeslaGate(gate));
+                foreach (var door in DoorVariant.AllDoors) Doors.Add(new Door(door, Door.GetDoorType(door)));
+                foreach (var airlock in UnityEngine.Object.FindObjectsOfType<AirlockController>()) Airlocks.Add(new Airlock(airlock));
+                foreach (var elevator in ElevatorChamber.AllChambers) Elevators.Add(new Elevator(elevator));
+                foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>()) Lockers.Add(locker);
+                foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>()) Toys.Add(AdminToy.Create(toy));
 
                 foreach (var interactable in Scp079InteractableBase.AllInstances)
                 {
                     if (interactable is null || interactable is not Scp079Camera cam)
                         continue;
 
-                    _cams.Add(new Camera(cam));
+                    Cameras.Add(new Camera(cam));
                 }
             }
             catch (Exception ex)
@@ -552,25 +529,22 @@ namespace LabExtended.API
                 if (identity is null)
                     return;
                 
-                _generators.RemoveWhere(x => x.NetId == identity.netId);
-                _airlocks.RemoveWhere(x => x.NetId == identity.netId);
-                _ragdolls.RemoveWhere(x => x.netId == identity.netId);
-                _pickups.RemoveWhere(x => x.netId == identity.netId);
-                _lockers.RemoveWhere(x => x.netId == identity.netId);
-                _gates.RemoveWhere(x => x.NetId == identity.netId);
-                _doors.RemoveWhere(x => x.NetId == identity.netId);
-                _toys.RemoveWhere(x => x.NetId == identity.netId);
+                Generators.RemoveAll(x => x.NetId == identity.netId);
+                Airlocks.RemoveAll(x => x.NetId == identity.netId);
+                Ragdolls.RemoveAll(x => x.netId == identity.netId);
+                Pickups.RemoveAll(x => x.netId == identity.netId);
+                Lockers.RemoveAll(x => x.netId == identity.netId);
+                TeslaGates.RemoveAll(x => x.NetId == identity.netId);
+                Doors.RemoveAll(x => x.NetId == identity.netId);
+                Toys.RemoveAll(x => x.NetId == identity.netId);
 
-                foreach (var player in ExPlayer.AllPlayers)
+                ExPlayer.AllPlayers.ForEach(player => 
                 {
-                    if (!player)
-                        continue;
-                    
-                    if (player.Inventory is null || player.Inventory._droppedItems is null)
-                        continue;
+                    if (!player) return;
+                    if (player.Inventory?._droppedItems is null) return;
                     
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
-                }
+                });
 
                 if (identity.TryGetComponent<IInteractable>(out var interactable))
                     InteractableCollider.AllInstances.Remove(interactable);
@@ -585,8 +559,8 @@ namespace LabExtended.API
         {
             if (ragdoll is null || !ragdoll)
                 return;
-
-            _ragdolls.Add(ragdoll);
+            
+            Ragdolls.Add(ragdoll);
         }
 
         private static void OnRagdollRemoved(BasicRagdoll ragdoll)
@@ -594,7 +568,7 @@ namespace LabExtended.API
             if (ragdoll is null || !ragdoll)
                 return;
 
-            _ragdolls.Remove(ragdoll);
+            Ragdolls.Remove(ragdoll);
         }
 
         [LoaderInitialize(1)]

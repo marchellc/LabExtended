@@ -1,6 +1,4 @@
 ﻿using LabExtended.Core.Hooking.Interfaces;
-using LabExtended.Core.Profiling;
-
 using LabExtended.Extensions;
 
 namespace LabExtended.Core.Hooking
@@ -25,11 +23,11 @@ namespace LabExtended.Core.Hooking
             {
                 if (HookManager._activeHooks.TryGetValue(type, out var hooks) && hooks != null && hooks.Count > 0)
                 {
-                    for (int i = 0; i < hooks.Count; i++)
+                    hooks.ForEach(hook =>
                     {
                         try
                         {
-                            var hookResult = hooks[i].Run(eventObject);
+                            var hookResult = hook.Run(eventObject);
 
                             if (hookResult != null && hookResult is T castValue)
                             {
@@ -41,34 +39,34 @@ namespace LabExtended.Core.Hooking
                         }
                         catch (Exception ex)
                         {
-                            ApiLog.Error("Hooking API", $"Failed to run hook &3{hooks[i].Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
+                            ApiLog.Error("Hooking API", $"Failed to run hook &3{hook.Method.GetMemberName()}&r due to an exception:\n{ex.ToColoredString()}");
                         }
-                    }
+                    });
                 }
 
                 if (HookManager._activeDelegates.TryGetValue(type, out var hookDelegateObjects) && hookDelegateObjects != null && hookDelegateObjects.Count > 0)
                 {
-                    var args = new object[] { eventObject };
+                    object[] args = [eventObject];
 
-                    foreach (var hookDelegateObject in hookDelegateObjects)
+                    hookDelegateObjects.ForEach(hookDelegateObject =>
                     {
                         try
                         {
                             if (hookDelegateObject.FieldGetter is null || hookDelegateObject.Invoker is null)
-                                continue;
+                                return;
 
                             var value = hookDelegateObject.FieldGetter();
 
                             if (value is null)
                             {
                                 ApiLog.Warn("Hooking API", $"Failed to get delegate value of event &3{hookDelegateObject.Event.GetMemberName()}&r");
-                                continue;
+                                return;
                             }
 
                             if (value is Action action)
                             {
                                 action();
-                                continue;
+                                return;
                             }
 
                             hookDelegateObject.Invoker(value, args);
@@ -77,7 +75,7 @@ namespace LabExtended.Core.Hooking
                         {
                             ApiLog.Error("Hooking API", $"An error occured while running custom delegates (&3{hookDelegateObject.Event.GetMemberName()}&r)!\n{ex.ToColoredString()}");
                         }
-                    }
+                    });
                 }
 
                 if (cancellable != null)

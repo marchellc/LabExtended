@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.Core;
 using LabExtended.Utilities;
 
@@ -12,11 +11,11 @@ namespace LabExtended.Extensions
     {
         public const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
-        private static readonly LockedDictionary<Type, ConstructorInfo[]> _constructors = new LockedDictionary<Type, ConstructorInfo[]>();
-        private static readonly LockedDictionary<Type, PropertyInfo[]> _properties = new LockedDictionary<Type, PropertyInfo[]>();
-        private static readonly LockedDictionary<Type, MethodInfo[]> _methods = new LockedDictionary<Type, MethodInfo[]>();
-        private static readonly LockedDictionary<Type, FieldInfo[]> _fields = new LockedDictionary<Type, FieldInfo[]>();
-        private static readonly LockedDictionary<Type, EventInfo[]> _events = new LockedDictionary<Type, EventInfo[]>();
+        private static readonly Dictionary<Type, ConstructorInfo[]> _constructors = new();
+        private static readonly Dictionary<Type, PropertyInfo[]> _properties = new();
+        private static readonly Dictionary<Type, MethodInfo[]> _methods = new();
+        private static readonly Dictionary<Type, FieldInfo[]> _fields = new();
+        private static readonly Dictionary<Type, EventInfo[]> _events = new();
 
         public static ConstructorInfo[] GetAllConstructors(this Type type)
         {

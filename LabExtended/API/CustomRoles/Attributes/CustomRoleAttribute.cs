@@ -1,4 +1,4 @@
-﻿namespace LabExtended.API.CustomRoles;
+﻿namespace LabExtended.API.CustomRoles.Attributes;
 
 public class CustomRoleAttribute : Attribute
 {

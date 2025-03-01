@@ -1,7 +1,6 @@
 ﻿using CommandSystem;
 
 using LabExtended.API;
-using LabExtended.API.Collections.Locked;
 
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Contexts;
@@ -22,7 +21,7 @@ namespace LabExtended.Commands
 {
     public abstract class CustomCommand : ICommand, IUsageProvider
     {
-        internal static readonly LockedDictionary<uint, ContinuedContext> _continuedContexts = new LockedDictionary<uint, ContinuedContext>();
+        internal static readonly Dictionary<uint, ContinuedContext> _continuedContexts = new();
 
         private bool _isInitialized = false;
 

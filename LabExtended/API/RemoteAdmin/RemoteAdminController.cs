@@ -1,5 +1,4 @@
 ﻿using LabExtended.API.Enums;
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
@@ -22,9 +21,9 @@ namespace LabExtended.API.RemoteAdmin
         private static readonly UniqueStringGenerator _objectIdGenerator = new UniqueStringGenerator(10, false);
         private static readonly UniqueInt32Generator _listIdGenerator = new UniqueInt32Generator(6000, 11000);
 
-        private static readonly LockedHashSet<Type> _globalObjects = new LockedHashSet<Type>();
+        private static readonly HashSet<Type> _globalObjects = new();
 
-        private LockedHashSet<IRemoteAdminObject> _objects = new LockedHashSet<IRemoteAdminObject>();
+        private List<IRemoteAdminObject> _objects = new();
         private DateTime _lastListRequestTime = DateTime.MinValue;
         private bool _wasOpen = false;
 
@@ -202,25 +201,15 @@ namespace LabExtended.API.RemoteAdmin
         {
             foreach (var obj in _objects)
             {
-                if (!obj.IsActive)
-                    continue;
-
-                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
-                    continue;
-
-                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
-                    continue;
-
-                if (!obj.GetVisiblity(Player))
-                    continue;
+                if (!obj.IsActive) continue;
+                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop)) continue;
+                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff) continue;
+                if (!obj.GetVisibility(Player)) continue;
 
                 if (obj.Icons != RemoteAdminIconType.None)
                 {
-                    if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0)
-                        builder.Append(RemoteAdminListPatch.MutedIconPrefix);
-
-                    if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0)
-                        builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
+                    if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0) builder.Append(RemoteAdminListPatch.MutedIconPrefix);
+                    if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0) builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
                 }
 
                 builder.Append($"({obj.ListId}) ");
@@ -233,25 +222,15 @@ namespace LabExtended.API.RemoteAdmin
         {
             foreach (var obj in _objects)
             {
-                if (!obj.IsActive)
-                    continue;
-
-                if (obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
-                    continue;
-
-                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
-                    continue;
-
-                if (!obj.GetVisiblity(Player))
-                    continue;
+                if (!obj.IsActive) continue;
+                if (obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop)) continue;
+                if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff) continue;
+                if (!obj.GetVisibility(Player)) continue;
 
                 if (obj.Icons != RemoteAdminIconType.None)
                 {
-                    if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0)
-                        builder.Append(RemoteAdminListPatch.MutedIconPrefix);
-
-                    if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0)
-                        builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
+                    if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0) builder.Append(RemoteAdminListPatch.MutedIconPrefix);
+                    if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0) builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
                 }
 
                 builder.Append($"({obj.ListId}) ");

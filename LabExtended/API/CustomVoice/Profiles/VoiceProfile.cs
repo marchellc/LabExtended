@@ -16,7 +16,8 @@ public abstract class VoiceProfile
     public virtual void Enable() { }
     public virtual void Disable() { }
 
-    public abstract VoiceProfileResult Receive(ref VoiceMessage message);
+    public abstract VoiceProfileResult ReceiveFrom(ref VoiceMessage message);
+    public abstract VoiceProfileResult SendTo(ref VoiceMessage message, ExPlayer player);
     
     public virtual bool OnChangingRole(RoleTypeId newRoleType) => false;
 }

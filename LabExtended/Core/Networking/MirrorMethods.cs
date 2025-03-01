@@ -1,10 +1,6 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Collections.Locked;
-
 using LabExtended.Extensions;
-
 using LabExtended.Utilities;
-using LabExtended.Utilities.Values;
 
 using Mirror;
 
@@ -16,9 +12,9 @@ namespace LabExtended.Core.Networking
 {
     public static class MirrorMethods
     {
-        public static volatile LockedHashSet<Tuple<Type, Func<object, object[], object>>> Writers;
-        public static volatile LockedHashSet<Tuple<string, string>> RpcFullNames;
-        public static volatile LockedHashSet<Tuple<string, ulong>> DirtyBits;
+        public static volatile HashSet<Tuple<Type, Func<object, object[], object>>> Writers;
+        public static volatile HashSet<Tuple<string, string>> RpcFullNames;
+        public static volatile HashSet<Tuple<string, ulong>> DirtyBits;
 
         public static volatile Action<NetworkIdentity, NetworkConnection> SendSpawnMessageDelegate;
 
@@ -26,9 +22,9 @@ namespace LabExtended.Core.Networking
         {
             try
             {
-                Writers = new LockedHashSet<Tuple<Type, Func<object, object[], object>>>();
-                DirtyBits = new LockedHashSet<Tuple<string, ulong>>();
-                RpcFullNames = new LockedHashSet<Tuple<string, string>>();
+                Writers = new();
+                DirtyBits = new();
+                RpcFullNames = new();
 
                 SendSpawnMessageDelegate =
                     typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")

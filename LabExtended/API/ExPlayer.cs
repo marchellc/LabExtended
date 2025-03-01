@@ -30,11 +30,8 @@ using Mirror.LiteNetLib4Mirror;
 using PlayerRoles;
 using PlayerRoles.Spectating;
 using PlayerRoles.FirstPersonControl;
-using PlayerRoles.FirstPersonControl.NetworkMessages;
 
 using PlayerStatsSystem;
-
-using RelativePositioning;
 
 using RemoteAdmin;
 using RemoteAdmin.Communication;
@@ -49,17 +46,17 @@ using GameCore;
 
 using LabApi.Features.Wrappers;
 
-using LabExtended.API.Collections;
 using LabExtended.API.CustomVoice;
-using LabExtended.API.Hints.Elements;
 using LabExtended.API.Hints.Elements.Personal;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Menus;
+
 using LabExtended.Commands;
 using LabExtended.Core.Networking.Synchronization.Position;
 using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
+
 using UserSettings.ServerSpecific;
 
 namespace LabExtended.API
@@ -67,46 +64,45 @@ namespace LabExtended.API
     /// <summary>
     /// A wrapper for the <see cref="ReferenceHub"/> class.
     /// </summary>
-    public class ExPlayer
+    public class ExPlayer : IDisposable
     {
-        internal static readonly List<ExPlayer> players = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> npcPlayers = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> allPlayers = new List<ExPlayer>(byte.MaxValue);
-        internal static readonly List<ExPlayer> ghostedPlayers = new List<ExPlayer>(byte.MaxValue);
-        
-        internal static readonly Dictionary<string, string> preauthData = new Dictionary<string, string>(byte.MaxValue);
-
+        internal static Dictionary<string, string> preauthData = new(byte.MaxValue);
         internal static ExPlayer? hostPlayer;
 
         /// <summary>
         /// Gets a list of all players on the server.
         /// </summary>
-        public static IReadOnlyList<ExPlayer> Players => players;
+        public static List<ExPlayer> Players { get; } = new(ExServer.MaxSlots * 2);
 
         /// <summary>
         /// Gets a list of all NPC players on the server.
         /// </summary>
-        public static IReadOnlyList<ExPlayer> NpcPlayers => npcPlayers;
+        public static List<ExPlayer> NpcPlayers { get; } = new(byte.MaxValue);
 
         /// <summary>
         /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
         /// </summary>
-        public static IReadOnlyList<ExPlayer> AllPlayers => allPlayers;
+        public static List<ExPlayer> AllPlayers { get; } = new(ExServer.MaxSlots * 2);
 
         /// <summary>
         /// Gets a count of all players on the server.
         /// </summary>
-        public static int Count => players.Count;
+        public static int Count => Players.Count;
 
         /// <summary>
         /// Gets a count of all NPCs on the server.
         /// </summary>
-        public static int NpcCount => npcPlayers.Count;
+        public static int NpcCount => NpcPlayers.Count;
 
         /// <summary>
         /// Gets a count of all players on the server (including real players, NPCs and the server player).
         /// </summary>
-        public static int AllCount => allPlayers.Count;
+        public static int AllCount => AllPlayers.Count;
+        
+        /// <summary>
+        /// Gets or sets ghosted player flags.
+        /// </summary>
+        public static int GhostedFlags { get; set; } = 0;
 
         /// <summary>
         /// Gets the host player.
@@ -127,8 +123,6 @@ namespace LabExtended.API
 
                     hostPlayer.Switches.ShouldSendPosition = false;
                     hostPlayer.Switches.ShouldReceivePositions = false;
-
-                    allPlayers.Add(hostPlayer);
                 }
 
                 return hostPlayer;
@@ -160,10 +154,6 @@ namespace LabExtended.API
             var npcPlayer = new ExPlayer(npcHub);
 
             npcHub.roleManager.ServerSetRole(RoleTypeId.None, RoleChangeReason.None, RoleSpawnFlags.All);
-
-            npcPlayers.Add(npcPlayer);
-            allPlayers.Add(npcPlayer);
-
             return npcPlayer;
         }
 
@@ -476,21 +466,21 @@ namespace LabExtended.API
 
         private NetPeer peer;
         private ReferenceHub hub;
-
+        
+        internal HintCache hintCache;
+        
         private RemoteAdminIconType forcedIcons;
 
         internal SSSUserStatusReport? sssReport;
         
         internal Dictionary<uint, RoleTypeId> sentRoles; // A custom way of sending roles to other players so it's easier to manage them.
+        internal Dictionary<uint, PositionData> sentPositions;
 
         internal Dictionary<string, SettingsMenu> settingsMenuLookup;
         internal Dictionary<string, SettingsEntry> settingsIdLookup;
         internal Dictionary<int, SettingsEntry> settingsAssignedIdLookup;
-        
-        internal HashSet<ExPlayer> invisibility;
+
         internal HashSet<PersonalHintElement> elements;
-        
-        internal HintCache hintCache;
 
         /// <summary>
         /// Creates a new <see cref="ExPlayer"/> instance with default switches.
@@ -505,33 +495,30 @@ namespace LabExtended.API
         /// <param name="component">The <see cref="ReferenceHub"/> component instance.</param>
         /// <param name="switches">The <see cref="SwitchContainer"/> instance.</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public ExPlayer(ReferenceHub component, SwitchContainer switches)
+        public ExPlayer(ReferenceHub component, SwitchContainer switches, Player player = null)
         {
-            if (component is null)
-                throw new ArgumentNullException(nameof(component));
-
-            if (AllPlayers.Any(x => x.hub && x.hub == component))
-                throw new Exception("Attempted to insert a duplicate ExPlayer instance");
-
+            if (component is null) throw new ArgumentNullException(nameof(component));
+            if (switches is null) throw new ArgumentNullException(nameof(switches));
+            
+            Player = player ?? Player.Get(component);
+            
             hub = component;
 
             forcedIcons = RemoteAdminIconType.None;
 
             sentRoles = DictionaryPool<uint, RoleTypeId>.Shared.Rent();
+            sentPositions = DictionaryPool<uint, PositionData>.Shared.Rent();
             
             settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
             settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
             settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
             
-            invisibility = HashSetPool<ExPlayer>.Shared.Rent();
             elements = HashSetPool<PersonalHintElement>.Shared.Rent();
 
             LiteNetLib4MirrorServer.Peers.TryPeekIndex(ConnectionId, out peer);
 
-            InfoArea = new EnumValue<PlayerInfoArea>(() => hub.nicknameSync.Network_playerInfoToShow,
-                value => hub.nicknameSync.Network_playerInfoToShow = value);
-            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(hub),
-                value => VoiceChatMutes.SetFlags(hub, value));
+            InfoArea = new EnumValue<PlayerInfoArea>(() => hub.nicknameSync.Network_playerInfoToShow, value => hub.nicknameSync.Network_playerInfoToShow = value);
+            MuteFlags = new EnumValue<VcMuteFlags>(() => VoiceChatMutes.GetFlags(hub), value => VoiceChatMutes.SetFlags(hub, value));
 
             ForcedRaIcons = new EnumValue<RemoteAdminIconType>(() => forcedIcons, value => forcedIcons = value);
 
@@ -581,15 +568,15 @@ namespace LabExtended.API
 
             hintCache = ObjectPool<HintCache>.Shared.Rent(x => x.Player = this, () => new HintCache());
 
-            allPlayers.Add(this);
+            AllPlayers.Add(this);
 
             if (IsNpc)
             {
-                npcPlayers.Add(this);
+                NpcPlayers.Add(this);
             }
             else if (!IsServer)
             {
-                players.Add(this);
+                Players.Add(this);
             }
             else
             {
@@ -602,8 +589,8 @@ namespace LabExtended.API
         /// </summary>
         public float VoicePitch
         {
-            get => Voice?.Pitch?.InstancePitch ?? 1f;
-            set => Voice!.Pitch!.InstancePitch = value;
+            get => Voice?.Thread?.InstancePitch ?? 1f;
+            set => Voice!.Thread!.InstancePitch = value;
         }
         
         /// <summary>
@@ -685,6 +672,11 @@ namespace LabExtended.API
         /// Gets the player's <see cref="ReferenceHub"/> component.
         /// </summary>
         public ReferenceHub Hub => hub;
+        
+        /// <summary>
+        /// Gets the player's LabAPI <see cref="LabApi.Features.Wrappers.Player"/> wrapper.
+        /// </summary>
+        public Player Player { get; }
 
         /// <summary>
         /// Gets the player's <see cref="UnityEngine.GameObject"/>.
@@ -735,11 +727,6 @@ namespace LabExtended.API
         /// Gets a list of players that are currently spectating this player.
         /// </summary>
         public IEnumerable<ExPlayer> SpectatingPlayers => Players.Where(IsSpectatedBy);
-
-        /// <summary>
-        /// Gets a list of players that this player will be invisible to.
-        /// </summary>
-        public HashSet<ExPlayer> InvisibleToTargets => invisibility;
 
         /// <summary>
         /// Gets the player's <see cref="UnityEngine.Transform"/>.
@@ -912,13 +899,13 @@ namespace LabExtended.API
         /// </summary>
         public bool IsInvisible
         {
-            get => ghostedPlayers.Contains(this);
+            get => (GhostedFlags & (1 << PlayerId)) != 0;
             set
             {
                 if (value)
-                    ghostedPlayers.Add(this);
+                    GhostedFlags |= 1 << PlayerId;
                 else
-                    ghostedPlayers.Remove(this);
+                    GhostedFlags &= ~(1 << PlayerId);
             }
         }
 
@@ -990,6 +977,11 @@ namespace LabExtended.API
             get => hub.characterClassManager.GodMode;
             set => hub.characterClassManager.GodMode = value;
         }
+
+        /// <summary>
+        /// Gets or sets personal ghost flags.
+        /// </summary>
+        public int PersonalGhostFlags { get; set; } = 0;
 
         /// <summary>
         /// Gets or sets the player's info area view range.
@@ -1089,11 +1081,8 @@ namespace LabExtended.API
 
                 var icons = RemoteAdminIconType.None;
 
-                if (IsInOverwatch)
-                    icons |= RemoteAdminIconType.OverwatchIcon;
-
-                if (IsMuted || IsIntercomMuted)
-                    icons |= RemoteAdminIconType.MutedIcon;
+                if (IsInOverwatch) icons |= RemoteAdminIconType.OverwatchIcon;
+                if (IsMuted || IsIntercomMuted)icons |= RemoteAdminIconType.MutedIcon;
 
                 return icons;
             }
@@ -1303,11 +1292,11 @@ namespace LabExtended.API
         {
             if (IsInvisible)
                 return true;
-
-            if (invisibility.Contains(otherPlayer))
-                return true;
-
-            return false;
+            
+            if (otherPlayer is null)
+                throw new ArgumentNullException(nameof(otherPlayer));
+            
+            return (PersonalGhostFlags & (1 << otherPlayer.PlayerId)) != 0;
         }
 
         /// <summary>
@@ -1315,14 +1304,29 @@ namespace LabExtended.API
         /// </summary>
         /// <param name="player">The player to make this player invisible for.</param>
         public void MakeInvisibleFor(ExPlayer player)
-            => invisibility.Add(player);
+        {
+            if (player is null)
+                throw new ArgumentNullException(nameof(player));
+
+            var playerBit = 1 << player.PlayerId;
+
+            if ((PersonalGhostFlags & playerBit) != 0)
+                return;
+
+            PersonalGhostFlags |= playerBit;
+        }
 
         /// <summary>
         /// Makes this player visible to the targeted player.
         /// </summary>
         /// <param name="player">The player to make this player visible for.</param>
         public void MakeVisibleFor(ExPlayer player)
-            => invisibility.Remove(player);
+        {
+            if (player is null)
+                throw new ArgumentNullException(nameof(player));
+
+            PersonalGhostFlags &= ~(1 << player.PlayerId);
+        }
 
         public T GetComponent<T>()
             => GameObject.TryFindComponent<T>(out var component) ? component : default;
@@ -1417,42 +1421,28 @@ namespace LabExtended.API
         }
         #endregion
 
-        #region Internal Methods
-        internal RoleTypeId? InternalGetRoleForJoinedPlayer(ExPlayer joinedPlayer)
-        {
-            if (!Switches.IsVisibleInSpectatorList)
-                return RoleTypeId.Spectator;
-
-            return null;
-        }
-
-        internal FpcSyncData InternalGetNewSyncData(FpcSyncData prev, PlayerMovementState state, Vector3 position, bool grounded, FpcMouseLook mouseLook)
-            => new FpcSyncData(prev, state, grounded, new RelativePosition(position), mouseLook);
-
-        internal void Dispose()
+        public void Dispose()
         {
             if (hostPlayer != null && hostPlayer == this)
                 hostPlayer = null;
+
+            GhostedFlags &= ~(1 << PlayerId);
             
-            allPlayers.Remove(this);
+            AllPlayers.Remove(this);
             
             if (IsNpc)
-                npcPlayers.Remove(this);
+                NpcPlayers.Remove(this);
             else if (!IsServer)
-                players.Remove(this);
+                Players.Remove(this);
 
             if (!string.IsNullOrWhiteSpace(UserId))
                 preauthData.Remove(UserId);
-            
-            foreach (var helper in PlayerCollection.m_Handlers)
-                helper.Remove(NetId);
-            
-            foreach (var other in allPlayers)
+
+            foreach (var other in AllPlayers)
             {
                 other.sentRoles?.Remove(NetId);
-                other.invisibility?.Remove(this);
             }
-            
+
             CustomCommand._continuedContexts.Remove(NetId);
             
             if (hintCache != null)
@@ -1490,10 +1480,10 @@ namespace LabExtended.API
                 sentRoles = null;
             }
 
-            if (invisibility != null)
+            if (sentPositions != null)
             {
-                HashSetPool<ExPlayer>.Shared.Return(invisibility);
-                invisibility = null;
+                DictionaryPool<uint, PositionData>.Shared.Return(sentPositions);
+                sentPositions = null;
             }
 
             if (settingsIdLookup != null)
@@ -1522,8 +1512,6 @@ namespace LabExtended.API
                 elements = null;
             }
         }
-
-        #endregion
 
         #region Operators
         /// <inheritdoc/>

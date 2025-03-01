@@ -1,4 +1,4 @@
-﻿namespace LabExtended.API.CustomVoice.Pitching;
+﻿namespace LabExtended.API.CustomVoice.Threading.Pitch;
 
 public static class VoicePitchUtils
 {

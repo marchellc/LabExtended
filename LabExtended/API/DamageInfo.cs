@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Enums;
-
+﻿using LabExtended.API.Enums;
 using LabExtended.Extensions;
 
 using PlayerStatsSystem;
@@ -9,16 +7,12 @@ using UnityEngine;
 
 namespace LabExtended.API
 {
-    public class DamageInfo
+    public struct DamageInfo
     {
-        internal static readonly LockedDictionary<StandardDamageHandler, DamageInfo> _wrappers = new LockedDictionary<StandardDamageHandler, DamageInfo>();
-
-        internal DamageInfo(StandardDamageHandler baseValue)
+        public DamageInfo(StandardDamageHandler baseValue)
             => Base = baseValue;
 
         public StandardDamageHandler Base { get; set; }
-
-        public bool IsApplied { get; internal set; }
 
         public bool IsScp096 => Type.IsScp096();
         public bool IsScp939 => Type.IsScp939();
@@ -79,17 +73,6 @@ namespace LabExtended.API
         {
             get => Base is AttackerDamageHandler attackerDamageHandler ? ExPlayer.Get(attackerDamageHandler.Attacker) : null;
             set => (Base as AttackerDamageHandler).Attacker = value?.Footprint ?? ExPlayer.Host.Footprint;
-        }
-
-        public static DamageInfo Get(StandardDamageHandler standardDamageHandler)
-        {
-            if (standardDamageHandler is null)
-                throw new ArgumentNullException(nameof(standardDamageHandler));
-
-            if (!_wrappers.TryGetValue(standardDamageHandler, out var damageInfo))
-                _wrappers[standardDamageHandler] = damageInfo = new DamageInfo(standardDamageHandler);
-
-            return damageInfo;
         }
     }
 }

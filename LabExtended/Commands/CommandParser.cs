@@ -1,6 +1,5 @@
 ﻿using LabExtended.API;
 using LabExtended.API.CustomCommands.Formatting;
-using LabExtended.API.Collections.Locked;
 
 using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Interfaces;
@@ -17,7 +16,7 @@ namespace LabExtended.Commands
 {
     public static class CommandParser
     {
-        private static readonly LockedDictionary<Type, ICommandParser> _definedParsers = new LockedDictionary<Type, ICommandParser>()
+        private static readonly Dictionary<Type, ICommandParser> _definedParsers = new()
         {
             [typeof(string)] = new StringParser(),
             [typeof(bool)] = new BoolParser(),
@@ -52,7 +51,7 @@ namespace LabExtended.Commands
             [typeof(PlayerListData)] = new PlayerListParser()
         };
 
-        private static readonly LockedDictionary<char, char> _definedQuotes = new LockedDictionary<char, char>()
+        private static readonly Dictionary<char, char> _definedQuotes = new()
         {
             ['\''] = '\''
         };

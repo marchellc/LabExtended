@@ -38,7 +38,7 @@ namespace LabExtended.API.RemoteAdmin.Objects
         public string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button)
             => Response(player, selectedPlayers, button);
 
-        public bool GetVisiblity(ExPlayer player)
+        public bool GetVisibility(ExPlayer player)
             => Visibility is null || Visibility(player);
 
         public virtual void OnDisabled() { }

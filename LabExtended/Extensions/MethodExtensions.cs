@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace LabExtended.Extensions
 {
@@ -8,7 +6,7 @@ namespace LabExtended.Extensions
     {
         public const BindingFlags Flags = TypeExtensions.Flags;
 
-        private static readonly LockedDictionary<MethodBase, ParameterInfo[]> _parameters = new LockedDictionary<MethodBase, ParameterInfo[]>();
+        private static readonly Dictionary<MethodBase, ParameterInfo[]> _parameters = new();
 
         public static ParameterInfo[] GetAllParameters(this MethodBase method)
         {

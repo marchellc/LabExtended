@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.Extensions;
+﻿using LabExtended.Extensions;
 
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,8 +7,8 @@ namespace LabExtended.Utilities
 {
     public static class FastReflection
     {
-        public static volatile LockedDictionary<MethodInfo, Func<object, object[], object>> Methods = new LockedDictionary<MethodInfo, Func<object, object[], object>>();
-        public static volatile LockedDictionary<ConstructorInfo, Func<object[], object>> Constructors = new LockedDictionary<ConstructorInfo, Func<object[], object>>();
+        public static volatile Dictionary<MethodInfo, Func<object, object[], object>> Methods = new();
+        public static volatile Dictionary<ConstructorInfo, Func<object[], object>> Constructors = new();
 
         public static Func<object[], object> ForConstructor(ConstructorInfo constructor)
         {

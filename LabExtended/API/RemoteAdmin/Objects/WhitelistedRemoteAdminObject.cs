@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections;
-using LabExtended.API.Enums;
+﻿using LabExtended.API.Enums;
 
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
@@ -8,7 +7,7 @@ namespace LabExtended.API.RemoteAdmin.Objects
 {
     public class WhitelistedRemoteAdminObject : IRemoteAdminObject
     {
-        public PlayerCollection Whitelist { get; } = new PlayerCollection();
+        public HashSet<uint> Whitelist { get; } = new();
 
         public virtual RemoteAdminObjectFlags Flags { get; } = RemoteAdminObjectFlags.ShowToNorthwoodStaff;
         public virtual RemoteAdminIconType Icons { get; } = RemoteAdminIconType.None;
@@ -28,8 +27,8 @@ namespace LabExtended.API.RemoteAdmin.Objects
         public virtual string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button)
             => string.Empty;
 
-        public virtual bool GetVisiblity(ExPlayer player)
-            => Whitelist.Contains(player);
+        public virtual bool GetVisibility(ExPlayer player)
+            => player != null && Whitelist.Contains(player.NetId);
 
         public virtual void OnDisabled() { }
         public virtual void OnEnabled() { }

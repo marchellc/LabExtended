@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Interfaces;
+﻿using LabExtended.API.Interfaces;
 
 using LabExtended.Extensions;
 
@@ -50,7 +49,7 @@ namespace LabExtended.API.Settings.Entries.Dropdown
         
         public Action<SettingsDropdown, SettingsDropdownOption, SettingsDropdownOption> OnSelected { get; set; }
 
-        public LockedList<SettingsDropdownOption> Options { get; } = new LockedList<SettingsDropdownOption>();
+        public List<SettingsDropdownOption> Options { get; } = new();
 
         public int PreviousIndex => _prevSelectedIndex;
         

@@ -22,6 +22,6 @@ namespace LabExtended.API.RemoteAdmin.Interfaces
         string GetButton(ExPlayer player, RemoteAdminButtonType buttonType);
         string GetResponse(ExPlayer player, IEnumerable<ExPlayer> selectedPlayers, RemoteAdminButtonType button);
 
-        bool GetVisiblity(ExPlayer player);
+        bool GetVisibility(ExPlayer player);
     }
 }

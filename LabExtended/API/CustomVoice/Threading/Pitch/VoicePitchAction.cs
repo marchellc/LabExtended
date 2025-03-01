@@ -1,6 +1,6 @@
-﻿namespace LabExtended.API.CustomVoice.Pitching;
+﻿namespace LabExtended.API.CustomVoice.Threading.Pitch;
 
-public class VoicePitchAction : IVoicePitchAction, IDisposable
+public class VoicePitchAction : IVoiceThreadAction, IDisposable
 {
     private float[] gInFIFO = new float[VoicePitchUtils.MAX_FRAME_LENGTH];
     private float[] gOutFIFO = new float[VoicePitchUtils.MAX_FRAME_LENGTH];
@@ -16,7 +16,7 @@ public class VoicePitchAction : IVoicePitchAction, IDisposable
     private long gRover;
     private long gInit;
 
-    public void Modify(ref VoicePitchPacket packet)
+    public void Modify(ref VoiceThreadPacket packet)
     {
         var data = new float[48000];
         

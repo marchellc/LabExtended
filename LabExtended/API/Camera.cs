@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.Wrappers;
+﻿using LabExtended.API.Wrappers;
 
 using MapGeneration;
 
@@ -15,7 +14,8 @@ namespace LabExtended.API
     public class Camera : Wrapper<Scp079Camera>
     {
         #region Types
-        private static readonly LockedDictionary<string, CameraType> _cameraTypes = new LockedDictionary<string, CameraType>()
+
+        private static readonly Dictionary<string, CameraType> _cameraTypes = new()
         {
             ["CHKPT (EZ HALL)"] = CameraType.EzChkptHall,
 

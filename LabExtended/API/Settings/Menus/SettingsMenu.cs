@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using LabExtended.API.Settings.Entries;
+﻿using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
 
@@ -36,11 +34,8 @@ namespace LabExtended.API.Settings.Menus
 
         public void HideMenu()
         {
-            if (IsHidden)
-                return;
-
-            if (!Player)
-                return;
+            if (IsHidden) return;
+            if (!Player) return;
 
             IsHidden = true;
             
@@ -49,11 +44,8 @@ namespace LabExtended.API.Settings.Menus
         
         public void ShowMenu()
         {
-            if (!IsHidden)
-                return;
-
-            if (!Player)
-                return;
+            if (!IsHidden) return;
+            if (!Player) return;
 
             IsHidden = false;
             

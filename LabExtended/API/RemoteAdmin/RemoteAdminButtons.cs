@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.API.RemoteAdmin.Buttons;
+﻿using LabExtended.API.RemoteAdmin.Buttons;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
@@ -7,7 +6,7 @@ namespace LabExtended.API.RemoteAdmin
 {
     public static class RemoteAdminButtons
     {
-        private static readonly LockedDictionary<RemoteAdminButtonType, IRemoteAdminButton> _buttons = new LockedDictionary<RemoteAdminButtonType, IRemoteAdminButton>()
+        private static readonly Dictionary<RemoteAdminButtonType, IRemoteAdminButton> _buttons = new()
         {
             [RemoteAdminButtonType.Request] = new RemoteAdminButton(RemoteAdminButtonType.Request),
             [RemoteAdminButtonType.RequestIp] = new RemoteAdminButton(RemoteAdminButtonType.RequestIp),

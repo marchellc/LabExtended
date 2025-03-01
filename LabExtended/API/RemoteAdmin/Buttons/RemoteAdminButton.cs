@@ -1,17 +1,17 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using LabExtended.API.RemoteAdmin.Enums;
+﻿using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
 using LabExtended.Utilities;
+
 using NorthwoodLib.Pools;
+
 using System.Text;
 
 namespace LabExtended.API.RemoteAdmin.Buttons
 {
     public class RemoteAdminButton : IRemoteAdminButton
     {
-        private readonly LockedHashSet<IRemoteAdminObject> _binds = new LockedHashSet<IRemoteAdminObject>();
+        private readonly List<IRemoteAdminObject> _binds = new();
         private readonly RemoteAdminButtonType _type;
 
         public RemoteAdminButton(RemoteAdminButtonType type)
@@ -19,14 +19,18 @@ namespace LabExtended.API.RemoteAdmin.Buttons
 
         public void OnOpened(ExPlayer player, StringBuilder builder, int pos, List<IRemoteAdminObject> appendedNames)
         {
-            for (int i = 0; i < _binds.Count; i++)
+            var index = 0;
+            
+            _binds.ForEach(bind =>
             {
-                var bind = _binds[i];
                 var size = 1;
                 var line = bind.GetButton(player, _type);
 
                 if (string.IsNullOrWhiteSpace(line))
-                    continue;
+                {
+                    index++;
+                    return;
+                }
 
                 HintUtils.TrimStartNewLines(ref line, out _);
 
@@ -44,15 +48,17 @@ namespace LabExtended.API.RemoteAdmin.Buttons
 
                 if (!appendedNames.Contains(bind))
                 {
-                    builder.Append($"<voffset=-{324 - ((i == 0 ? size : size + i) * 30)}><br><pos=78%>{bind.GetName(player)}</pos></voffset>");
+                    builder.Append($"<voffset=-{324 - ((index == 0 ? size : size + index) * 30)}><br><pos=78%>{bind.GetName(player)}</pos></voffset>");
                     appendedNames.Add(bind);
                 }
 
                 if (pos != 0)
-                    builder.Append($"<voffset=-{(pos == 26 ? 326 : 329) - ((i == 0 ? size : size + i) * 30)}><br><pos={pos}%>{line}</pos></voffset>");
+                    builder.Append($"<voffset=-{(pos == 26 ? 326 : 329) - ((index == 0 ? size : size + index) * 30)}><br><pos={pos}%>{line}</pos></voffset>");
                 else
-                    builder.Append($"<voffset=-{324 - ((i == 0 ? size : size + i) * 30)}><br>{line}</voffset>");
-            }
+                    builder.Append($"<voffset=-{324 - ((index == 0 ? size : size + index) * 30)}><br>{line}</voffset>");
+
+                index++;
+            });
         }
 
         public bool OnPressed(ExPlayer player, IEnumerable<int> selectedObjects)
@@ -77,7 +83,11 @@ namespace LabExtended.API.RemoteAdmin.Buttons
             if (remoteAdminObject is null)
                 throw new ArgumentNullException(nameof(remoteAdminObject));
 
-            return _binds.Add(remoteAdminObject);
+            if (_binds.Contains(remoteAdminObject))
+                return false;
+            
+            _binds.Add(remoteAdminObject);
+            return true;
         }
 
         public bool UnbindObject(IRemoteAdminObject remoteAdminObject)

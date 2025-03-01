@@ -36,7 +36,6 @@ namespace LabExtended.Events
             ExPlayer.hostPlayer = null;
             
             ExPlayer.preauthData.Clear();
-            DamageInfo._wrappers.Clear();    
 
             // No reason not to reset the NPC connection ID
             DummyNetworkConnection._idGenerator = ushort.MaxValue;
@@ -49,7 +48,7 @@ namespace LabExtended.Events
         private static void InternalHandleRoundRestart()
         {
             ExRound.State = RoundState.Restarting;
-            ExMap._gates.Clear();
+            ExMap.TeslaGates.Clear();
             
             OnRoundRestart.InvokeSafe();
             

@@ -1,4 +1,4 @@
-﻿using LabExtended.API.CustomVoice.Pitching;
+﻿using LabExtended.API.CustomVoice.Threading;
 
 using LabExtended.Commands;
 using LabExtended.Commands.Arguments;
@@ -19,8 +19,8 @@ public class SetPitchCommand : CustomCommand
         
         var pitch = args.Get<float>("Pitch");
         
-        VoicePitch.GlobalPitch = pitch;
+        VoiceThread.GlobalPitch = pitch;
         
-        ctx.RespondOk($"Global pitch changed to {VoicePitch.GlobalPitch}");
+        ctx.RespondOk($"Global pitch changed to {VoiceThread.GlobalPitch}");
     }
 }

@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using LabExtended.Commands.Interfaces;
+﻿using LabExtended.Commands.Interfaces;
 
 using System.ComponentModel;
 using System.Reflection;
@@ -9,7 +7,7 @@ namespace LabExtended.Commands.Arguments
 {
     public class ArgumentDefinition
     {
-        internal readonly LockedList<ICommandValidator> _validators = new LockedList<ICommandValidator>();
+        internal List<ICommandValidator> _validators = new();
         internal ParameterInfo _bindParameter;
 
         public Type Type { get; private set; }
@@ -27,11 +25,8 @@ namespace LabExtended.Commands.Arguments
         public ArgumentDefinition() { }
         public ArgumentDefinition(Type type, string name, string description = "No description", ICommandParser parser = null, object defaultValue = null, bool isOptional = false)
         {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-
-            if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentNullException(nameof(name));
+            if (type is null) throw new ArgumentNullException(nameof(type));
+            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentNullException(nameof(name));
 
             Type = type;
             Name = name;

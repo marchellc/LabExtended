@@ -51,7 +51,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets a custom tick rate for tesla gates.
         /// </summary>
-        public static int TickRate { get; set; } = 100;
+        public static float TickRate { get; set; } = 0.1f;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this tesla gate can be triggered.
@@ -271,14 +271,9 @@ namespace LabExtended.API
 
             foreach (var player in ExPlayer.Players)
             {
-                if (!player.Switches.CanTriggerTesla)
-                    continue;
-
-                if (!player.Role.IsAlive || player.Role.Is(RoleTypeId.Scp079))
-                    continue;
-
-                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team))
-                    continue;
+                if (!player.Switches.CanTriggerTesla) continue;
+                if (!player.Role.IsAlive || player.Role.Is(RoleTypeId.Scp079)) continue;
+                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team)) continue;
 
                 if (!shouldIdle)
                     shouldIdle = Base.IsInIdleRange(player.Hub);
@@ -329,13 +324,13 @@ namespace LabExtended.API
             {
                 _tickCooldown -= Time.deltaTime;
 
-                if (_tickCooldown <= 0f)
-                    _tickCooldown = TickRate;
-                else
+                if (_tickCooldown > 0f)
                     return;
+                
+                _tickCooldown = TickRate;
             }
-            
-            foreach (var gate in ExMap._gates)
+
+            ExMap.TeslaGates.ForEach(gate =>
             {
                 try
                 {
@@ -345,13 +340,14 @@ namespace LabExtended.API
                 {
                     ApiLog.Error("Extended API", $"Failed to update tesla gate {gate.NetId}!\n{ex.ToColoredString()}");
                 }
-            }
+            });
         }
 
         [LoaderInitialize(1)]
         private static void Init()
         {
             PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(TeslaGateUpdateLoop)) ? x : null);
+            ApiLog.Debug("Tesla Gate API", "Initialized");
         }
     }
 }

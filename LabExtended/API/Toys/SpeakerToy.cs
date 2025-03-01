@@ -88,7 +88,7 @@ namespace LabExtended.API.Toys
             wrapper.Position = position;
             wrapper.Scale = Vector3.zero;
 
-            ExMap._toys.Add(wrapper);
+            ExMap.Toys.Add(wrapper);
 
             setup.InvokeSafe(wrapper);
             return wrapper;

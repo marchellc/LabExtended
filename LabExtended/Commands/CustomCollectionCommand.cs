@@ -6,7 +6,6 @@ using LabExtended.Commands.Arguments;
 using LabExtended.Commands.Interfaces;
 
 using LabExtended.API;
-using LabExtended.API.Collections.Locked;
 
 using LabExtended.Core.Pooling.Pools;
 
@@ -19,7 +18,7 @@ namespace LabExtended.Commands
     public abstract class CustomCommand<T> : CustomCommand
         where T : class
     {
-        private LockedList<ArgumentCollectionMember> _members;
+        private List<ArgumentCollectionMember> _members;
 
         public CustomCommand() : base() { }
 
@@ -71,7 +70,7 @@ namespace LabExtended.Commands
 
         private ArgumentDefinition[] GenerateArgs()
         {
-            _members = new LockedList<ArgumentCollectionMember>();
+            _members = new();
 
             var properties = typeof(T).GetAllProperties();
             var list = ListPool<ArgumentDefinition>.Shared.Rent();

@@ -27,14 +27,12 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 {
     public static class PositionSynchronizer
     {
-        private struct PositionUpdateLoop { }
+        public struct PositionUpdateLoop { }
         
         private static NetworkWriter _writer = NetworkWriterPool.Get();
-
         private static float _sendTime = 0f;
 
         internal static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
-        internal static readonly Dictionary<ExPlayer, Dictionary<ExPlayer, PositionData>> _syncCache = DictionaryPool<ExPlayer, Dictionary<ExPlayer, PositionData>>.Shared.Rent();
 
         public static float SendRate => ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate > 0f 
             ? ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate 
@@ -42,50 +40,37 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 
         private static void OnUpdate()
         {
-            var sendRate = SendRate;
-
-            _sendTime -= sendRate;
+            _sendTime -= Time.deltaTime;
 
             if (_sendTime > 0f)
                 return;
 
-            _sendTime = sendRate;
-            
+            _sendTime = SendRate;
+
             try
             {
-                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
+                ExPlayer.AllPlayers.ForEach(player =>
                 {
-                    var player = ExPlayer.AllPlayers[i];
+                    if (player is null || !player.Switches.ShouldReceivePositions)
+                        return;
 
-                    if (!player.Switches.ShouldReceivePositions)
-                        continue;
-
-                    var ghosted = ExPlayer.ghostedPlayers.Contains(player);
+                    var ghosted = (ExPlayer.GhostedFlags & (1 << player.PlayerId)) != 0;
                     var hasRole = player.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole);
 
                     _validBuffer.Clear();
 
-                    for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
+                    ExPlayer.AllPlayers.ForEach(other =>
                     {
-                        var other = ExPlayer.AllPlayers[x];
-
-                        if (!other.Switches.ShouldSendPosition)
-                            continue;
-
-                        if (!other.Role.Is<IFpcRole>(out _))
-                            continue;
-
-                        if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition)
-                            continue;
+                        if (!other.Switches.ShouldSendPosition) return;
+                        if (!other.Role.Is<IFpcRole>(out _)) return;
+                        if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition) return;
 
                         _validBuffer.Add(other);
-                    }
+                    });
+
 
                     if (_validBuffer.Count < 1)
-                        continue;
-
-                    if (!_syncCache.TryGetValue(player, out var syncCache))
-                        _syncCache[player] = syncCache = DictionaryPool<ExPlayer, PositionData>.Shared.Rent();
+                        return;
 
                     _writer.Reset();
                     _writer.WriteMessage<FpcPositionMessage>(_ =>
@@ -99,13 +84,14 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                             var mouseLook = fpcRole.FpcModule.MouseLook;
                             var module = fpcRole.FpcModule;
 
-                            var isInvisible = hasRole && customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
+                            var isInvisible = !hasRole ||
+                                              !customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
 
-                            if (!isInvisible && (ghosted || other.invisibility.Contains(player)))
+                            if (!isInvisible && (ghosted || (other.PersonalGhostFlags & (1 << player.PlayerId)) != 0))
                                 isInvisible = true;
 
-                            if (!syncCache.TryGetValue(other, out var prevData))
-                                prevData = syncCache[other] = new PositionData();
+                            if (!player.sentPositions.TryGetValue(other.NetId, out var prevData))
+                                player.sentPositions[other.NetId] = prevData = new();
 
                             var position = isInvisible ? FpcMotor.InvisiblePosition : other.Transform.position;
                             var posBit = false;
@@ -124,20 +110,22 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 
                             var relative = new RelativePosition(position);
 
-                            if (!posBit)
-                                posBit = prevData.Position != relative;
+                            if (prevData.IsReset || prevData.Position != position)
+                                posBit = true;
 
                             mouseLook.GetSyncValues(relative.WaypointId, out var syncH, out var syncV);
 
-                            var lookBit = prevData.SyncH != syncH || prevData.SyncV != syncV;
+                            var lookBit = prevData.IsReset || prevData.SyncH != syncH || prevData.SyncV != syncV;
                             var customBit = module.IsGrounded;
 
-                            prevData.Position = relative;
+                            prevData.Position = position;
+                            prevData.RelativePosition = relative;
 
                             prevData.SyncH = syncH;
                             prevData.SyncV = syncV;
 
-                            Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7, out var b8);
+                            Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3,
+                                out var b4, out var b5, out var b6, out var b7, out var b8);
 
                             _writer.WriteRecyclablePlayerId(other.Hub.Network_playerId);
                             _writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
@@ -150,60 +138,40 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                                 _writer.WriteUShort(syncH);
                                 _writer.WriteUShort(syncV);
                             }
+
+                            prevData.IsReset = false;
                         }
                     });
 
                     player.Send(_writer.ToArraySegment());
-                }
+                });
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Position Synchronizer", $"Caught an error while synchronizing player positions:\n{ex.ToColoredString()}");
+                ApiLog.Error("Position Synchronizer",
+                    $"Caught an error while synchronizing player positions:\n{ex.ToColoredString()}");
             }
         }
 
         private static void OnPlayerRoleChange(PlayerChangedRoleArgs args)
         {
-            if (args.PreviousRole is null || args.PreviousRole is not IFpcRole)
+            if (args.PreviousRole is not IFpcRole || args.Player is null)
                 return;
             
-            _syncCache.ForEach(x => x.Value.Remove(args.Player));
-        }
-
-        private static void OnSpawning(PlayerSpawningArgs args)
-        {
-            _syncCache.Remove(args.Player);
-
-            foreach (var player in ExPlayer.AllPlayers)
+            ExPlayer.AllPlayers.ForEach(ply =>
             {
-                if (_syncCache.TryGetValue(player, out var cache))
-                    cache.Remove(args.Player);
-            }
+                if (ply != args.Player && args.Player.sentPositions.TryGetValue(ply.NetId, out var sent))
+                {
+                    sent.IsReset = true;
+                }
+            });
         }
-
-        private static void OnPlayerLeave(ExPlayer player)
-        {
-            if (_syncCache.TryGetValue(player, out var syncCache))
-                DictionaryPool<ExPlayer, PositionData>.Shared.Return(syncCache);
-
-            _syncCache.Remove(player);
-            _syncCache.ForEach(x => x.Value.Remove(player));
-        }
-
-        private static void OnRoundRestart()
-        {
-            _validBuffer.Clear();
-            _syncCache.Clear();
-        }
-
+        
         [LoaderInitialize(3)]
         private static void Init()
         {
-            PlayerLeavePatch.OnLeaving += OnPlayerLeave;
-
             InternalEvents.OnRoleChanged += OnPlayerRoleChange;
-            InternalEvents.OnRoundRestart += OnRoundRestart;
-            InternalEvents.OnSpawning += OnSpawning;
+            InternalEvents.OnRoundRestart += _validBuffer.Clear;
 
             PlayerLoopHelper.ModifySystem(x =>
             {

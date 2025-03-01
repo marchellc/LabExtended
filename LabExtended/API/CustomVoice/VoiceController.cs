@@ -1,4 +1,5 @@
-﻿using LabExtended.Core.Hooking;
+﻿using System.Runtime.Remoting;
+using LabExtended.Core.Hooking;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events;
@@ -7,9 +8,9 @@ using LabExtended.Events.Player;
 using LabExtended.Utilities.Unity;
 
 using LabExtended.API.CustomVoice.Profiles;
-using LabExtended.API.CustomVoice.Pitching;
-using LabExtended.Core;
+using LabExtended.API.CustomVoice.Threading;
 using LabExtended.Extensions;
+
 using UnityEngine;
 
 using VoiceChat;
@@ -22,14 +23,13 @@ public class VoiceController : IDisposable
     public static event Action<VoiceController> OnJoined; 
     
     private Dictionary<DateTime, VoiceMessage> _sessionPackets;
-    
     private Dictionary<Type, VoiceProfile> _profiles;
 
     private bool _wasSpeaking;
     private float _speakingTime;
     
     public ExPlayer Player { get; }
-    public VoicePitch Pitch { get; internal set; }
+    public VoiceThread Thread { get; internal set; }
 
     public bool IsOnline => Player != null && Player;
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
@@ -41,7 +41,7 @@ public class VoiceController : IDisposable
     {
         Player = player;
         
-        Pitch = new VoicePitch(this);
+        Thread = new VoiceThread(this);
         
         _sessionPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
         _profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
@@ -168,8 +168,8 @@ public class VoiceController : IDisposable
         PlayerLoopHelper.AfterLoop -= UpdateSpeaking;
         InternalEvents.OnSpawning -= HandleSpawn;
         
-        Pitch?.Dispose();
-        Pitch = null;
+        Thread?.Dispose();
+        Thread = null;
         
         if (_sessionPackets != null)
         {
@@ -195,15 +195,26 @@ public class VoiceController : IDisposable
 
     internal void ProcessMessage(ref VoiceMessage msg)
     {
-        if (!IsOnline)
-            return;
-        
-        if (msg.SpeakerNull || msg.Speaker is null || msg.Speaker.netId != Player.NetId)
-            return;
+        if (!IsOnline) return;
+        if (msg.Speaker is null || msg.Speaker.netId != Player.NetId) return;
 
         _sessionPackets.Add(DateTime.Now, msg);
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
+
+        foreach (var profile in _profiles)
+        {
+            if (!profile.Value.IsActive)
+                continue;
+
+            var result = profile.Value.ReceiveFrom(ref msg);
+
+            if (result is VoiceProfileResult.SkipAndDontSend)
+                return;
+
+            if (result is VoiceProfileResult.SkipAndSend)
+                break;
+        }
 
         for (int i = 0; i < ExPlayer.Players.Count; i++)
         {
@@ -220,7 +231,7 @@ public class VoiceController : IDisposable
                 if (!profile.Value.IsActive)
                     continue;
 
-                var result = profile.Value.Receive(ref msg);
+                var result = profile.Value.SendTo(ref msg, player);
 
                 if (result is VoiceProfileResult.None)
                     continue;
@@ -292,8 +303,16 @@ public class VoiceController : IDisposable
     
     private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)
     {
-        if (receiver.Role.VoiceModule is null || receiver == Player)
+        if (receiver.Role.VoiceModule is null)
             return VoiceChatChannel.None;
+
+        if (receiver == Player)
+        {
+            if (receiver.Switches.CanHearSelf)
+                return VoiceChatChannel.RoundSummary;
+
+            return VoiceChatChannel.None;
+        }
         
         return receiver.Role.VoiceModule.ValidateReceive(Player.Hub, messageChannel);
     }

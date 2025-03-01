@@ -1,11 +1,10 @@
 ﻿using LabExtended.API;
-using LabExtended.API.Collections.Locked;
 
 namespace LabExtended.Utilities.Values
 {
     public struct FakeValue<T>
     {
-        private readonly LockedDictionary<uint, T> _values;
+        private readonly Dictionary<uint, T> _values;
 
         public T? GlobalValue { get; set; }
 
@@ -25,7 +24,7 @@ namespace LabExtended.Utilities.Values
         }
 
         public FakeValue()
-            => _values = new LockedDictionary<uint, T>();
+            => _values = new();
 
         public T GetValue(uint netId, T defaultValue = default)
             => _values.TryGetValue(netId, out var fakedValue) ? fakedValue : defaultValue;

@@ -77,7 +77,7 @@ namespace LabExtended.API.Toys
                 _ => new AdminToy(adminToy)
             };
 
-            ExMap._toys.Add(wrapperToy);
+            ExMap.Toys.Add(wrapperToy);
             return wrapperToy;
         }
     }

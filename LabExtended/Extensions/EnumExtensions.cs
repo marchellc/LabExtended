@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using NorthwoodLib.Pools;
+﻿using NorthwoodLib.Pools;
 
 namespace LabExtended.Extensions
 {
@@ -15,9 +13,10 @@ namespace LabExtended.Extensions
             Remove
         }
 
-        private static readonly LockedHashSet<Type> _flaggableEnums = new LockedHashSet<Type>();
-        private static readonly LockedHashSet<Type> _nonFlaggableEnums = new LockedHashSet<Type>();
-        private static readonly LockedDictionary<Type, Enum[]> _enumValuesCache = new LockedDictionary<Type, Enum[]>();
+        private static readonly HashSet<Type> _flaggableEnums = new();
+        private static readonly HashSet<Type> _nonFlaggableEnums = new();
+        
+        private static readonly Dictionary<Type, Enum[]> _enumValuesCache = new();
 
         public static Enum[] GetEnumValues(this Type type)
             => _enumValuesCache.TryGetValue(type, out var values) ? values : _enumValuesCache[type] = Enum.GetValues(type).CastArray<Enum>();

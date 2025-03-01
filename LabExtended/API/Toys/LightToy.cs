@@ -75,7 +75,7 @@ namespace LabExtended.API.Toys
 
             configure.InvokeSafe(toy);
 
-            ExMap._toys.Add(toy);
+            ExMap.Toys.Add(toy);
 
             NetworkServer.Spawn(lightSource.gameObject);
             return toy;

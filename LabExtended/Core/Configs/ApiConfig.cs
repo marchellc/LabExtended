@@ -6,9 +6,6 @@ namespace LabExtended.Core.Configs
 {
     public class ApiConfig
     {
-        [Description("Map-specific configuration.")]
-        public MapSection MapSection { get; set; } = new MapSection();
-
         [Description("Voice chat configuration.")]
         public VoiceSection VoiceSection { get; set; } = new VoiceSection();
 
@@ -20,12 +17,6 @@ namespace LabExtended.Core.Configs
         
         [Description("Optimization features.")]
         public OptimizationSection OptimizationSection { get; set; } = new OptimizationSection();
-
-        [Description("Multi Threading configuration.")]
-        public MultiThreadSection MultiThreadSection { get; set; } = new MultiThreadSection();
-        
-        [Description("Voice chat threading configuration.")]
-        public ThreadedVoiceSection ThreadedVoiceSection { get; set; } = new ThreadedVoiceSection();
 
         [Description("Player data synchronization configuration.")]
         public SynchronizationSection SynchronizationSection { get; set; } = new SynchronizationSection();

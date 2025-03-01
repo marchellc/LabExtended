@@ -1,12 +1,17 @@
 ﻿using RelativePositioning;
 
+using UnityEngine;
+
 namespace LabExtended.Core.Networking.Synchronization.Position
 {
     public class PositionData
     {
-        public RelativePosition Position = default;
+        public Vector3 Position { get; set; } = default;
+        public RelativePosition RelativePosition { get; set; } = default;
 
-        public ushort SyncH = 0;
-        public ushort SyncV = 0;
+        public bool IsReset { get; set; } = true;
+        
+        public ushort SyncH { get; set; } = 0;
+        public ushort SyncV { get; set; } = 0;
     }
 }

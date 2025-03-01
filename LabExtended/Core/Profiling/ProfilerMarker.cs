@@ -1,6 +1,4 @@
-﻿using LabExtended.API.Collections.Locked;
-
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace LabExtended.Core.Profiling
 {
@@ -9,8 +7,8 @@ namespace LabExtended.Core.Profiling
     /// </summary>
     public class ProfilerMarker : IDisposable
     {
-        internal static readonly LockedHashSet<ProfilerMarker> _allMarkers = new LockedHashSet<ProfilerMarker>();
-
+        internal static readonly List<ProfilerMarker> _allMarkers = new();
+        
         /// <summary>
         /// Gets all created markers.
         /// </summary>

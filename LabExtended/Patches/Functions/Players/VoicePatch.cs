@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Functions.Players
 
             OnMessage.InvokeSafe(speaker, msg);
             
-            speaker.Voice.Pitch.ProcessMessage(ref msg);
+            speaker.Voice.Thread.ProcessMessage(ref msg);
             return false;
         }
     }

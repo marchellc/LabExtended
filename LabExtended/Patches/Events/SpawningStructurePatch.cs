@@ -39,7 +39,7 @@ namespace LabExtended.Patches.Events
                 __instance.RegisterUnspawnedObject(triggerDoor, obj.gameObject);
 
             if (structure is Scp079Generator scp079Generator)
-                ExMap._generators.Add(new Generator(scp079Generator));
+                ExMap.Generators.Add(new(scp079Generator));
 
             return false;
         }

@@ -1,5 +1,5 @@
-﻿using LabExtended.API.Collections.Locked;
-using LabExtended.Core;
+﻿using LabExtended.Core;
+using LabExtended.Extensions;
 
 using YamlDotNet.Serialization;
 
@@ -10,7 +10,7 @@ namespace LabExtended.API.Containers
     /// </summary>
     public class SwitchContainer
     {
-        public static SwitchContainer DefaultPlayerSwitches { get; } = new SwitchContainer();
+        public static SwitchContainer DefaultPlayerSwitches { get; } = new();
         public static SwitchContainer DefaultNpcSwitches { get; }
 
         public static SwitchContainer ConfigPlayerSwitches => ApiLoader.ApiConfig.OtherSection.Players;
@@ -19,7 +19,7 @@ namespace LabExtended.API.Containers
         /// Gets a list of ignored effect types.
         /// </summary>
         [YamlIgnore]
-        public LockedHashSet<Type> IgnoredEffects { get; } = new LockedHashSet<Type>();
+        public HashSet<Type> IgnoredEffects { get; } = new();
 
         #region Visibility Switches
         /// <summary>
@@ -232,6 +232,11 @@ namespace LabExtended.API.Containers
         /// <para>Overrides <see cref="CanBeHeard"/>.</para>
         /// </summary>
         public bool CanBeHeardBySpectators { get; set; } = true;
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether the player can hear themselves speaking.
+        /// </summary>
+        public bool CanHearSelf { get; set; }
         #endregion
 
         /// <summary>
@@ -268,7 +273,8 @@ namespace LabExtended.API.Containers
                 return;
 
             IgnoredEffects.Clear();
-            IgnoredEffects.AddRange(other.IgnoredEffects);
+            
+            other.IgnoredEffects.ForEach(x => IgnoredEffects.Add(x));
 
             IsVisibleInRemoteAdmin = other.IsVisibleInRemoteAdmin;
             IsVisibleInSpectatorList = other.IsVisibleInSpectatorList;
@@ -314,6 +320,7 @@ namespace LabExtended.API.Containers
             CanBeHeardByStaff = other.CanBeHeardByStaff;
             CanBeHeardByOtherRoles = other.CanBeHeardByOtherRoles;
             CanBeHeardBySpectators = other.CanBeHeardBySpectators;
+            CanHearSelf = other.CanHearSelf;
 
             HasInstantKill = other.HasInstantKill;
             HasUnlimitedAmmo = other.HasUnlimitedAmmo;

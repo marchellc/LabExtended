@@ -24,7 +24,7 @@ namespace LabExtended.API.RemoteAdmin.Objects
         public virtual string GetButton(ExPlayer player, RemoteAdminButtonType buttonType)
             => string.Empty;
 
-        public virtual bool GetVisiblity(ExPlayer player)
+        public virtual bool GetVisibility(ExPlayer player)
             => true;
 
         public virtual void OnDisabled() { }

@@ -1,11 +1,11 @@
-﻿using LabExtended.API.Collections.Locked;
+﻿using LabExtended.Extensions;
 
 namespace LabExtended.Utilities.Generation
 {
     public class UniqueGenerator<T>
     {
         private volatile Func<T> _generator;
-        private volatile LockedHashSet<T> _cache = new LockedHashSet<T>();
+        private volatile HashSet<T> _cache = new();
 
         public ICollection<T> Cache => _cache;
 
@@ -32,16 +32,16 @@ namespace LabExtended.Utilities.Generation
             => _cache.Remove(value);
 
         public void FreeAll()
-            => _cache.RemoveAll(value => true);
+            => _cache.Clear();
 
         public void FreeAll(Func<T, bool> predicate)
-            => _cache.RemoveAll(predicate);
+            => _cache.RemoveWhere(x => predicate(x));
 
         public void Occupy(T value)
             => _cache.Add(value);
 
         public void OccupyMany(IEnumerable<T> values)
-            => _cache.AddRange(values);
+            => values?.ForEach(x => _cache.Add(x));
 
         public bool IsOccupied(T value)
             => _cache.Contains(value);

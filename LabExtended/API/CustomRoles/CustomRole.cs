@@ -2,7 +2,6 @@
 
 using HarmonyLib;
 
-using LabExtended.API.Collections.Locked;
 using LabExtended.API.Containers;
 
 using LabExtended.Utilities.Unity;
@@ -17,14 +16,14 @@ using NorthwoodLib.Pools;
 
 using PlayerRoles;
 
-using UnityEngine;
-
 namespace LabExtended.API.CustomRoles;
+
+using Attributes;
 
 public class CustomRole
 {
-    private static readonly LockedDictionary<Type, CustomRoleAttribute> customRoles = new LockedDictionary<Type, CustomRoleAttribute>();
-    private static readonly LockedDictionary<ExPlayer, List<CustomRole>> activeRoles = new LockedDictionary<ExPlayer, List<CustomRole>>();
+    private static readonly Dictionary<Type, CustomRoleAttribute> customRoles = new();
+    private static readonly Dictionary<ExPlayer, List<CustomRole>> activeRoles = new();
 
     public static IReadOnlyDictionary<Type, CustomRoleAttribute> CustomRoles => customRoles;
     public static IReadOnlyDictionary<ExPlayer, List<CustomRole>> ActiveRoles => activeRoles;

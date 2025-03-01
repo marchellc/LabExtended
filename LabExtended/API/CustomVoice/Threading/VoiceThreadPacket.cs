@@ -1,11 +1,11 @@
 ﻿using VoiceChat;
 using VoiceChat.Codec;
 
-namespace LabExtended.API.CustomVoice.Pitching;
+namespace LabExtended.API.CustomVoice.Threading;
 
-public class VoicePitchPacket
+public class VoiceThreadPacket
 {
-    public volatile IVoicePitchAction Action;
+    public volatile IVoiceThreadAction Action;
 
     public volatile byte[] Data;
     public volatile int Length;
@@ -17,7 +17,7 @@ public class VoicePitchPacket
     public volatile OpusEncoder Encoder;
     public volatile OpusDecoder Decoder;
     
-    public volatile Action<VoicePitchPacket> OnProcessed;
+    public volatile Action<VoiceThreadPacket> OnProcessed;
 
     public volatile VoiceChatChannel OriginalChannel;
 }

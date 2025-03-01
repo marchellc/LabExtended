@@ -10,8 +10,6 @@ using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
-using LabExtended.API.Collections.Locked;
-
 using UnityEngine;
 
 using NorthwoodLib.Pools;
