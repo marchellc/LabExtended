@@ -3,6 +3,7 @@
 using LabExtended.Core;
 using LabExtended.Utilities;
 using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Utilities.Unity;
 using MEC;
 
@@ -21,6 +22,8 @@ namespace LabExtended.API
     {
         private static volatile float deltaTime;
         private static volatile float tps;
+        
+        private static volatile bool running = true;
         
         /// <summary>
         /// Gets the server's version.
@@ -56,6 +59,11 @@ namespace LabExtended.API
         /// Gets a value indicating whether or not this is a dedicated server.
         /// </summary>
         public static bool IsDedicated => ServerStatic.IsDedicated;
+        
+        /// <summary>
+        /// Whether or not the server's process is still running.
+        /// </summary>
+        public static bool IsRunning => running;
 
         /// <summary>
         /// Gets a value indicating whether or not Late Join is enabled.
@@ -268,14 +276,22 @@ namespace LabExtended.API
 
         private static void UpdateTickRateAndTime()
         {
-            var delta = Time.deltaTime;
-            var tps = Mathf.Round(1f / Time.smoothDeltaTime);
+            deltaTime = Time.deltaTime;
+            tps = Mathf.Round(1f / Time.smoothDeltaTime);
+        }
+
+        private static void OnQuitting()
+        {
+            running = false;
             
-            Interlocked.Exchange(ref deltaTime, delta);
-            Interlocked.Exchange(ref ExServer.tps, tps);
+            ApiLog.Warn("LabExtended", "The server is quitting, terminating ..");
         }
 
         [LoaderInitialize(1)]
-        private static void OnInit() => PlayerLoopHelper.AfterLoop += UpdateTickRateAndTime;
+        private static void OnInit()
+        {
+            StaticUnityMethods.OnFixedUpdate += UpdateTickRateAndTime;
+            ServerEvents.Quitting += OnQuitting;
+        }
     }
 }

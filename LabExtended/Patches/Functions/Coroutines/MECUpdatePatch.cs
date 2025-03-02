@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using HarmonyLib;
-
+using LabExtended.API;
 using LabExtended.Core;
 
 using MEC;
@@ -26,7 +26,7 @@ public static class MECUpdatePatch
 
 				processIndex.i = 0;
 
-				while (processIndex.i < __instance._lastSlowUpdateProcessSlot)
+				while (processIndex.i < __instance._lastSlowUpdateProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -77,7 +77,7 @@ public static class MECUpdatePatch
 
 				processIndex2.i = 0;
 
-				while (processIndex2.i < __instance._lastRealtimeUpdateProcessSlot)
+				while (processIndex2.i < __instance._lastRealtimeUpdateProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -128,7 +128,7 @@ public static class MECUpdatePatch
 
 				processIndex3.i = 0;
 
-				while (processIndex3.i < __instance._lastUpdateProcessSlot)
+				while (processIndex3.i < __instance._lastUpdateProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -210,7 +210,7 @@ public static class MECUpdatePatch
 
 				processIndex.i = 0;
 
-				while (processIndex.i < __instance._lastFixedUpdateProcessSlot)
+				while (processIndex.i < __instance._lastFixedUpdateProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -276,7 +276,7 @@ public static class MECUpdatePatch
 
 				processIndex.i = 0;
 				
-				while (processIndex.i < __instance._lastLateUpdateProcessSlot)
+				while (processIndex.i < __instance._lastLateUpdateProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -341,7 +341,7 @@ public static class MECUpdatePatch
 
 				processIndex.i = 0;
 				
-				while (processIndex.i < __instance._lastManualTimeframeProcessSlot)
+				while (processIndex.i < __instance._lastManualTimeframeProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{
@@ -404,7 +404,7 @@ public static class MECUpdatePatch
 
 	private static IEnumerator<float> EndOfFramePumpWatcher(Timing timing, MonoBehaviour behaviour)
 	{
-		while (timing._nextEndOfFrameProcessSlot > 0)
+		while (timing._nextEndOfFrameProcessSlot > 0 && ExServer.IsRunning)
 		{
 			if (!timing._EOFPumpRan)
 				behaviour.StartCoroutine(EndOfFramePump(timing));
@@ -418,7 +418,7 @@ public static class MECUpdatePatch
 
 	private static IEnumerator EndOfFramePump(Timing timing)
 	{
-		while (timing._nextEndOfFrameProcessSlot > 0)
+		while (timing._nextEndOfFrameProcessSlot > 0 && ExServer.IsRunning)
 		{
 			yield return Timing.EofWaitObject;
 
@@ -433,7 +433,7 @@ public static class MECUpdatePatch
 
 				processIndex.i = 0;
 
-				while (processIndex.i < timing._lastEndOfFrameProcessSlot)
+				while (processIndex.i < timing._lastEndOfFrameProcessSlot && ExServer.IsRunning)
 				{
 					try
 					{

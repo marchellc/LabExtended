@@ -15,6 +15,8 @@ using LabApi.Loader.Features.Paths;
 using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 
+using LabExtended.Events;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Core
@@ -177,6 +179,7 @@ namespace LabExtended.Core
             ApiLog.Info("Extended Loader", $"Waiting for LabAPI ..");
 
             LogPatch.OnLogging += LogHandler;
+            ServerEvents.Quitting += QuitHandler;
             
             typeof(ApiLoader).Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, 
@@ -189,6 +192,26 @@ namespace LabExtended.Core
                 return;
             
             LogPoint();
+        }
+
+        private static void QuitHandler()
+        {
+            ServerEvents.Quitting -= QuitHandler;
+
+            foreach (var plugin in PluginLoader.Plugins.Keys)
+            {
+                ApiLog.Debug("Lab Extended", $"Unloading plugin &6{plugin.Name}&r ..");
+                
+                try
+                {
+                    plugin.UnregisterCommands();
+                    plugin.Disable();
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Lab Extended", $"Could not unload plugin &1{plugin.Name}&r:\n{ex.ToColoredString()}");
+                }
+            }
         }
     }
 }

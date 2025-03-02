@@ -381,23 +381,17 @@ namespace LabExtended.Core.Networking
             }
         }
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
+        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, 
+            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
         {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
-
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
-                return;
+            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
+            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             if (writer != null)
             {
                 var data = writer.ToArraySegment();
+                
                 SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
             }
             else
@@ -406,23 +400,17 @@ namespace LabExtended.Core.Networking
             }
         }
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
+        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, 
+            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
         {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
-
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
-                return;
+            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
+            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             if (writer != null)
             {
                 var data = writer.ToArraySegment();
+                
                 SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
             }
             else
@@ -431,19 +419,14 @@ namespace LabExtended.Core.Networking
             }
         }
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
+        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data,
+            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
         {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
-
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
-                return;
+            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
+            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
+            
+            ApiLog.Debug("Mirror API", $"SendRpc &6{behaviour.name}&r &3{rpcName}&r (&6{rpcHash}&r)");
 
             var msg = new RpcMessage()
             {
@@ -458,48 +441,68 @@ namespace LabExtended.Core.Networking
 
             if (customObservers != null)
             {
+                ApiLog.Debug("Mirror API", $"Sending to customObservers");
+                
                 foreach (var ply in customObservers)
                 {
+                    ApiLog.Debug("Mirror API", $"Checking out observer &1{ply.Name}&r (&6{ply.UserId}&r)");
+
                     if (checkObservers && !behaviour.netIdentity.observers.ContainsValue(ply.Connection))
+                    {
+                        ApiLog.Debug("Mirror API", $"checkObservers is true and target is not included in observers");
                         continue;
+                    }
 
                     if (!includeOwner && ply.Connection == behaviour.netIdentity.connectionToClient)
+                    {
+                        ApiLog.Debug("Mirror API", $"includeOwner is false and target connection is owner");
                         continue;
+                    }
 
                     if (!ply.Connection.isReady)
+                    {
+                        ApiLog.Debug("Mirror API", $"target connection is not ready");    
                         continue;
+                    }
 
                     ply.Connection.Send(msg, channelId);
+                    
+                    ApiLog.Debug("Mirror API", $"Sent RPC payload");    
                 }
             }
             else
             {
+                ApiLog.Debug("Mirror API", $"Sending to default observers ({behaviour.netIdentity.observers.Count})");    
+                
                 foreach (var conn in behaviour.netIdentity.observers.Values)
                 {
+                    ApiLog.Debug("Mirror API", $"Checking out connection id={conn.connectionId} ({conn})");    
+                    
                     if (!includeOwner && conn == behaviour.netIdentity.connectionToClient)
+                    {
+                        ApiLog.Debug("Mirror API", $"includeOwner is false and target connection is owner");
                         continue;
+                    }
 
                     if (!conn.isReady)
+                    {
+                        ApiLog.Debug("Mirror API", $"Target connection is not ready");    
                         continue;
+                    }
 
                     conn.Send(msg, channelId);
+                    
+                    ApiLog.Debug("Mirror API", $"Sent RPC payload to connection");    
                 }
             }
         }
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
+        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data, 
+            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
         {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
-
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
-                return;
+            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
+            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             var msg = new RpcMessage()
             {
@@ -514,14 +517,9 @@ namespace LabExtended.Core.Networking
 
             foreach (var conn in (customObservers ?? behaviour.netIdentity.observers.Values))
             {
-                if (customObservers != null && checkObservers && !behaviour.netIdentity.observers.ContainsValue(conn))
-                    continue;
-
-                if (!includeOwner && conn == behaviour.netIdentity.connectionToClient)
-                    continue;
-
-                if (!conn.isReady)
-                    continue;
+                if (customObservers != null && checkObservers && !behaviour.netIdentity.observers.ContainsValue(conn)) continue;
+                if (!includeOwner && conn == behaviour.netIdentity.connectionToClient) continue;
+                if (!conn.isReady) continue;
 
                 conn.Send(msg, channelId);
             }

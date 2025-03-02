@@ -1,4 +1,5 @@
-﻿using LabExtended.Attributes;
+﻿using LabExtended.API;
+using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Extensions;
 
@@ -92,7 +93,7 @@ namespace LabExtended.Utilities.Unity
 
             systems.Push(system);
 
-            while (systems.Count > 0) 
+            while (systems.Count > 0 && ExServer.IsRunning) 
             {
                 var parent = systems.Pop();
 
@@ -331,7 +332,7 @@ namespace LabExtended.Utilities.Unity
 
                 list.Push(system);
 
-                while (list.Count > 0)
+                while (list.Count > 0 && ExServer.IsRunning)
                 {
                     var sys = list.Pop();
 
@@ -363,7 +364,7 @@ namespace LabExtended.Utilities.Unity
 
                 list.Push(new Tuple<int, PlayerLoopSystem>(0, system));
 
-                while (list.Count > 0)
+                while (list.Count > 0 && ExServer.IsRunning)
                 {
                     var tuple = list.Pop();
                     var depth = tuple.Item1;

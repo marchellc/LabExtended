@@ -533,7 +533,7 @@ namespace LabExtended.API
                         ticketLoader.ModifyTickets(player.Hub, 10);
                 }
 
-                while (scpQueue.TryDequeue(out var scpRole))
+                while (scpQueue.TryDequeue(out var scpRole) && ExServer.IsRunning)
                     ChooseScps(candidates, players, roles, scpRole, scpQueue);
 
                 ListPool<ExPlayer>.Shared.Return(candidates);
@@ -593,7 +593,7 @@ namespace LabExtended.API
                         }
                     }
 
-                    while (scps > 0)
+                    while (scps > 0 && ExServer.IsRunning)
                     {
                         var num4 = (double)UnityEngine.Random.value * num2;
 

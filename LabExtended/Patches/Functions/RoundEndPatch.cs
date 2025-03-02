@@ -56,7 +56,7 @@ namespace LabExtended.Patches.Functions
     {
       var time = Time.unscaledTime;
 
-      while (summary != null && summary)
+      while (summary != null && summary && ExServer.IsRunning)
       {
         yield return Timing.WaitForSeconds(2.5f);
 

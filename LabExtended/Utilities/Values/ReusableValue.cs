@@ -1,4 +1,5 @@
-﻿using LabExtended.Extensions;
+﻿using LabExtended.API;
+using LabExtended.Extensions;
 
 namespace LabExtended.Utilities.Values
 {
@@ -36,7 +37,7 @@ namespace LabExtended.Utilities.Values
             {
                 if (_newValue is null)
                 {
-                    while (_busy)
+                    while (_busy && ExServer.IsRunning)
                         continue;
 
                     _busy = true;

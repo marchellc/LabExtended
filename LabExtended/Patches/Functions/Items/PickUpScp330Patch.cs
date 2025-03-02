@@ -82,7 +82,7 @@ namespace LabExtended.Patches.Functions.Items
 
             player.Inventory._bag ??= new CandyBag(bag, player);
 
-            while (scp330Pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(scp330Pickup.StoredCandies[0]))
+            while (scp330Pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(scp330Pickup.StoredCandies[0]) && ExServer.IsRunning)
                 scp330Pickup.StoredCandies.RemoveAt(0);
 
             if (bag.AcquisitionAlreadyReceived)

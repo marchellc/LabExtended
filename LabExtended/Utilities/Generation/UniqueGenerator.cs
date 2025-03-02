@@ -1,4 +1,5 @@
-﻿using LabExtended.Extensions;
+﻿using LabExtended.API;
+using LabExtended.Extensions;
 
 namespace LabExtended.Utilities.Generation
 {
@@ -21,7 +22,7 @@ namespace LabExtended.Utilities.Generation
         {
             var value = _generator();
 
-            while (_cache.Contains(value))
+            while (_cache.Contains(value) && ExServer.IsRunning)
                 value = _generator();
 
             _cache.Add(value);

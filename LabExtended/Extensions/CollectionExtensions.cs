@@ -3,6 +3,7 @@
 using NorthwoodLib.Pools;
 
 using System.Collections;
+using LabExtended.API;
 
 namespace LabExtended.Extensions
 {
@@ -38,7 +39,7 @@ namespace LabExtended.Extensions
             {
                 var index = RandomGen.Instance.GetInt32(0, count - 1);
 
-                while (selected.Contains(index))
+                while (selected.Contains(index) && ExServer.IsRunning)
                     index = RandomGen.Instance.GetInt32(0, count - 1);
 
                 selected.Add(index);
@@ -64,7 +65,7 @@ namespace LabExtended.Extensions
             {
                 var index = RandomGen.Instance.GetInt32(0, count - 1);
 
-                while (selected.Contains(index))
+                while (selected.Contains(index) && ExServer.IsRunning)
                     index = RandomGen.Instance.GetInt32(0, count - 1);
 
                 selected.Add(index);
@@ -90,7 +91,7 @@ namespace LabExtended.Extensions
             {
                 var index = RandomGen.Instance.GetInt32(0, count - 1);
 
-                while (selected.Contains(index))
+                while (selected.Contains(index) && ExServer.IsRunning)
                     index = RandomGen.Instance.GetInt32(0, count - 1);
 
                 selected.Add(index);
@@ -142,7 +143,7 @@ namespace LabExtended.Extensions
             var list = new List<T>(count);
             var added = 0;
 
-            while (added != count)
+            while (added != count && ExServer.IsRunning)
             {
                 var item = objects.First(o => predicate(o));
 
@@ -177,7 +178,7 @@ namespace LabExtended.Extensions
             var count = 0;
             var enumerator = objects.GetEnumerator();
 
-            while (enumerator.MoveNext())
+            while (enumerator.MoveNext() && ExServer.IsRunning)
                 count++;
 
             if (enumerator is IDisposable disposable)

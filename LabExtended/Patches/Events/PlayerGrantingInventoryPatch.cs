@@ -91,7 +91,7 @@ namespace LabExtended.Patches.Events
                 
                 if (receivingArgs.InventoryReset || grantingArgs.ShouldResetInventory)
                 {
-                    while (ply.inventory.UserInventory.Items.Count > 0)
+                    while (ply.inventory.UserInventory.Items.Count > 0 && ExServer.IsRunning)
                         ply.inventory.ServerRemoveItem(ply.inventory.UserInventory.Items.ElementAt(0).Key, null);
                     
                     ply.inventory.UserInventory.ReserveAmmo.Clear();
@@ -106,7 +106,7 @@ namespace LabExtended.Patches.Events
                     var itemCount = ply.inventory.UserInventory.Items.Count(x => x.Value is not Scp1344Item);
                     var removedCount = 0;
 
-                    while (removedCount != itemCount)
+                    while (removedCount != itemCount && ExServer.IsRunning)
                     {
                         var nextItem = ply.inventory.UserInventory.Items.ElementAt(0);
 

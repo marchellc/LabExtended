@@ -56,11 +56,8 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             {
                 var other = ExPlayer.Get(otherHub);
 
-                if (other is null)
-                    continue;
-
-                if (!other.Switches.IsVisibleInRemoteAdmin)
-                    continue;
+                if (other is null) continue;
+                if (!other.Switches.IsVisibleInRemoteAdmin) continue;
 
                 var icons = other.RaIcons;
 

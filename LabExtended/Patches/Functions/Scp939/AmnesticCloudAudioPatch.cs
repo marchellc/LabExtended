@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Core.Networking;
 
 using Mirror;
@@ -17,8 +18,16 @@ namespace LabExtended.Patches.Functions.Scp939
         [HarmonyPatch(typeof(Scp939AmnesticCloudInstance), nameof(Scp939AmnesticCloudInstance.RpcPlayCreateSound))]
         public static bool Prefix(Scp939AmnesticCloudInstance __instance)
         {
-            __instance.SendRpc(FunctionName, FunctionHash, (NetworkWriter)null, 0, true, true, ExPlayer.Get(x => x.Switches.CanHearAmnesticCloudSpawn));
-            return false;
+            try
+            {
+                __instance.SendRpc(FunctionName, FunctionHash, (NetworkWriter)null, 0, true, true, ExPlayer.Get(x => x.Switches.CanHearAmnesticCloudSpawn));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                ApiLog.Error("AmnesticCloudAudioPatch", ex);
+                return true;
+            }
         }
     }
 }

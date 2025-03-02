@@ -1,3 +1,4 @@
+using LabExtended.API;
 using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
@@ -48,7 +49,7 @@ public abstract class PoolBase<T> : IDisposable
 
         _pool.Clear();
 
-        while (_pool.Count != size)
+        while (_pool.Count != size && ExServer.IsRunning)
         {
             var item = constructor();
             

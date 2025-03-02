@@ -84,7 +84,7 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                             var mouseLook = fpcRole.FpcModule.MouseLook;
                             var module = fpcRole.FpcModule;
 
-                            var isInvisible = !hasRole ||
+                            var isInvisible = hasRole &&
                                               !customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
 
                             if (!isInvisible && (ghosted || (other.PersonalGhostFlags & (1 << player.PlayerId)) != 0))

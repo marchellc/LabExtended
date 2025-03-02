@@ -126,10 +126,10 @@ namespace LabExtended.Events
         private static void RegisterEvents()
         {
             EventExtensions.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(typeof(PlayerEvents), nameof(PlayerEvents.PreAuthenticating), InternalHandlePlayerAuth);
-            EventExtensions.InsertFirst<LabEventHandler<RoundEndedEventArgs>>(typeof(ServerEvents), nameof(ServerEvents.RoundEnded), InternalHandleRoundEnd);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.WaitingForPlayers), InternalHandleRoundWaiting);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.RoundRestarted), InternalHandleRoundRestart);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(ServerEvents), nameof(ServerEvents.RoundStarted), InternalHandleRoundStart);
+            EventExtensions.InsertFirst<LabEventHandler<RoundEndedEventArgs>>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundEnded), InternalHandleRoundEnd);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.WaitingForPlayers), InternalHandleRoundWaiting);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundRestarted), InternalHandleRoundRestart);
+            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundStarted), InternalHandleRoundStart);
         }
     }
 }

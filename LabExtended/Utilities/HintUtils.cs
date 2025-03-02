@@ -4,7 +4,7 @@ using LabExtended.Core.Pooling.Pools;
 using System.Text.RegularExpressions;
 
 using Hints;
-
+using LabExtended.API;
 using Mirror;
 
 namespace LabExtended.Utilities
@@ -178,7 +178,7 @@ namespace LabExtended.Utilities
                         }, () => new HintData()));
                     }
 
-                    while (text.Length * avgCharWidth > 100f)
+                    while (text.Length * avgCharWidth > 100f && ExServer.IsRunning)
                     {
                         int cutIndex = (int)(100f / avgCharWidth);
 

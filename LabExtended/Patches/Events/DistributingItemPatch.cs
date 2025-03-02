@@ -6,7 +6,7 @@ using InventorySystem.Items.Pickups;
 
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
-
+using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Map;
@@ -28,8 +28,8 @@ namespace LabExtended.Patches.Events
         [HarmonyPatch(typeof(ItemDistributor), nameof(ItemDistributor.PlaceSpawnables))]
         public static bool Prefix(ItemDistributor __instance)
         {
-            while (ItemSpawnpoint.RandomInstances.Remove(null)) { }
-            while (ItemSpawnpoint.AutospawnInstances.Remove(null)) { }
+            while (ItemSpawnpoint.RandomInstances.Remove(null) && ExServer.IsRunning) { }
+            while (ItemSpawnpoint.AutospawnInstances.Remove(null) && ExServer.IsRunning) { }
 
             foreach (var item in __instance.Settings.SpawnableItems)
                 SpawnItem(__instance, item);

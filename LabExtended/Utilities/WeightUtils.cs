@@ -1,4 +1,5 @@
-﻿using LabExtended.Utilities.Generation;
+﻿using LabExtended.API;
+using LabExtended.Utilities.Generation;
 
 using NorthwoodLib.Pools;
 
@@ -43,7 +44,7 @@ namespace LabExtended.Utilities
             {
                 var index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
-                while (!allowDuplicates && selected.Contains(index))
+                while (!allowDuplicates && selected.Contains(index) && ExServer.IsRunning)
                     index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
                 array[i] = list[index];
@@ -75,7 +76,7 @@ namespace LabExtended.Utilities
             {
                 var index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
-                while (!allowDuplicates && selected.Contains(index))
+                while (!allowDuplicates && selected.Contains(index) && ExServer.IsRunning)
                     index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
                 chosen.Add(list[index]);
@@ -107,7 +108,7 @@ namespace LabExtended.Utilities
             {
                 var index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
-                while (!allowDuplicates && selected.Contains(index))
+                while (!allowDuplicates && selected.Contains(index) && ExServer.IsRunning)
                     index = GetRandomIndex(total, count, x => weightPicker(list[x]));
 
                 chosen.Add(list[index]);

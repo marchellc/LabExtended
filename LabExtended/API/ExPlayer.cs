@@ -592,11 +592,11 @@ namespace LabExtended.API
             get => Voice?.Thread?.InstancePitch ?? 1f;
             set => Voice!.Thread!.InstancePitch = value;
         }
-        
+
         /// <summary>
         /// Gets the time of the player joining.
         /// </summary>
-        public DateTime JoinTime { get; } = DateTime.Now;
+        public DateTime JoinTime => PersistentStorage.JoinTime;
 
         /// <summary>
         /// Gets or sets the icons that will always be shown in the Remote Admin player list.
@@ -1441,6 +1441,7 @@ namespace LabExtended.API
             foreach (var other in AllPlayers)
             {
                 other.sentRoles?.Remove(NetId);
+                other.PersonalGhostFlags &= ~(1 << PlayerId);
             }
 
             CustomCommand._continuedContexts.Remove(NetId);

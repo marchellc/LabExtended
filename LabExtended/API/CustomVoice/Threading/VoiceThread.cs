@@ -3,10 +3,14 @@
 using LabExtended.API.CustomVoice.Threading.Pitch;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
+
+using Mirror;
 
 using VoiceChat.Codec;
 using VoiceChat.Codec.Enums;
+
 using VoiceChat.Networking;
 
 namespace LabExtended.API.CustomVoice.Threading;
@@ -69,6 +73,7 @@ public class VoiceThread : IDisposable
         Task.Run(UpdateInputQueue);
 
         StaticUnityMethods.OnFixedUpdate += UpdateOutputQueue;
+        ServerEvents.Quitting += Dispose;
     }
 
     public void Dispose()
@@ -77,6 +82,7 @@ public class VoiceThread : IDisposable
             return;
 
         StaticUnityMethods.OnFixedUpdate -= UpdateOutputQueue;
+        ServerEvents.Quitting -= Dispose;
         
         isDisposed = true;
         
@@ -86,10 +92,16 @@ public class VoiceThread : IDisposable
         voicePitchAction = null;
 
         opusDecoder?.Dispose();
-        opusEncoder?.Dispose();
-
-        opusEncoder = null;
         opusDecoder = null;
+        
+        opusEncoder?.Dispose();
+        opusEncoder = null;
+        
+        inputQueue?.Clear();
+        inputQueue = null;
+        
+        outputQueue?.Clear();
+        outputQueue = null;
     }
     
     public void ProcessCustom<T>(byte[] originalData, int originalLength, IVoiceThreadAction action, Action<T> onProcessed, Func<T> packetFactory) where T : VoiceThreadPacket
@@ -228,20 +240,23 @@ public class VoiceThread : IDisposable
 
     internal void ProcessMessage(ref VoiceMessage msg)
     {
-        if (!ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice && ActivePitch != 1f)
+        if (!isDisposed)
         {
-            ProcessPitch(ref msg);
-            return;
+            if (!ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice && ActivePitch != 1f)
+            {
+                ProcessPitch(ref msg);
+                return;
+            }
+
+            voiceController.ProcessMessage(ref msg);
         }
-        
-        voiceController.ProcessMessage(ref msg);
     }
 
     private void UpdateOutputQueue()
     {
         try
         {
-            while (outputQueue.TryDequeue(out var packet))
+            while (outputQueue.TryDequeue(out var packet) && ExServer.IsRunning && !isDisposed)
             {
                 packet.OnProcessed.InvokeSafe(packet);
             }
@@ -254,11 +269,11 @@ public class VoiceThread : IDisposable
 
     private void UpdateInputQueue()
     {
-        while (true)
+        while (!isDisposed && ExServer.IsRunning)
         {
             try
             {
-                while (inputQueue.TryDequeue(out var packet))
+                while (inputQueue.TryDequeue(out var packet) && ExServer.IsRunning)
                 {
                     if (packet.Action is null)
                         continue;

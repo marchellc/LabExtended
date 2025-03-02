@@ -1,4 +1,6 @@
 ﻿using System.Runtime.Remoting;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 using LabExtended.Core.Hooking;
 using LabExtended.Core.Pooling.Pools;
 
@@ -201,6 +203,8 @@ public class VoiceController : IDisposable
         _sessionPackets.Add(DateTime.Now, msg);
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
+        
+        VoiceEvents.InvokeOnSending(Player, ref msg);
 
         foreach (var profile in _profiles)
         {
@@ -246,7 +250,17 @@ public class VoiceController : IDisposable
                 }
             }
 
+            if (send)
+                VoiceEvents.InvokeOnReceiving(Player, player, ref msg);
+            
             if (!send || msg.Channel is VoiceChatChannel.None)
+                continue;
+
+            var receivingArgs = new PlayerReceivingVoiceMessageEventArgs(player.Hub, msg);
+            
+            PlayerEvents.OnReceivingVoiceMessage(receivingArgs);
+
+            if (!receivingArgs.IsAllowed)
                 continue;
             
             player.Send(msg);

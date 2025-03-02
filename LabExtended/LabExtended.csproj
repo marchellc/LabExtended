@@ -12,6 +12,8 @@
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+      <DebugSymbols>true</DebugSymbols>
+      <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <ItemGroup>

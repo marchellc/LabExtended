@@ -61,7 +61,7 @@ namespace LabExtended.Commands.Parsing.PlayerList.Nodes
 
                     var output = new List<ExPlayer>(playerCount);
 
-                    while (output.Count != playerCount)
+                    while (output.Count != playerCount && ExServer.IsRunning)
                     {
                         var randomItem = list.FirstOrDefault(p => UnityEngine.Random.Range(0, 1) == 1);
 
@@ -147,7 +147,7 @@ namespace LabExtended.Commands.Parsing.PlayerList.Nodes
         {
             var statementsNode = new StatementsNode();
 
-            while (position < tokens.Count)
+            while (position < tokens.Count && ExServer.IsRunning)
                 statementsNode.Expressions.Add(ParseExpression(ref position, tokens));
 
             return statementsNode;

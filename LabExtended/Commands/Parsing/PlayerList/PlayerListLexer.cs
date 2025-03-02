@@ -1,4 +1,5 @@
-﻿using NorthwoodLib.Pools;
+﻿using LabExtended.API;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Commands.Parsing.PlayerList
 {
@@ -9,7 +10,7 @@ namespace LabExtended.Commands.Parsing.PlayerList
             var list = ListPool<TextToken>.Shared.Rent();
             var position = 0;
 
-            while (GetNextToken(code, list, ref position))
+            while (GetNextToken(code, list, ref position) && ExServer.IsRunning)
                 continue;
 
             return list;

@@ -6,8 +6,7 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-
-using Mirror;
+using LabExtended.Utilities;
 
 using UnityEngine;
 
@@ -15,6 +14,18 @@ namespace LabExtended.Patches.Functions.Players
 {
     public static class EnablingEffectPatch
     {
+        public static FastEvent<Action<StatusEffectBase>> OnEnabled { get; } =
+            FastEvents.DefineEvent<Action<StatusEffectBase>>(typeof(StatusEffectBase),
+                nameof(StatusEffectBase.OnEnabled));
+        
+        public static FastEvent<Action<StatusEffectBase>> OnDisabled { get; } =
+            FastEvents.DefineEvent<Action<StatusEffectBase>>(typeof(StatusEffectBase),
+                nameof(StatusEffectBase.OnDisabled));
+        
+        public static FastEvent<Action<StatusEffectBase, byte, byte>> OnIntensityChanged { get; } =
+            FastEvents.DefineEvent<Action<StatusEffectBase, byte, byte>>(typeof(StatusEffectBase),
+                nameof(StatusEffectBase.OnIntensityChanged));
+        
         [HarmonyPatch(typeof(StatusEffectBase), nameof(StatusEffectBase.ForceIntensity))]
         public static bool Prefix(StatusEffectBase __instance, byte value)
         {
@@ -28,10 +39,9 @@ namespace LabExtended.Patches.Functions.Players
                 return false;
 
             var prevIntensity = __instance.Intensity;
-            var serverActive = NetworkServer.active;
             var isEnabling = prevIntensity == 0 && value > 0;
 
-            if (serverActive && isEnabling)
+            if (isEnabling)
             {
                 var receivingArgs =
                     new PlayerEffectUpdatingEventArgs(player.Hub, __instance, value, __instance.Duration);
@@ -42,24 +52,31 @@ namespace LabExtended.Patches.Functions.Players
                     return false;
 
                 value = receivingArgs.Intensity;
-
-                if (__instance.Duration != receivingArgs.Duration)
-                    __instance.Duration = receivingArgs.Duration;
+                
+                __instance.Duration = receivingArgs.Duration;
             }
 
             __instance._intensity = (byte)Mathf.Min(value, __instance.MaxIntensity);
-
-            if (serverActive)
-                __instance.Hub.playerEffectsController.ServerSyncEffect(__instance);
+            __instance.Hub.playerEffectsController.ServerSyncEffect(__instance);
+            
+            PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(player.Hub, __instance, value, __instance.Duration));
 
             if (isEnabling)
+            {
                 __instance.Enabled();
+
+                OnEnabled.InvokeEvent(null, __instance);
+            }
             else if (prevIntensity > 0 && value == 0)
+            {
                 __instance.Disabled();
+                
+                OnDisabled.InvokeEvent(null, __instance);
+            }
 
             __instance.IntensityChanged(prevIntensity, value);
-
-            PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(player.Hub, __instance, value, __instance.Duration));
+            
+            OnIntensityChanged.InvokeEvent(null, __instance, prevIntensity, value);
             return false;
         }
     }

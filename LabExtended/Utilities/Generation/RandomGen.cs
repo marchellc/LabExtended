@@ -1,4 +1,6 @@
-﻿namespace LabExtended.Utilities.Generation
+﻿using LabExtended.API;
+
+namespace LabExtended.Utilities.Generation
 {
     public class RandomGen
     {
@@ -40,11 +42,11 @@
         {
             var str = "";
 
-            while (str.Length != minSize)
+            while (str.Length != minSize && ExServer.IsRunning)
             {
                 var c = GetChar(allowUnreadable);
 
-                while (whitelisted.Length > 0 && !whitelisted.Contains(c))
+                while (whitelisted.Length > 0 && !whitelisted.Contains(c) && ExServer.IsRunning)
                     c = GetChar(allowUnreadable);
 
                 str += c;
@@ -57,11 +59,11 @@
         {
             var str = "";
 
-            while (str.Length != minSize)
+            while (str.Length != minSize && ExServer.IsRunning)
             {
                 var c = GetChar(allowUnreadable);
 
-                while (blacklisted.Contains(c))
+                while (blacklisted.Contains(c) && ExServer.IsRunning)
                     c = GetChar(allowUnreadable);
 
                 str += c;
@@ -74,7 +76,7 @@
         {
             var str = "";
 
-            while (str.Length != minSize)
+            while (str.Length != minSize && ExServer.IsRunning)
                 str += GetChar(allowUnreadable);
 
             return str;

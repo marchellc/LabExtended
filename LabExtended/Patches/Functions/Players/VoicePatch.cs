@@ -1,6 +1,8 @@
-﻿using LabExtended.API;
-
+﻿using Achievements.Handlers;
+using LabExtended.API;
 using LabExtended.Core;
+using LabExtended.Events;
+using LabExtended.Utilities;
 
 using Mirror;
 
@@ -9,17 +11,17 @@ using PlayerRoles.Voice;
 using VoiceChat;
 using VoiceChat.Networking;
 
-using CentralAuth;
-
 using HarmonyLib;
-
-using LabExtended.Extensions;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 
 namespace LabExtended.Patches.Functions.Players
 {
     public static class VoicePatch
     {
-        public static event Action<ExPlayer, VoiceMessage> OnMessage;
+        public static FastEvent<VoiceTransceiver.VoiceMessageReceiving> OnReceiving { get; } =
+            FastEvents.DefineEvent<VoiceTransceiver.VoiceMessageReceiving>(typeof(VoiceTransceiver),
+                nameof(VoiceTransceiver.OnVoiceMessageReceiving));
         
         [HarmonyPatch(typeof(VoiceTransceiver), nameof(VoiceTransceiver.ServerReceiveMessage))]
         public static bool Prefix(VoiceMessage msg, NetworkConnection conn)
@@ -33,8 +35,22 @@ namespace LabExtended.Patches.Functions.Players
             if (!ExPlayer.TryGet(msg.Speaker, out var speaker))
                 return false;
 
-            OnMessage.InvokeSafe(speaker, msg);
+            var sendingArgs = new PlayerSendingVoiceMessageEventArgs(msg);
             
+            PlayerEvents.OnSendingVoiceMessage(sendingArgs);
+
+            if (!sendingArgs.IsAllowed)
+                return false;
+
+            if (ApiLoader.ApiConfig.VoiceSection.EnableLegacyEvent)
+            {
+                OnReceiving.InvokeEvent(null, msg, msg.Speaker);
+            }
+            else
+            {
+                OnSpeakingTerms.OnVoiceMessageReceiving(msg, msg.Speaker);
+            }
+
             speaker.Voice.Thread.ProcessMessage(ref msg);
             return false;
         }

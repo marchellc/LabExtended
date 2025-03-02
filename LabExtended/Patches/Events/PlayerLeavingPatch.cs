@@ -4,6 +4,7 @@ using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
+using LabExtended.Extensions;
 
 using LiteNetLib;
 
@@ -13,20 +14,22 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerLeavingPatch
     {
-        [HookPatch(typeof(PlayerLeavingArgs))]
+        [HookPatch(typeof(PlayerLeavingArgs), true)]
         [HarmonyPatch(typeof(LiteNetLib4MirrorServer), nameof(LiteNetLib4MirrorServer.OnPeerDisconnected))]
         public static bool Prefix(NetPeer peer, DisconnectInfo disconnectinfo)
         {
-            if (peer is null)
-                return true;
-
-            var player = ExPlayer.Get(peer);
-
-            if (player is null)
+            ExPlayer player = null;
+            
+            if ((player = ExPlayer.Get(peer)) is null)
                 return true;
 
             HookRunner.RunEvent(new PlayerLeavingArgs(player, disconnectinfo.Reason is DisconnectReason.Timeout, disconnectinfo));
-            return true;
+            
+            LiteNetLib4MirrorCore.LastDisconnectError = disconnectinfo.SocketErrorCode;
+            LiteNetLib4MirrorCore.LastDisconnectReason = disconnectinfo.Reason;
+            
+            LiteNetLib4MirrorTransport.Singleton.OnServerDisconnected.InvokeSafe(peer.Id + 1);
+            return false;
         }
     }
 }
