@@ -27,7 +27,7 @@
         <HintPath>$(LABEX_REFERENCES)\Assembly-CSharp-publicized.dll</HintPath>
       </Reference>
       <Reference Include="Assembly-CSharp-firstpass">
-        <HintPath>..\..\refs\Assembly-CSharp-firstpass-publicized.dll</HintPath>
+        <HintPath>$(LABEX_REFERENCES)\Assembly-CSharp-firstpass-publicized.dll</HintPath>
       </Reference>
       <Reference Include="CommandSystem.Core">
         <HintPath>$(LABEX_REFERENCES)\CommandSystem.Core.dll</HintPath>
