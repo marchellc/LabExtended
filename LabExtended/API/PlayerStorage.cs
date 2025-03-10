@@ -7,9 +7,9 @@ namespace LabExtended.API
     /// </summary>
     public class PlayerStorage : IDisposable
     {
-        internal static readonly Dictionary<string, PlayerStorage> _persistentStorage = new Dictionary<string, PlayerStorage>();
+        internal static readonly Dictionary<string, PlayerStorage?> _persistentStorage = new Dictionary<string, PlayerStorage?>();
 
-        private Dictionary<string, object> _storage;
+        private Dictionary<string, object>? _storage;
         
         /// <summary>
         /// Whether or not this storage is persistent.

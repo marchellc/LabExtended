@@ -54,10 +54,10 @@ namespace LabExtended.API.CustomCommands.Despawn.LookAt
                         return;
                     }
 
-                    player.HasGodMode = false;
+                    player.IsGodModeEnabled = false;
                     player.Kill();
 
-                    ctx.RespondOk($"Killed {player.Name}");
+                    ctx.RespondOk($"Killed {player.Nickname}");
                     return;
                 }
 

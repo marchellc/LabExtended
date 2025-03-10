@@ -34,7 +34,9 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                     return false;
                 }
 
-                if (result == 1 && !player.IsNorthwoodStaff && !player.Hub.authManager.BypassBansFlagSet && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
+                if (result == 1 && !player.IsNorthwoodStaff 
+                                && !player.ReferenceHub.authManager.BypassBansFlagSet 
+                                && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
                 {
                     ApiLog.Debug("Remote Admin API", $"Missing permissions");
                     return false;

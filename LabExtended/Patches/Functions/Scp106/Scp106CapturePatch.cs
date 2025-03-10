@@ -14,7 +14,7 @@ namespace LabExtended.Patches.Functions.Scp106
             if (!ExPlayer.TryGet(__instance._targetHub, out var player) || !ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!player.Switches.CanBeCapturedBy106 || !scp.Switches.CanCaptureAs106)
+            if (!player.Toggles.CanBeCapturedBy106 || !scp.Toggles.CanCaptureAs106)
             {
                 __instance.SendCooldown(__instance._missCooldown);
                 return false;

@@ -13,9 +13,9 @@ namespace LabExtended.Events.Round
         /// <summary>
         /// A dictionary of player's and their decided role.
         /// </summary>
-        public Dictionary<ExPlayer, RoleTypeId> Roles { get; }
+        public Dictionary<ExPlayer?, RoleTypeId> Roles { get; }
 
-        internal AssigningRolesArgs(Dictionary<ExPlayer, RoleTypeId> roles)
+        internal AssigningRolesArgs(Dictionary<ExPlayer?, RoleTypeId> roles)
             => Roles = roles;
     }
 }

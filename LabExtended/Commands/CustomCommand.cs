@@ -125,7 +125,7 @@ namespace LabExtended.Commands
                     var cmdResponse = (ICommandResponse)result;
 
                     if (cmdResponse is ContinuedResponse continuedResponse)
-                        _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, context, context.RawInput, context.RawArgs);
+                        _continuedContexts[player.NetworkId] = new ContinuedContext(continuedResponse, context, context.RawInput, context.RawArgs);
                     else
                         collection.Dispose();
 
@@ -222,7 +222,7 @@ namespace LabExtended.Commands
             if (!ExPlayer.TryGet(args.Sender, out var player))
                 return;
 
-            if (!_continuedContexts.TryGetValue(player.NetId, out var continuedContext))
+            if (!_continuedContexts.TryGetValue(player.NetworkId, out var continuedContext))
                 return;
 
             args.IsAllowed = false;
@@ -240,9 +240,9 @@ namespace LabExtended.Commands
             }
 
             if (ctx.Response is ContinuedResponse continuedResponse)
-                _continuedContexts[player.NetId] = new ContinuedContext(continuedResponse, ctx, ctx.RawInput, ctx.RawArgs);
+                _continuedContexts[player.NetworkId] = new ContinuedContext(continuedResponse, ctx, ctx.RawInput, ctx.RawArgs);
             else
-                _continuedContexts.Remove(player.NetId);
+                _continuedContexts.Remove(player.NetworkId);
 
             player.SendRemoteAdminMessage(ctx.Response.Response, ctx.Response.IsSuccess, true, continuedContext.PreviousContext?.Command?.Command ?? string.Empty);
         }

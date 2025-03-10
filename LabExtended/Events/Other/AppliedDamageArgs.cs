@@ -22,9 +22,9 @@ namespace LabExtended.Events.Other
         /// <summary>
         /// The target that the damage is being applied on.
         /// </summary>
-        public ExPlayer Target { get; set; }
+        public ExPlayer? Target { get; set; }
 
-        internal AppliedDamageArgs(DamageInfo damageInfo, DamageHandlerBase.HandlerOutput output, ExPlayer target)
+        internal AppliedDamageArgs(DamageInfo damageInfo, DamageHandlerBase.HandlerOutput output, ExPlayer? target)
         {
             Info = damageInfo;
             Output = output;

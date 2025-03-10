@@ -27,7 +27,9 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 if (!RemoteAdminButtons.TryGetButton(RemoteAdminButtonType.RequestAuth, out var dataButton))
                     return true;
 
-                if (!player.IsNorthwoodModerator && !player.Hub.authManager.BypassBansFlagSet && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
+                if (!player.IsNorthwoodStaff 
+                    && !player.ReferenceHub.authManager.BypassBansFlagSet 
+                    && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
                     return false;
 
                 var array = data.Split(' ');

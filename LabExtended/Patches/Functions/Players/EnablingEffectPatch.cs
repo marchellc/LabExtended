@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Functions.Players
             if (!ExPlayer.TryGet(__instance.Hub, out var player))
                 return true;
 
-            if (!player.Switches.CanReceiveEffects || player.Switches.IgnoredEffects.Contains(__instance.GetType()))
+            if (!player.Toggles.CanReceiveEffects || player.Toggles.IgnoredEffects.Contains(__instance.GetType()))
                 return false;
 
             var prevIntensity = __instance.Intensity;
@@ -44,7 +44,7 @@ namespace LabExtended.Patches.Functions.Players
             if (isEnabling)
             {
                 var receivingArgs =
-                    new PlayerEffectUpdatingEventArgs(player.Hub, __instance, value, __instance.Duration);
+                    new PlayerEffectUpdatingEventArgs(player.ReferenceHub, __instance, value, __instance.Duration);
 
                 PlayerEvents.OnUpdatingEffect(receivingArgs);
 
@@ -59,7 +59,7 @@ namespace LabExtended.Patches.Functions.Players
             __instance._intensity = (byte)Mathf.Min(value, __instance.MaxIntensity);
             __instance.Hub.playerEffectsController.ServerSyncEffect(__instance);
             
-            PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(player.Hub, __instance, value, __instance.Duration));
+            PlayerEvents.OnUpdatedEffect(new PlayerEffectUpdatedEventArgs(player.ReferenceHub, __instance, value, __instance.Duration));
 
             if (isEnabling)
             {

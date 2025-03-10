@@ -19,6 +19,6 @@ public class DictionaryPool<TKey, TValue> : PoolBase<Dictionary<TKey, TValue>>
     public Dictionary<TKey, TValue> Rent(IDictionary<TKey, TValue> dictionary)
         => base.Rent(x => x.AddRange(dictionary), () => new Dictionary<TKey, TValue>(dictionary));
 
-    public void Return(Dictionary<TKey, TValue> dictionary)
+    public void Return(Dictionary<TKey, TValue>? dictionary)
         => base.Return(dictionary, x => x.Clear());
 }

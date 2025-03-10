@@ -11,7 +11,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// The player toggling their noclip state.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Gets the current noclip state.
@@ -23,7 +23,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public bool NewState { get; set; }
 
-        internal PlayerTogglingNoClipArgs(ExPlayer player, bool curState)
+        internal PlayerTogglingNoClipArgs(ExPlayer? player, bool curState)
         {
             Player = player;
 

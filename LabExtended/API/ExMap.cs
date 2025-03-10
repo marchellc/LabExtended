@@ -192,7 +192,7 @@ namespace LabExtended.API
 
             var ragdoll = UnityEngine.Object.Instantiate(ragdollRole.Ragdoll);
 
-            ragdoll.NetworkInfo = new RagdollData((owner ?? ExPlayer.Host).Hub, damageHandler, ragdoll.transform.localPosition, ragdoll.transform.localRotation);
+            ragdoll.NetworkInfo = new RagdollData((owner ?? ExPlayer.Host).ReferenceHub, damageHandler, ragdoll.transform.localPosition, ragdoll.transform.localRotation);
 
             ragdoll.transform.position = position;
             ragdoll.transform.rotation = rotation;

@@ -13,7 +13,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// Gets the player who's attempting to switch their item.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Gets the currently selected item.
@@ -34,7 +34,7 @@ namespace LabExtended.Events.Player
             set => NextSerial = value?.ItemSerial ?? 0;
         }
 
-        internal PlayerSelectingItemArgs(ExPlayer player, ItemBase current, ushort nextSerial)
+        internal PlayerSelectingItemArgs(ExPlayer? player, ItemBase current, ushort nextSerial)
         {
             Player = player;
             Current = current;

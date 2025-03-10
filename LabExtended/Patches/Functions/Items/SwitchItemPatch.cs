@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Functions.Items
                 if (!ExPlayer.TryGet(__instance._hub, out var player))
                     return false;
 
-                if (!player.Switches.CanSwitchItems)
+                if (!player.Toggles.CanSwitchItems)
                     return false;
 
                 ItemBase curItem = null;

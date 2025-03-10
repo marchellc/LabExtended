@@ -37,13 +37,13 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            if (!player.Switches.CanPickUpItems)
+            if (!player.Toggles.CanPickUpItems)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
 
-            var scp330Args = new PlayerPickingUpScp330EventArgs(player.Hub, scp330Pickup);
+            var scp330Args = new PlayerPickingUpScp330EventArgs(player.ReferenceHub, scp330Pickup);
 
             PlayerEvents.OnPickingUpScp330(scp330Args);
 
@@ -88,7 +88,7 @@ namespace LabExtended.Patches.Functions.Items
             if (bag.AcquisitionAlreadyReceived)
                 bag.ServerRefreshBag();
 
-            PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(player.Hub, scp330Pickup, bag));
+            PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(player.ReferenceHub, scp330Pickup, bag));
 
             if (pickingUpItemEv.DestroyPickup || scp330Pickup.StoredCandies.Count == 0)
             {

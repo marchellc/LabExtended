@@ -19,8 +19,8 @@ namespace LabExtended.Utilities.Values
 
         public T this[ExPlayer player]
         {
-            get => _values[player.NetId];
-            set => _values[player.NetId] = value;
+            get => _values[player.NetworkId];
+            set => _values[player.NetworkId] = value;
         }
 
         public FakeValue()
@@ -33,7 +33,7 @@ namespace LabExtended.Utilities.Values
             => _values.TryGetValue(hub.netId, out var fakedValue) ? fakedValue : defaultValue;
 
         public T GetValue(ExPlayer player, T defaultValue = default)
-            => _values.TryGetValue(player.NetId, out var fakedValue) ? fakedValue : defaultValue;
+            => _values.TryGetValue(player.NetworkId, out var fakedValue) ? fakedValue : defaultValue;
 
         public bool GetValue(uint netId, ref T value)
         {
@@ -59,7 +59,7 @@ namespace LabExtended.Utilities.Values
 
         public bool GetValue(ExPlayer player, ref T value)
         {
-            if (_values.TryGetValue(player.NetId, out var fakedValue))
+            if (_values.TryGetValue(player.NetworkId, out var fakedValue))
             {
                 value = fakedValue;
                 return true;
@@ -75,7 +75,7 @@ namespace LabExtended.Utilities.Values
             => _values.TryGetValue(hub.netId, out fakedValue);
 
         public bool TryGetValue(ExPlayer player, out T fakedValue)
-            => _values.TryGetValue(player.NetId, out fakedValue);
+            => _values.TryGetValue(player.NetworkId, out fakedValue);
 
         public void SetValue(uint netId, T value)
             => _values[netId] = value;
@@ -84,7 +84,7 @@ namespace LabExtended.Utilities.Values
             => _values[hub.netId] = value;
 
         public void SetValue(ExPlayer player, T value)
-            => _values[player.NetId] = value;
+            => _values[player.NetworkId] = value;
 
         public bool RemoveValue(uint netId)
             => _values.Remove(netId);
@@ -93,7 +93,7 @@ namespace LabExtended.Utilities.Values
             => _values.Remove(hub.netId);
 
         public bool RemoveValue(ExPlayer player)
-            => _values.Remove(player.NetId);
+            => _values.Remove(player.NetworkId);
 
         public void ClearValues()
             => _values.Clear();
@@ -102,6 +102,6 @@ namespace LabExtended.Utilities.Values
             => value.GlobalValue;
 
         public static explicit operator FakeValue<T>(T value)
-            => new FakeValue<T>() { GlobalValue = value };
+            => new() { GlobalValue = value };
     }
 }

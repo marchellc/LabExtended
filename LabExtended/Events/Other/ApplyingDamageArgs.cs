@@ -18,9 +18,9 @@ namespace LabExtended.Events.Other
         /// <summary>
         /// The damage target.
         /// </summary>
-        public ExPlayer Target { get; set; }
+        public ExPlayer? Target { get; set; }
 
-        internal ApplyingDamageArgs(DamageInfo damageInfo, ExPlayer target)
+        internal ApplyingDamageArgs(DamageInfo damageInfo, ExPlayer? target)
         {
             Info = damageInfo;
             Target = target;

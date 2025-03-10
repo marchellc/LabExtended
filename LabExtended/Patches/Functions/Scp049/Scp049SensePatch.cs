@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Functions.Scp049
 
             var target = ExPlayer.Get(__instance.Target);
 
-            if (target is null || !target.Switches.CanBeScp049Target || !scp.Switches.CanUseSenseAs049)
+            if (target is null || !target.Toggles.CanBeScp049Target || !scp.Toggles.CanUseSenseAs049)
             {
                 if (NullTargetCooldown > 0)
                     __instance.Cooldown.Trigger(NullTargetCooldown);
@@ -68,7 +68,7 @@ namespace LabExtended.Patches.Functions.Scp049
             if (sensingArgs.Duration > 0)
                 __instance.Duration.Trigger(sensingArgs.Duration);
 
-            __instance.Target = sensingArgs.Target.Hub;
+            __instance.Target = sensingArgs.Target.ReferenceHub;
             __instance.HasTarget = true;
 
             __instance.ServerSendRpc(true);

@@ -46,7 +46,7 @@ namespace LabExtended.Patches.Events
                 if (!curUsable.CanStartUsing)
                     return false;
 
-                var usingArgs = new PlayerUsingItemArgs(player, curUsable, UsableItemsController.GetCooldown(curUsable.ItemSerial, curUsable, player.Inventory.UsableItemsHandler), curUsable.ItemTypeId.GetSpeedMultiplier(player.Hub));
+                var usingArgs = new PlayerUsingItemArgs(player, curUsable, UsableItemsController.GetCooldown(curUsable.ItemSerial, curUsable, player.Inventory.UsableItemsHandler), curUsable.ItemTypeId.GetSpeedMultiplier(player.ReferenceHub));
 
                 if (!HookRunner.RunEvent(usingArgs, true))
                     return false;
@@ -59,7 +59,7 @@ namespace LabExtended.Patches.Events
 
                 if (usingArgs.SpeedMultiplier > 0f)
                 {
-                    var usingEventArgs = new PlayerUsingItemEventArgs(player.Hub, curUsable);
+                    var usingEventArgs = new PlayerUsingItemEventArgs(player.ReferenceHub, curUsable);
 
                     PlayerEvents.OnUsingItem(usingEventArgs);
 
@@ -81,11 +81,11 @@ namespace LabExtended.Patches.Events
                 if (player.Inventory.CurrentlyUsedItem.ItemSerial == 0)
                     return false;
 
-                var speedMultiplier = curUsable.ItemTypeId.GetSpeedMultiplier(player.Hub);
+                var speedMultiplier = curUsable.ItemTypeId.GetSpeedMultiplier(player.ReferenceHub);
 
                 if (player.Inventory.CurrentlyUsedItem.StartTime + curUsable.MaxCancellableTime / speedMultiplier > Time.timeSinceLevelLoad)
                 {
-                    var cancellingArgs = new PlayerCancellingUsingItemEventArgs(player.Hub, curUsable);
+                    var cancellingArgs = new PlayerCancellingUsingItemEventArgs(player.ReferenceHub, curUsable);
 
                     PlayerEvents.OnCancellingUsingItem(cancellingArgs);
 
@@ -97,7 +97,7 @@ namespace LabExtended.Patches.Events
 
                     msg.SendToAuthenticated();
 
-                    PlayerEvents.OnCancelledUsingItem(new PlayerCancelledUsingItemEventArgs(player.Hub, curUsable));
+                    PlayerEvents.OnCancelledUsingItem(new PlayerCancelledUsingItemEventArgs(player.ReferenceHub, curUsable));
                 }
             }
 

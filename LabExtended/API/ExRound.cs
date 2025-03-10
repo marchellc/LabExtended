@@ -155,7 +155,7 @@ namespace LabExtended.API
                 RoundSummary.RoundLock = _roundLockTracking.HasValue;
 
                 if (_roundLockTracking.HasValue)
-                    ApiLog.Debug("Round API", $"Round Lock enabled by &3{RoundLockEnabledBy?.Name ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? null}&r)");
+                    ApiLog.Debug("Round API", $"Round Lock enabled by &3{RoundLockEnabledBy?.Nickname ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? null}&r)");
                 else
                     ApiLog.Debug("Round API", $"Round Lock disabled.");
             }
@@ -183,7 +183,7 @@ namespace LabExtended.API
                 RoundStart.LobbyLock = _lobbyLockTracking.HasValue;
 
                 if (_lobbyLockTracking.HasValue)
-                    ApiLog.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Name ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
+                    ApiLog.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Nickname ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
                 else
                     ApiLog.Debug("Round API", $"Lobby Lock disabled.");
             }
@@ -378,9 +378,9 @@ namespace LabExtended.API
         /// Generates round-start player role list.
         /// </summary>
         /// <returns>A dictionary of players and their roles.</returns>
-        public static Dictionary<ExPlayer, RoleTypeId> ChooseRoles()
+        public static Dictionary<ExPlayer?, RoleTypeId> ChooseRoles()
         {
-            var roles = new Dictionary<ExPlayer, RoleTypeId>();
+            var roles = new Dictionary<ExPlayer?, RoleTypeId>();
 
             try
             {
@@ -413,7 +413,7 @@ namespace LabExtended.API
                 RoleAssigner._spawned = true;
                 RoleAssigner.LateJoinTimer.Restart();
 
-                var players = new List<ExPlayer>(ExPlayer.AllPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
+                var players = new List<ExPlayer?>(ExPlayer.AllPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
                 var scps = 0;
 
                 for (int i = 0; i < players.Count; i++)
@@ -440,7 +440,7 @@ namespace LabExtended.API
             return roles;
 
             #region Helper Methods
-            void DecideHumans(List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, Team[] queue, int size)
+            void DecideHumans(List<ExPlayer?> players, Dictionary<ExPlayer?, RoleTypeId> roles, Team[] queue, int size)
             {
                 HumanSpawner._humanQueue = queue;
 
@@ -499,9 +499,9 @@ namespace LabExtended.API
                 ListPool<ExPlayer>.Shared.Return(candidates);
             }
 
-            void DecideScps(List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, int scps)
+            void DecideScps(List<ExPlayer?> players, Dictionary<ExPlayer?, RoleTypeId> roles, int scps)
             {
-                var candidates = ListPool<ExPlayer>.Shared.Rent();
+                List<ExPlayer?>? candidates = ListPool<ExPlayer>.Shared.Rent();
 
                 GenerateScpList(candidates, roles, players, scps);
 
@@ -521,16 +521,16 @@ namespace LabExtended.API
                 {
                     foreach (var player in ExPlayer.Players)
                     {
-                        if (!RoleAssigner.CheckPlayer(player.Hub))
+                        if (!RoleAssigner.CheckPlayer(player.ReferenceHub))
                             continue;
 
-                        var tickets = ticketLoader.GetTickets(player.Hub, 10);
+                        var tickets = ticketLoader.GetTickets(player.ReferenceHub, 10);
 
-                        ticketLoader.ModifyTickets(player.Hub, tickets + 2);
+                        ticketLoader.ModifyTickets(player.ReferenceHub, tickets + 2);
                     }
 
                     foreach (var player in candidates)
-                        ticketLoader.ModifyTickets(player.Hub, 10);
+                        ticketLoader.ModifyTickets(player.ReferenceHub, 10);
                 }
 
                 while (scpQueue.TryDequeue(out var scpRole) && ExServer.IsRunning)
@@ -539,7 +539,7 @@ namespace LabExtended.API
                 ListPool<ExPlayer>.Shared.Return(candidates);
             }
 
-            void GenerateScpList(List<ExPlayer> candidates, Dictionary<ExPlayer, RoleTypeId> roles, List<ExPlayer> players, int scps)
+            void GenerateScpList(List<ExPlayer?> candidates, Dictionary<ExPlayer?, RoleTypeId> roles, List<ExPlayer?> players, int scps)
             {
                 if (scps <= 0)
                     return;
@@ -550,7 +550,7 @@ namespace LabExtended.API
 
                     foreach (var player in players)
                     {
-                        var tickets = ticketLoader.GetTickets(player.Hub, 10);
+                        var tickets = ticketLoader.GetTickets(player.ReferenceHub, 10);
 
                         if (tickets >= num)
                         {
@@ -583,12 +583,12 @@ namespace LabExtended.API
                         if (!candidates.Contains(player))
                         {
                             var num3 = 1L;
-                            var tickets = ticketLoader.GetTickets(player.Hub, 10);
+                            var tickets = ticketLoader.GetTickets(player.ReferenceHub, 10);
 
                             for (int i = 0; i < scps; i++)
                                 num3 *= tickets;
 
-                            potential.Add(new ScpPlayerPicker.PotentialScp { Player = player.Hub, Weight = num3 });
+                            potential.Add(new ScpPlayerPicker.PotentialScp { Player = player.ReferenceHub, Weight = num3 });
                             num2 += num3;
                         }
                     }
@@ -619,7 +619,7 @@ namespace LabExtended.API
                 }
             }
 
-            void ChooseScps(List<ExPlayer> candidates, List<ExPlayer> players, Dictionary<ExPlayer, RoleTypeId> roles, RoleTypeId scpRole, Queue<RoleTypeId> scpQueue)
+            void ChooseScps(List<ExPlayer?> candidates, List<ExPlayer?> players, Dictionary<ExPlayer?, RoleTypeId> roles, RoleTypeId scpRole, Queue<RoleTypeId> scpQueue)
             {
                 ScpSpawner.ChancesBuffer.Clear();
 
@@ -628,17 +628,14 @@ namespace LabExtended.API
 
                 foreach (var player in candidates)
                 {
-                    var num3 = ScpSpawner.GetPreferenceOfPlayer(player.Hub, scpRole);
+                    var num3 = ScpSpawner.GetPreferenceOfPlayer(player.ReferenceHub, scpRole);
 
                     foreach (var otherScp in scpQueue)
-                    {
-                        num3 -= ScpSpawner.GetPreferenceOfPlayer(player.Hub, otherScp);
-                        ApiLog.Debug($"RoleGeneration.GenerateScpList", $"Preference now {num3}");
-                    }
+                        num3 -= ScpSpawner.GetPreferenceOfPlayer(player.ReferenceHub, otherScp);
 
                     num2++;
 
-                    ScpSpawner.ChancesBuffer[player.Hub] = num3;
+                    ScpSpawner.ChancesBuffer[player.ReferenceHub] = num3;
                     
                     num = Mathf.Min(num3, num);
                 }
@@ -665,8 +662,8 @@ namespace LabExtended.API
 
                     if (num7 >= num6)
                     {
-                        candidates.RemoveAll(p => p.Hub == pair.Key);
-                        players.RemoveAll(p => p.Hub == pair.Key);
+                        candidates.RemoveAll(p => p.ReferenceHub == pair.Key);
+                        players.RemoveAll(p => p.ReferenceHub == pair.Key);
 
                         roles[ExPlayer.Get(pair.Key)] = scpRole;
                     }

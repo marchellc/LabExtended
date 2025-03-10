@@ -24,8 +24,8 @@ public class VoiceController : IDisposable
 {
     public static event Action<VoiceController> OnJoined; 
     
-    private Dictionary<DateTime, VoiceMessage> _sessionPackets;
-    private Dictionary<Type, VoiceProfile> _profiles;
+    private Dictionary<DateTime, VoiceMessage>? _sessionPackets;
+    private Dictionary<Type, VoiceProfile>? _profiles;
 
     private bool _wasSpeaking;
     private float _speakingTime;
@@ -36,8 +36,8 @@ public class VoiceController : IDisposable
     public bool IsOnline => Player != null && Player;
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
     
-    public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
-    public IReadOnlyDictionary<Type, VoiceProfile> Profiles => _profiles;
+    public IReadOnlyDictionary<DateTime, VoiceMessage>? SessionPackets => _sessionPackets;
+    public IReadOnlyDictionary<Type, VoiceProfile>? Profiles => _profiles;
 
     internal VoiceController(ExPlayer player)
     {
@@ -198,7 +198,7 @@ public class VoiceController : IDisposable
     internal void ProcessMessage(ref VoiceMessage msg)
     {
         if (!IsOnline) return;
-        if (msg.Speaker is null || msg.Speaker.netId != Player.NetId) return;
+        if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId) return;
 
         _sessionPackets.Add(DateTime.Now, msg);
 
@@ -256,7 +256,7 @@ public class VoiceController : IDisposable
             if (!send || msg.Channel is VoiceChatChannel.None)
                 continue;
 
-            var receivingArgs = new PlayerReceivingVoiceMessageEventArgs(player.Hub, msg);
+            var receivingArgs = new PlayerReceivingVoiceMessageEventArgs(player.ReferenceHub, msg);
             
             PlayerEvents.OnReceivingVoiceMessage(receivingArgs);
 
@@ -322,12 +322,12 @@ public class VoiceController : IDisposable
 
         if (receiver == Player)
         {
-            if (receiver.Switches.CanHearSelf)
+            if (receiver.Toggles.CanHearSelf)
                 return VoiceChatChannel.RoundSummary;
 
             return VoiceChatChannel.None;
         }
         
-        return receiver.Role.VoiceModule.ValidateReceive(Player.Hub, messageChannel);
+        return receiver.Role.VoiceModule.ValidateReceive(Player.ReferenceHub, messageChannel);
     }
 }

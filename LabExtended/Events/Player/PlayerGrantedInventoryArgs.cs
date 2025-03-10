@@ -13,7 +13,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// The player who's starting inventory has been granted.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Whether or not the player has escaped.
@@ -33,9 +33,9 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// A dictionary of added ammo.
         /// </summary>
-        public Dictionary<ItemType, ushort> Ammo { get; }
+        public Dictionary<ItemType, ushort>? Ammo { get; }
 
-        internal PlayerGrantedInventoryArgs(ExPlayer player, bool hasEscaped, List<ItemBase> items, List<ItemPickupBase> keptItems, Dictionary<ItemType, ushort> ammo)
+        internal PlayerGrantedInventoryArgs(ExPlayer? player, bool hasEscaped, List<ItemBase> items, List<ItemPickupBase> keptItems, Dictionary<ItemType, ushort>? ammo)
         {
             Player = player;
 

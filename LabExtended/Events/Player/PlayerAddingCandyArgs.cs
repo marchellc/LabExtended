@@ -13,7 +13,7 @@ namespace LabExtended.Events.Player
 
         public CandyKindID CandyType { get; set; }
 
-        internal PlayerAddingCandyArgs(ExPlayer player, CandyKindID type, bool canAdd)
+        internal PlayerAddingCandyArgs(ExPlayer? player, CandyKindID type, bool canAdd)
             => (Player, CandyType, CanAdd) = (player, type, canAdd);
     }
 }

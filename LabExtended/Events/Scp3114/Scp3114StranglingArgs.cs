@@ -8,7 +8,7 @@ namespace LabExtended.Events.Scp3114
         public ExPlayer Scp { get; }
         public ExPlayer Target { get; set; }
 
-        internal Scp3114StranglingArgs(ExPlayer scp, ExPlayer target)
+        internal Scp3114StranglingArgs(ExPlayer? scp, ExPlayer target)
             => (Scp, Target) = (scp, target);
     }
 }

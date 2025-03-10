@@ -21,9 +21,9 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// The player who's interacting with the lever.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
-        internal WarheadChangingLeverArgs(bool curState, ExPlayer player)
+        internal WarheadChangingLeverArgs(bool curState, ExPlayer? player)
         {
             CurrentState = curState;
             NewState = !curState;

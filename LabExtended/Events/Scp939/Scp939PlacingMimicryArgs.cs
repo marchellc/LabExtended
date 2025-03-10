@@ -17,7 +17,7 @@ namespace LabExtended.Events.Scp939
 
         public RelativePosition Position { get; set; }
 
-        internal Scp939PlacingMimicryArgs(ExPlayer scp, RelativePosition position)
+        internal Scp939PlacingMimicryArgs(ExPlayer? scp, RelativePosition position)
             => (Scp, Role, Controller, Position) = (scp, scp.Role.Scp939, scp.Subroutines.MimicPointController, position);
     }
 }

@@ -28,8 +28,8 @@ namespace LabExtended.API.Containers
         static EffectContainer()
             => _properties = typeof(EffectContainer).FindProperties(x => (x.GetSetMethod(true)?.IsPrivate ?? false));
 
-        public Dictionary<Type, StatusEffectBase> Effects { get; internal set; }
-        public Dictionary<Type, CustomEffect> CustomEffects { get; internal set; }
+        public Dictionary<Type, StatusEffectBase>? Effects { get; internal set; }
+        public Dictionary<Type, CustomEffect>? CustomEffects { get; internal set; }
 
         public PlayerEffectsController Controller { get; }
         

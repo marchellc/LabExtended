@@ -43,7 +43,9 @@ namespace LabExtended.Patches.Functions.Scp939
             range += module.MaxMovementSpeed * __instance._pingTolerance;
 
             var inRange = (fpcRole.FpcModule.Position - module.Position).sqrMagnitude <= range * range;
-            var isSeen = scp.Switches.CanSeeEveryoneAs939 || target.Switches.IsVisibleToScp939 || inRange || Scp939VisibilityController.LastSeen.TryGetValue(hub.netId, out var lastSeenInfo) && lastSeenInfo.Elapsed < __instance._sustain;
+            var isSeen = scp.Toggles.CanSeeEveryoneAs939 || target.Toggles.IsVisibleToScp939 || inRange 
+                         || Scp939VisibilityController.LastSeen.TryGetValue(hub.netId, out var lastSeenInfo) 
+                         && lastSeenInfo.Elapsed < __instance._sustain;
 
             if (!inRange || __instance._scpRole.IsLocalPlayer)
             {

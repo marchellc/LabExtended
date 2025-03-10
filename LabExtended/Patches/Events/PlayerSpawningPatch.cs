@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Events
                 if (player is null)
                     return true;
 
-                var changingArgs = new PlayerChangingRoleEventArgs(player.Hub, __instance.CurrentRole, newRole, reason);
+                var changingArgs = new PlayerChangingRoleEventArgs(player.ReferenceHub, __instance.CurrentRole, newRole, reason);
 
                 PlayerEvents.OnChangingRole(changingArgs);
 
@@ -46,7 +46,7 @@ namespace LabExtended.Patches.Events
                 var spawningEv = new PlayerSpawningArgs(player, __instance.CurrentRole, changingArgs.NewRole, changingArgs.ChangeReason, spawnFlags);
                 var curRole = __instance.CurrentRole;
                 
-                if ((player.Switches.CanChangeRoles && HookRunner.RunEvent(spawningEv, true))
+                if ((player.Toggles.CanChangeRoles && HookRunner.RunEvent(spawningEv, true))
                     || (!__instance._anySet || (spawningEv.NewRole is RoleTypeId.None && spawningEv.ChangeReason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)
                 {
@@ -82,12 +82,12 @@ namespace LabExtended.Patches.Events
 
                     InternalEvents.InternalHandleRoleChange(spawningEv);
 
-                    OnServerRoleSet.InvokeEvent(null, player.Hub, newRole, reason);
+                    OnServerRoleSet.InvokeEvent(null, player.ReferenceHub, newRole, reason);
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                     __instance._sendNextFrame = true;
 
-                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.Hub, curRole, newRole, reason));
+                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, curRole, newRole, reason));
                 }
 
                 return false;

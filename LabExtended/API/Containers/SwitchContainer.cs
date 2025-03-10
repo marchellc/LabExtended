@@ -11,9 +11,43 @@ namespace LabExtended.API.Containers
     public class SwitchContainer
     {
         public static SwitchContainer DefaultPlayerSwitches { get; } = new();
-        public static SwitchContainer DefaultNpcSwitches { get; }
 
-        public static SwitchContainer ConfigPlayerSwitches => ApiLoader.ApiConfig.OtherSection.Players;
+        public static SwitchContainer DefaultNpcSwitches { get; } = new()
+        {
+            IsVisibleInRemoteAdmin = true,
+            IsVisibleInSpectatorList = false,
+            
+            CanBeRespawned = false,
+            CanBlockRoundEnd = false,
+            CanTriggerScp096 = false,
+            CanBlockScp173 = false,
+            CanCountAs079ExpTarget = false,
+            CanBeResurrectedBy049 = false,
+            CanBePocketDimensionItemTarget = false,
+            
+            PreventsRecontaining079 = false,
+            
+            ShouldReceivePositions = false,
+        };
+
+        public static SwitchContainer PlayerConfig => ApiLoader.ApiConfig.OtherSection.PlayerToggles;
+        public static SwitchContainer NpcConfig => ApiLoader.ApiConfig.OtherSection.NpcToggles;
+
+        public static SwitchContainer GetNewPlayerToggles(bool useConfigValues = true)
+        {
+            var toggles = new SwitchContainer();
+            
+            toggles.ResetToPlayer(useConfigValues);
+            return toggles;
+        }
+
+        public static SwitchContainer GetNewNpcToggles(bool useConfigValues = true)
+        {
+            var toggles = new SwitchContainer();
+            
+            toggles.ResetToNpc(useConfigValues);
+            return toggles;
+        }
 
         /// <summary>
         /// Gets a list of ignored effect types.
@@ -35,12 +69,12 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating if this player is always visible to SCP-939.
         /// </summary>
-        public bool IsVisibleToScp939 { get; set; }
+        public bool IsVisibleToScp939 { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can see every other player when playing as SCP-939.
         /// </summary>
-        public bool CanSeeEveryoneAs939 { get; set; }
+        public bool CanSeeEveryoneAs939 { get; set; } = false;
         #endregion
 
         #region Round Switches
@@ -162,7 +196,7 @@ namespace LabExtended.API.Containers
         public bool CanBeRecontainedAs079 { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether or not this player (when playing as SCP, except SCP-079) can prevent Recontaining of SCP-079.
+        /// Gets or sets a value indicating whether or not this player (when playing as SCP, except SCP-079) can prevent recontaining of SCP-079.
         /// </summary>
         public bool PreventsRecontaining079 { get; set; } = true;
         #endregion
@@ -264,8 +298,8 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool ShouldReceiveOwnPosition { get; set; } = false;
 
-        public void ResetToPlayer(bool fromConfig = true)
-            => Copy(fromConfig ? ConfigPlayerSwitches : DefaultPlayerSwitches);
+        public void ResetToPlayer(bool fromConfig = true) => Copy(fromConfig ? PlayerConfig : DefaultPlayerSwitches);
+        public void ResetToNpc(bool fromConfig = true) => Copy(fromConfig ? NpcConfig : DefaultNpcSwitches);
 
         public void Copy(SwitchContainer other)
         {

@@ -12,7 +12,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// The player who selected a new item.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Gets the previous item instance.
@@ -34,7 +34,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public ItemIdentifier NewIdentifier { get; }
 
-        internal PlayerSelectedItemArgs(ExPlayer player, ItemBase previousItem, ItemBase newItem, ItemIdentifier previousIdentifier, ItemIdentifier newIdentifier)
+        internal PlayerSelectedItemArgs(ExPlayer? player, ItemBase previousItem, ItemBase newItem, ItemIdentifier previousIdentifier, ItemIdentifier newIdentifier)
         {
             Player = player;
 

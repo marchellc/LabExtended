@@ -11,7 +11,7 @@ namespace LabExtended.Events.Player
 
         public bool CanOpen { get; set; }
 
-        internal PlayerInteractingDoorArgs(ExPlayer player, Door door, bool canOpen)
+        internal PlayerInteractingDoorArgs(ExPlayer? player, Door door, bool canOpen)
             => (Player, Door, CanOpen) = (player, door, canOpen);
     }
 }

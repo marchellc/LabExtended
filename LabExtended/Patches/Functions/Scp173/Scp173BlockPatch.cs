@@ -26,10 +26,10 @@ namespace LabExtended.Patches.Functions.Scp173
             if (scp is null || player is null)
                 return true;
 
-            if (!scp.Switches.CanBeBlockedAs173)
+            if (!scp.Toggles.CanBeBlockedAs173)
                 return __result = false;
 
-            if (!player.Switches.CanBlockScp173)
+            if (!player.Toggles.CanBlockScp173)
                 return __result = false;
 
             var position = __instance.CastRole.FpcModule.Position;

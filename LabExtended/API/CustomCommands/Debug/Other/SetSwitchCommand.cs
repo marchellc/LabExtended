@@ -35,11 +35,11 @@ namespace LabExtended.API.CustomCommands.Debug.Other
 
             if (prop is null)
             {
-                ctx.RespondFail($"Unknown switch name.\n{string.Join("\n", typeof(SwitchContainer).GetAllProperties().Where(x => x.PropertyType == typeof(bool)).Select(x => $"- {x.Name} ({x.GetValue(target.Switches)})"))}");
+                ctx.RespondFail($"Unknown switch name.\n{string.Join("\n", typeof(SwitchContainer).GetAllProperties().Where(x => x.PropertyType == typeof(bool)).Select(x => $"- {x.Name} ({x.GetValue(target.Toggles)})"))}");
                 return;
             }
 
-            prop.SetValue(target.Switches, value);
+            prop.SetValue(target.Toggles, value);
 
             ctx.RespondOk($"Set switch '{prop.Name}' to {value}");
         }

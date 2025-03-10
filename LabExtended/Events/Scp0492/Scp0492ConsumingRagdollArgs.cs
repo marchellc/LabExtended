@@ -14,7 +14,7 @@ namespace LabExtended.Events.Scp0492
 
         public byte Code { get; set; } = 0;
 
-        internal Scp0492ConsumingRagdollArgs(ExPlayer scp, ExPlayer target, BasicRagdoll ragdoll)
+        internal Scp0492ConsumingRagdollArgs(ExPlayer? scp, ExPlayer target, BasicRagdoll ragdoll)
             => (Scp, Target, Ragdoll) = (scp, target, ragdoll);
     }
 }

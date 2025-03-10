@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Events
             if (sender is null || !ExPlayer.TryGet(sender, out var player))
                 return false;
 
-            if (!player.IsNoclipPermitted)
+            if (!player.IsNoClipPermitted)
                 return false;
 
             var togglingArgs = new PlayerTogglingNoClipArgs(player, player.Stats.AdminFlags.HasFlag(AdminFlags.Noclip));

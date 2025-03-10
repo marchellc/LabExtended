@@ -14,6 +14,6 @@ namespace LabExtended.Events.Scp079
         public bool LockDoors { get; set; } = true;
         public bool FlickerLights { get; set; } = true;
 
-        internal Scp079RecontainingArgs(ExPlayer activator, List<ExPlayer> scps) => (Activator, Scps) = (activator, scps);
+        internal Scp079RecontainingArgs(ExPlayer? activator, List<ExPlayer> scps) => (Activator, Scps) = (activator, scps);
     }
 }

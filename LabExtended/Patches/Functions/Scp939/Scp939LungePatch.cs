@@ -29,7 +29,7 @@ namespace LabExtended.Patches.Functions.Scp939
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanLungeAs939)
+            if (!scp.Toggles.CanLungeAs939)
                 return false;
 
             var pos = reader.ReadRelativePosition().Position;
@@ -50,7 +50,7 @@ namespace LabExtended.Patches.Functions.Scp939
                 __instance.TriggerLunge();
             }
 
-            hub = lungingArgs.Target?.Hub;
+            hub = lungingArgs.Target?.ReferenceHub;
             target = lungingArgs.Target;
 
             if (hub is null || !HitboxIdentity.IsEnemy(__instance.Owner, hub))
@@ -97,7 +97,8 @@ namespace LabExtended.Patches.Functions.Scp939
 
             foreach (var other in ExPlayer.Players)
             {
-                if (other != target && HitboxIdentity.IsEnemy(__instance.Owner, other.Hub) && other.Role.Is<IFpcRole>(out var otherRole))
+                if (other != target && HitboxIdentity.IsEnemy(__instance.Owner, other.ReferenceHub) 
+                                    && other.Role.Is<IFpcRole>(out var otherRole))
                 {
                     var otherPos = otherRole.FpcModule.Position;
 
@@ -106,7 +107,8 @@ namespace LabExtended.Patches.Functions.Scp939
                         if (Physics.Linecast(otherPos, pos, PlayerRolesUtils.BlockerMask))
                             return false;
 
-                        if (other.Hub.playerStats.DealDamage(new Scp939DamageHandler(__instance.CastRole, lungingArgs.LungeSecondaryDamage, Scp939DamageType.LungeSecondary)))
+                        if (other.ReferenceHub.playerStats.DealDamage(new Scp939DamageHandler(__instance.CastRole, 
+                                lungingArgs.LungeSecondaryDamage, Scp939DamageType.LungeSecondary)))
                         {
                             damageDealt = true;
                             num = Mathf.Max(num, 0.6f);

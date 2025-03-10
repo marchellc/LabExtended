@@ -29,13 +29,13 @@ namespace LabExtended.Patches.Functions.Items
             if (__instance.TargetPickup is null)
                 return false;
 
-            if (!player.Switches.CanPickUpItems)
+            if (!player.Toggles.CanPickUpItems)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
 
-            var pickingUpArgs = new PlayerPickingUpItemEventArgs(player.Hub, __instance.TargetPickup);
+            var pickingUpArgs = new PlayerPickingUpItemEventArgs(player.ReferenceHub, __instance.TargetPickup);
 
             PlayerEvents.OnPickingUpItem(pickingUpArgs);
 
@@ -68,7 +68,7 @@ namespace LabExtended.Patches.Functions.Items
                 if (pickingUpEv.DestroyPickup)
                     __instance.TargetPickup.DestroySelf();
 
-                PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.Hub, item));
+                PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.ReferenceHub, item));
             }
             else
             {

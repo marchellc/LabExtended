@@ -20,7 +20,7 @@ namespace LabExtended.Patches.Functions.Scp939
         {
             try
             {
-                __instance.SendRpc(FunctionName, FunctionHash, (NetworkWriter)null, 0, true, true, ExPlayer.Get(x => x.Switches.CanHearAmnesticCloudSpawn));
+                __instance.SendRpc(FunctionName, FunctionHash, (NetworkWriter)null, 0, true, true, ExPlayer.Get(x => x.Toggles.CanHearAmnesticCloudSpawn));
                 return false;
             }
             catch (Exception ex)

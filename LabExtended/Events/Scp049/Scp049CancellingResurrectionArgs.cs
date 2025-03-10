@@ -10,6 +10,6 @@ namespace LabExtended.Events.Scp049
 
         public byte ErrorCode { get; set; }
 
-        internal Scp049CancellingResurrectionArgs(ExPlayer scp, ExPlayer target, byte code) => (Scp, Target, ErrorCode) = (scp, target, code);
+        internal Scp049CancellingResurrectionArgs(ExPlayer? scp, ExPlayer? target, byte code) => (Scp, Target, ErrorCode) = (scp, target, code);
     }
 }

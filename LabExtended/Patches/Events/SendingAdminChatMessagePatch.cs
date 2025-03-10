@@ -42,17 +42,17 @@ namespace LabExtended.Patches.Events
 
             q = sendingArgs.Message;
 
-            var str = $"{player.NetId}!{q}";
+            var str = $"{player.NetworkId}!{q}";
 
-            ApiLog.Info("Admin Chat", $"Player &3{player.Name}&r (&6{player.UserId}&r) sent a message: &1{q}&r");
-            ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"[{player.Name}] {q}", ServerLogs.ServerLogType.AdminChat);
+            ApiLog.Info("Admin Chat", $"Player &3{player.Nickname}&r (&6{player.UserId}&r) sent a message: &1{q}&r");
+            ServerLogs.AddLog(ServerLogs.Modules.Administrative, $"[{player.Nickname}] {q}", ServerLogs.ServerLogType.AdminChat);
 
             foreach (var ply in ExPlayer.Players)
             {
                 if (!ply.HasRemoteAdminAccess || !ply.IsVerified)
                     continue;
 
-                ply.Hub.encryptedChannelManager.TrySendMessageToClient(str, EncryptedChannelManager.EncryptedChannel.AdminChat);
+                ply.ReferenceHub.encryptedChannelManager.TrySendMessageToClient(str, EncryptedChannelManager.EncryptedChannel.AdminChat);
             }
 
             return false;

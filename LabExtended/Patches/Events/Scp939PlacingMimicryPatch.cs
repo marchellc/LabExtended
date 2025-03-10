@@ -23,7 +23,7 @@ namespace LabExtended.Patches.Events
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanUseMimicryAs939)
+            if (!scp.Toggles.CanUseMimicryAs939)
                 return false;
 
             if (__instance.Active)

@@ -50,7 +50,7 @@ namespace LabExtended.Commands.Parsing
                 }
             }
 
-            result = ExPlayer.Players.FirstOrDefault(p => p.Address == value);
+            result = ExPlayer.Players.FirstOrDefault(p => p.IpAddress == value);
             return result != null;
         }
     }

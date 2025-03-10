@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
 
             foreach (var player in ExPlayer.Players)
             {
-                if (!player.Switches.CanCountAs079ExpTarget)
+                if (!player.Toggles.CanCountAs079ExpTarget)
                     continue;
 
                 if (!player.Role.Is<IFpcRole>(out var fpcRole))

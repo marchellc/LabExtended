@@ -2,16 +2,12 @@
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
-using LabExtended.Core.Pooling.Pools;
-
 using LabExtended.Events;
 using LabExtended.Events.Player;
-using LabExtended.Patches.Functions.Players;
+
 using LabExtended.Utilities.Unity;
 
 using Mirror;
-
-using NorthwoodLib.Pools;
 
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
@@ -29,10 +25,9 @@ namespace LabExtended.Core.Networking.Synchronization.Position
     {
         public struct PositionUpdateLoop { }
         
-        private static NetworkWriter _writer = NetworkWriterPool.Get();
-        private static float _sendTime = 0f;
-
-        internal static readonly List<ExPlayer> _validBuffer = ListPool<ExPlayer>.Shared.Rent();
+        private static ExPlayer[] validBuffer;
+        private static NetworkWriter writer = NetworkWriterPool.Get();
+        private static float sendTime = 0f;
 
         public static float SendRate => ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate > 0f 
             ? ApiLoader.ApiConfig.SynchronizationSection.PositionSyncRate 
@@ -40,58 +35,63 @@ namespace LabExtended.Core.Networking.Synchronization.Position
 
         private static void OnUpdate()
         {
-            _sendTime -= Time.deltaTime;
+            sendTime -= Time.deltaTime;
 
-            if (_sendTime > 0f)
+            if (sendTime > 0f)
                 return;
 
-            _sendTime = SendRate;
+            sendTime = SendRate;
 
             try
             {
+                if (validBuffer is null || validBuffer.Length < ExPlayer.AllCount)
+                    validBuffer = new ExPlayer[ExPlayer.AllCount];
+                
                 ExPlayer.AllPlayers.ForEach(player =>
                 {
-                    if (player is null || !player.Switches.ShouldReceivePositions)
+                    if (player is null || !player.Toggles.ShouldReceivePositions)
                         return;
 
                     var ghosted = (ExPlayer.GhostedFlags & (1 << player.PlayerId)) != 0;
                     var hasRole = player.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole);
-
-                    _validBuffer.Clear();
+                    
+                    var bufferSize = 0;
+                    var bufferIndex = 0;
 
                     ExPlayer.AllPlayers.ForEach(other =>
                     {
-                        if (!other.Switches.ShouldSendPosition) return;
+                        if (!other.Toggles.ShouldSendPosition) return;
                         if (!other.Role.Is<IFpcRole>(out _)) return;
-                        if (other.NetId == player.NetId && !player.Switches.ShouldReceiveOwnPosition) return;
+                        if (other.NetworkId == player.NetworkId && !player.Toggles.ShouldReceiveOwnPosition) return;
 
-                        _validBuffer.Add(other);
+                        validBuffer[bufferIndex++] = other;
+
+                        bufferSize++;
                     });
 
-
-                    if (_validBuffer.Count < 1)
+                    if (bufferSize < 1)
                         return;
 
-                    _writer.Reset();
-                    _writer.WriteMessage<FpcPositionMessage>(_ =>
+                    writer.Reset();
+                    writer.WriteMessage<FpcPositionMessage>(_ =>
                     {
-                        _writer.WriteUShort((ushort)_validBuffer.Count);
+                        writer.WriteUShort((ushort)bufferSize);
 
-                        for (int y = 0; y < _validBuffer.Count; y++)
+                        for (int y = 0; y < bufferSize; y++)
                         {
-                            var other = _validBuffer[y];
+                            var other = validBuffer[y];
                             var fpcRole = (IFpcRole)other.Role.Role;
                             var mouseLook = fpcRole.FpcModule.MouseLook;
                             var module = fpcRole.FpcModule;
 
                             var isInvisible = hasRole &&
-                                              !customVisibilityRole.VisibilityController.ValidateVisibility(other.Hub);
+                                              !customVisibilityRole.VisibilityController.ValidateVisibility(other.ReferenceHub);
 
                             if (!isInvisible && (ghosted || (other.PersonalGhostFlags & (1 << player.PlayerId)) != 0))
                                 isInvisible = true;
 
-                            if (!player.sentPositions.TryGetValue(other.NetId, out var prevData))
-                                player.sentPositions[other.NetId] = prevData = new();
+                            if (!player.SentPositions.TryGetValue(other.NetworkId, out var prevData))
+                                player.SentPositions[other.NetworkId] = prevData = new();
 
                             var position = isInvisible ? FpcMotor.InvisiblePosition : other.Transform.position;
                             var posBit = false;
@@ -127,23 +127,23 @@ namespace LabExtended.Core.Networking.Synchronization.Position
                             Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3,
                                 out var b4, out var b5, out var b6, out var b7, out var b8);
 
-                            _writer.WriteRecyclablePlayerId(other.Hub.Network_playerId);
-                            _writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
+                            writer.WriteRecyclablePlayerId(other.ReferenceHub.Network_playerId); 
+                            writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, lookBit, posBit, customBit));
 
                             if (posBit)
-                                _writer.WriteRelativePosition(relative);
+                                writer.WriteRelativePosition(relative);
 
                             if (lookBit)
                             {
-                                _writer.WriteUShort(syncH);
-                                _writer.WriteUShort(syncV);
+                                writer.WriteUShort(syncH);
+                                writer.WriteUShort(syncV);
                             }
 
                             prevData.IsReset = false;
                         }
                     });
 
-                    player.Send(_writer.ToArraySegment());
+                    player.Send(writer.ToArraySegment());
                 });
             }
             catch (Exception ex)
@@ -160,18 +160,25 @@ namespace LabExtended.Core.Networking.Synchronization.Position
             
             ExPlayer.AllPlayers.ForEach(ply =>
             {
-                if (ply != args.Player && args.Player.sentPositions.TryGetValue(ply.NetId, out var sent))
+                if (ply != args.Player && 
+                    args.Player.SentPositions != null &&
+                    args.Player.SentPositions.TryGetValue(ply.NetworkId, out var sent))
                 {
                     sent.IsReset = true;
                 }
             });
+        }
+
+        private static void OnRoundRestart()
+        {
+            Array.Clear(validBuffer, 0, validBuffer.Length);
         }
         
         [LoaderInitialize(3)]
         private static void Init()
         {
             InternalEvents.OnRoleChanged += OnPlayerRoleChange;
-            InternalEvents.OnRoundRestart += _validBuffer.Clear;
+            InternalEvents.OnRoundRestart += OnRoundRestart;
 
             PlayerLoopHelper.ModifySystem(x =>
             {

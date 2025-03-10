@@ -13,7 +13,7 @@ namespace LabExtended.Events.Player
         public float RemainingCooldown { get; set; }
         public float SpeedMultiplier { get; set; }
 
-        internal PlayerUsingItemArgs(ExPlayer player, UsableItem item, float cooldown, float multiplier)
+        internal PlayerUsingItemArgs(ExPlayer? player, UsableItem item, float cooldown, float multiplier)
             => (Player, Item, RemainingCooldown, SpeedMultiplier) = (player, item, cooldown, multiplier);
     }
 }

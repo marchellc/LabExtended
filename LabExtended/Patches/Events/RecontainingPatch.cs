@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Events
         {
             var list = ListPool<ExPlayer>.Shared.Rent();
 
-            list.AddRange(ExPlayer.Get(x => x.Role.Is(RoleTypeId.Scp079) && x.Switches.CanBeRecontainedAs079));
+            list.AddRange(ExPlayer.Get(x => x.Role.Is(RoleTypeId.Scp079) && x.Toggles.CanBeRecontainedAs079));
 
             var recontainingArgs = new Scp079RecontainingArgs(ExPlayer.Get(__instance._activatorGlass.LastAttacker), list);
 
@@ -43,9 +43,9 @@ namespace LabExtended.Patches.Events
             foreach (var player in list)
             {
                 if (recontainingArgs.Activator is not null)
-                    player.Hub.playerStats.DealDamage(new RecontainmentDamageHandler(recontainingArgs.Activator.Footprint));
+                    player.ReferenceHub.playerStats.DealDamage(new RecontainmentDamageHandler(recontainingArgs.Activator.Footprint));
                 else
-                    player.Hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
+                    player.ReferenceHub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
             }
 
             ListPool<ExPlayer>.Shared.Return(list);

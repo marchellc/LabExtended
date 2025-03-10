@@ -70,7 +70,7 @@ namespace LabExtended.Patches.Events
 
                 newRole.Init(__instance.Hub, reason, spawnFlags);
 
-                RoleSpawnpointManager.SetPosition(player.Hub, newRole);
+                RoleSpawnpointManager.SetPosition(player.ReferenceHub, newRole);
 
                 newRole.SetupPoolObject();
                 
@@ -89,7 +89,7 @@ namespace LabExtended.Patches.Events
                 HookRunner.RunEvent(changedArgs);
 
                 if (wasSet)
-                    OnRoleChanged.InvokeEvent(null, player.Hub, prevRole, newRole);
+                    OnRoleChanged.InvokeEvent(null, player.ReferenceHub, prevRole, newRole);
 
                 return false;
             }

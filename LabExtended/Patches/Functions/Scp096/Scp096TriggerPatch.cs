@@ -17,13 +17,13 @@ namespace LabExtended.Patches.Functions.Scp096
             if (scp is null || player is null)
                 return true;
 
-            if (!scp.Switches.CanBeTriggeredAs096)
+            if (!scp.Toggles.CanBeTriggeredAs096)
             {
                 __result = false;
                 return false;
             }
 
-            if (!player.Switches.CanTriggerScp096)
+            if (!player.Toggles.CanTriggerScp096)
             {
                 __result = false;
                 return false;

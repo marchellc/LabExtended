@@ -25,16 +25,13 @@ namespace LabExtended.Events
         internal static event Action OnRoundEnded;
 
         internal static event Action<ExPlayer> OnPlayerJoined;
-        internal static event Action<ExPlayer> OnPlayerLeft; 
+        internal static event Action<ExPlayer?> OnPlayerLeft; 
         
         internal static event Action<PlayerChangedRoleArgs> OnRoleChanged;
         internal static event Action<PlayerSpawningArgs> OnSpawning; 
         
         private static void InternalHandleRoundWaiting()
         {
-            ExPlayer.hostPlayer?.Dispose();
-            ExPlayer.hostPlayer = null;
-            
             ExPlayer.preauthData.Clear();
 
             // No reason not to reset the NPC connection ID
@@ -81,26 +78,30 @@ namespace LabExtended.Events
 
         internal static void InternalHandlePlayerJoin(ExPlayer player)
         {
-            OnPlayerJoined.InvokeSafe(player);
+            if (!player.IsServer)
+            {
+                OnPlayerJoined.InvokeSafe(player);
 
-            if (!player.IsServer && !player.IsNpc)
-                ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&6{player.UserId}&r) &2joined&r from &3{player.Address} ({player.CountryCode})&r!");
+                if (!player.IsNpc)
+                    ApiLog.Info("LabExtended",
+                        $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");
+            }
         }
 
-        internal static void InternalHandlePlayerLeave(ExPlayer player)
+        internal static void InternalHandlePlayerLeave(ExPlayer? player)
         {
             if (ExRound.State is RoundState.InProgress || ExRound.State is RoundState.WaitingForPlayers)
             {
                 if (ApiLoader.BaseConfig.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
                 {
                     ExRound.IsRoundLocked = false;
-                    ApiLog.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                    ApiLog.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Nickname}&r &6{player.UserId}&r) left the server.");
                 }
 
                 if (ApiLoader.BaseConfig.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
                 {
                     ExRound.IsLobbyLocked = false;
-                    ApiLog.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Name}&r &6{player.UserId}&r) left the server.");
+                    ApiLog.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Nickname}&r &6{player.UserId}&r) left the server.");
                 }
             }
             
@@ -109,7 +110,7 @@ namespace LabExtended.Events
             player.Dispose();
 
             if (!player.IsServer && !player.IsNpc)
-                ApiLog.Info("LabExtended", $"Player &3{player.Name}&r (&3{player.UserId}&r) &1left&r from &3{player.Address}&r!");
+                ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
         }
 
         internal static void InternalHandleRoleChange(PlayerSpawningArgs args)

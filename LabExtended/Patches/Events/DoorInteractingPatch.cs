@@ -39,7 +39,7 @@ namespace LabExtended.Patches.Events
                     && (!mode.HasFlagFast(DoorLockMode.ScpOverride) || !ply.IsSCP(true)) && (mode == DoorLockMode.FullLock
                     || (__instance.TargetState && !mode.HasFlagFast(DoorLockMode.CanClose)) || (!__instance.TargetState && !mode.HasFlagFast(DoorLockMode.CanOpen))))
                 {
-                    var interactingEventArgs = new PlayerInteractingDoorEventArgs(player.Hub, __instance, false);
+                    var interactingEventArgs = new PlayerInteractingDoorEventArgs(player.ReferenceHub, __instance, false);
 
                     PlayerEvents.OnInteractingDoor(interactingEventArgs);
 
@@ -61,7 +61,7 @@ namespace LabExtended.Patches.Events
 
             var canOpen = player.Role.Is(RoleTypeId.Scp079) || __instance.RequiredPermissions.CheckPermissions(ply.inventory.CurInstance, ply);
             
-            var interactingDoorEvArgs = new PlayerInteractingDoorEventArgs(player.Hub, __instance, canOpen);
+            var interactingDoorEvArgs = new PlayerInteractingDoorEventArgs(player.ReferenceHub, __instance, canOpen);
 
             PlayerEvents.OnInteractingDoor(interactingDoorEvArgs);
 

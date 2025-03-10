@@ -15,12 +15,12 @@ public class VoiceEvents
     public static event SendingVoiceMessageHandler OnSendingVoiceMessage;
     
     public static event Action<ExPlayer> OnStartedSpeaking;
-    public static event Action<ExPlayer, float, Dictionary<DateTime, VoiceMessage>> OnStoppedSpeaking;
+    public static event Action<ExPlayer, float, Dictionary<DateTime, VoiceMessage>?> OnStoppedSpeaking;
 
     public static void InvokeOnStartedSpeaking(ExPlayer player)
         => OnStartedSpeaking.InvokeSafe(player);
     
-    public static void InvokeOnStoppedSpeaking(ExPlayer player, float time, Dictionary<DateTime, VoiceMessage> packets)
+    public static void InvokeOnStoppedSpeaking(ExPlayer player, float time, Dictionary<DateTime, VoiceMessage>? packets)
         => OnStoppedSpeaking.InvokeSafe(player, time, packets);
     
     public static void InvokeOnReceiving(ExPlayer player, ExPlayer receiver, ref VoiceMessage message)

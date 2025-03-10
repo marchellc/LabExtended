@@ -14,9 +14,6 @@ namespace LabExtended.Core.Configs
 
         [Description("Pooling API configuration.")]
         public PoolSection PoolSection { get; set; } = new PoolSection();
-        
-        [Description("Optimization features.")]
-        public OptimizationSection OptimizationSection { get; set; } = new OptimizationSection();
 
         [Description("Player data synchronization configuration.")]
         public SynchronizationSection SynchronizationSection { get; set; } = new SynchronizationSection();

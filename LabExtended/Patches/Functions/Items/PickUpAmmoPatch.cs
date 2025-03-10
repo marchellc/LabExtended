@@ -30,7 +30,7 @@ namespace LabExtended.Patches.Functions.Items
             if (player is null)
                 return true;
 
-            if (!player.Switches.CanPickUpAmmo)
+            if (!player.Toggles.CanPickUpAmmo)
             {
                 __instance.TargetPickup.UnlockPickup();
                 return false;
@@ -39,7 +39,7 @@ namespace LabExtended.Patches.Functions.Items
             var curAmmo = __instance.CurrentAmmo;
             var ammo = (uint)Math.Min(curAmmo + ammoPickup.SavedAmmo, __instance.MaxAmmo) - curAmmo;
 
-            var pickingUpArgs = new PlayerPickingUpAmmoEventArgs(player.Hub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup);
+            var pickingUpArgs = new PlayerPickingUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup);
 
             PlayerEvents.OnPickingUpAmmo(pickingUpArgs);
             
@@ -80,7 +80,7 @@ namespace LabExtended.Patches.Functions.Items
                     }, HintEffectPresets.FadeInAndOut(0.25f), 1.5f));
                 }
 
-                PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.Hub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup));
+                PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup));
             }
 
             if (pickUpEv.DestroyPickup)

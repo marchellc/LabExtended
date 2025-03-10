@@ -38,7 +38,7 @@ namespace LabExtended.API.Settings
             set => ServerSpecificSettingsSync.Version = value;
         }
 
-        public static event Action<ExPlayer, SettingsEntry> OnUpdated;
+        public static event Action<ExPlayer?, SettingsEntry> OnUpdated;
         public static event Action<ExPlayer, SettingsEntry> OnCreated;
 
         public static void SyncEntries(ExPlayer player)
@@ -46,7 +46,7 @@ namespace LabExtended.API.Settings
             if (!player)
                 throw new ArgumentNullException(nameof(player));
             
-            ApiLog.Debug("Settings API", $"Synchronizing entries for player &3{player.Name}&r (&6{player.UserId}&r)");
+            ApiLog.Debug("Settings API", $"Synchronizing entries for player &3{player.Nickname}&r (&6{player.UserId}&r)");
             
             var list = ListPool<ServerSpecificSettingBase>.Shared.Rent();
             var headers = ListPool<string>.Shared.Rent();
@@ -127,7 +127,7 @@ namespace LabExtended.API.Settings
         public static bool TryGetMenu(string menuId, ExPlayer player, out SettingsMenu menu)
             => player.settingsMenuLookup.TryGetValue(menuId, out menu);
         
-        public static bool TryGetEntry(int generatedId, ExPlayer player, out SettingsEntry entry)
+        public static bool TryGetEntry(int generatedId, ExPlayer? player, out SettingsEntry entry)
             => player.settingsAssignedIdLookup.TryGetValue(generatedId, out entry);
         
         public static bool TryGetEntry(string customId, ExPlayer player, out SettingsEntry entry)
@@ -227,7 +227,7 @@ namespace LabExtended.API.Settings
                 throw new ArgumentNullException(nameof(menu));
 
             if (player.settingsMenuLookup.ContainsKey(menu.CustomId))
-                throw new Exception($"A menu with the same ID already exists for {player.Name} ({player.UserId})");
+                throw new Exception($"A menu with the same ID already exists for {player.Nickname} ({player.UserId})");
 
             var entries = ListPool<SettingsEntry>.Shared.Rent();
             var curCount = player.settingsIdLookup.Count;
@@ -281,10 +281,10 @@ namespace LabExtended.API.Settings
                 throw new ArgumentNullException(nameof(entry));
 
             if (player.settingsIdLookup.ContainsKey(entry.CustomId))
-                throw new Exception($"An entry with the same custom ID ({entry.CustomId}) already exists for player {player.Name} ({player.UserId})");
+                throw new Exception($"An entry with the same custom ID ({entry.CustomId}) already exists for player {player.Nickname} ({player.UserId})");
 
             if (player.settingsAssignedIdLookup.ContainsKey(entry.AssignedId))
-                throw new Exception($"An entry with the same assigned ID ({entry.AssignedId}) already exists for player {player.Name} ({player.UserId})");
+                throw new Exception($"An entry with the same assigned ID ({entry.AssignedId}) already exists for player {player.Nickname} ({player.UserId})");
 
             entry.Player = player;
             
@@ -321,20 +321,20 @@ namespace LabExtended.API.Settings
             SyncEntries(player);
         }
 
-        public static bool HasSettingsOpen(ExPlayer player)
+        public static bool HasSettingsOpen(this ExPlayer player)
         {
-            if (!player || !player.sssReport.HasValue)
+            if (!player || !player.SettingsReport.HasValue)
                 return false;
 
-            return player.sssReport.Value.TabOpen;
+            return player.SettingsReport.Value.TabOpen;
         }
 
-        public static int GetUserVersion(ExPlayer player)
+        public static int GetUserVersion(this ExPlayer player)
         {
-            if (!player || !player.sssReport.HasValue)
+            if (!player || !player.SettingsReport.HasValue)
                 return 0;
 
-            return player.sssReport.Value.Version;
+            return player.SettingsReport.Value.Version;
         }
 
         public static int GetIntegerId(string customId)
@@ -368,6 +368,9 @@ namespace LabExtended.API.Settings
         {
             try
             {
+                if (!player)
+                    return;
+                
                 for (int i = 0; i < allBuilders.Count; i++)
                 {
                     try
@@ -470,7 +473,7 @@ namespace LabExtended.API.Settings
                     }
                     catch (Exception ex)
                     {
-                        ApiLog.Error("Settings API", $"Failed while building settings for player &1{player.Name} ({player.UserId})&r at index &3{i}&r:\n{ex.ToColoredString()}");
+                        ApiLog.Error("Settings API", $"Failed while building settings for player &1{player.Nickname} ({player.UserId})&r at index &3{i}&r:\n{ex.ToColoredString()}");
                     }
                 }
 
@@ -480,12 +483,12 @@ namespace LabExtended.API.Settings
                     
                     ApiLog.Debug("Settings API", $"Built &1{player.settingsIdLookup.Count}&r setting entries " +
                                                  $"and &1{player.settingsMenuLookup.Count}&r menu(s) for player " +
-                                                 $"&1{player.Name}&r (&6{player.UserId}&r)");
+                                                 $"&1{player.Nickname}&r (&6{player.UserId}&r)");
                 }
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Settings API", $"Failed while building settings for player &1{player.Name}&r ({player.UserId})&r:\n{ex.ToColoredString()}");
+                ApiLog.Error("Settings API", $"Failed while building settings for player &1{player.Nickname}&r ({player.UserId})&r:\n{ex.ToColoredString()}");
             }
         }
 
@@ -496,17 +499,17 @@ namespace LabExtended.API.Settings
                 if (connection is null || !ExPlayer.TryGet(connection, out var player) || !player)
                     return;
 
-                if (player.sssReport.HasValue)
+                if (player.SettingsReport.HasValue)
                 {
-                    HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, player.sssReport.Value));
+                    HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, player.SettingsReport.Value));
 
-                    player.sssReport = userStatusReport;
+                    player.SettingsReport = userStatusReport;
                     return;
                 }
                 
                 HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, null));
 
-                player.sssReport = userStatusReport;
+                player.SettingsReport = userStatusReport;
             }
             catch (Exception ex)
             {
@@ -528,13 +531,13 @@ namespace LabExtended.API.Settings
 
                 if (clientResponse.SettingType is null)
                 {
-                    ApiLog.Debug("Settings API", $"Player &1{player.Name} ({player.UserId})&r sent an empty setting type");
+                    ApiLog.Debug("Settings API", $"Player &1{player.Nickname} ({player.UserId})&r sent an empty setting type");
                     return;
                 }
 
                 if (!TryGetEntry(clientResponse.Id, player, out var entry))
                 {
-                    ApiLog.Debug("Settings API", $"Failed to find setting ID &1{clientResponse.Id}&r for player &1{player.Name} ({player.UserId})&r!");
+                    ApiLog.Debug("Settings API", $"Failed to find setting ID &1{clientResponse.Id}&r for player &1{player.Nickname} ({player.UserId})&r!");
                     return;
                 }
 

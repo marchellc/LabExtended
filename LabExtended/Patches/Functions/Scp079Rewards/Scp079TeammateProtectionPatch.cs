@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
             foreach (var pair in __instance._attackers)
             {
                 if (pair.Value <= __instance._lastDamageTime && ExPlayer.TryGet(pair.Key, out var player)
-                    && player.Switches.CanCountAs079ExpTarget && player.Role.Is<IFpcRole>(out var fpcRole))
+                    && player.Toggles.CanCountAs079ExpTarget && player.Role.Is<IFpcRole>(out var fpcRole))
                 {
                     TeammateProtectionRewards.TrackedTeammate.AttackersNonAlloc[index] = fpcRole.FpcModule.Position;
 

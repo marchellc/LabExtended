@@ -19,7 +19,7 @@ namespace LabExtended.Events.Scp939
 
         public MimicPointController.RpcStateMsg Reason { get; }
 
-        internal Scp939RemovingMimicryArgs(ExPlayer scp, RelativePosition position, MimicPointController.RpcStateMsg reason)
+        internal Scp939RemovingMimicryArgs(ExPlayer? scp, RelativePosition position, MimicPointController.RpcStateMsg reason)
             => (Scp, Role, Controller, Position, Reason) = (scp, scp.Role.Scp939, scp.Subroutines.MimicPointController, position, reason);
     }
 }

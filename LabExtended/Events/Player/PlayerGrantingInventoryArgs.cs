@@ -11,7 +11,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// The player receiving the inventory.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Whether or not to remove previous items.
@@ -41,9 +41,9 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// A dictionary of ammo type and their amount to add.
         /// </summary>
-        public Dictionary<ItemType, ushort> Ammo { get; }
+        public Dictionary<ItemType, ushort>? Ammo { get; }
 
-        internal PlayerGrantingInventoryArgs(ExPlayer player, bool shouldGrantInventory, bool shouldResetInventory, bool hasEscaped, bool dropPreviousItems, List<ItemType> items, Dictionary<ItemType, ushort> ammo)
+        internal PlayerGrantingInventoryArgs(ExPlayer? player, bool shouldGrantInventory, bool shouldResetInventory, bool hasEscaped, bool dropPreviousItems, List<ItemType> items, Dictionary<ItemType, ushort>? ammo)
         {
             Player = player;
 

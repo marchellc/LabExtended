@@ -84,13 +84,13 @@ namespace LabExtended.Commands.Parsing.PlayerList.Nodes
                         throw new ArgumentNullException(nameof(text));
 
                     if (text == "*")
-                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.Hub.serverRoles.Network_myText));
+                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.ReferenceHub.serverRoles.Network_myText));
                     else if (text == "!*")
-                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => string.IsNullOrWhiteSpace(p.Hub.serverRoles.Network_myText));
+                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => string.IsNullOrWhiteSpace(p.ReferenceHub.serverRoles.Network_myText));
                     else if (text.StartsWith("!"))
-                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.Hub.serverRoles.Network_myText) && p.Hub.serverRoles.Network_myText.GetSimilarity(text.Substring(1)) < 0.8);
+                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.ReferenceHub.serverRoles.Network_myText) && p.ReferenceHub.serverRoles.Network_myText.GetSimilarity(text.Substring(1)) < 0.8);
                     else
-                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.Hub.serverRoles.Network_myText) && p.Hub.serverRoles.Network_myText.GetSimilarity(text.Substring(1)) >= 0.8);
+                        return Run(binaryOperationNode.LeftOperand, tagPredicate).Where(p => !string.IsNullOrWhiteSpace(p.ReferenceHub.serverRoles.Network_myText) && p.ReferenceHub.serverRoles.Network_myText.GetSimilarity(text.Substring(1)) >= 0.8);
                 }
                 else
                     throw new Exception($"Unkown binary operand");
@@ -100,7 +100,7 @@ namespace LabExtended.Commands.Parsing.PlayerList.Nodes
                 if (textNode.NodeType is TextNodeType.All)
                     return ExPlayer.Players;
                 else if (textNode.NodeType is TextNodeType.Player)
-                    return ExPlayer.Players.Where(p => p.Name.GetSimilarity(textNode.Token.Text) >= 0.85 || p.UserId == textNode.Token.Text);
+                    return ExPlayer.Players.Where(p => p.Nickname.GetSimilarity(textNode.Token.Text) >= 0.85 || p.UserId == textNode.Token.Text);
                 else if (textNode.NodeType is TextNodeType.Number && int.TryParse(textNode.Token.Text, out var playerId))
                     return ExPlayer.Players.Where(p => p.PlayerId == playerId);
                 else
@@ -109,7 +109,7 @@ namespace LabExtended.Commands.Parsing.PlayerList.Nodes
             else if (expressionNode is UnOpNode unOpNode)
             {
                 if (unOpNode.TextToken.Token.Name == "NAME")
-                    return ExPlayer.Players.Where(p => p.Name.GetSimilarity(((TextNode)unOpNode.Operand).Token.Text) >= 0.85);
+                    return ExPlayer.Players.Where(p => p.Nickname.GetSimilarity(((TextNode)unOpNode.Operand).Token.Text) >= 0.85);
                 else
                     throw new Exception("Unknown node");
             }

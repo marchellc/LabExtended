@@ -16,7 +16,7 @@ namespace LabExtended.Events.Scp939
         public float LungeTargetDamage { get; set; } = 120f;
         public float LungeSecondaryDamage { get; set; } = 30f;
 
-        internal Scp939LungingArgs(ExPlayer scp, ExPlayer target, Scp939Role role, Scp939LungeAbility ability)
+        internal Scp939LungingArgs(ExPlayer? scp, ExPlayer target, Scp939Role role, Scp939LungeAbility ability)
             => (Scp, Target, Role, Ability) = (scp, target, role, ability);
     }
 }

@@ -19,7 +19,7 @@ namespace LabExtended.Patches.Functions.Scp939
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanUseMimicryAs939)
+            if (!scp.Toggles.CanUseMimicryAs939)
                 return false;
 
             __instance._syncOption = reader.ReadByte();

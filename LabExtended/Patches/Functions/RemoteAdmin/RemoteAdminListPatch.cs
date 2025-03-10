@@ -57,9 +57,9 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 var other = ExPlayer.Get(otherHub);
 
                 if (other is null) continue;
-                if (!other.Switches.IsVisibleInRemoteAdmin) continue;
+                if (!other.Toggles.IsVisibleInRemoteAdmin) continue;
 
-                var icons = other.RaIcons;
+                var icons = other.RemoteAdminActiveIcons;
 
                 builder.Append(RaPlayerList.GetPrefix(otherHub, hasHiddenBadges, hasGlobalHiddenBadges));
 
@@ -75,7 +75,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 builder.Append("<color={RA_ClassColor}>(");
                 builder.Append(other.PlayerId);
                 builder.Append(") ");
-                builder.Append(other.Hub.nicknameSync.CombinedName.Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
+                builder.Append(other.ReferenceHub.nicknameSync.CombinedName.Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
                 builder.AppendLine();
             }
 

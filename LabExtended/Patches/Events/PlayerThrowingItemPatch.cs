@@ -30,13 +30,13 @@ namespace LabExtended.Patches.Events
             if (player is null)
                 return true;
 
-            if (!player.Switches.CanDropItems)
+            if (!player.Toggles.CanDropItems)
                 return false;
 
             if (!__instance.UserInventory.Items.TryGetValue(itemSerial, out var item) || !item.AllowHolster)
                 return false;
 
-            var droppingArgs = new PlayerDroppingItemEventArgs(player.Hub, item);
+            var droppingArgs = new PlayerDroppingItemEventArgs(player.ReferenceHub, item);
 
             PlayerEvents.OnDroppingItem(droppingArgs);
 
@@ -62,11 +62,11 @@ namespace LabExtended.Patches.Events
 
             player.Inventory._droppedItems.Add(pickup);
 
-            PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.Hub, pickup));
+            PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup));
 
-            if (player.Switches.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody))
+            if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody))
             {
-                var throwingArgs = new PlayerThrowingItemEventArgs(player.Hub, pickup, rigidbody);
+                var throwingArgs = new PlayerThrowingItemEventArgs(player.ReferenceHub, pickup, rigidbody);
 
                 PlayerEvents.OnThrowingItem(throwingArgs);
 
@@ -94,7 +94,7 @@ namespace LabExtended.Patches.Events
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
 
-                PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(player.Hub, pickup, rigidbody));
+                PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody));
             }
 
             return false;

@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions.Scp049
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanConsumeRagdollsAsZombie)
+            if (!scp.Toggles.CanConsumeRagdollsAsZombie)
             {
                 __result = 2;
                 return false;
@@ -53,7 +53,7 @@ namespace LabExtended.Patches.Functions.Scp049
 
             var target = ExPlayer.Get(ragdoll.Info.OwnerHub);
 
-            if (target != null && !target.Switches.CanBeConsumedByZombies)
+            if (target != null && !target.Toggles.CanBeConsumedByZombies)
             {
                 __result = 2;
                 return false;

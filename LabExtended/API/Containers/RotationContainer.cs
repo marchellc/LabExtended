@@ -1,14 +1,8 @@
 ﻿using LabExtended.API.Interfaces;
-using LabExtended.Core;
-using LabExtended.Core.Networking;
 using LabExtended.Utilities;
-
-using Mirror;
 
 using PlayerRoles.FirstPersonControl.NetworkMessages;
 using PlayerRoles.PlayableScps;
-
-using RelativePositioning;
 
 using UnityEngine;
 
@@ -34,13 +28,38 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player that this player is currently looking at.
         /// </summary>
-        public ExPlayer LookingAtPlayer
-            => ExPlayer.AllPlayers.Where(x => IsLookingAt(x)).OrderBy(Player.Position.DistanceTo).FirstOrDefault();
+        public ExPlayer? LookingAtPlayer
+        {
+            get
+            {
+                var closestPlayer = default(ExPlayer);
+                
+                foreach (var player in ExPlayer.AllPlayers)
+                {
+                    if (player is null)
+                        continue;
+                    
+                    if (!player.Role.IsAlive)
+                        continue;
+                    
+                    if (player == Player)
+                        continue;
+                    
+                    if (!IsLookingAt(player))
+                        continue;
 
+                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) > Vector3.Distance(player.Position, Player.Position))
+                        closestPlayer = player;
+                }
+
+                return closestPlayer;
+            }
+        }
+        
         /// <summary>
         /// Gets the player that this player is directly looking at.
         /// </summary>
-        public ExPlayer DirectlyLookingAtPlayer
+        public ExPlayer? DirectlyLookingAtPlayer
         {
             get 
             {
@@ -102,7 +121,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         public LowPrecisionQuaternion LowPrecision
         {
-            get => new LowPrecisionQuaternion(Rotation);
+            get => new(Rotation);
             set => Rotation = value.Value;
         }
 
@@ -165,7 +184,7 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <returns><see langword="true"/> if the position is in line of sight.</returns>
         public bool IsInLineOfSight(Vector3 position, float radius = 0.12f, float distance = 60f)
-            => VisionInformation.GetVisionInformation(Player.Hub, Player.CameraTransform, position, radius, distance).IsInLineOfSight;
+            => VisionInformation.GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance).IsInLineOfSight;
 
         /// <summary>
         /// Whether or not a specific player is being looked at by this player.
@@ -175,7 +194,7 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
         /// <returns><see langword="true"/> if the player is being looked at.</returns>
-        public bool IsLookingAt(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
+        public bool IsLookingAt(ExPlayer? player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
             => player != null && player.Role.IsAlive && ((player.IsSpectatedBy(Player) && countSpectating) || IsLookingAt(player.Rotation.CameraPosition, radius, distance));
 
         /// <summary>
@@ -226,7 +245,7 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <returns><see langword="true"/> if the position is being looked at.</returns>
         public bool IsLookingAt(Vector3 position, float radius = 0.12f, float distance = 60f)
-            => VisionInformation.GetVisionInformation(Player.Hub, Player.CameraTransform, position, radius, distance).IsLooking;
+            => VisionInformation.GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance).IsLooking;
 
         /// <summary>
         /// Sets the player's rotation.

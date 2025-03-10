@@ -212,7 +212,7 @@ namespace LabExtended.API
         /// <param name="player">The player to check.</param>
         /// <returns><see langword="true"/> if the player is in idle range, otherwise <see langword="false"/>.</returns>
         public bool IsInIdleRange(ExPlayer player)
-            => player != null && player.Role.IsAlive && Base.IsInIdleRange(player.Hub);
+            => player != null && player.Role.IsAlive && Base.IsInIdleRange(player.ReferenceHub);
 
         /// <summary>
         /// Gets a value indicating whether or not a specific player is in trigger range.
@@ -220,15 +220,15 @@ namespace LabExtended.API
         /// <param name="player">The player to check.</param>
         /// <returns><see langword="true"/> if the player is in trigger range, otherwise <see langword="false"/>.</returns>
         public bool IsInTriggerRange(ExPlayer player)
-            => player != null && player.Role.IsAlive && Base.PlayerInRange(player.Hub);
+            => player != null && player.Role.IsAlive && Base.PlayerInRange(player.ReferenceHub);
 
         /// <inheritdoc/>
         public void Damage(ExPlayer player, float amount)
-            => player.Hub.playerStats.DealDamage(new UniversalDamageHandler(amount, DeathTranslations.Tesla));
+            => player.ReferenceHub.playerStats.DealDamage(new UniversalDamageHandler(amount, DeathTranslations.Tesla));
 
         /// <inheritdoc/>
         public void Kill(ExPlayer player)
-            => player.Hub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Tesla));
+            => player.ReferenceHub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Tesla));
 
         /// <inheritdoc/>
         public DamageHandlerBase GetDamageHandler(float damageAmount)
@@ -271,14 +271,14 @@ namespace LabExtended.API
 
             foreach (var player in ExPlayer.Players)
             {
-                if (!player.Switches.CanTriggerTesla) continue;
+                if (!player.Toggles.CanTriggerTesla) continue;
                 if (!player.Role.IsAlive || player.Role.Is(RoleTypeId.Scp079)) continue;
                 if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team)) continue;
 
                 if (!shouldIdle)
-                    shouldIdle = Base.IsInIdleRange(player.Hub);
+                    shouldIdle = Base.IsInIdleRange(player.ReferenceHub);
 
-                if (!shouldTrigger && Base.PlayerInRange(player.Hub) && !Base.InProgress)
+                if (!shouldTrigger && Base.PlayerInRange(player.ReferenceHub) && !Base.InProgress)
                 {
                     if (!HookRunner.RunEvent(new PlayerTriggeringTeslaGateArgs(player, this), true))
                         continue;

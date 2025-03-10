@@ -83,9 +83,9 @@ namespace LabExtended.API.Hints
             builder = StringBuilderPool.Shared.Rent();
         }
 
-        public static void PauseHints(this ExPlayer player) => player.hintCache.IsPaused = true;
-        public static void ResumeHints(this ExPlayer player) => player.hintCache.IsPaused = false;
-        public static void ToggleHints(this ExPlayer player) => player.hintCache.IsPaused = !player.hintCache.IsPaused;
+        public static void PauseHints(this ExPlayer? player) => player.Hints.IsPaused = true;
+        public static void ResumeHints(this ExPlayer? player) => player.Hints.IsPaused = false;
+        public static void ToggleHints(this ExPlayer player) => player.Hints.IsPaused = !player.Hints.IsPaused;
         
         public static void ForceSendHints() => SendNextFrame = true;
         public static void ForceSendHints(this ExPlayer player) => SendNextFrame = true;
@@ -98,24 +98,24 @@ namespace LabExtended.API.Hints
             if (string.IsNullOrWhiteSpace(content))
                 throw new ArgumentNullException(nameof(content));
             
-            if (player.hintCache.Queue.Count < 1)
+            if (player.Hints.Queue.Count < 1)
             {
-                player.hintCache.Queue.Add(new HintMessage(content, duration));
+                player.Hints.Queue.Add(new HintMessage(content, duration));
             }
             else
             {
                 if (isPriority)
                 {
-                    var curHint = player.hintCache.Queue[0];
+                    var curHint = player.Hints.Queue[0];
 
-                    player.hintCache.RemoveCurrent();
+                    player.Hints.RemoveCurrent();
                     
-                    player.hintCache.Queue.Insert(0, new HintMessage(content, duration));
-                    player.hintCache.Queue.Add(curHint);
+                    player.Hints.Queue.Insert(0, new HintMessage(content, duration));
+                    player.Hints.Queue.Add(curHint);
                 }
                 else
                 {
-                    player.hintCache.Queue.Add(new HintMessage(content, duration));
+                    player.Hints.Queue.Add(new HintMessage(content, duration));
                 }
             }
         }
@@ -140,7 +140,7 @@ namespace LabExtended.API.Hints
             {
                 foreach (var player in ExPlayer.Players)
                 {
-                    player.elements.ForEach(x =>
+                    player.HintElements.ForEach(x =>
                     {
                         x.IsActive = false;
 
@@ -152,7 +152,7 @@ namespace LabExtended.API.Hints
                         x.OnDisabled();
                     });
                     
-                    player.elements.Clear();
+                    player.HintElements.Clear();
                 }
             }
         }
@@ -216,7 +216,7 @@ namespace LabExtended.API.Hints
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
 
-            if (!target.elements.Remove(hintElement))
+            if (!target.HintElements.Remove(hintElement))
                 return false;
             
             hintElement.IsActive = false;
@@ -286,12 +286,12 @@ namespace LabExtended.API.Hints
             hintElement._prevCompiled = null;
             hintElement._tickNum = 0;
 
-            target.elements.Add(hintElement);
+            target.HintElements.Add(hintElement);
             
             hintElement.OnEnabled();
             hintElement.IsActive = true;
 
-            ApiLog.Debug("Hint API", $"Added personal element &1{hintElement.Id}&r (&6{hintElement.GetType().Name}&r) to player &1{target.Name}&r (&6{target.UserId}&r)");
+            ApiLog.Debug("Hint API", $"Added personal element &1{hintElement.Id}&r (&6{hintElement.GetType().Name}&r) to player &1{target.Nickname}&r (&6{target.UserId}&r)");
             return true;
         }
 
@@ -333,7 +333,7 @@ namespace LabExtended.API.Hints
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            return target.elements.Where(x => predicate(x));
+            return target.HintElements.Where(x => predicate(x));
         }
 
         public static IEnumerable<T> GetHintElements<T>(Predicate<T> predicate = null) where T : HintElement
@@ -350,9 +350,9 @@ namespace LabExtended.API.Hints
                 throw new ArgumentNullException(nameof(target));
             
             if (predicate is null)
-                return target.elements.Where<T>();
+                return target.HintElements.Where<T>();
             else
-                return target.elements.Where<T>(x => predicate(x));
+                return target.HintElements.Where<T>(x => predicate(x));
         }
 
         public static T GetHintElement<T>(int id) where T : HintElement
@@ -383,7 +383,7 @@ namespace LabExtended.API.Hints
             if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
-            return target.elements.TryGetFirst(x => predicate(x), out var element) ? element : null;
+            return target.HintElements.TryGetFirst(x => predicate(x), out var element) ? element : null;
         }
 
         public static T GetHintElement<T>(Predicate<T> predicate = null) where T : HintElement
@@ -400,16 +400,16 @@ namespace LabExtended.API.Hints
                 throw new ArgumentNullException(nameof(target));
             
             if (predicate != null)
-                return target.elements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
+                return target.HintElements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
             else
-                return target.elements.TryGetFirst<T>(out var element) ? element : null;
+                return target.HintElements.TryGetFirst<T>(out var element) ? element : null;
         }
 
         public static bool TryGetHintElement<T>(out T element) where T : HintElement
             => elements.TryGetFirst(out element);
         
         public static bool TryGetHintElement<T>(this ExPlayer target, out T element) where T : PersonalHintElement
-            => target.elements.TryGetFirst(out element);
+            => target.HintElements.TryGetFirst(out element);
 
         public static bool TryGetHintElement<T>(int id, out T element) where T : HintElement
             => TryGetHintElement(x => x.Id == id, out element);
@@ -451,7 +451,7 @@ namespace LabExtended.API.Hints
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
 
-            return target.elements.TryGetFirst(x => predicate(x), out element);
+            return target.HintElements.TryGetFirst(x => predicate(x), out element);
         }
 
         public static bool TryGetHintElement(Predicate<HintElement> predicate, out HintElement element)
@@ -470,7 +470,7 @@ namespace LabExtended.API.Hints
             if (target is null)
                 throw new ArgumentNullException(nameof(target));
 
-            return target.elements.TryGetFirst(x => predicate(x), out hintElement);
+            return target.HintElements.TryGetFirst(x => predicate(x), out hintElement);
         }
 
         internal static void OnTick()
@@ -490,8 +490,8 @@ namespace LabExtended.API.Hints
                 
                 foreach (var player in ExPlayer.Players)
                 {
-                    if (!player || player.hintCache is null) continue;
-                    if (player.hintCache.IsPaused) continue;
+                    if (!player || player.Hints is null) continue;
+                    if (player.Hints.IsPaused) continue;
 
                     builder.Clear();
                     builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
@@ -501,18 +501,18 @@ namespace LabExtended.API.Hints
                     
                     var overrideParse = false;
 
-                    player.hintCache.RefreshRatio();
+                    player.Hints.RefreshRatio();
                     
-                    if (player.hintCache.CurrentMessage is null || player.hintCache.UpdateTime())
-                        player.hintCache.NextMessage();
+                    if (player.Hints.CurrentMessage is null || player.Hints.UpdateTime())
+                        player.Hints.NextMessage();
 
-                    if (player.hintCache.CurrentMessage != null)
+                    if (player.Hints.CurrentMessage != null)
                     {
-                        player.hintCache.ParseTemp();
+                        player.Hints.ParseTemp();
 
-                        if (player.hintCache.TempData.Count > 0)
+                        if (player.Hints.TempData.Count > 0)
                         {
-                            AppendMessages(player.hintCache.TempData, TemporaryHintAlign, 0f, builder);
+                            AppendMessages(player.Hints.TempData, TemporaryHintAlign, 0f, builder);
                             anyAppended = true;
                         }
                     }
@@ -533,7 +533,7 @@ namespace LabExtended.API.Hints
 
                         if ((builder.Length + element.Builder.Length) >= MaxHintTextLength)
                         {
-                            ApiLog.Warn("Hint API", $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Name}&r (&6{player.UserId}&r) " +
+                            ApiLog.Warn("Hint API", $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Nickname}&r (&6{player.UserId}&r) " +
                                                     $"due to it exceeding maximum allowed limit (&1{builder.Length + element.Builder.Length}&r / &2{MaxHintTextLength}&r)");
 
                             return;
@@ -585,7 +585,7 @@ namespace LabExtended.API.Hints
 
                             if (element.Data.Count > 0)
                             {
-                                AppendMessages(element.Data, element.GetAlignment(player), player.hintCache.LeftOffset, builder);
+                                AppendMessages(element.Data, element.GetAlignment(player), player.Hints.LeftOffset, builder);
                                 anyAppended = true;
                             }
                         }
@@ -605,7 +605,7 @@ namespace LabExtended.API.Hints
                         ProcessElement(element);
                     }
 
-                    foreach (var personalElement in player.elements)
+                    foreach (var personalElement in player.HintElements)
                     {
                         if (anyOverride) break;
                         ProcessElement(personalElement);
@@ -613,10 +613,10 @@ namespace LabExtended.API.Hints
                     
                     if (!anyAppended)
                     {
-                        if (!player.hintCache.WasClearedAfterEmpty)
+                        if (!player.Hints.WasClearedAfterEmpty)
                         {
                             player.Connection.Send(emptyData);
-                            player.hintCache.WasClearedAfterEmpty = true;
+                            player.Hints.WasClearedAfterEmpty = true;
                         }
 
                         continue;
@@ -629,10 +629,10 @@ namespace LabExtended.API.Hints
 
                     if (text.Length >= MaxHintTextLength)
                     {
-                        if (!player.hintCache.WasClearedAfterEmpty)
+                        if (!player.Hints.WasClearedAfterEmpty)
                         {
                             player.Connection.Send(emptyData);
-                            player.hintCache.WasClearedAfterEmpty = true;
+                            player.Hints.WasClearedAfterEmpty = true;
                         }
 
                         ApiLog.Warn("Hint API", $"The compiled hint is too big! (&1{text.Length}&r / &2{MaxHintTextLength}&r)");
@@ -643,7 +643,7 @@ namespace LabExtended.API.Hints
                     writer.WriteHintData(ApiLoader.ApiConfig.HintSection.HintDuration, text);
 
                     player.Connection.Send(writer.ToArraySegment());
-                    player.hintCache.WasClearedAfterEmpty = false;
+                    player.Hints.WasClearedAfterEmpty = false;
                 }
 
                 updateInterval = lowestRate;

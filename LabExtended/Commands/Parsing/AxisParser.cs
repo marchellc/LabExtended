@@ -6,7 +6,7 @@ namespace LabExtended.Commands.Parsing
     {
         public static readonly char[] IndexToAxis = new char[] { 'x', 'y', 'z', 'w' };
 
-        public static bool ParseAxis(string[] parts, Dictionary<char, float> axis, out string error)
+        public static bool ParseAxis(string[] parts, Dictionary<char, float>? axis, out string error)
         {
             error = string.Empty;
 

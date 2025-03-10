@@ -18,7 +18,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanGainExpAs079)
+            if (!scp.Toggles.CanGainExpAs079)
                 return false;
 
             __instance._expGainQueue.Enqueue(new Scp079TierManager.ExpQueuedNotification(amount, reason, subject));

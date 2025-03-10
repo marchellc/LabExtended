@@ -16,7 +16,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// Gets the throwing player.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Gets the item to be thrown.
@@ -49,7 +49,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public Vector3 AngularVelocity { get; set; }
 
-        internal PlayerThrowingItemArgs(ExPlayer player, ItemBase item, ItemPickupBase pickup, Rigidbody rigidbody, Vector3 position, Vector3 velocity, Vector3 angularVelocity)
+        internal PlayerThrowingItemArgs(ExPlayer? player, ItemBase item, ItemPickupBase pickup, Rigidbody rigidbody, Vector3 position, Vector3 velocity, Vector3 angularVelocity)
         {
             Player = player;
             Item = item;

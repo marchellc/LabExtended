@@ -206,10 +206,10 @@ namespace LabExtended.API
         }
 
         public bool CanInteract(ExPlayer player = null)
-            => Base.AllowInteracting(player?.Hub, 0);
+            => Base.AllowInteracting(player?.ReferenceHub, 0);
 
         public bool TryPry(ExPlayer player = null)
-            => Base is PryableDoor pryableDoor && pryableDoor.TryPryGate(player?.Hub);
+            => Base is PryableDoor pryableDoor && pryableDoor.TryPryGate(player?.ReferenceHub);
 
         public void SetHealth(float health)
         {

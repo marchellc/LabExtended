@@ -61,17 +61,69 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the closest player.
         /// </summary>
-        public ExPlayer ClosestPlayer => ExPlayer.Players.Where(p => p.NetId != Player.NetId && p.Role.IsAlive).OrderBy(DistanceTo).FirstOrDefault();
+        public ExPlayer? ClosestPlayer
+        {
+            get
+            {
+                var closestPlayer = default(ExPlayer);
+                
+                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
+                {
+                    var player = ExPlayer.AllPlayers[i];
+                    
+                    if (player is null)
+                        continue;
+                    
+                    if (!player.Role.IsAlive)
+                        continue;
+                    
+                    if (player == Player)
+                        continue;
+
+                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) >
+                        Vector3.Distance(player.Position, Position))
+                        closestPlayer = player;
+                }
+
+                return closestPlayer;
+            }
+        }
 
         /// <summary>
         /// Gets the closest SCP player.
         /// </summary>
-        public ExPlayer ClosestScp => ExPlayer.Players.Where(p => p.NetId != Player.NetId && p.Role.IsScp).OrderBy(DistanceTo).FirstOrDefault();
+        public ExPlayer? ClosestScp
+        {
+            get
+            {
+                var closestPlayer = default(ExPlayer);
+                
+                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
+                {
+                    var player = ExPlayer.AllPlayers[i];
+                    
+                    if (player is null)
+                        continue;
+                    
+                    if (!player.Role.IsScp)
+                        continue;
+                    
+                    if (player == Player)
+                        continue;
+
+                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) >
+                        Vector3.Distance(player.Position, Position))
+                        closestPlayer = player;
+                }
+
+                return closestPlayer;
+            }
+        }
 
         /// <summary>
         /// Gets the closest waypoint.
         /// </summary>
-        public WaypointBase WayPoint
+        public WaypointBase? WayPoint
         {
             get
             {
@@ -107,7 +159,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         public RelativePosition Relative
         {
-            get => new RelativePosition(Position);
+            get => Player.Role.Motor?.ReceivedPosition ?? new(Position);
             set => Set(value.Position);
         }
 
@@ -131,7 +183,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         /// <param name="position">The position to set.</param>
         public void Set(Vector3 position)
-            => Player.Hub.TryOverridePosition(position);
+            => Player.ReferenceHub.TryOverridePosition(position);
 
         /// <summary>
         /// Gets a list of players in a specified range.
@@ -139,7 +191,7 @@ namespace LabExtended.API.Containers
         /// <param name="range">The maximum range.</param>
         /// <returns>A list of players that are in range.</returns>
         public IEnumerable<ExPlayer> GetPlayersInRange(float range)
-            => ExPlayer.Players.Where(p => p.NetId != Player.NetId && p.Role.IsAlive && p.Position.DistanceTo(Player) <= range);
+            => ExPlayer.AllPlayers.Where(p => p.NetworkId != Player.NetworkId && p.Role.IsAlive && p.Position.DistanceTo(Player) <= range);
 
         /// <summary>
         /// Gets the distance to a specified position.

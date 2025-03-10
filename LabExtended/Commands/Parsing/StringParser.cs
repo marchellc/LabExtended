@@ -22,6 +22,9 @@ namespace LabExtended.Commands.Parsing
                 if (getter is null || getter.IsStatic)
                     return;
                 
+                if (dict.ContainsKey(name))
+                    return;
+                
                 var method = FastReflection.ForMethod(getter);
                 
                 dict.Add(name, player => method(player, Array.Empty<object>()));

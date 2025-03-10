@@ -10,7 +10,7 @@ namespace LabExtended.Events.Player
         public ExPlayer Player { get; }
         public CandyItem Candy { get; }
 
-        internal PlayerDroppingCandyArgs(ExPlayer player, CandyItem candy)
+        internal PlayerDroppingCandyArgs(ExPlayer? player, CandyItem candy)
             => (Player, Candy) = (player, candy);
     }
 }

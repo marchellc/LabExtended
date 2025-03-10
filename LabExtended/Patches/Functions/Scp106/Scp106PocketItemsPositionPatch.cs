@@ -20,7 +20,7 @@ namespace LabExtended.Patches.Functions.Scp106
 
             foreach (var player in ExPlayer.AllPlayers)
             {
-                if (!player.Switches.CanBePocketDimensionItemTarget)
+                if (!player.Toggles.CanBePocketDimensionItemTarget)
                     continue;
 
                 if (!player.Role.Is<IFpcRole>(out var fpcRole))

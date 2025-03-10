@@ -28,7 +28,7 @@ namespace LabExtended.API.RemoteAdmin.Objects
             => string.Empty;
 
         public virtual bool GetVisibility(ExPlayer player)
-            => player != null && Whitelist.Contains(player.NetId);
+            => player != null && Whitelist.Contains(player.NetworkId);
 
         public virtual void OnDisabled() { }
         public virtual void OnEnabled() { }

@@ -19,7 +19,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
             if (!ExPlayer.TryGet(ply, out var player))
                 return true;
 
-            if (!player.Switches.CanCountAs079ExpTarget)
+            if (!player.Toggles.CanCountAs079ExpTarget)
                 return false;
 
             if (!player.Role.Is<IFpcRole>(out var fpcRole))
@@ -31,7 +31,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
             if (playerRoom is null)
                 return false;
 
-            if (!ExPlayer.Players.Any(x => x.Switches.CanCountAs079ExpTarget && HidStoppedReward.IsNearbyTeammate(playerPos, x.Hub)))
+            if (!ExPlayer.Players.Any(x => x.Toggles.CanCountAs079ExpTarget && HidStoppedReward.IsNearbyTeammate(playerPos, x.ReferenceHub)))
                 return false;
 
             foreach (var role in Scp079Role.ActiveInstances)

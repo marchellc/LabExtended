@@ -4,7 +4,7 @@ namespace LabExtended.Commands.Arguments
 {
     public class ArgumentCollection : IDisposable
     {
-        private Dictionary<string, object> _args = DictionaryPool<string, object>.Shared.Rent();
+        private Dictionary<string, object>? _args = DictionaryPool<string, object>.Shared.Rent();
 
         public int Size => _args.Count;
 

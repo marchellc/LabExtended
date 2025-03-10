@@ -14,7 +14,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
         [HarmonyPatch(typeof(TerminationRewards), nameof(TerminationRewards.GainReward))]
         public static bool Prefix(Scp079Role scp079, ReferenceHub deadPly, DamageHandlerBase damageHandler)
         {
-            if (ExPlayer.TryGet(deadPly, out var player) && !player.Switches.CanCountAs079ExpTarget)
+            if (ExPlayer.TryGet(deadPly, out var player) && !player.Toggles.CanCountAs079ExpTarget)
                 return false;
 
             return true;

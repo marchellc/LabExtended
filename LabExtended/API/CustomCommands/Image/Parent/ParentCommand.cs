@@ -41,6 +41,6 @@ public class ParentCommand : CustomCommand
 
         image.Toy.Parent = target.Transform;
         
-        ctx.RespondOk($"Set parent of {id} to {target.Name} ({target.UserId})");
+        ctx.RespondOk($"Set parent of {id} to {target.Nickname} ({target.UserId})");
     }
 }

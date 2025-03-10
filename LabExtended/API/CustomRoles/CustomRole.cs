@@ -23,23 +23,23 @@ using Attributes;
 public class CustomRole
 {
     private static readonly Dictionary<Type, CustomRoleAttribute> customRoles = new();
-    private static readonly Dictionary<ExPlayer, List<CustomRole>> activeRoles = new();
+    private static readonly Dictionary<ExPlayer?, List<CustomRole>> activeRoles = new();
 
     public static IReadOnlyDictionary<Type, CustomRoleAttribute> CustomRoles => customRoles;
-    public static IReadOnlyDictionary<ExPlayer, List<CustomRole>> ActiveRoles => activeRoles;
+    public static IReadOnlyDictionary<ExPlayer?, List<CustomRole>> ActiveRoles => activeRoles;
     
     public bool IsEnabled { get; internal set; }
     
-    public ExPlayer Player { get; internal set; }
+    public ExPlayer? Player { get; internal set; }
     public CustomRoleAttribute Attribute { get; internal set; }
 
     public RoleContainer Role => Player?.Role;
     public AmmoContainer Ammo => Player?.Ammo;
     public StatsContainer Stats => Player?.Stats;
-    public EffectContainer Effects => Player?.Effects;
+    public EffectContainer? Effects => Player?.Effects;
     public RotationContainer Rotation => Player?.Rotation;
     public PositionContainer Position => Player?.Position;
-    public InventoryContainer Inventory => Player?.Inventory;
+    public InventoryContainer? Inventory => Player?.Inventory;
     public SubroutineContainer Subroutines => Player?.Subroutines;
     
     public string Id => Attribute?.Id ?? string.Empty;
@@ -103,13 +103,13 @@ public class CustomRole
     public override string ToString()
         => $"Custom Role (Id={Id}; Player={Player?.ToString() ?? "null"}; Type={Type?.FullName ?? "null"})";
 
-    public static bool HasRole<T>(ExPlayer player) where T : CustomRole
+    public static bool HasRole<T>(ExPlayer? player) where T : CustomRole
         => player != null && GetRoles(player).Any(x => x is T);
 
-    public static bool HasRole(ExPlayer player, Type roleType)
+    public static bool HasRole(ExPlayer? player, Type roleType)
         => player != null && roleType != null && GetRoles(player).Any(x => x.Attribute.roleType == roleType);
 
-    public static bool HasRole<T>(ExPlayer player, out T customRole) where T : CustomRole
+    public static bool HasRole<T>(ExPlayer? player, out T customRole) where T : CustomRole
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -131,7 +131,7 @@ public class CustomRole
         return false;
     }
     
-    public static bool HasRole(ExPlayer player, Type roleType, out CustomRole customRole)
+    public static bool HasRole(ExPlayer? player, Type roleType, out CustomRole customRole)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -156,10 +156,10 @@ public class CustomRole
         return false;
     }
     
-    public static bool RemoveRole<T>(ExPlayer player) where T : CustomRole
+    public static bool RemoveRole<T>(ExPlayer? player) where T : CustomRole
         => RemoveRole(player, typeof(T));
 
-    public static bool RemoveRole(ExPlayer player, Type roleType)
+    public static bool RemoveRole(ExPlayer? player, Type roleType)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -181,7 +181,7 @@ public class CustomRole
         return true;
     }
 
-    public static T GrantRole<T>(ExPlayer player) where T : CustomRole
+    public static T GrantRole<T>(ExPlayer? player) where T : CustomRole
     {
         if (!TryGrantRole<T>(player, out var customRole))
             throw new Exception("Could not grant custom role");
@@ -189,7 +189,7 @@ public class CustomRole
         return customRole;
     }
     
-    public static CustomRole GrantRole(ExPlayer player, Type roleType)
+    public static CustomRole GrantRole(ExPlayer? player, Type roleType)
     {
         if (!TryGrantRole(player, roleType, out var customRole))
             throw new Exception("Could not grant custom role");
@@ -197,7 +197,7 @@ public class CustomRole
         return customRole;
     }
 
-    public static bool TryGrantRole<T>(ExPlayer player, out T customRole) where T : CustomRole
+    public static bool TryGrantRole<T>(ExPlayer? player, out T customRole) where T : CustomRole
     {
         customRole = null;
         
@@ -208,7 +208,7 @@ public class CustomRole
         return true;
     }
 
-    public static bool TryGrantRole(ExPlayer player, Type roleType, out CustomRole grantedRole)
+    public static bool TryGrantRole(ExPlayer? player, Type roleType, out CustomRole grantedRole)
     {
         if (roleType is null)
             throw new ArgumentNullException(nameof(roleType));
@@ -244,7 +244,7 @@ public class CustomRole
         return true;
     }
 
-    public static bool TryGetRoles(ExPlayer player, out List<CustomRole> roles)
+    public static bool TryGetRoles(ExPlayer? player, out List<CustomRole> roles)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -252,7 +252,7 @@ public class CustomRole
         return activeRoles.TryGetValue(player, out roles);
     }
 
-    public static List<CustomRole> GetRoles(ExPlayer player)
+    public static List<CustomRole> GetRoles(ExPlayer? player)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -347,7 +347,7 @@ public class CustomRole
         }
     }
 
-    private static void OnJoin(ExPlayer player)
+    private static void OnJoin(ExPlayer? player)
     {
         var list = ListPool<CustomRole>.Shared.Rent();
         
@@ -379,7 +379,7 @@ public class CustomRole
         }
     }
     
-    private static void OnLeft(ExPlayer player)
+    private static void OnLeft(ExPlayer? player)
     {
         if (activeRoles.TryGetValue(player, out var roles))
         {

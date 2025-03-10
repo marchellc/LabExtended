@@ -222,7 +222,7 @@ namespace LabExtended.Core.Networking
         public static void SetDirtyBit(this NetworkBehaviour behaviour, ulong bit)
             => behaviour?.SetSyncVarDirtyBit(bit);
 
-        public static void SendSpawnMessage(this NetworkIdentity identity, NetworkConnection connection)
+        public static void SendSpawnMessage(this NetworkIdentity? identity, NetworkConnection connection)
             => SendSpawnMessageDelegate(identity, connection);
 
         public static void SendSpawnMessage(this NetworkIdentity identity, Func<ExPlayer, bool> predicate = null, Vector3? customPos = null, Vector3? customScale = null, Quaternion? customRot = null, ArraySegment<byte>? payload = null)
@@ -329,9 +329,6 @@ namespace LabExtended.Core.Networking
             if (string.IsNullOrWhiteSpace(rpcName))
                 throw new ArgumentNullException(nameof(rpcName));
 
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
             if (checkObservers && behaviour.netIdentity.observers.Count < 1)
                 return;
 
@@ -359,9 +356,6 @@ namespace LabExtended.Core.Networking
             if (string.IsNullOrWhiteSpace(rpcName))
                 throw new ArgumentNullException(nameof(rpcName));
 
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(rpcHash));
-
             if (checkObservers && behaviour.netIdentity.observers.Count < 1)
                 return;
 
@@ -386,7 +380,6 @@ namespace LabExtended.Core.Networking
         {
             if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
             if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             if (writer != null)
             {
@@ -405,7 +398,6 @@ namespace LabExtended.Core.Networking
         {
             if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
             if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             if (writer != null)
             {
@@ -424,7 +416,6 @@ namespace LabExtended.Core.Networking
         {
             if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
             if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
             
             ApiLog.Debug("Mirror API", $"SendRpc &6{behaviour.name}&r &3{rpcName}&r (&6{rpcHash}&r)");
 
@@ -445,9 +436,9 @@ namespace LabExtended.Core.Networking
                 
                 foreach (var ply in customObservers)
                 {
-                    ApiLog.Debug("Mirror API", $"Checking out observer &1{ply.Name}&r (&6{ply.UserId}&r)");
+                    ApiLog.Debug("Mirror API", $"Checking out observer &1{ply.Nickname}&r (&6{ply.UserId}&r)");
 
-                    if (checkObservers && !behaviour.netIdentity.observers.ContainsValue(ply.Connection))
+                    if (checkObservers && !behaviour.netIdentity.observers.ContainsValue(ply.ClientConnection))
                     {
                         ApiLog.Debug("Mirror API", $"checkObservers is true and target is not included in observers");
                         continue;
@@ -502,7 +493,6 @@ namespace LabExtended.Core.Networking
         {
             if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
             if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-            if (rpcHash < ushort.MinValue || rpcHash > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(rpcHash));
 
             var msg = new RpcMessage()
             {

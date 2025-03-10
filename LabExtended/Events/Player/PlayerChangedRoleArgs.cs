@@ -14,7 +14,7 @@ namespace LabExtended.Events.Player
         /// <summary>
         /// Gets the player changing their role.
         /// </summary>
-        public ExPlayer Player { get; }
+        public ExPlayer? Player { get; }
 
         /// <summary>
         /// Gets the player's previous role.
@@ -46,7 +46,7 @@ namespace LabExtended.Events.Player
         /// </summary>
         public bool HasSpawnProtection { get; }
 
-        internal PlayerChangedRoleArgs(ExPlayer player, PlayerRoleBase previousRole, PlayerRoleBase newRole, RoleChangeReason changeReason, RoleSpawnFlags spawnFlags, NetworkReader spawnData, bool hasSpawnProtection)
+        internal PlayerChangedRoleArgs(ExPlayer? player, PlayerRoleBase previousRole, PlayerRoleBase newRole, RoleChangeReason changeReason, RoleSpawnFlags spawnFlags, NetworkReader spawnData, bool hasSpawnProtection)
         {
             Player = player;
             PreviousRole = previousRole;

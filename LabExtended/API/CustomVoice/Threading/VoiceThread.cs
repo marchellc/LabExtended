@@ -195,7 +195,7 @@ public class VoiceThread : IDisposable
         
         Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
 
-        var newMessage = new VoiceMessage(voiceController.Player.Hub, packet.OriginalChannel, newBuffer, packet.Length, false);
+        var newMessage = new VoiceMessage(voiceController.Player.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
         
         setupMessageHandler?.Invoke(ref newMessage);
         
@@ -233,7 +233,7 @@ public class VoiceThread : IDisposable
         
         Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
 
-        var newMessage = new VoiceMessage(voiceController.Player.Hub, packet.OriginalChannel, newBuffer, packet.Length, false);
+        var newMessage = new VoiceMessage(voiceController.Player.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
         
         voiceController.ProcessMessage(ref newMessage);
     }
@@ -298,6 +298,6 @@ public class VoiceThread : IDisposable
         var newBuffer = new byte[packet.Data.Length];
         
         Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
-        return new VoiceMessage(packet.Speaker.Hub, packet.OriginalChannel, newBuffer, packet.Length, false);
+        return new VoiceMessage(packet.Speaker.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
     }
 }

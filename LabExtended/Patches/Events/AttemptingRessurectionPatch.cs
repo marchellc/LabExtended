@@ -22,7 +22,7 @@ namespace LabExtended.Patches.Events
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
-            if (!scp.Switches.CanUseResurrectAs049)
+            if (!scp.Toggles.CanUseResurrectAs049)
             {
                 __result = Scp049ResurrectAbility.ResurrectError.Refused;
                 return false;
@@ -65,7 +65,7 @@ namespace LabExtended.Patches.Events
 
             var target = ExPlayer.Get(ragdoll.Info.OwnerHub);
 
-            if (target != null && !target.Switches.CanBeResurrectedBy049)
+            if (target != null && !target.Toggles.CanBeResurrectedBy049)
             {
                 __result = Scp049ResurrectAbility.ResurrectError.TargetInvalid;
                 return false;

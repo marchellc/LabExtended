@@ -21,7 +21,7 @@ namespace LabExtended.Core.Networking.Synchronization.Role
             {
                 var player = ExPlayer.AllPlayers[i];
 
-                if (player is null || !player || player.Role is null || player.sentRoles is null)
+                if (player is null || !player || player.Role is null || player.SentRoles is null)
                     continue;
 
                 for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
@@ -33,7 +33,7 @@ namespace LabExtended.Core.Networking.Synchronization.Role
                         continue;
 
                     if (player.Role.Role is IObfuscatedRole obfuscatedRole)
-                        role = obfuscatedRole.GetRoleForUser(other.Hub);
+                        role = obfuscatedRole.GetRoleForUser(other.ReferenceHub);
 
                     if (player.Role.FakedList.GlobalValue != RoleTypeId.None)
                         role = player.Role.FakedList.GlobalValue;
@@ -41,14 +41,14 @@ namespace LabExtended.Core.Networking.Synchronization.Role
                     if (player.Role.FakedList.TryGetValue(other, out var fakedRole))
                         role = fakedRole;
 
-                    if (!other.Role.IsAlive && !player.Switches.IsVisibleInSpectatorList)
+                    if (!other.Role.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
                         role = RoleTypeId.Spectator;
 
-                    if (player.sentRoles.TryGetValue(other.NetId, out var sentRole) && sentRole == role)
+                    if (player.SentRoles.TryGetValue(other.NetworkId, out var sentRole) && sentRole == role)
                         continue;
 
-                    player.sentRoles[other.NetId] = role;
-                    other.Connection.Send(new RoleSyncInfo(player.Hub, role, other.Hub));
+                    player.SentRoles[other.NetworkId] = role;
+                    other.Connection.Send(new RoleSyncInfo(player.ReferenceHub, role, other.ReferenceHub));
                 }
             }
         }
