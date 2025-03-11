@@ -62,7 +62,7 @@ namespace LabExtended.Patches.Functions.Items
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
-
+            
             ammo = pickUpEv.Amount;
 
             if (ammo > 0)
@@ -80,7 +80,8 @@ namespace LabExtended.Patches.Functions.Items
                     }, HintEffectPresets.FadeInAndOut(0.25f), 1.5f));
                 }
 
-                PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup));
+                PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId,
+                    (ushort)ammo, ammoPickup));
             }
 
             if (pickUpEv.DestroyPickup)

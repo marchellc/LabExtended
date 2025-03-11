@@ -16,6 +16,12 @@ public static class HostPlayerPatch
     {
         if (referenceHub != null && referenceHub.isLocalPlayer)
         {
+            if (ExPlayer.host != null)
+            {
+                Server.Host = ExPlayer.host;
+                return false;
+            }
+            
             var player = new ExPlayer(referenceHub, SwitchContainer.GetNewNpcToggles(true));
 
             Server.Host = player;

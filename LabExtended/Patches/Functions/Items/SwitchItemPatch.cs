@@ -4,6 +4,7 @@ using InventorySystem;
 using InventorySystem.Items;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
@@ -44,26 +45,68 @@ namespace LabExtended.Patches.Functions.Items
 
                 var flag = __instance.CurItem.SerialNumber == 0 || __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out curItem) && __instance.CurInstance != null;
 
+                CustomItemInstance curCustomItem = null;
+                CustomItemInstance newCustomItem = null;
+                
+                if (curItem != null)
+                    CustomItemManager.InventoryItems.TryGetValue(curItem, out curCustomItem);
+                
                 if (itemSerial == 0 || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
+                        return false;
+                    
+                    if (newItem is not null)
+                        CustomItemManager.InventoryItems.TryGetValue(newItem, out newCustomItem);
+
+                    if (curCustomItem != null && !curCustomItem.OnDeselecting(curItem))
+                        return false;
+
+                    if (newCustomItem != null && !newCustomItem.OnSelecting(newItem))
                         return false;
 
                     if (itemSerial == 0)
                     {
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
+
+                        if (curCustomItem != null)
+                        {
+                            curCustomItem.IsHeld = false;
+                            curCustomItem.OnDeselected();
+                        }
                     }
                     else
                     {
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
+
+                        if (curCustomItem != null)
+                        {
+                            curCustomItem.IsHeld = false;
+                            curCustomItem.OnDeselected();
+                        }
+
+                        if (newCustomItem != null)
+                        {
+                            newCustomItem.IsHeld = true;
+                            newCustomItem.OnSelected();
+                        }
                     }
                 }
                 else if (!flag)
                 {
+                    if (curCustomItem != null && !curCustomItem.OnDeselecting(curItem))
+                        return false;
+                    
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
+                    
+                    if (curCustomItem != null)
+                    {
+                        curCustomItem.IsHeld = false;
+                        curCustomItem.OnDeselected();
+                    }
                 }
 
                 var switchedArgs = new PlayerSelectedItemArgs(player, curItem, newItem, prevIdentifier, __instance.CurItem);

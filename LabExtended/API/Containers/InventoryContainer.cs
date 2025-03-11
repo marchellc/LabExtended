@@ -208,18 +208,20 @@ namespace LabExtended.API.Containers
         /// <typeparam name="T">Generic type of the item.</typeparam>
         /// <param name="type">Type of the item.</param>
         /// <param name="addReason">Reason for this item being added.</param>
+        /// <param name="itemSerial">The item's serial number.</param>
         /// <returns>The item instance as <typeparamref name="T"/>.</returns>
-        public T AddItem<T>(ItemType type, ItemAddReason addReason = ItemAddReason.AdminCommand) where T : ItemBase
-            => (T)AddItem(type, addReason);
+        public T AddItem<T>(ItemType type, ItemAddReason addReason = ItemAddReason.AdminCommand, ushort? itemSerial = null) where T : ItemBase
+            => (T)AddItem(type, addReason, itemSerial);
 
         /// <summary>
         /// Adds a new item to the player's inventory.
         /// </summary>
         /// <param name="type">Type of the item.</param>
         /// <param name="addReason">Reason for this item being added.</param>
+        /// <param name="itemSerial">The item's serial number.</param>
         /// <returns>The item instance.</returns>
-        public ItemBase AddItem(ItemType type, ItemAddReason addReason = ItemAddReason.AdminCommand)
-           => Inventory.ServerAddItem(type, addReason);
+        public ItemBase AddItem(ItemType type, ItemAddReason addReason = ItemAddReason.AdminCommand, ushort? itemSerial = null)
+           => Inventory.ServerAddItem(type, addReason, itemSerial ?? 0);
 
         /// <summary>
         /// Drops an item with the specified serial.

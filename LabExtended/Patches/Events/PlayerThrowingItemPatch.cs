@@ -8,9 +8,12 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
+
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
+using LabExtended.Extensions;
 
 using PlayerRoles.FirstPersonControl;
 
@@ -20,8 +23,8 @@ namespace LabExtended.Patches.Events
 {
     public static class PlayerThrowingItemPatch
     {
-        [HookPatch(typeof(PlayerThrowingItemArgs))]
-        [HookPatch(typeof(PlayerDroppingItemArgs))]
+        [HookPatch(typeof(PlayerThrowingItemArgs), true)]
+        [HookPatch(typeof(PlayerDroppingItemArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.UserCode_CmdDropItem__UInt16__Boolean))]
         public static bool Prefix(Inventory __instance, ushort itemSerial, bool tryThrow)
         {
@@ -48,8 +51,29 @@ namespace LabExtended.Patches.Events
             if (!HookRunner.RunEvent(droppingEv, true))
                 return false;
 
-            ItemPickupBase pickup = __instance.ServerDropItem(itemSerial);
+            CustomItemManager.InventoryItems.TryGetValue(item, out var customItemInstance);
 
+            ItemPickupBase pickup = null;
+
+            if (customItemInstance != null)
+            {
+                if (!customItemInstance.OnDropping(ref tryThrow))
+                    return false;
+
+                if (customItemInstance.CustomData.PickupType is ItemType.None)
+                    return false;
+                
+                __instance.ServerRemoveItem(itemSerial, item.PickupDropModel);
+
+                pickup = ExMap.SpawnItem(customItemInstance.CustomData.PickupType, player.Position,
+                    customItemInstance.CustomData.PickupScale ?? Vector3.one, player.Rotation, customItemInstance.ItemSerial, 
+                    true);
+            }
+            else
+            { 
+                pickup = __instance.ServerDropItem(itemSerial);
+            }
+            
             if (item is Scp330Bag)
                 player.Inventory._bag = null;
 
@@ -64,7 +88,21 @@ namespace LabExtended.Patches.Events
 
             PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup));
 
-            if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetComponent<Rigidbody>(out var rigidbody))
+            if (customItemInstance != null)
+            {
+                customItemInstance.Item = null;
+                customItemInstance.IsHeld = false;
+                
+                customItemInstance.Pickup = pickup;
+                customItemInstance.OnDropped(tryThrow);
+                
+                CustomItemManager.PickupItems.Add(pickup, customItemInstance);
+                CustomItemManager.InventoryItems.Remove(item);
+
+                player.customItems.Remove(item);
+            }
+
+            if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
             {
                 var throwingArgs = new PlayerThrowingItemEventArgs(player.ReferenceHub, pickup, rigidbody);
 
@@ -87,12 +125,23 @@ namespace LabExtended.Patches.Events
                 if (!HookRunner.RunEvent(throwingEv, true))
                     return false;
 
-                rigidbody.position = throwingEv.Position;
-                rigidbody.velocity = throwingEv.Velocity;
-                rigidbody.angularVelocity = throwingEv.AngularVelocity;
+                velocity = throwingEv.Velocity;
+                angular = throwingEv.AngularVelocity;
+
+                var position = throwingEv.Position;
+
+                if (customItemInstance != null &&
+                    !customItemInstance.OnThrowing(rigidbody, ref position, ref velocity, ref angular))
+                    return false;
+
+                rigidbody.position = position;
+                rigidbody.velocity = velocity;
+                rigidbody.angularVelocity = angular;
 
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
+                
+                customItemInstance?.OnThrown();
 
                 PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody));
             }

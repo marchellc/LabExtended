@@ -1,4 +1,5 @@
 ﻿using InventorySystem;
+
 using LabExtended.API;
 
 namespace LabExtended.Extensions

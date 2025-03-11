@@ -7,14 +7,14 @@ namespace LabExtended.Extensions;
 
 public static class EventExtensions
 {
-    public static void InsertFirst<T>(Type type, string eventName, T listener, object classInstance = null)
+    public static void InsertFirst<T>(this Type type, string eventName, T listener, object classInstance = null)
         where T : Delegate
         => InsertFirst(type.FindEvent(x => x.Name == eventName), listener, classInstance);
     
-    public static void InsertFirst<T>(EventInfo eventInfo, T listener, object classInstance = null) where T : Delegate
+    public static void InsertFirst<T>(this EventInfo eventInfo, T listener, object classInstance = null) where T : Delegate
         => InsertFirst(eventInfo, (Delegate)listener, classInstance);
     
-    public static void InsertFirst(EventInfo eventInfo, Delegate listener, object classInstance = null)
+    public static void InsertFirst(this EventInfo eventInfo, Delegate listener, object classInstance = null)
     {
         if (eventInfo is null)
             throw new ArgumentNullException(nameof(eventInfo));

@@ -36,6 +36,7 @@ using UnityEngine;
 using VoiceChat;
 
 using Hints;
+using LabExtended.API.CustomItems;
 using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomVoice;
 using LabExtended.API.Hints.Elements.Personal;
@@ -408,6 +409,7 @@ public class ExPlayer : Player, IDisposable
     #endregion
 
     internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
+    internal Dictionary<ItemBase, CustomItemInstance> customItems = DictionaryPool<ItemBase, CustomItemInstance>.Shared.Rent();
     
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
     internal Dictionary<string, SettingsEntry>? settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
@@ -651,7 +653,21 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets a list of players that are currently spectating this player.
     /// </summary>
-    public IEnumerable<ExPlayer> SpectatingPlayers => Players.Where(IsSpectatedBy);
+    public IEnumerator<ExPlayer> SpectatingPlayers
+    {
+        get
+        {
+            for (int i = 0; i < Players.Count; i++)
+            {
+                var player = Players[i];
+                
+                if (!player.IsSpectating(this))
+                    continue;
+                
+                yield return player;
+            }
+        }
+    }
 
     /// <summary>
     /// Gets the SCP-079 camera this player is currently using.
@@ -1118,7 +1134,6 @@ public class ExPlayer : Player, IDisposable
 
         UnityEngine.Object.Destroy((UnityEngine.Object)(object)component!);
         return true;
-
     }
 
     /// <summary>
@@ -1234,6 +1249,18 @@ public class ExPlayer : Player, IDisposable
             settingsMenuLookup = null;
         }
 
+        if (customItems != null)
+        {
+            DictionaryPool<ItemBase, CustomItemInstance>.Shared.Return(customItems);
+            customItems = null;
+        }
+
+        if (customRoles != null)
+        {
+            DictionaryPool<Type, CustomRoleInstance>.Shared.Return(customRoles);
+            customRoles = null;
+        }
+        
         if (HintElements != null)
         {
             HintElements.ForEach(x => x.OnDisabled());

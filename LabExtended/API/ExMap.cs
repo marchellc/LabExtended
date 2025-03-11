@@ -229,10 +229,10 @@ namespace LabExtended.API
         public static void ResetLightsColor()
             => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = DefaultLightColor);
 
-        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true)
-            => SpawnItem<ItemPickupBase>(type, position, scale, rotation, spawn);
+        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, ushort? serial = null, bool spawn = true)
+            => SpawnItem<ItemPickupBase>(type, position, scale, rotation, serial, spawn);
 
-        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
+        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, ushort? serial = null, bool spawn = true) where T : ItemPickupBase
         {
             if (!item.TryGetItemPrefab(out var prefab))
                 return null;
@@ -244,7 +244,7 @@ namespace LabExtended.API
 
             pickup.transform.localScale = scale;
 
-            pickup.Info = new PickupSyncInfo(item, prefab.Weight, ItemSerialGenerator.GenerateNext());
+            pickup.Info = new PickupSyncInfo(item, prefab.Weight, serial ?? ItemSerialGenerator.GenerateNext());
 
             if (spawn)
             {
@@ -261,7 +261,7 @@ namespace LabExtended.API
 
             for (int i = 0; i < count; i++)
             {
-                var item = SpawnItem<T>(type, position, scale, rotation, spawn);
+                var item = SpawnItem<T>(type, position, scale, rotation, null, spawn);
 
                 if (item is null)
                     continue;

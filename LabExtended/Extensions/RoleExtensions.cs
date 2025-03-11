@@ -117,10 +117,10 @@ namespace LabExtended.Extensions
             => role is RoleTypeId.Scp049 || (role is RoleTypeId.Scp0492 && countZombies) || role is RoleTypeId.Scp079 || role is RoleTypeId.Scp096 || role is RoleTypeId.Scp106 || role is RoleTypeId.Scp173 || role is RoleTypeId.Scp3114 || role is RoleTypeId.Scp939;
 
         public static bool IsNtf(this RoleTypeId role)
-            => role is RoleTypeId.NtfCaptain || role is RoleTypeId.NtfPrivate || role is RoleTypeId.NtfSergeant || role is RoleTypeId.NtfSpecialist;
+            => role is RoleTypeId.NtfCaptain or RoleTypeId.NtfPrivate or RoleTypeId.NtfSergeant or RoleTypeId.NtfSpecialist;
 
         public static bool IsChaos(this RoleTypeId role)
-            => role is RoleTypeId.ChaosConscript || role is RoleTypeId.ChaosMarauder || role is RoleTypeId.ChaosRepressor || role is RoleTypeId.ChaosRifleman;
+            => role is RoleTypeId.ChaosConscript or RoleTypeId.ChaosMarauder or RoleTypeId.ChaosRepressor or RoleTypeId.ChaosRifleman;
 
         public static bool IsEnemy(this RoleTypeId role, RoleTypeId otherRole)
         {

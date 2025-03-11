@@ -9,8 +9,8 @@ namespace LabExtended.Core
         public const int Build = 0;
         public const int Patch = 0;
 
-        public static Version Version { get; } = new Version(Major, Minor, Build, Patch);
-        public static Version Game { get; } = new Version(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision);
+        public static Version Version { get; } = new(Major, Minor, Build, Patch);
+        public static Version Game { get; } = new(GameCore.Version.Major, GameCore.Version.Minor, GameCore.Version.Revision);
 
         public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 0, 3));
 

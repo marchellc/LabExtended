@@ -9,6 +9,7 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -63,10 +64,49 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            ItemBase item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId, ItemAddReason.PickedUp, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
+            CustomItemManager.PickupItems.TryGetValue(scp244DeployablePickup, out var customItemInstance);
+
+            ItemBase item = null;
+            
+            if (customItemInstance != null)
+            {
+                if (!customItemInstance.OnPickingUp(player))
+                {
+                    __instance.TargetPickup.UnlockPickup();
+                    return false;
+                }
+
+                if (customItemInstance.CustomData.InventoryType is ItemType.None)
+                {
+                    __instance.TargetPickup.UnlockPickup();
+                    return false;
+                }
+
+                item = __instance.Hub.inventory.ServerAddItem(customItemInstance.CustomData.InventoryType,
+                    ItemAddReason.PickedUp, customItemInstance.ItemSerial, __instance.TargetPickup);
+            }
+            else
+            {
+                item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId,
+                    ItemAddReason.PickedUp,
+                    __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
+            }
 
             if (item != null)
             {
+                if (customItemInstance != null)
+                {
+                    customItemInstance.Item = item;
+
+                    customItemInstance.Pickup = null;
+                    customItemInstance.OnPickedUp();
+
+                    CustomItemManager.PickupItems.Remove(scp244DeployablePickup);
+                    CustomItemManager.InventoryItems.Add(item, customItemInstance);
+                    
+                    player.customItems.Add(item, customItemInstance);
+                }
+                
                 scp244DeployablePickup.State = Scp244State.PickedUp;
 
                 __instance.CheckCategoryLimitHint();

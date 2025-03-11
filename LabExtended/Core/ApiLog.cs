@@ -75,8 +75,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Formats color-coded text to ANSI text.
         /// <para>Formatting works as follows:</para>
-        /// <para>Each tag MUST start with<b>&</b></para>
-        /// <para>Then a singular letter / number that specifies the operation follows.</para>
+        /// <para>A singular letter / number that specifies the operation follows.</para>
         /// <para>0 - Black</para>
         /// <para>1 - Red</para>
         /// <para>2 - Green</para>

@@ -561,51 +561,50 @@ namespace LabExtended.API.Settings
 
                 ApiLog.Debug("Settings API", $"Updating entry &1{entry.CustomId}&r ({entry.AssignedId}) (menu: {entry.Menu?.CustomId ?? "null"})");
 
-                using (var reader = NetworkReaderPool.Get(clientResponse.Payload))
-                {
-                    if (entry is ICustomReaderSetting customReaderSetting)
-                        customReaderSetting.Read(reader);
-                    else
-                        entry.Base.DeserializeValue(reader);
+                using var reader = NetworkReaderPool.Get(clientResponse.Payload);
+                
+                if (entry is ICustomReaderSetting customReaderSetting)
+                    customReaderSetting.Read(reader);
+                else
+                    entry.Base.DeserializeValue(reader);
                     
-                    entry.InternalOnUpdated();
+                entry.InternalOnUpdated();
 
-                    HookRunner.RunEvent(new SettingsEntryUpdatedArgs(entry));
+                HookRunner.RunEvent(new SettingsEntryUpdatedArgs(entry));
 
-                    OnUpdated.InvokeSafe(player, entry);
+                OnUpdated.InvokeSafe(player, entry);
 
-                    if (entry.Menu != null)
+                if (entry.Menu != null)
+                {
+                    switch (entry)
                     {
-                        switch (entry)
-                        {
-                            case SettingsButton button:
-                                entry.Menu.OnButtonTriggered(button);
-                                break;
+                        case SettingsButton button:
+                            entry.Menu.OnButtonTriggered(button);
+                            break;
                             
-                            case SettingsTwoButtons twoButtons:
-                                entry.Menu.OnButtonSwitched(twoButtons);
-                                break;
+                        case SettingsTwoButtons twoButtons:
+                            entry.Menu.OnButtonSwitched(twoButtons);
+                            break;
                             
-                            case SettingsPlainText plainText:
-                                entry.Menu.OnPlainTextUpdated(plainText);
-                                break;
+                        case SettingsPlainText plainText:
+                            entry.Menu.OnPlainTextUpdated(plainText);
+                            break;
                             
-                            case SettingsSlider slider:
-                                entry.Menu.OnSliderMoved(slider);
-                                break;
+                        case SettingsSlider slider:
+                            entry.Menu.OnSliderMoved(slider);
+                            break;
                             
-                            case SettingsTextArea textArea:
-                                entry.Menu.OnTextInput(textArea);
-                                break;
+                        case SettingsTextArea textArea:
+                            entry.Menu.OnTextInput(textArea);
+                            break;
                             
-                            case SettingsKeyBind keyBind:
-                                entry.Menu.OnKeyBindPressed(keyBind);
-                                break;
+                        case SettingsKeyBind keyBind:
+                            entry.Menu.OnKeyBindPressed(keyBind);
+                            break;
                             
-                            case SettingsDropdown dropdown:
-                                entry.Menu.OnDropdownSelected(dropdown, dropdown.SelectedOption);
-                                break;
-                        }
+                        case SettingsDropdown dropdown:
+                            entry.Menu.OnDropdownSelected(dropdown, dropdown.SelectedOption);
+                            break;
                     }
                 }
             }

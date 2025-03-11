@@ -9,7 +9,7 @@ using LabExtended.Patches.Functions;
 using Serialization;
 
 using System.Reflection;
-
+using CommandSystem.Commands.Shared;
 using LabApi.Loader;
 using LabApi.Loader.Features.Paths;
 using LabApi.Loader.Features.Plugins;
@@ -177,6 +177,11 @@ namespace LabExtended.Core
 
             ApiLog.Info("Extended Loader", $"Waiting for LabAPI ..");
 
+            if (!string.IsNullOrWhiteSpace(BuildInfoCommand.ModDescription))
+                BuildInfoCommand.ModDescription += $"\nLabExtended v{ApiVersion.Version}";
+            else
+                BuildInfoCommand.ModDescription = $"\nLabExtended v{ApiVersion.Version}";
+
             LogPatch.OnLogging += LogHandler;
             ServerEvents.Quitting += QuitHandler;
             
@@ -202,7 +207,7 @@ namespace LabExtended.Core
                 if (plugin is null) continue;
                 if (Loader != null && plugin == Loader) continue;
                 
-                ApiLog.Debug("Lab Extended", $"Unloading plugin &6{plugin.Name}&r ..");
+                ApiLog.Debug("LabExtended", $"Unloading plugin &6{plugin.Name}&r ..");
                 
                 try
                 {
@@ -211,7 +216,7 @@ namespace LabExtended.Core
                 }
                 catch (Exception ex)
                 {
-                    ApiLog.Error("Lab Extended", $"Could not unload plugin &1{plugin.Name}&r:\n{ex.ToColoredString()}");
+                    ApiLog.Error("LabExtended", $"Could not unload plugin &1{plugin.Name}&r:\n{ex.ToColoredString()}");
                 }
             }
         }

@@ -58,16 +58,16 @@ namespace LabExtended.Extensions
             => new UniversalDamageHandler(damage, type.GetDeathTranslation());
 
         public static bool IsScp939(this DamageType damageType)
-            => damageType is DamageType.Scp939 || damageType is DamageType.Scp939Claw || damageType is DamageType.Scp939Lunge;
+            => damageType is DamageType.Scp939 or DamageType.Scp939Claw or DamageType.Scp939Lunge;
 
         public static bool IsScp3114(this DamageType damageType)
-            => damageType is DamageType.Scp3114 || damageType is DamageType.Scp3114Slap || damageType is DamageType.Scp3114Strangulation;
+            => damageType is DamageType.Scp3114 or DamageType.Scp3114Slap or DamageType.Scp3114Strangulation;
 
         public static bool IsScp096(this DamageType damageType)
-            => damageType is DamageType.Scp096 || damageType is DamageType.Scp096Charge || damageType is DamageType.Scp096GateKill || damageType is DamageType.Scp096SlapLeft || damageType is DamageType.Scp096SlapRight;
+            => damageType is DamageType.Scp096 or DamageType.Scp096Charge or DamageType.Scp096GateKill or DamageType.Scp096SlapLeft or DamageType.Scp096SlapRight;
 
         public static bool IsThrowable(this DamageType damageType)
-            => damageType is DamageType.Explosion || damageType is DamageType.Scp018;
+            => damageType is DamageType.Explosion or DamageType.Scp018;
 
         public static DamageType GetDamageType(this DamageHandlerBase damageHandlerBase)
         {

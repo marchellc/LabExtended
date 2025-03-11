@@ -13,9 +13,7 @@ public static class RegularPlayerPatch
     public static bool JoinPrefix(ReferenceHub referenceHub)
     {
         if (referenceHub != null && !referenceHub.isLocalPlayer)
-        {
             _ = new ExPlayer(referenceHub);
-        }
 
         return false;
     }

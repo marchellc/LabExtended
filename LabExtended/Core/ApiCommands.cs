@@ -60,8 +60,6 @@ namespace LabExtended.Core
 
             if (command is null)
                 throw new ArgumentNullException(nameof(command));
-            
-            ApiLog.Debug("LabExtended Commands", $"Registering command &1{command.Command}&r (&3{command.GetType().FullName}&r)");
 
             if (handler.AllCommands.TryGetFirst(x => x.Command == command.Command 
                                                      || (x.Aliases != null && command.Aliases != null && x.Aliases.Any(y => command.Aliases.Contains(y))), 

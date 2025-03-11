@@ -2,6 +2,8 @@
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
+using LabExtended.API.Containers;
+
 using LabExtended.Core.Events;
 
 using UnityEngine;
@@ -20,7 +22,7 @@ namespace LabExtended.Events.Player
 
         /// <summary>
         /// Gets the item to be thrown.
-        /// <para>This <b>will</b> be a prefab in case it's called by <see cref="ExPlayer.ThrowItem{T}(ItemType, ushort?)"/>!</para>
+        /// <para>This <b>will</b> be a prefab in case it's called by <see cref="InventoryContainer.ThrowItem{T}(ItemType, ushort?)"/>!</para>
         /// </summary>
         public ItemBase Item { get; }
 
