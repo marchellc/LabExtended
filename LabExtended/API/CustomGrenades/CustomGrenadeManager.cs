@@ -4,7 +4,7 @@ using InventorySystem.Items.ThrowableProjectiles;
 using LabExtended.API.CustomItems;
 using LabExtended.Attributes;
 using LabExtended.Events;
-
+using MEC;
 using UnityEngine;
 using Utils.Networking;
 
@@ -45,7 +45,9 @@ public static class CustomGrenadeManager
 
         var pickup = customGrenadeInstance.Player.Inventory.ThrowItem<ItemPickupBase>(
             customGrenadeInstance.CustomData.PickupType,
-            customGrenadeInstance.CustomData.Force, customGrenadeInstance.ItemSerial);
+            customGrenadeInstance.CustomData.Force, 
+            customGrenadeInstance.CustomData.PickupScale,
+            customGrenadeInstance.ItemSerial);
         
         CustomItemManager.PickupItems.Add(pickup, customGrenadeInstance);
         CustomItemManager.InventoryItems.Remove(customGrenadeInstance.Item);
@@ -54,12 +56,13 @@ public static class CustomGrenadeManager
         customGrenadeInstance.Pickup = pickup;
         
         customGrenadeInstance.RemainingTime = customGrenadeInstance.CustomData.Time;
+        customGrenadeInstance.SpawnTime = Time.timeSinceLevelLoad;
+        customGrenadeInstance.ReadyTime = 0f;
+        
         customGrenadeInstance.IsSpawned = true;
+        customGrenadeInstance.IsReady = false;
         
         customGrenadeInstance.OnSpawned();
-        
-        if (pickup is ThrowableItem)
-            new ThrowableNetworkHandler.ThrowableItemAudioMessage(customGrenadeInstance.ItemSerial, ThrowableNetworkHandler.RequestType.ConfirmThrowFullForce).SendToAuthenticated();
     }
     
     private static void OnItemCreated(CustomItemInstance customItemInstance)
@@ -107,6 +110,7 @@ public static class CustomGrenadeManager
                 return;
             
             nade.IsDetonated = true;
+            nade.DetonationTime = Time.timeSinceLevelLoad;
             
             CustomItemManager.PickupItems.Remove(nade.Pickup);
             

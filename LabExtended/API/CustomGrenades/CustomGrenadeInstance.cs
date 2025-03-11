@@ -1,5 +1,5 @@
 ﻿using LabExtended.API.CustomItems;
-
+using UnityEngine;
 using Utils;
 
 namespace LabExtended.API.CustomGrenades;
@@ -18,6 +18,31 @@ public class CustomGrenadeInstance : CustomItemInstance
     /// Gets or sets the remaining time.
     /// </summary>
     public float RemainingTime { get; set; } = 0f;
+
+    /// <summary>
+    /// Gets the time of the grenade throw start.
+    /// </summary>
+    public float ReadyTime { get; internal set; } = 0f;
+
+    /// <summary>
+    /// Gets the time of the grenade spawning.
+    /// </summary>
+    public float SpawnTime { get; internal set; } = 0f;
+
+    /// <summary>
+    /// Gets the time of the grenade detonating.
+    /// </summary>
+    public float DetonationTime { get; internal set; } = 0f;
+    
+    /// <summary>
+    /// Gets the amount of seconds that the grenade was spawned for.
+    /// </summary>
+    public float SpawnedFor => Time.timeSinceLevelLoad - SpawnTime;
+    
+    /// <summary>
+    /// Whether or not the grenade is ready to be thrown.
+    /// </summary>
+    public bool IsReady { get; internal set; }
 
     /// <summary>
     /// Whether or not the grenade is spawned.

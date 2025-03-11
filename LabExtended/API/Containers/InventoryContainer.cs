@@ -383,20 +383,21 @@ namespace LabExtended.API.Containers
             return Inventory.ServerAddItem(type, addReason);
         }
 
-        public T ThrowItem<T>(ItemBase item, float force = 1f) where T : ItemPickupBase
+        public T ThrowItem<T>(ItemBase item, float force = 1f, Vector3? scale = null) where T : ItemPickupBase
         {
             if (item is null)
                 throw new ArgumentNullException(nameof(item));
 
             Inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-            return ThrowItem<T>(item.ItemTypeId, force, item.ItemSerial);
+            return ThrowItem<T>(item.ItemTypeId, force, scale, item.ItemSerial);
         }
 
-        public T ThrowItem<T>(ItemType itemType, float force = 1f, ushort? itemSerial = null) where T : ItemPickupBase
+        public T ThrowItem<T>(ItemType itemType, float force = 1f, Vector3? scale = null, ushort? itemSerial = null) where T : ItemPickupBase
         {
             var itemPrefab = itemType.GetItemPrefab<ItemBase>();
             
-            var pickupInstance = itemType.GetPickupInstance<T>(null, null, null, itemSerial, true);
+            var pickupInstance = itemType.GetPickupInstance<T>(Inventory._hub.PlayerCameraReference.position, scale, 
+                Inventory._hub.PlayerCameraReference.rotation, itemSerial, true);
             var pickupRigidbody = pickupInstance?.GetRigidbody();
 
             if (pickupRigidbody is null)
