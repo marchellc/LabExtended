@@ -33,6 +33,7 @@ namespace LabExtended.API.Containers
             get
             {
                 var closestPlayer = default(ExPlayer);
+                var closestDistance = 0f;
                 
                 foreach (var player in ExPlayer.AllPlayers)
                 {
@@ -48,8 +49,21 @@ namespace LabExtended.API.Containers
                     if (!IsLookingAt(player))
                         continue;
 
-                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) > Vector3.Distance(player.Position, Player.Position))
+                    if (closestPlayer is null)
+                    {
                         closestPlayer = player;
+                        closestDistance = Vector3.Distance(player.Position, Player.Position);
+                        
+                        continue;
+                    }
+
+                    var distance = Vector3.Distance(player.Position, Player.Position);
+                    
+                    if (closestDistance > distance)
+                    {
+                        closestPlayer = player;
+                        closestDistance = distance;
+                    }
                 }
 
                 return closestPlayer;

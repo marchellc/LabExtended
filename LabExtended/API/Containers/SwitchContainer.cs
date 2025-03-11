@@ -81,7 +81,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player should count in the next respawn wave.
         /// </summary>
-        public bool CanBeRespawned { get; set; } = true;
+        public bool CanBeRespawned { get; set; } = true; // BROKEN
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player prevents the round from ending.
@@ -276,12 +276,12 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not any damage dealt to other players will result in instant death.
         /// </summary>
-        public bool HasInstantKill { get; set; } = false;
+        public bool HasInstantKill { get; set; } = false; // BROKEN
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player consumes ammo while shooting.
         /// </summary>
-        public bool HasUnlimitedAmmo { get; set; } = false;
+        public bool HasUnlimitedAmmo { get; set; } = false; // BROKEN
 
         /// <summary>
         /// Whether or not this player should receive position messages.

@@ -36,7 +36,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the fake list for desyncing positions.
         /// </summary>
-        public FakeValue<Vector3> FakedList { get; } = new FakeValue<Vector3>() { GlobalValue = Vector3.zero };
+        public FakeValue<Vector3> FakedList { get; } = new();
 
         /// <summary>
         /// Gets the player's current room.
@@ -46,17 +46,106 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the elevator this player is currently in.
         /// </summary>
-        public Elevator Elevator => ExMap.Elevators.FirstOrDefault(elevator => elevator.Contains(Player));
+        public Elevator? CurrentElevator => ExMap.GetElevator(Position);
+
+        /// <summary>
+        /// Gets the closest elevator.
+        /// </summary>
+        public Elevator? ClosestElevator
+        {
+            get
+            {
+                var closestLift = default(Elevator);
+                var closestDistance = 0f;
+                
+                ExMap.Elevators.ForEach(lift =>
+                {
+                    if (closestLift is null)
+                    {
+                        closestLift = lift;
+                        closestDistance = Vector3.Distance(lift.Position, Position);
+
+                        return;
+                    }
+
+                    var distance = Vector3.Distance(lift.Position, Position);
+
+                    if (distance > closestDistance)
+                        return;
+
+                    closestLift = lift;
+                    closestDistance = distance;
+                });
+
+                return closestLift;
+            }
+        }
 
         /// <summary>
         /// Gets the closest door.
         /// </summary>
-        public Door ClosestDoor => ExMap.Doors.OrderBy(d => DistanceTo(d.Position)).FirstOrDefault();
+        public Door? ClosestDoor
+        {
+            get
+            {
+                var closestDoor = default(Door);
+                var closestDistance = 0f;
+                
+                ExMap.Doors.ForEach(door =>
+                {
+                    if (closestDoor is null)
+                    {
+                        closestDoor = door;
+                        closestDistance = Vector3.Distance(door.Position, Position);
+
+                        return;
+                    }
+
+                    var distance = Vector3.Distance(door.Position, Position);
+
+                    if (distance > closestDistance)
+                        return;
+
+                    closestDoor = door;
+                    closestDistance = distance;
+                });
+
+                return closestDoor;
+            }
+        }
 
         /// <summary>
         /// Gets the closest SCP-079 camera.
         /// </summary>
-        public Camera ClosestCamera => ExMap.Cameras.OrderBy(x => Vector3.Distance(x.Position, Position)).First();
+        public Camera? ClosestCamera
+        {
+            get
+            {
+                var closestCamera = default(Camera);
+                var closestDistance = 0f;
+                
+                ExMap.Cameras.ForEach(cam =>
+                {
+                    if (closestCamera is null)
+                    {
+                        closestCamera = cam;
+                        closestDistance = Vector3.Distance(cam.Position, Position);
+
+                        return;
+                    }
+
+                    var distance = Vector3.Distance(cam.Position, Position);
+
+                    if (distance > closestDistance)
+                        return;
+
+                    closestCamera = cam;
+                    closestDistance = distance;
+                });
+
+                return closestCamera;
+            }
+        }
 
         /// <summary>
         /// Gets the closest player.
@@ -66,24 +155,29 @@ namespace LabExtended.API.Containers
             get
             {
                 var closestPlayer = default(ExPlayer);
-                
-                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
-                {
-                    var player = ExPlayer.AllPlayers[i];
-                    
-                    if (player is null)
-                        continue;
-                    
-                    if (!player.Role.IsAlive)
-                        continue;
-                    
-                    if (player == Player)
-                        continue;
+                var closestDistance = 0f;
 
-                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) >
-                        Vector3.Distance(player.Position, Position))
+                ExPlayer.AllPlayers.ForEach(player =>
+                {
+                    if (!player.Role.IsAlive) return;
+                    if (player == Player) return;
+
+                    if (closestPlayer is null)
+                    {
                         closestPlayer = player;
-                }
+                        closestDistance = Vector3.Distance(player.Position, Player.Position);
+
+                        return;
+                    }
+
+                    var distance = Vector3.Distance(player.Position, Player.Position);
+
+                    if (distance > closestDistance) 
+                        return;
+                    
+                    closestPlayer = player;
+                    closestDistance = distance;
+                });
 
                 return closestPlayer;
             }
@@ -97,24 +191,29 @@ namespace LabExtended.API.Containers
             get
             {
                 var closestPlayer = default(ExPlayer);
-                
-                for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
-                {
-                    var player = ExPlayer.AllPlayers[i];
-                    
-                    if (player is null)
-                        continue;
-                    
-                    if (!player.Role.IsScp)
-                        continue;
-                    
-                    if (player == Player)
-                        continue;
+                var closestDistance = 0f;
 
-                    if (closestPlayer is null || Vector3.Distance(closestPlayer.Position, Player.Position) >
-                        Vector3.Distance(player.Position, Position))
+                ExPlayer.AllPlayers.ForEach(player =>
+                {
+                    if (!player.Role.IsScp) return;
+                    if (player == Player) return;
+
+                    if (closestPlayer is null)
+                    {
                         closestPlayer = player;
-                }
+                        closestDistance = Vector3.Distance(player.Position, Player.Position);
+
+                        return;
+                    }
+
+                    var distance = Vector3.Distance(player.Position, Player.Position);
+
+                    if (distance > closestDistance)
+                        return;
+
+                    closestPlayer = player;
+                    closestDistance = distance;
+                });
 
                 return closestPlayer;
             }
@@ -207,7 +306,7 @@ namespace LabExtended.API.Containers
         /// <param name="player">The player.</param>
         /// <returns>The distance.</returns>
         public float DistanceTo(ExPlayer player)
-            => Vector3.Distance(player.Position.Position, Position);
+            => player is null ? 0f : Vector3.Distance(player.Position.Position, Position);
 
         /// <summary>
         /// Gets the distance to a specified transform.
@@ -215,7 +314,7 @@ namespace LabExtended.API.Containers
         /// <param name="transform">The transform.</param>
         /// <returns>The distance.</returns>
         public float DistanceTo(Transform transform)
-            => Vector3.Distance(transform.position, Position);
+            => transform is null ? 0f : Vector3.Distance(transform.position, Position);
 
         /// <summary>
         /// Gets the distance to a specified gameObject.
@@ -223,22 +322,29 @@ namespace LabExtended.API.Containers
         /// <param name="gameObject">The gameObject.</param>
         /// <returns>The distance.</returns>
         public float DistanceTo(GameObject gameObject)
-            => Vector3.Distance(gameObject.transform.position, Position);
+            => gameObject is null ? 0f : Vector3.Distance(gameObject.transform.position, Position);
 
         /// <summary>
         /// Resets gravity to it's default for all players.
+        /// <param name="predicate">The predicate to filter players by.</param>
         /// </summary>
-        public static void ResetGravity()
-            => SetGravity(DefaultGravity);
+        public static void ResetGravity(Func<ExPlayer, bool> predicate = null)
+            => SetGravity(DefaultGravity, predicate);
         
         /// <summary>
         /// Sets gravity for all players.
         /// </summary>
         /// <param name="gravity">The gravity to set.</param>
-        public static void SetGravity(Vector3 gravity)
+        /// <param name="predicate">The predicate to filter players by.</param>
+        public static void SetGravity(Vector3 gravity, Func<ExPlayer, bool> predicate = null)
         {
-            foreach (var player in ExPlayer.Players)
-                player.Position.Gravity = gravity;
+            ExPlayer.Players.ForEach(ply =>
+            {
+                if (!ply) return;
+                if (predicate != null && !predicate(ply)) return;
+                
+                ply.Position.Gravity = gravity;
+            });
         }
 
         /// <summary>

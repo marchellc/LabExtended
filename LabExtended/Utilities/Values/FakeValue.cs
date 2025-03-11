@@ -2,14 +2,41 @@
 
 namespace LabExtended.Utilities.Values
 {
-    public struct FakeValue<T>
+    public class FakeValue<T>
     {
         private readonly Dictionary<uint, T> _values;
 
-        public T? GlobalValue { get; set; }
+        private T? globalValue;
+        private bool hasGlobalValue;
+
+        public T? GlobalValue
+        {
+            get
+            {
+                if (!hasGlobalValue)
+                    throw new Exception("Global Value has not been set.");
+                
+                return globalValue;
+            }
+            set
+            {
+                if (value is null)
+                {
+                    hasGlobalValue = false;
+                    globalValue = default;
+                }
+                else
+                {
+                    hasGlobalValue = true;
+                    globalValue = value;
+                }
+            }
+        }
 
         public bool KeepOnDeath { get; set; }
         public bool KeepOnRoleChange { get; set; }
+        
+        public bool HasGlobalValue => hasGlobalValue;
 
         public T this[uint netId]
         {
@@ -95,13 +122,16 @@ namespace LabExtended.Utilities.Values
         public bool RemoveValue(ExPlayer player)
             => _values.Remove(player.NetworkId);
 
-        public void ClearValues()
-            => _values.Clear();
+        public void ClearValues(bool clearValues = true, bool resetGlobalValue = true)
+        {
+            if (clearValues)
+                _values.Clear();
 
-        public static implicit operator T(FakeValue<T> value)
-            => value.GlobalValue;
-
-        public static explicit operator FakeValue<T>(T value)
-            => new() { GlobalValue = value };
+            if (resetGlobalValue)
+            {
+                hasGlobalValue = false;
+                globalValue = default;
+            }
+        }
     }
 }

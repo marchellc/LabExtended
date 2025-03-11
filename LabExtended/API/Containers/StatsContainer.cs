@@ -48,6 +48,12 @@ namespace LabExtended.API.Containers
             set => Vigor.MaxValue = value;
         }
 
+        public float MaxHealth
+        {
+            get => Health.MaxValue;
+            set => Health.MaxValue = value;
+        }
+        
         public float MaxStamina
         {
             get => Stamina.MaxValue;

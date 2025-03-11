@@ -4,7 +4,7 @@ using LabExtended.API.Containers;
 using CentralAuth;
 using CommandSystem;
 using Footprinting;
-
+using GameCore;
 using InventorySystem.Disarming;
 
 using InventorySystem.Items;
@@ -36,7 +36,7 @@ using UnityEngine;
 using VoiceChat;
 
 using Hints;
-
+using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomVoice;
 using LabExtended.API.Hints.Elements.Personal;
 using LabExtended.API.Settings.Entries;
@@ -101,16 +101,16 @@ public class ExPlayer : Player, IDisposable
         {
             if (host != null)
                 return host;
-            
+
             if (Server.Host != null)
                 return host = (ExPlayer)Server.Host;
 
             if (ReferenceHub.TryGetHostHub(out var hostHub))
             {
                 host = new(hostHub, SwitchContainer.GetNewNpcToggles(true));
-                
+
                 InternalEvents.InternalHandlePlayerJoin(host);
-                
+
                 Server.Host = host;
                 return host;
             }
@@ -407,11 +407,18 @@ public class ExPlayer : Player, IDisposable
 
     #endregion
 
+    internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
+    
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
     internal Dictionary<string, SettingsEntry>? settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
 
     internal Dictionary<int, SettingsEntry>?
         settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
+
+    public ExPlayer(string nickname) : this(DummyUtils.SpawnDummy(nickname), SwitchContainer.GetNewNpcToggles(true))
+    {
+        
+    }
 
     public ExPlayer(ReferenceHub referenceHub) : this(referenceHub, SwitchContainer.GetNewPlayerToggles(true))
     {
@@ -488,6 +495,12 @@ public class ExPlayer : Player, IDisposable
         else
         {
             host = this;
+
+            Toggles.ShouldSendPosition = false;
+            
+            Toggles.IsVisibleToScp939 = false;
+            Toggles.IsVisibleInRemoteAdmin = false;
+            Toggles.IsVisibleInSpectatorList = false;
         }
     }
 
@@ -1153,6 +1166,9 @@ public class ExPlayer : Player, IDisposable
 
         AllPlayers.ForEach(ply =>
         {
+            if (ply == null) 
+                return;
+            
             ply.SentRoles?.Remove(NetworkId);
             ply.SentPositions?.Remove(NetworkId);
 

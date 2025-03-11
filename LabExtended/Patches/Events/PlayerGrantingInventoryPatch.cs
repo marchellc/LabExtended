@@ -12,7 +12,6 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.API.CustomRoles;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
@@ -77,16 +76,6 @@ namespace LabExtended.Patches.Events
                     DictionaryPool<ItemType, ushort>.Shared.Return(ammoToAdd);
                     
                     return false;
-                }
-                
-                var customRoles = CustomRole.GetRoles(ply);
-
-                foreach (var customRole in customRoles)
-                {
-                    if (!customRole.IsEnabled)
-                        continue;
-                    
-                    customRole.OnGrantingInventory(grantingArgs);
                 }
                 
                 if (receivingArgs.InventoryReset || grantingArgs.ShouldResetInventory)

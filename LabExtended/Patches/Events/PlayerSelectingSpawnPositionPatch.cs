@@ -8,11 +8,11 @@ using LabApi.Events.Handlers;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using LabExtended.API;
-using LabExtended.API.CustomRoles;
-
 using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
+
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Events;
@@ -41,20 +41,6 @@ public static class PlayerSelectingSpawnPositionPatch
 
             if (!HookRunner.RunEvent(selectingPositionArgs, true))
                 return false;
-
-            foreach (var customRole in CustomRole.GetRoles(player))
-            {
-                if (customRole is null)
-                    continue;
-                
-                if (!customRole.IsEnabled)
-                    continue;
-
-                customRole.OnSelectingPosition(selectingPositionArgs);
-
-                if (!selectingPositionArgs.IsAllowed)
-                    return false;
-            }
 
             var spawningArgs = new PlayerSpawningEventArgs(hub, newRole, true, selectingPositionArgs.Position, selectingPositionArgs.Rotation);
 

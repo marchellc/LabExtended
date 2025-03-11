@@ -321,13 +321,18 @@ public class VoiceController : IDisposable
             return VoiceChatChannel.None;
 
         if (receiver == Player)
-        {
-            if (receiver.Toggles.CanHearSelf)
-                return VoiceChatChannel.RoundSummary;
+            return receiver.Toggles is { CanHearSelf: true, CanBeHeard: true } 
+                ? VoiceChatChannel.RoundSummary 
+                : VoiceChatChannel.None;
 
-            return VoiceChatChannel.None;
-        }
+        if (Player.Toggles.CanBeHeard)
+            return receiver.Role.VoiceModule.ValidateReceive(Player.ReferenceHub, messageChannel);
         
-        return receiver.Role.VoiceModule.ValidateReceive(Player.ReferenceHub, messageChannel);
+        if ((Player.Toggles.CanBeHeardBySpectators && receiver.IsSpectating(Player))
+            || (Player.Toggles.CanBeHeardByStaff && (receiver.IsNorthwoodStaff || receiver.HasRemoteAdminAccess))
+            || (Player.Toggles.CanBeHeardByOtherRoles && receiver.Role.Type != Player.Role.Type))
+            return receiver.Role.VoiceModule.ValidateReceive(Player.ReferenceHub, messageChannel);
+            
+        return VoiceChatChannel.None;
     }
 }

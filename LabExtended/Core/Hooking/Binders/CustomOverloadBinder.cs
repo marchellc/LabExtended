@@ -1,5 +1,5 @@
 ﻿using LabExtended.Core.Hooking.Interfaces;
-using LabExtended.Utilities;
+
 using System.Reflection;
 
 namespace LabExtended.Core.Hooking.Binders

@@ -71,6 +71,31 @@ namespace LabExtended.Core
 
         // https://github.com/northwood-studios/NwPluginAPI/blob/master/NwPluginAPI/Core/Log.cs
         // This function was removed in LabAPI so I'm re-adding it.
+        
+        /// <summary>
+        /// Formats color-coded text to ANSI text.
+        /// <para>Formatting works as follows:</para>
+        /// <para>Each tag MUST start with<b>&</b></para>
+        /// <para>Then a singular letter / number that specifies the operation follows.</para>
+        /// <para>0 - Black</para>
+        /// <para>1 - Red</para>
+        /// <para>2 - Green</para>
+        /// <para>3 - Yellow</para>
+        /// <para>4 - Blue</para>
+        /// <para>5 - Purple</para>
+        /// <para>6 - Cyan</para>
+        /// <para>7 - White</para>
+        /// <para>r - Resets all tags</para>
+        /// <para>b / B - Bold characters on / off</para>
+        /// <para>o / O - Italic characters on / off</para>
+        /// <para>m / M - Strikethrough on / off</para>
+        /// <para>n / N - Underlinining on / off</para>
+        /// </summary>
+        /// <param name="message">The message to format.</param>
+        /// <param name="defaultColor">The color to use as default.</param>
+        /// <param name="unityRichText">Whether or not to convert to Rich Text.</param>
+        /// <param name="ignoreTrueColor">Whether or not to ignore true color tags.</param>
+        /// <returns>The formatted string.</returns>
         public static string FormatTrueColorText(string message, string defaultColor = "7", bool unityRichText = false, bool ignoreTrueColor = false)
         {
             bool isPrefix = false;

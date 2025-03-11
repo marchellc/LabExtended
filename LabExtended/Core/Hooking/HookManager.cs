@@ -289,7 +289,7 @@ namespace LabExtended.Core.Hooking
 
                 for (int x = 0; x < properties.Length; x++)
                 {
-                    if (properties[x].Name.ToLower() == arg.Name.ToLower())
+                    if (string.Equals(properties[x].Name, arg.Name, StringComparison.CurrentCultureIgnoreCase))
                     {
                         property = properties[x];
                         break;

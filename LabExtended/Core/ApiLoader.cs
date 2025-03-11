@@ -70,6 +70,8 @@ namespace LabExtended.Core
                     File.WriteAllText(ApiConfigPath, SerializedApiConfig);
                 else
                     ApiConfig = YamlParser.Deserializer.Deserialize<ApiConfig>(File.ReadAllText(ApiConfigPath));
+
+                ApiLog.IsTrueColorEnabled = BaseConfig?.TrueColorEnabled ?? true;
             }
             catch (Exception ex)
             {
@@ -104,7 +106,7 @@ namespace LabExtended.Core
                 try
                 {
                     if (plugin is null) continue;
-                    if (!string.IsNullOrWhiteSpace(plugin?.Name) && plugin.Name == LoaderName) continue;
+                    if (Loader != null && plugin == Loader) continue;
 
                     var type = plugin.GetType();
                     var assembly = type.Assembly;
@@ -127,10 +129,7 @@ namespace LabExtended.Core
                     var loadMethod = type.FindMethod("ExtendedLoad");
 
                     if (loadMethod != null)
-                    {
-                        if (loadMethod.IsStatic) loadMethod.Invoke(null, null);
-                        else loadMethod.Invoke(plugin, null);
-                    }
+                        loadMethod.Invoke(loadMethod.IsStatic ? null : plugin, null);
 
                     ApiLog.Info("Extended Loader", $"Loaded plugin &3{plugin.Name}&r!");
                 }
@@ -200,6 +199,9 @@ namespace LabExtended.Core
 
             foreach (var plugin in PluginLoader.Plugins.Keys)
             {
+                if (plugin is null) continue;
+                if (Loader != null && plugin == Loader) continue;
+                
                 ApiLog.Debug("Lab Extended", $"Unloading plugin &6{plugin.Name}&r ..");
                 
                 try

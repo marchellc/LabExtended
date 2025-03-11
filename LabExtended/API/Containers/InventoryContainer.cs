@@ -105,7 +105,9 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets permissions of the currently held keycard. <i>(<see cref="KeycardPermissions.None"/> if the player isn't holding a keycard)</i>.
         /// </summary>
-        public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem ? keycardItem.Permissions : KeycardPermissions.None;
+        public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem 
+            ? keycardItem.Permissions 
+            : KeycardPermissions.None;
 
         /// <summary>
         /// Whether or not to synchronize items with the player on the next frame.
