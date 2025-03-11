@@ -383,30 +383,26 @@ namespace LabExtended.API.Containers
             return Inventory.ServerAddItem(type, addReason);
         }
 
-        public T ThrowItem<T>(ItemBase item) where T : ItemPickupBase
+        public T ThrowItem<T>(ItemBase item, float force = 1f) where T : ItemPickupBase
         {
             if (item is null)
                 throw new ArgumentNullException(nameof(item));
 
             Inventory.ServerRemoveItem(item.ItemSerial, item.PickupDropModel);
-            return ThrowItem<T>(item.ItemTypeId, item.ItemSerial);
+            return ThrowItem<T>(item.ItemTypeId, force, item.ItemSerial);
         }
 
-        public T ThrowItem<T>(ItemType itemType, ushort? itemSerial = null) where T : ItemPickupBase
+        public T ThrowItem<T>(ItemType itemType, float force = 1f, ushort? itemSerial = null) where T : ItemPickupBase
         {
             var itemPrefab = itemType.GetItemPrefab<ItemBase>();
+            
             var pickupInstance = itemType.GetPickupInstance<T>(null, null, null, itemSerial, true);
             var pickupRigidbody = pickupInstance?.GetRigidbody();
 
             if (pickupRigidbody is null)
-                return null;
+                throw new Exception($"Pickup {itemType} cannot be thrown");
 
-            var throwArgs = new PlayerThrowingItemEventArgs(Inventory._hub, pickupInstance, pickupRigidbody);
-
-            LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(throwArgs);
-
-            if (!throwArgs.IsAllowed)
-                return default;
+            LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(new PlayerThrowingItemEventArgs(Inventory._hub, pickupInstance, pickupRigidbody));
             
             var velocity = Inventory._hub.GetVelocity();
             var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
@@ -416,15 +412,15 @@ namespace LabExtended.API.Containers
             velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
             velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
             velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
+            
+            velocity *= force;
 
-            var throwingEv = new PlayerThrowingItemArgs(ExPlayer.Get(Inventory._hub), itemPrefab, pickupInstance, pickupRigidbody, Inventory._hub.PlayerCameraReference.position, velocity, angular);
+            HookRunner.RunEvent(new PlayerThrowingItemArgs(ExPlayer.Get(Inventory._hub), itemPrefab, pickupInstance,
+                pickupRigidbody, Inventory._hub.PlayerCameraReference.position, velocity, angular), true);
 
-            if (!HookRunner.RunEvent(throwingEv, true))
-                return pickupInstance;
-
-            pickupRigidbody.position = throwingEv.Position;
-            pickupRigidbody.velocity = throwingEv.Velocity;
-            pickupRigidbody.angularVelocity = throwingEv.AngularVelocity;
+            pickupRigidbody.position = Inventory._hub.PlayerCameraReference.position;
+            pickupRigidbody.velocity = velocity;
+            pickupRigidbody.angularVelocity = angular;
 
             if (pickupRigidbody.angularVelocity.magnitude > pickupRigidbody.maxAngularVelocity)
                 pickupRigidbody.maxAngularVelocity = pickupRigidbody.angularVelocity.magnitude;

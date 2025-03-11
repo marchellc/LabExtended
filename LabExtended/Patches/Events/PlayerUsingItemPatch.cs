@@ -8,6 +8,8 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomUsables;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
@@ -37,6 +39,34 @@ namespace LabExtended.Patches.Events
 
             if (msg.Status is StatusMessage.StatusType.Start)
             {
+                if (CustomItemManager.InventoryItems.TryGetValue(curUsable, out var customItemInstance)
+                    && customItemInstance is CustomUsableInstance customUsableInstance)
+                {
+                    var usingEventArgs = new PlayerUsingItemEventArgs(player.ReferenceHub, curUsable);
+
+                    PlayerEvents.OnUsingItem(usingEventArgs);
+
+                    if (!usingEventArgs.IsAllowed)
+                        return false;
+                    
+                    if (customUsableInstance.RemainingCooldown > 0f)
+                    {
+                        customUsableInstance.SendCooldown(customUsableInstance.RemainingCooldown);
+                        return false;
+                    }
+
+                    if (!customUsableInstance.OnStartUsing())
+                        return false;
+
+                    customUsableInstance.IsUsing = true;
+                    
+                    customUsableInstance.RemainingTime = customUsableInstance.CustomData.UseTime;
+                    customUsableInstance.OnStartedUsing();
+
+                    msg.SendToAuthenticated();
+                    return false;
+                }
+                
                 if (!curUsable.ServerValidateStartRequest(player.Inventory.UsableItemsHandler))
                     return false;
 
@@ -68,13 +98,40 @@ namespace LabExtended.Patches.Events
                     
                     player.Inventory.UsableItemsHandler.CurrentUsable = new CurrentlyUsedItem(curUsable, curUsable.ItemSerial, Time.timeSinceLevelLoad);
                     player.Inventory.UsableItemsHandler.CurrentUsable.Item.OnUsingStarted();
-
+                    
                     msg.SendToAuthenticated();
                     return false;
                 }
             }
             else
             {
+                if (CustomItemManager.InventoryItems.TryGetValue(curUsable, out var customItemInstance)
+                    && customItemInstance is CustomUsableInstance customUsableInstance)
+                {
+                    var cancellingArgs = new PlayerCancellingUsingItemEventArgs(player.ReferenceHub, curUsable);
+
+                    PlayerEvents.OnCancellingUsingItem(cancellingArgs);
+
+                    if (!cancellingArgs.IsAllowed)
+                        return false;
+                    
+                    if (!customUsableInstance.IsUsing)
+                        return false;
+
+                    if (!customUsableInstance.OnCancelling())
+                        return false;
+
+                    customUsableInstance.IsUsing = false;
+                    
+                    customUsableInstance.RemainingTime = 0f;
+                    customUsableInstance.RemainingCooldown = customUsableInstance.CustomData.Cooldown;
+                    
+                    customUsableInstance.OnCancelled();
+                    
+                    msg.SendToAuthenticated();
+                    return false;
+                }
+                
                 if (!curUsable.ServerValidateCancelRequest(player.Inventory.UsableItemsHandler))
                     return false;
 

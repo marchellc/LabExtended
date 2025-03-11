@@ -18,6 +18,16 @@ namespace LabExtended.API.CustomItems;
 public static class CustomItemManager
 {
     /// <summary>
+    /// Called when a new Custom Item instance is created.
+    /// </summary>
+    public static event Action<CustomItemInstance>? OnItemCreated;
+    
+    /// <summary>
+    /// Called when an existing Custom Item instance is destroyed.
+    /// </summary>
+    public static event Action<CustomItemInstance>? OnItemDestroyed; 
+    
+    /// <summary>
     /// Gets all registered custom items.
     /// </summary>
     public static Dictionary<Type, CustomItemData> RegisteredItems { get; } = new();
@@ -195,6 +205,10 @@ public static class CustomItemManager
         customItem.OnEnabled();
         
         InventoryItems.Add(originalItem, customItem);
+
+#pragma warning disable CS8604 // Possible null reference argument.
+        OnItemCreated.InvokeSafe(customItem);
+#pragma warning restore CS8604 // Possible null reference argument.
         return customItem;
     }
     
@@ -247,6 +261,10 @@ public static class CustomItemManager
         item.OnEnabled();
         
         PickupItems.Add(pickup, item);
+        
+#pragma warning disable CS8604 // Possible null reference argument.
+        OnItemCreated.InvokeSafe(item);
+#pragma warning restore CS8604 // Possible null reference argument.
         return item;
     }
 
@@ -346,6 +364,10 @@ public static class CustomItemManager
                 p.Value.OnDisabled();
                 
                 itemsToDestroy.Add(p.Key);
+                
+#pragma warning disable CS8604 // Possible null reference argument.
+                OnItemDestroyed.InvokeSafe(p.Value);
+#pragma warning restore CS8604 // Possible null reference argument.
             }
         });
         
@@ -356,24 +378,32 @@ public static class CustomItemManager
         ListPool<ItemBase>.Shared.Return(itemsToDestroy);
     }
 
-    private static void OnItemDestroyed(ItemPickupBase pickup)
+    private static void OnItemDespawned(ItemPickupBase pickup)
     {
         if (PickupItems.TryGetValue(pickup, out var customItemInstance) && customItemInstance.Item is null)
         {
             customItemInstance.Pickup = null;
             customItemInstance.OnDisabled();
+            
+#pragma warning disable CS8604 // Possible null reference argument.
+            OnItemDestroyed.InvokeSafe(customItemInstance);
+#pragma warning restore CS8604 // Possible null reference argument.
         }
         
         PickupItems.Remove(pickup);
     }
 
-    private static void OnPlayerLeft(ExPlayer player)
+    private static void OnPlayerLeft(ExPlayer? player)
     {
         player.customItems.ForEach(p =>
         {
             player.ReferenceHub.inventory.ServerRemoveItem(p.Key.ItemSerial, p.Key.PickupDropModel);
             
             p.Value.OnDisabled();
+            
+#pragma warning disable CS8604 // Possible null reference argument.
+            OnItemDestroyed.InvokeSafe(p.Value);
+#pragma warning restore CS8604 // Possible null reference argument.
 
             InventoryItems.Remove(p.Key);
         });
@@ -384,7 +414,7 @@ public static class CustomItemManager
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        ItemPickupBase.OnPickupDestroyed += OnItemDestroyed;
+        ItemPickupBase.OnPickupDestroyed += OnItemDespawned;
         InternalEvents.OnPlayerLeft += OnPlayerLeft;
     }
 }

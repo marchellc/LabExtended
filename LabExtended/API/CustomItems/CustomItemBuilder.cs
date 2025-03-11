@@ -10,7 +10,7 @@ public class CustomItemBuilder
     /// <summary>
     /// Gets the custom item data.
     /// </summary>
-    public CustomItemData Data { get; } = new();
+    public virtual CustomItemData Data { get; } = new();
 
     /// <summary>
     /// Sets the item's name.
