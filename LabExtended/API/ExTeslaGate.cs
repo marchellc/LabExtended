@@ -92,19 +92,61 @@ namespace LabExtended.API
         public new Quaternion Rotation => Quaternion.Euler(Base.localRotation);
 
         /// <summary>
-        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="Player"/> which contains all the players inside the hurt range.
+        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="ExPlayer"/> which contains all the players inside the hurt range.
         /// </summary>
-        public IEnumerable<ExPlayer> PlayersInHurtRange => ExPlayer.Players.Where(IsInHurtRange);
+        public IEnumerable<ExPlayer> PlayersInHurtRange
+        {
+            get
+            {
+                for (var i = 0; i < ExPlayer.Players.Count; i++)
+                {
+                    var player = ExPlayer.Players[i];
+                    
+                    if (!player || !IsInHurtRange(player))
+                        continue;
+
+                    yield return player;
+                }
+            }
+        }
 
         /// <summary>
-        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="Player"/> which contains all the players inside the idle range.
+        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="ExPlayer"/> which contains all the players inside the idle range.
         /// </summary>
-        public IEnumerable<ExPlayer> PlayersInIdleRange => ExPlayer.Players.Where(IsInIdleRange);
+        public IEnumerable<ExPlayer> PlayersInIdleRange 
+        {
+            get
+            {
+                for (var i = 0; i < ExPlayer.Players.Count; i++)
+                {
+                    var player = ExPlayer.Players[i];
+                    
+                    if (!player || !IsInIdleRange(player))
+                        continue;
+
+                    yield return player;
+                }
+            }
+        }
 
         /// <summary>
-        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="Player"/> which contains all the players inside the trigger range.
+        /// Gets a <see cref="IEnumerable{T}"/> of <see cref="ExPlayer"/> which contains all the players inside the trigger range.
         /// </summary>
-        public IEnumerable<ExPlayer> PlayersInTriggerRange => ExPlayer.Players.Where(IsInTriggerRange);
+        public IEnumerable<ExPlayer> PlayersInTriggerRange
+        {
+            get
+            {
+                for (var i = 0; i < ExPlayer.Players.Count; i++)
+                {
+                    var player = ExPlayer.Players[i];
+                    
+                    if (!player || !IsInTriggerRange(player))
+                        continue;
+
+                    yield return player;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets a value indicating whether or not a shock is in progress.
@@ -272,19 +314,21 @@ namespace LabExtended.API
             foreach (var player in ExPlayer.Players)
             {
                 if (!player.Toggles.CanTriggerTesla) continue;
-                if (!player.Role.IsAlive || player.Role.Is(RoleTypeId.Scp079)) continue;
-                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team)) continue;
+                if (!player.Role.IsAlive) continue;
+                
+                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team)) 
+                    continue;
 
                 if (!shouldIdle)
                     shouldIdle = Base.IsInIdleRange(player.ReferenceHub);
 
-                if (!shouldTrigger && Base.PlayerInRange(player.ReferenceHub) && !Base.InProgress)
-                {
-                    if (!HookRunner.RunEvent(new PlayerTriggeringTeslaGateArgs(player, this), true))
-                        continue;
+                if (shouldTrigger || !Base.PlayerInRange(player.ReferenceHub) || Base.InProgress) 
+                    continue;
+                
+                if (!HookRunner.RunEvent(new PlayerTriggeringTeslaGateArgs(player, this), true))
+                    continue;
 
-                    shouldTrigger = true;
-                }
+                shouldTrigger = true;
             }
 
             if (shouldTrigger)
@@ -303,18 +347,18 @@ namespace LabExtended.API
                 }
             }
 
-            if (shouldIdle != Base.isIdling)
+            if (shouldIdle == Base.isIdling) 
+                return;
+            
+            if (shouldIdle)
             {
-                if (shouldIdle)
-                {
-                    Base.RpcDoIdle();
-                    HookRunner.RunEvent(new TeslaGateStartedIdlingArgs(this));
-                }
-                else
-                {
-                    Base.RpcDoneIdling();
-                    HookRunner.RunEvent(new TeslaGateStoppedIdlingArgs(this));
-                }
+                Base.RpcDoIdle();
+                HookRunner.RunEvent(new TeslaGateStartedIdlingArgs(this));
+            }
+            else
+            {
+                Base.RpcDoneIdling();
+                HookRunner.RunEvent(new TeslaGateStoppedIdlingArgs(this));
             }
         }
 
@@ -338,7 +382,7 @@ namespace LabExtended.API
                 }
                 catch (Exception ex)
                 {
-                    ApiLog.Error("Extended API", $"Failed to update tesla gate {gate.NetId}!\n{ex.ToColoredString()}");
+                    ApiLog.Error("LabExtended", $"Failed to update tesla gate {gate.NetId}!\n{ex.ToColoredString()}");
                 }
             });
         }
@@ -346,8 +390,9 @@ namespace LabExtended.API
         [LoaderInitialize(1)]
         private static void Init()
         {
-            PlayerLoopHelper.ModifySystem(x => x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(TeslaGateUpdateLoop)) ? x : null);
-            ApiLog.Debug("Tesla Gate API", "Initialized");
+            PlayerLoopHelper.ModifySystem(x => 
+                x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(TeslaGateUpdateLoop)) 
+                    ? x : null);
         }
     }
 }
