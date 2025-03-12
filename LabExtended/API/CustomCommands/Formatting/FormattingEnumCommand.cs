@@ -11,7 +11,7 @@ namespace LabExtended.API.CustomCommands.Formatting
 {
     public class FormattingEnumCommand : CustomCommand
     {
-        public static List<Type> EnumTypes { get; } = new List<Type>();
+        public static List<Type> EnumTypes { get; } = new();
 
         public override string Command => "enum";
         public override string Description => "Displays all values of an enum.";
@@ -30,7 +30,8 @@ namespace LabExtended.API.CustomCommands.Formatting
 
             var enumName = args.Get<string>("Name");
 
-            if (!EnumTypes.TryGetFirst<Type>(t => t.Name.ToLower() == enumName.ToLower(), out var foundEnum))
+            if (!EnumTypes.TryGetFirst(t => t.FullName.ToLower() == enumName.ToLower() || t.Name.ToLower() == enumName.ToLower(), 
+                    out var foundEnum))
             {
                 ctx.RespondFail($"Unknown enum type: {enumName}");
                 return;

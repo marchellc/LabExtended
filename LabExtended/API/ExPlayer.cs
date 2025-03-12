@@ -657,7 +657,7 @@ public class ExPlayer : Player, IDisposable
     {
         get
         {
-            for (int i = 0; i < Players.Count; i++)
+            for (var i = 0; i < Players.Count; i++)
             {
                 var player = Players[i];
                 
@@ -672,7 +672,18 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the SCP-079 camera this player is currently using.
     /// </summary>
-    public new Camera Camera => ExMap.GetCamera(Subroutines.Scp079CurrentCameraSync?.CurrentCamera);
+    public new Camera? Camera
+    {
+        get
+        {
+            var current = Role.Scp079?.CurrentCamera;
+
+            if (current is null)
+                return null;
+            
+            return !Camera.TryGet(current, out var camera) ? null : camera;
+        }
+    }
 
     /// <summary>
     /// Gets the player's <see cref="UnityEngine.Transform"/>.

@@ -27,13 +27,14 @@ public static class Scp079TeslaAbilityPatch
         if (camera is null)
             return false;
 
-        if (!ExMap.TeslaGates.TryGetFirst(x => RoomIdUtils.IsTheSameRoom(x.Position, camera.Position), out var gate))
+        if (!ExTeslaGate.Lookup.TryGetFirst(
+                x => RoomIdUtils.IsTheSameRoom(x.Value.Position, camera.Position), out var gate))
             return false;
 
-        if (gate.IsDisabled)
+        if (gate.Value.IsDisabled)
             return false;
 
-        var usingTeslaArgs = new Scp079UsingTeslaEventArgs(__instance.Owner, gate.Base);
+        var usingTeslaArgs = new Scp079UsingTeslaEventArgs(__instance.Owner, gate.Value.Base);
         
         Scp079Events.OnUsingTesla(usingTeslaArgs);
 
@@ -43,12 +44,12 @@ public static class Scp079TeslaAbilityPatch
         __instance.RewardManager.MarkRoom(camera.Room);
         __instance.AuxManager.CurrentAux -= __instance._cost;
         
-        gate.Base.RpcInstantBurst();
+        gate.Value.Base.RpcInstantBurst();
 
         __instance._nextUseTime = NetworkTime.time + __instance._cooldown;
         __instance.ServerSendRpc(false);
         
-        Scp079Events.OnUsedTesla(new(__instance.Owner, gate.Base));
+        Scp079Events.OnUsedTesla(new(__instance.Owner, gate.Value.Base));
         return false;
     }
 }

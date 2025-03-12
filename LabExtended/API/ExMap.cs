@@ -1,10 +1,6 @@
-﻿using AdminToys;
-
-using Hazards;
+﻿using Hazards;
 
 using Interactables;
-using Interactables.Interobjects;
-using Interactables.Interobjects.DoorUtils;
 
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
@@ -12,10 +8,7 @@ using InventorySystem.Items.ThrowableProjectiles;
 
 using LabApi.Events.Arguments.ServerEvents;
 
-using LabExtended.API.Enums;
 using LabExtended.API.Prefabs;
-using LabExtended.API.Toys;
-
 using LabExtended.Attributes;
 
 using LabExtended.Core;
@@ -32,10 +25,8 @@ using MapGeneration.Distributors;
 using Mirror;
 
 using PlayerRoles;
-using PlayerRoles.PlayableScps.Scp079;
-using PlayerRoles.PlayableScps.Scp079.Cameras;
-using PlayerRoles.PlayableScps.Scp3114;
 using PlayerRoles.Ragdolls;
+using PlayerRoles.PlayableScps.Scp3114;
 
 using PlayerStatsSystem;
 
@@ -48,52 +39,59 @@ using Utils.Networking;
 
 namespace LabExtended.API
 {
+    /// <summary>
+    /// Map management functions.
+    /// </summary>
     public static class ExMap
     {
+        /// <summary>
+        /// List of spawned pickups.
+        /// </summary>
         public static List<ItemPickupBase> Pickups { get; } = new();
+        
+        /// <summary>
+        /// List of spawned ragdolls.
+        /// </summary>
         public static List<BasicRagdoll> Ragdolls { get; } = new();
-        public static List<Generator> Generators { get; } = new();
-        public static List<ExTeslaGate> TeslaGates { get; } = new();
-        public static List<Elevator> Elevators { get; } = new();
-        public static List<Airlock> Airlocks { get; } = new();
+        
+        /// <summary>
+        /// List of spawned lockers.
+        /// </summary>
         public static List<Locker> Lockers { get; } = new();
-        public static List<Camera> Cameras { get; } = new();
-        public static List<AdminToy> Toys { get; } = new();
-        public static List<Door> Doors { get; } = new();
 
-        public static IEnumerable<LockerChamber> LockerChambers => Lockers.SelectMany(x => x.Chambers);
+        /// <summary>
+        /// List of locker chambers.
+        /// </summary>
+        public static List<LockerChamber> Chambers { get; } = new();
 
-        public static IEnumerable<Elevator> MovingElevators => GetElevators(x => x.IsMoving);
-        public static IEnumerable<Elevator> ReadyElevators => GetElevators(x => x.Base.IsReady);
-
-        public static IEnumerable<Door> OpenedDoors => GetDoors(x => x.IsOpened);
-        public static IEnumerable<Door> ClosedDoors => GetDoors(x => !x.IsOpened);
-        public static IEnumerable<Door> MovingDoors => GetDoors(x => x.IsMoving);
-
-        public static IEnumerable<Generator> ActivatedGenerators => Generators.Where(x => x.IsEngaged);
-        public static IEnumerable<Generator> ActivatingGenerators => Generators.Where(x => x.IsActivating);
-
-        public static IEnumerable<Generator> OpenGenerators => Generators.Where(x => x.IsOpen);
-        public static IEnumerable<Generator> ClosedGenerators => Generators.Where(x => !x.IsOpen);
-
-        public static IEnumerable<Camera> ActiveCameras => GetCameras(x => x.IsUsed);
-        public static IEnumerable<Camera> InactiveCameras => GetCameras(x => !x.IsUsed);
-
-        public static IEnumerable<LightToy> LightToys => Toys.Where<LightToy>();
-        public static IEnumerable<TargetToy> TargetToys => Toys.Where<TargetToy>();
-        public static IEnumerable<PrimitiveToy> PrimitiveToys => Toys.Where<PrimitiveToy>();
-
-        public static IEnumerable<Toys.SpeakerToy> SpeakerToys => Toys.Where<Toys.SpeakerToy>();
-
+        /// <summary>
+        /// List of spawned waypoints.
+        /// </summary>
         public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
+        
+        /// <summary>
+        /// List of spawned NetID waypoints.
+        /// </summary>
         public static IEnumerable<NetIdWaypoint> NetIdWaypoints => NetIdWaypoint.AllNetWaypoints.Where(x => x != null);
 
-        public static int AmbientClipsCount => AmbientSoundPlayer.clips.Length;
+        /// <summary>
+        /// Amount of ambient clips.
+        /// </summary>
+        public static int AmbientClipsCount => AmbientSoundPlayer?.clips.Length ?? 0;
 
-        public static AmbientSoundPlayer AmbientSoundPlayer { get; private set; }
+        /// <summary>
+        /// Gets the AmbientSoundPlayer component.
+        /// </summary>
+        public static AmbientSoundPlayer? AmbientSoundPlayer { get; private set; }
 
+        /// <summary>
+        /// Gets the default color of a room's light.
+        /// </summary>
         public static Color DefaultLightColor { get; } = Color.clear;
 
+        /// <summary>
+        /// Gets or sets the map's seed.
+        /// </summary>
         public static int Seed
         {
             get => SeedSynchronizer.Seed;
@@ -106,6 +104,13 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Broadcasts a message to all players.
+        /// </summary>
+        /// <param name="msg">The message to show.</param>
+        /// <param name="duration">Duration of the message.</param>
+        /// <param name="clearPrevious">Whether or not to clear previous broadcasts.</param>
+        /// <param name="flags">Flags of the broadcast.</param>
         public static void Broadcast(object msg, ushort duration, bool clearPrevious = true, Broadcast.BroadcastFlags flags = global::Broadcast.BroadcastFlags.Normal)
         {
             if (clearPrevious)
@@ -114,23 +119,46 @@ namespace LabExtended.API
             global::Broadcast.Singleton?.RpcAddElement(msg.ToString(), duration, flags);
         }
 
+        /// <summary>
+        /// Shows a hint to all players.
+        /// </summary>
+        /// <param name="msg">The message to show.</param>
+        /// <param name="duration">Duration of the message.</param>
+        /// <param name="isPriority">Whether or not to show this message immediately.</param>
         public static void ShowHint(object msg, ushort duration, bool isPriority = false)
             => ExPlayer.Players.ForEach(x => x.SendHint(msg, duration, isPriority));
 
+        /// <summary>
+        /// Starts Light Containment Zone decontamination.
+        /// </summary>
         public static void StartDecontamination()
             => DecontaminationController.Singleton?.ForceDecontamination();
 
+        /// <summary>
+        /// Plays a random ambient clip.
+        /// </summary>
         public static void PlayAmbientSound()
-            => AmbientSoundPlayer.GenerateRandom();
+            => AmbientSoundPlayer?.GenerateRandom();
 
+        /// <summary>
+        /// Plays the specified ambient clip.
+        /// </summary>
+        /// <param name="id">Index of the clip to play.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public static void PlayAmbientSound(int id)
         {
-            if (id < 0 || id >= AmbientSoundPlayer.clips.Length)
+            if (id < 0 || id >= AmbientClipsCount)
                 throw new ArgumentOutOfRangeException(nameof(id));
 
-            AmbientSoundPlayer.RpcPlaySound(AmbientSoundPlayer.clips[id].index);
+            AmbientSoundPlayer?.RpcPlaySound(AmbientSoundPlayer.clips[id].index);
         }
 
+        /// <summary>
+        /// Spawns a new tantrum.
+        /// </summary>
+        /// <param name="position">Where to spawn the tantrum.</param>
+        /// <param name="setActive">Whether or not to set the tantrum as active.</param>
+        /// <returns></returns>
         public static TantrumEnvironmentalHazard PlaceTantrum(Vector3 position, bool setActive = true)
         {
             var instance = PrefabList.Tantrum.Spawn<TantrumEnvironmentalHazard>();
@@ -146,15 +174,41 @@ namespace LabExtended.API
             return instance;
         }
 
+        /// <summary>
+        /// Spawns a grenade.
+        /// </summary>
+        /// <param name="position">The position to spawn the grenade at.</param>
+        /// <param name="type">The type of grenade.</param>
+        /// <param name="attacker">The attacker.</param>
         public static void Explode(Vector3 position, ExplosionType type = ExplosionType.Grenade, ExPlayer attacker = null)
             => ExplosionUtils.ServerExplode(position, (attacker ?? ExPlayer.Host).Footprint, type);
 
+        /// <summary>
+        /// Spawns an explosion effect.
+        /// </summary>
+        /// <param name="position">Where to spawn the effect.</param>
+        /// <param name="type">Type of effect.</param>
         public static void SpawnExplosion(Vector3 position, ItemType type = ItemType.GrenadeHE)
             => ExplosionUtils.ServerSpawnEffect(position, type);
 
+        /// <summary>
+        /// Spawns a ragdoll converted by SCP-3114.
+        /// </summary>
+        /// <param name="position">Where to spawn the ragdoll.</param>
+        /// <param name="scale">Scale of the ragdoll.</param>
+        /// <param name="rotation">Rotation of the ragdoll.</param>
+        /// <returns>The spawned ragdoll.</returns>
         public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Quaternion rotation)
             => SpawnBonesRagdoll(position, scale, Vector3.zero, rotation);
 
+        /// <summary>
+        /// Spawns a ragdoll converted by SCP-3114.
+        /// </summary>
+        /// <param name="position">Where to spawn the ragdoll.</param>
+        /// <param name="scale">Scale of the ragdoll.</param>
+        /// <param name="velocity">Velocity of the player.</param>
+        /// <param name="rotation">Rotation of the ragdoll.</param>
+        /// <returns>The spawned ragdoll.</returns>
         public static DynamicRagdoll SpawnBonesRagdoll(Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation)
         {
             var ragdollInstance = SpawnRagdoll(RoleTypeId.Tutorial, position, scale, rotation, true, ExPlayer.Host, new UniversalDamageHandler(-1f, DeathTranslations.Warhead));
@@ -177,9 +231,32 @@ namespace LabExtended.API
             return bonesRagdoll;
         }
 
+        /// <summary>
+        /// Spawns a ragdoll of a specific role.
+        /// </summary>
+        /// <param name="ragdollRoleType">The role to spawn a ragdoll of.</param>
+        /// <param name="position">Where to spawn the ragdoll.</param>
+        /// <param name="scale">Ragdoll's scale.</param>
+        /// <param name="rotation">Ragdoll's rotation.</param>
+        /// <param name="spawn">Whether or not to spawn it for players.</param>
+        /// <param name="owner">The ragdoll's owner.</param>
+        /// <param name="damageHandler">The ragdoll's cause of death.</param>
+        /// <returns>The spawned ragdoll instance.</returns>
         public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
             => SpawnRagdoll(ragdollRoleType, position, scale, Vector3.zero, rotation, spawn, owner, damageHandler);
 
+        /// <summary>
+        /// Spawns a ragdoll of a specific role.
+        /// </summary>
+        /// <param name="ragdollRoleType">The role to spawn a ragdoll of.</param>
+        /// <param name="position">Where to spawn the ragdoll.</param>
+        /// <param name="scale">Ragdoll's scale.</param>
+        /// <param name="velocity">The player velocity.</param>
+        /// <param name="rotation">Ragdoll's rotation.</param>
+        /// <param name="spawn">Whether or not to spawn it for players.</param>
+        /// <param name="owner">The ragdoll's owner.</param>
+        /// <param name="damageHandler">The ragdoll's cause of death.</param>
+        /// <returns>The spawned ragdoll instance.</returns>
         public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
         {
             if (!ragdollRoleType.TryGetPrefab(out var role))
@@ -209,6 +286,11 @@ namespace LabExtended.API
             return ragdoll;
         }
 
+        /// <summary>
+        /// Flickers light across the selected zones.
+        /// </summary>
+        /// <param name="duration">Flicker duration.</param>
+        /// <param name="zones">The zone whitelist.</param>
         public static void FlickerLights(float duration, params FacilityZone[] zones)
         {
             foreach (var light in RoomLightController.Instances)
@@ -223,16 +305,46 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Sets color of all lights.
+        /// </summary>
+        /// <param name="color">The color to set.</param>
         public static void SetLightColor(Color color)
             => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = color);
 
+        /// <summary>
+        /// Resets color of all lights.
+        /// </summary>
         public static void ResetLightsColor()
             => RoomLightController.Instances.ForEach(x => x.NetworkOverrideColor = DefaultLightColor);
 
-        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, ushort? serial = null, bool spawn = true)
+        /// <summary>
+        /// Spawns a new item.
+        /// </summary>
+        /// <param name="type">Type of the item.</param>
+        /// <param name="position">Where to spawn it.</param>
+        /// <param name="scale">Scale of the item.</param>
+        /// <param name="rotation">Rotation of the item.</param>
+        /// <param name="serial">Optional item serial number.</param>
+        /// <param name="spawn">Whether or not to spawn it for players.</param>
+        /// <returns>The spawned item.</returns>
+        public static ItemPickupBase SpawnItem(ItemType type, Vector3 position, Vector3 scale, Quaternion rotation, 
+            ushort? serial = null, bool spawn = true)
             => SpawnItem<ItemPickupBase>(type, position, scale, rotation, serial, spawn);
 
-        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, ushort? serial = null, bool spawn = true) where T : ItemPickupBase
+        /// <summary>
+        /// Spawns a new item.
+        /// </summary>
+        /// <param name="item">Type of the item.</param>
+        /// <param name="position">Where to spawn it.</param>
+        /// <param name="scale">Scale of the item.</param>
+        /// <param name="rotation">Rotation of the item.</param>
+        /// <param name="serial">Optional item serial number.</param>
+        /// <param name="spawn">Whether or not to spawn it for players.</param>
+        /// <typeparam name="T">Generic type of the item.</typeparam>
+        /// <returns>The spawned item.</returns>
+        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, 
+            ushort? serial = null, bool spawn = true) where T : ItemPickupBase
         {
             if (!item.TryGetItemPrefab(out var prefab))
                 return null;
@@ -254,8 +366,20 @@ namespace LabExtended.API
 
             return pickup;
         }
-
-        public static List<T> SpawnItems<T>(ItemType type, int count, Vector3 position, Vector3 scale, Quaternion rotation, bool spawn = true) where T : ItemPickupBase
+        
+        /// <summary>
+        /// Spawns an amount of an item.
+        /// </summary>
+        /// <param name="type">The type of item to spawn.</param>
+        /// <param name="count">The amount to spawn.</param>
+        /// <param name="position">Where to spawn.</param>
+        /// <param name="scale">Scale of each item.</param>
+        /// <param name="rotation">Rotation of each item.</param>
+        /// <param name="spawn">Whether or not to spawn.</param>
+        /// <typeparam name="T">Generic type of the item.</typeparam>
+        /// <returns></returns>
+        public static List<T> SpawnItems<T>(ItemType type, int count, Vector3 position, Vector3 scale, Quaternion rotation, 
+            bool spawn = true) where T : ItemPickupBase
         {
             var list = new List<T>(count);
 
@@ -272,13 +396,61 @@ namespace LabExtended.API
             return list;
         }
 
-        public static ThrownProjectile SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
+        /// <summary>
+        /// Spawns a projectile.
+        /// </summary>
+        /// <param name="item">The projectile type.</param>
+        /// <param name="position">Where to spawn it.</param>
+        /// <param name="scale">Projectile scale.</param>
+        /// <param name="velocity">Projectile velocity.</param>
+        /// <param name="rotation">Projectile rotation.</param>
+        /// <param name="force">Throwing force.</param>
+        /// <param name="fuseTime">How long until detonation (in seconds).</param>
+        /// <param name="spawn">Whether or not to spawn.</param>
+        /// <param name="activate">Whether or not to activate.</param>
+        /// <returns>The spawned projectile.</returns>
+        public static ThrownProjectile SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity,
+            Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
             => SpawnProjectile<ThrownProjectile>(item, position, scale, velocity, rotation, force, fuseTime, spawn, activate);
 
-        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
+        /// <summary>
+        /// Spawns a projectile.
+        /// </summary>
+        /// <param name="item">The projectile type.</param>
+        /// <param name="position">Where to spawn it.</param>
+        /// <param name="scale">Projectile scale.</param>
+        /// <param name="velocity">Projectile velocity.</param>
+        /// <param name="rotation">Projectile rotation.</param>
+        /// <param name="force">Throwing force.</param>
+        /// <param name="fuseTime">How long until detonation (in seconds).</param>
+        /// <param name="spawn">Whether or not to spawn.</param>
+        /// <param name="activate">Whether or not to activate.</param>
+        /// <typeparam name="T">Generic projectile type.</typeparam>
+        /// <returns>The spawned projectile.</returns>
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity, 
+            Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true) where T : ThrownProjectile
             => SpawnProjectile<T>(item, position, scale, Vector3.forward, Vector3.up, rotation, velocity, force, fuseTime, spawn, activate);
 
-        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up, Quaternion rotation, Vector3 velocity, float force, float fuseTime = 2f, bool spawn = true, bool activate = true, ushort? serial = null) where T : ThrownProjectile
+        /// <summary>
+        /// Spawns a projectile.
+        /// </summary>
+        /// <param name="item">Projectile type.</param>
+        /// <param name="position">Spawn position.</param>
+        /// <param name="scale">Projectile scale.</param>
+        /// <param name="forward">Forward vector (can be <see cref="Vector3.forward"/>)</param>
+        /// <param name="up">Upwards vector (can be <see cref="Vector3.up"/>)</param>
+        /// <param name="rotation">Projectile rotation.</param>
+        /// <param name="velocity">Projectile velocity.</param>
+        /// <param name="force">Throwing force.</param>
+        /// <param name="fuseTime">Time until detonation.</param>
+        /// <param name="spawn">Whether or not to spawn.</param>
+        /// <param name="activate">Whether or not to activate.</param>
+        /// <param name="serial">Optional item serial number.</param>
+        /// <typeparam name="T">Generic projectile type.</typeparam>
+        /// <returns></returns>
+        public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up, 
+            Quaternion rotation, Vector3 velocity, float force, float fuseTime = 2f, bool spawn = true, 
+            bool activate = true, ushort? serial = null) where T : ThrownProjectile
         {
             if (!item.TryGetItemPrefab<ThrowableItem>(out var throwableItem))
                 return null;
@@ -326,193 +498,23 @@ namespace LabExtended.API
             return projectile;
         }
 
-        #region Toys
-        public static IEnumerable<T> GetToys<T>(Predicate<T> predicate) where T : AdminToy
-            => Toys.Where<T>(toy => predicate(toy));
-
-        public static IEnumerable<AdminToy> GetToys(Predicate<AdminToy> predicate)
-            => Toys.Where(toy => predicate(toy));
-
-        public static T GetToy<T>(AdminToyBase adminToyBase) where T : AdminToy
-        {
-            if (adminToyBase is null)
-                return null;
-
-            if (Toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
-                return (T)toy;
-
-            toy = AdminToy.Create(adminToyBase);
-
-            Toys.Add(toy);
-            return (T)toy;
-        }
-
-        public static AdminToy GetToy(AdminToyBase adminToyBase)
-        {
-            if (adminToyBase is null)
-                return null;
-
-            if (Toys.TryGetFirst(x => x.Base == adminToyBase, out var toy))
-                return toy;
-
-            toy = AdminToy.Create(adminToyBase);
-
-            Toys.Add(toy);
-            return toy;
-        }
-        #endregion
-
-        #region Cameras
-        public static IEnumerable<Camera> GetCameras(RoomName room)
-            => GetCameras(x => x.RoomName == room);
-
-        public static IEnumerable<Camera> GetCameras(FacilityZone zone)
-            => GetCameras(x => x.Zone == zone);
-
-        public static IEnumerable<Camera> GetCameras(Predicate<Camera> predicate)
-            => Cameras.Where(x => predicate(x));
-
-        public static Camera GetCamera(Enums.CameraType type)
-            => GetCamera(x => x.Type == type);
-
-        public static Camera GetCamera(ushort id)
-            => GetCamera(x => x.Id == id);
-
-        public static Camera GetCamera(string name)
-            => GetCamera(x => x.Name == name);
-
-        public static Camera GetCamera(Scp079Camera camera)
-            => GetCamera(x => x.Base == camera);
-
-        public static Camera GetCamera(Predicate<Camera> predicate)
-            => Cameras.FirstOrDefault(x => predicate(x));
-        #endregion
-
-        #region Elevators
-        public static IEnumerable<Elevator> GetElevators(Predicate<Elevator> predicate)
-            => Elevators.Where(x => predicate(x));
-
-        public static Elevator GetElevator(Vector3 position)
-            => GetElevator(x => x.Contains(position));
-
-        public static Elevator GetElevator(Predicate<Elevator> predicate)
-            => Elevators.FirstOrDefault(x => predicate(x));
-
-        public static Elevator GetElevator(ElevatorGroup group)
-            => Elevators.FirstOrDefault(p => p.Group == group);
-
-        public static Elevator GetElevator(ElevatorChamber chamber)
-        {
-            if (chamber is null)
-                return null;
-
-            if (!Elevators.TryGetFirst(x => x.Base == chamber, out var wrapper))
-            {
-                wrapper = new Elevator(chamber);
-
-                Elevators.Add(wrapper);
-                return wrapper;
-            }
-
-            return wrapper;
-        }
-        #endregion
-
-        #region Doors
-        public static IEnumerable<Door> GetDoors(RoomName room)
-            => GetDoors(x => x.Rooms.Any(y => y.Name == room));
-
-        public static IEnumerable<Door> GetDoors(FacilityZone zone)
-            => GetDoors(x => x.Rooms.Any(y => y.Zone == zone));
-
-        public static IEnumerable<Door> GetDoors(DoorType type)
-            => GetDoors(x => x.Type == type);
-
-        public static IEnumerable<Door> GetDoors(Predicate<Door> predicate)
-            => Doors.Where(x => predicate(x));
-
-        public static Door GetDoor(Predicate<Door> predicate)
-            => Doors.FirstOrDefault(x => predicate(x));
-
-        public static Door GetDoor(Collider collider)
-        {
-            if (collider.TryGetComponent<InteractableCollider>(out var interactableCollider)
-                && interactableCollider.Target != null && interactableCollider.Target is DoorVariant door)
-                return GetDoor(door);
-
-            if (collider.TryGetComponent(out door))
-                return GetDoor(door);
-
-            if (collider.TryGetComponent<IInteractable>(out var interactable)
-                && (door = (interactable as DoorVariant)) != null)
-                return GetDoor(door);
-
-            return null;
-        }
-
-        public static Door GetDoor(DoorType type)
-        {
-            if (type is DoorType.UnknownDoor || type is DoorType.UnknownElevator || type is DoorType.UnknownGate)
-                return null;
-
-            return Doors.FirstOrDefault(d => d.Type == type);
-        }
-
-        public static Door GetDoor(DoorVariant door)
-        {
-            if (door is null)
-                return null;
-
-            if (!Doors.TryGetFirst(x => x.Base == door, out var wrapper))
-            {
-                wrapper = new Door(door, Door.GetDoorType(door));
-
-                Doors.Add(wrapper);
-                return wrapper;
-            }
-
-            return wrapper;
-        }
-
-        private static Door CreateDoor(DoorVariant door)
-        {
-            if (door is CheckpointDoor checkpointDoor)
-                return new Checkpoint(checkpointDoor, Door.GetDoorType(door));
-
-            return new Door(door, Door.GetDoorType(door));
-        }
-        #endregion
-
         private static void OnRoundWaiting()
         {
             try
             {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 AmbientSoundPlayer = ExPlayer.Host.GameObject.GetComponent<AmbientSoundPlayer>();
-
-                TeslaGates.Clear();
-                Generators.Clear();
-                Elevators.Clear();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+                
                 Ragdolls.Clear();
-                Airlocks.Clear();
                 Pickups.Clear();
                 Lockers.Clear();
-                Cameras.Clear();
-                Doors.Clear();
-                Toys.Clear();
+                Chambers.Clear();
 
-                foreach (var gate in TeslaGate.AllGates) TeslaGates.Add(new ExTeslaGate(gate));
-                foreach (var door in DoorVariant.AllDoors) Doors.Add(new Door(door, Door.GetDoorType(door)));
-                foreach (var airlock in UnityEngine.Object.FindObjectsOfType<AirlockController>()) Airlocks.Add(new Airlock(airlock));
-                foreach (var elevator in ElevatorChamber.AllChambers) Elevators.Add(new Elevator(elevator));
-                foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>()) Lockers.Add(locker);
-                foreach (var toy in UnityEngine.Object.FindObjectsOfType<AdminToyBase>()) Toys.Add(AdminToy.Create(toy));
-
-                foreach (var interactable in Scp079InteractableBase.AllInstances)
+                foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>())
                 {
-                    if (interactable is null || interactable is not Scp079Camera cam)
-                        continue;
-
-                    Cameras.Add(new Camera(cam));
+                    Lockers.Add(locker);
+                    Chambers.AddRange(locker.Chambers);
                 }
             }
             catch (Exception ex)
@@ -529,19 +531,14 @@ namespace LabExtended.API
                 if (identity is null)
                     return;
                 
-                Generators.RemoveAll(x => x.NetId == identity.netId);
-                Airlocks.RemoveAll(x => x.NetId == identity.netId);
                 Ragdolls.RemoveAll(x => x.netId == identity.netId);
                 Pickups.RemoveAll(x => x.netId == identity.netId);
                 Lockers.RemoveAll(x => x.netId == identity.netId);
-                TeslaGates.RemoveAll(x => x.NetId == identity.netId);
-                Doors.RemoveAll(x => x.NetId == identity.netId);
-                Toys.RemoveAll(x => x.NetId == identity.netId);
 
                 ExPlayer.AllPlayers.ForEach(player => 
                 {
-                    if (!player) return;
-                    if (player.Inventory?._droppedItems is null) return;
+                    if (player?.Inventory?._droppedItems is null) 
+                        return;
                     
                     player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
                 });
@@ -572,7 +569,7 @@ namespace LabExtended.API
         }
 
         [LoaderInitialize(1)]
-        private static void Init()
+        private static void OnInit()
         {
             RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
             RagdollManager.OnRagdollRemoved += OnRagdollRemoved;

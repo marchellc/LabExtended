@@ -2,7 +2,6 @@
 
 using Interactables.Interobjects.DoorUtils;
 
-using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Core.Hooking;
 using LabExtended.Events.Map;
@@ -37,9 +36,6 @@ namespace LabExtended.Patches.Events
                 __instance.SpawnObject(obj.gameObject);
             else
                 __instance.RegisterUnspawnedObject(triggerDoor, obj.gameObject);
-
-            if (structure is Scp079Generator scp079Generator)
-                ExMap.Generators.Add(new(scp079Generator));
 
             return false;
         }

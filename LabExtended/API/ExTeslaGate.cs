@@ -7,12 +7,11 @@ using LabExtended.Attributes;
 
 using LabExtended.Core;
 using LabExtended.Core.Hooking;
-
+using LabExtended.Events;
 using LabExtended.Events.Map;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-using LabExtended.Utilities.Unity;
 
 using MapGeneration;
 
@@ -20,7 +19,6 @@ using PlayerRoles;
 using PlayerStatsSystem;
 
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace LabExtended.API
 {
@@ -32,9 +30,48 @@ namespace LabExtended.API
 
         IDamageObject
     {
-        public struct TeslaGateUpdateLoop { }
+        /// <summary>
+        /// Gets a lookup table for each tesla gate.
+        /// </summary>
+        public static Dictionary<TeslaGate, ExTeslaGate> Lookup { get; } = new();
 
-        private static float _tickCooldown = 0f;
+        /// <summary>
+        /// Gets a list of all tesla gates.
+        /// </summary>
+        public static List<ExTeslaGate> Gates { get; } = new();
+
+        /// <summary>
+        /// Tries to get an initialized wrapper.
+        /// </summary>
+        /// <param name="gate">The base object to find the wrapper variant of.</param>
+        /// <param name="wrapper">The found wrapper instance.</param>
+        /// <returns>true if the wrapper was found.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGet(TeslaGate gate, out ExTeslaGate wrapper)
+        {
+            if (gate is null)
+                throw new ArgumentNullException(nameof(gate));
+            
+            return Lookup.TryGetValue(gate, out wrapper);
+        }
+
+        /// <summary>
+        /// Gets an initialized wrapper.
+        /// </summary>
+        /// <param name="gate">The base object to find the wrapper variant of.</param>
+        /// <returns>The found wrapper instance.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
+        public static ExTeslaGate Get(TeslaGate gate)
+        {
+            if (gate is null)
+                throw new ArgumentNullException(nameof(gate));
+
+            if (!Lookup.TryGetValue(gate, out var wrapper))
+                throw new KeyNotFoundException($"Could not find a Tesla Gate (ID={gate.netId})");
+            
+            return wrapper;
+        }
         
         internal ExTeslaGate(TeslaGate baseValue) : base(baseValue) { }
 
@@ -47,11 +84,6 @@ namespace LabExtended.API
         /// Gets a <see cref="HashSet{T}"/> of teams ignored by all tesla gates.
         /// </summary>
         public static HashSet<Team> IgnoredTeams { get; } = new();
-
-        /// <summary>
-        /// Gets or sets a custom tick rate for tesla gates.
-        /// </summary>
-        public static float TickRate { get; set; } = 0.1f;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this tesla gate can be triggered.
@@ -364,17 +396,10 @@ namespace LabExtended.API
 
         private static void OnUpdate()
         {
-            if (TickRate > 0)
-            {
-                _tickCooldown -= Time.deltaTime;
-
-                if (_tickCooldown > 0f)
-                    return;
-                
-                _tickCooldown = TickRate;
-            }
-
-            ExMap.TeslaGates.ForEach(gate =>
+            if (!StaticUnityMethods.IsPlaying)
+                return;
+            
+            Gates.ForEach(gate =>
             {
                 try
                 {
@@ -387,12 +412,36 @@ namespace LabExtended.API
             });
         }
 
+        private static void OnTeslaSpawned(TeslaGate gate)
+        {
+            if (Lookup.ContainsKey(gate))
+                return;
+
+            var wrapper = new ExTeslaGate(gate);
+
+            Gates.Add(wrapper);
+            Lookup.Add(gate, wrapper);
+        }
+
+        private static void OnTeslaDestroyed(TeslaGate gate)
+        {
+            if (!Lookup.TryGetValue(gate, out var wrapper))
+                return;
+            
+            Gates.Remove(wrapper);
+            Lookup.Remove(gate);
+        }
+
         [LoaderInitialize(1)]
         private static void Init()
         {
-            PlayerLoopHelper.ModifySystem(x => 
-                x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(TeslaGateUpdateLoop)) 
-                    ? x : null);
+            TeslaGate.OnAdded += OnTeslaSpawned;
+            TeslaGate.OnRemoved += OnTeslaDestroyed;
+            
+            StaticUnityMethods.OnFixedUpdate += OnUpdate;
+
+            InternalEvents.OnRoundRestart += Lookup.Clear;
+            InternalEvents.OnRoundRestart += Gates.Clear;
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using LabExtended.API.Wrappers;
+using LabExtended.Attributes;
+using LabExtended.Events;
 
 using MapGeneration;
 
@@ -11,6 +13,9 @@ using CameraType = LabExtended.API.Enums.CameraType;
 
 namespace LabExtended.API
 {
+    /// <summary>
+    /// Represents an in-game SCP-079 camera.
+    /// </summary>
     public class Camera : Wrapper<Scp079Camera>
     {
         #region Types
@@ -142,8 +147,80 @@ namespace LabExtended.API
             ["TUNNEL ENTRANCE"] = CameraType.TunnelEntrance,
         };
         #endregion
+
+        /// <summary>
+        /// Gets a list of all SCP-079 cameras.
+        /// </summary>
+        public static Dictionary<Scp079Camera, Camera> Lookup { get; } = new();
+
+        /// <summary>
+        /// Tries to find a wrapper by it's base object.
+        /// </summary>
+        /// <param name="camera">The base object.</param>
+        /// <param name="wrapper">The found wrapper instance.</param>
+        /// <returns>true if the wrapper was found.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGet(Scp079Camera camera, out Camera wrapper)
+        {
+            if (camera is null)
+                throw new ArgumentNullException(nameof(camera));
+            
+            return Lookup.TryGetValue(camera, out wrapper);
+        }
+
+        /// <summary>
+        /// Tries to find a specific wrapper.
+        /// </summary>
+        /// <param name="predicate">The predicate used to search.</param>
+        /// <param name="wrapper">The found wrapper instance.</param>
+        /// <returns>true if the wrapper was found.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static bool TryGet(Func<Camera, bool> predicate, out Camera? wrapper)
+        {
+            if (predicate is null)
+                throw new ArgumentNullException(nameof(predicate));
+
+            foreach (var pair in Lookup)
+            {
+                if (!predicate(pair.Value))
+                    continue;
+                
+                wrapper = pair.Value;
+                return true;
+            }
+
+            wrapper = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets a wrapper by it's base object.
+        /// </summary>
+        /// <param name="camera">The base object.</param>
+        /// <returns>The found wrapper instance.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="KeyNotFoundException"></exception>
+        public static Camera Get(Scp079Camera camera)
+        {
+            if (camera is null)
+                throw new ArgumentNullException(nameof(camera));
+
+            if (!Lookup.TryGetValue(camera, out var wrapper))
+                throw new KeyNotFoundException($"Could not find a camera of ID {camera.SyncId}");
+
+            return wrapper;
+        }
+
+        /// <summary>
+        /// Gets a wrapper by a predicate.
+        /// </summary>
+        /// <param name="predicate">The predicate used to search.</param>
+        /// <returns>The found wrapper instance if found, otherwise null.</returns>
+        /// <exception cref="Exception"></exception>
+        public static Camera? Get(Func<Camera, bool> predicate)
+            => TryGet(predicate, out var wrapper) ? wrapper : null;
         
-        public Camera(Scp079Camera baseValue) : base(baseValue)
+        internal Camera(Scp079Camera baseValue) : base(baseValue)
         {
             if (_cameraTypes.TryGetValue(baseValue.Label, out var type))
             {
@@ -180,36 +257,103 @@ namespace LabExtended.API
             }
         }
 
+        /// <summary>
+        /// Gets the camera's game object.
+        /// </summary>
         public GameObject GameObject => Base.gameObject;
 
+        /// <summary>
+        /// Gets the camera's transform.
+        /// </summary>
         public Transform Transform => Base.transform;
+        
+        /// <summary>
+        /// Gets the camera's anchor transform.
+        /// </summary>
         public Transform Anchor => Base.CameraAnchor;
+        
+        /// <summary>
+        /// Gets the camera's pivot transform.
+        /// </summary>
         public Transform Pivot => Base.HorizontalAxis._pivot;
 
+        /// <summary>
+        /// Gets the camera's current room.
+        /// </summary>
         public RoomIdentifier Room => Base.Room;
-        public ExPlayer User => ExPlayer.Players.FirstOrDefault(x => x.Role.Is<Scp079Role>(out var scp) && scp.CurrentCamera != null && scp.CurrentCamera == Base);
+        
+        /// <summary>
+        /// Gets the player that is currently using this camera.
+        /// </summary>
+        public ExPlayer User => ExPlayer.Players.FirstOrDefault(x => x.Role.Is<Scp079Role>(out var scp) 
+                                                                     && scp.CurrentCamera != null && scp.CurrentCamera == Base);
 
+        /// <summary>
+        /// Gets the camera's name.
+        /// </summary>
         public string Name => Base.name;
 
+        /// <summary>
+        /// Gets the camera's synchronization ID.
+        /// </summary>
         public ushort Id => Base.SyncId;
 
+        /// <summary>
+        /// Gets the camera's current zoom.
+        /// </summary>
         public float Zoom => Base.ZoomAxis.CurValue;
 
+        /// <summary>
+        /// Gets the camera's current vertical axis.
+        /// </summary>
         public float VerticalAxis => Base.VerticalAxis.CurValue;
+        
+        /// <summary>
+        /// Gets the camera's current horizontal axis.
+        /// </summary>
         public float HorizontalAxis => Base.HorizontalAxis.CurValue;
 
+        /// <summary>
+        /// Whether or not this camera is currently being used.
+        /// </summary>
         public bool IsUsed => Base.IsActive;
 
+        /// <summary>
+        /// Gets the camera's position.
+        /// </summary>
         public Vector3 Position => Base.transform.position;
 
+        /// <summary>
+        /// Gets the camera's rotation.
+        /// </summary>
         public Quaternion Rotation => Base.transform.rotation;
+        
+        /// <summary>
+        /// Gets the camera's anchor rotation.
+        /// </summary>
         public Quaternion AnchorRotation => Anchor.rotation;
+        
+        /// <summary>
+        /// Gets the camera's pivot rotation.
+        /// </summary>
         public Quaternion PivotRotation => Pivot.localRotation;
 
+        /// <summary>
+        /// Gets the facility zone that this camera is located in.
+        /// </summary>
         public FacilityZone Zone => Room?.Zone ?? FacilityZone.None;
+        
+        /// <summary>
+        /// Gets the name of the room that this camera is located in.
+        /// </summary>
         public RoomName RoomName => Room?.Name ?? RoomName.Unnamed;
 
+        /// <summary>
+        /// Gets the type of this camera.
+        /// </summary>
         public CameraType Type { get; }
+        
+        // BROKEN
 
         /*
         public void LookAt(Transform transform)
@@ -268,5 +412,23 @@ namespace LabExtended.API
             }
         }
         */
+
+        private static void OnWaiting()
+        {
+            foreach (var interactable in Scp079InteractableBase.AllInstances)
+            {
+                if (interactable is not Scp079Camera camera)
+                    continue;
+                
+                Lookup.Add(camera, new(camera));
+            }
+        }
+
+        [LoaderInitialize(1)]
+        private static void OnInit()
+        {
+            InternalEvents.OnRoundRestart += Lookup.Clear;
+            InternalEvents.OnRoundWaiting += OnWaiting;
+        }
     }
 }

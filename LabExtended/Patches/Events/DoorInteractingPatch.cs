@@ -23,9 +23,7 @@ namespace LabExtended.Patches.Events
             if (!ExPlayer.TryGet(ply, out var player))
                 return true;
 
-            var door = ExMap.GetDoor(__instance);
-
-            if (door is null)
+            if (!Door.TryGet(__instance, out var door))
                 return true;
             
             if (!__instance.AllowInteracting(ply, colliderId))

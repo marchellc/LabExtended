@@ -18,7 +18,7 @@ namespace LabExtended.Commands.Interfaces
 
         bool IsHost { get; }
 
-        void Respond(object response, bool success);
+        void Respond(object response, bool success = true);
 
         void RespondOk(object response);
         void RespondOk(IEnumerable<object> lines);

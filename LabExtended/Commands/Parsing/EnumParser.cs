@@ -141,9 +141,15 @@ namespace LabExtended.Commands.Parsing
             }
             catch (Exception ex)
             {
-                failureMessage = $"Failed to parse enum due to an error:\n{ex}";
+                if (!FormattingEnumCommand.EnumTypes.Contains(EnumType))
+                    FormattingEnumCommand.EnumTypes.Add(EnumType);
+                
+                failureMessage = $"Value \"{value}\" could not be parsed into a valid \"{EnumType.Name}\" enum.\n" +
+                                 $"You can view a list of valid values by using the \"formatting enum {EnumType.Name}\" command" +
+                                 $" (or \"formatting enum {EnumType.FullName}\" if there are more enums with the same name)." +
+                                 $"\nError: {ex.Message}";
+                
                 result = null;
-
                 return false;
             }
         }

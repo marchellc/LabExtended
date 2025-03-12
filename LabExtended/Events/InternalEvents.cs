@@ -45,7 +45,9 @@ namespace LabExtended.Events
         private static void InternalHandleRoundRestart()
         {
             ExRound.State = RoundState.Restarting;
-            ExMap.TeslaGates.Clear();
+            
+            ExTeslaGate.Gates.Clear();
+            ExTeslaGate.Lookup.Clear();
             
             OnRoundRestart.InvokeSafe();
             

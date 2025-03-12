@@ -46,7 +46,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the elevator this player is currently in.
         /// </summary>
-        public Elevator? CurrentElevator => ExMap.GetElevator(Position);
+        public Elevator? CurrentElevator => Elevator.Get(x => x.Contains(Player));
 
         /// <summary>
         /// Gets the closest elevator.
@@ -58,24 +58,24 @@ namespace LabExtended.API.Containers
                 var closestLift = default(Elevator);
                 var closestDistance = 0f;
                 
-                ExMap.Elevators.ForEach(lift =>
+                foreach (var pair in Elevator.Lookup)
                 {
                     if (closestLift is null)
                     {
-                        closestLift = lift;
-                        closestDistance = Vector3.Distance(lift.Position, Position);
+                        closestLift = pair.Value;
+                        closestDistance = Vector3.Distance(pair.Value.Position, Position);
 
-                        return;
+                        continue;
                     }
 
-                    var distance = Vector3.Distance(lift.Position, Position);
+                    var distance = Vector3.Distance(pair.Value.Position, Position);
 
                     if (distance > closestDistance)
-                        return;
+                        continue;
 
-                    closestLift = lift;
+                    closestLift = pair.Value;
                     closestDistance = distance;
-                });
+                }
 
                 return closestLift;
             }
@@ -91,24 +91,24 @@ namespace LabExtended.API.Containers
                 var closestDoor = default(Door);
                 var closestDistance = 0f;
                 
-                ExMap.Doors.ForEach(door =>
+                foreach (var pair in Door.Lookup)
                 {
                     if (closestDoor is null)
                     {
-                        closestDoor = door;
-                        closestDistance = Vector3.Distance(door.Position, Position);
+                        closestDoor = pair.Value;
+                        closestDistance = Vector3.Distance(pair.Value.Position, Position);
 
-                        return;
+                        continue;
                     }
 
-                    var distance = Vector3.Distance(door.Position, Position);
+                    var distance = Vector3.Distance(pair.Value.Position, Position);
 
                     if (distance > closestDistance)
-                        return;
+                        continue;
 
-                    closestDoor = door;
+                    closestDoor = pair.Value;
                     closestDistance = distance;
-                });
+                }
 
                 return closestDoor;
             }
@@ -123,25 +123,25 @@ namespace LabExtended.API.Containers
             {
                 var closestCamera = default(Camera);
                 var closestDistance = 0f;
-                
-                ExMap.Cameras.ForEach(cam =>
+
+                foreach (var pair in Camera.Lookup)
                 {
                     if (closestCamera is null)
                     {
-                        closestCamera = cam;
-                        closestDistance = Vector3.Distance(cam.Position, Position);
+                        closestCamera = pair.Value;
+                        closestDistance = Vector3.Distance(pair.Value.Position, Position);
 
-                        return;
+                        continue;
                     }
 
-                    var distance = Vector3.Distance(cam.Position, Position);
+                    var distance = Vector3.Distance(pair.Value.Position, Position);
 
                     if (distance > closestDistance)
-                        return;
+                        continue;
 
-                    closestCamera = cam;
+                    closestCamera = pair.Value;
                     closestDistance = distance;
-                });
+                }
 
                 return closestCamera;
             }

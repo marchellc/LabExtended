@@ -181,19 +181,18 @@ public class PrimitiveImageToy : IDisposable
             
             for (int y = width; y > 0; y--)
             {
-                var primitive = PrimitiveToy.Spawn(Vector3.zero, x =>
+                var primitive = new PrimitiveToy(PrimitiveType.Cube)
                 {
-                    x.MovementSmoothing = 0;
-                    x.Type = PrimitiveType.Cube;
-                    x.IsStatic = true;
-
-                    var transform = x.Transform;
+                    MovementSmoothing = 0,
+                    IsStatic = true
+                };
+                
+                var transform = primitive.Transform;
                     
-                    transform.localScale = new Vector3(size, size, size);
-                    transform.localPosition = new Vector3(y * 0.05f * scale - centerDelta, yAxis, 0);
+                transform.localScale = new Vector3(size, size, size);
+                transform.localPosition = new Vector3(y * 0.05f * scale - centerDelta, yAxis, 0);
                     
-                    transform.SetParent(parent.transform);
-                });
+                transform.SetParent(parent.transform);
 
                 list.Add(primitive);
             }

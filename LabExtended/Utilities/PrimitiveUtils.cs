@@ -46,23 +46,17 @@ namespace LabExtended.Utilities
             var lineCol = lineColor.HasValue ? lineColor.Value : Color.blue;
             var endColor = endCubeColor.HasValue ? endCubeColor.Value : Color.blue;
 
-            var startCube = PrimitiveToy.Spawn(startPosition, x =>
+            var startCube = new PrimitiveToy(PrimitiveType.Cube, flags)
             {
-                x.Base.NetworkPrimitiveType = PrimitiveType.Cube;
-                x.Base.NetworkPrimitiveFlags = flags;
-                
-                x.Base.NetworkMaterialColor = startColor;
-                x.Base.NetworkScale = x.Transform.localScale = startCubeScale;
-            });
+                Color = startColor,
+                Scale = startCubeScale
+            };
 
-            var endCube = PrimitiveToy.Spawn(endPosition, x =>
+            var endCube = new PrimitiveToy(PrimitiveType.Cube, flags)
             {
-                x.Base.NetworkPrimitiveType = PrimitiveType.Cube;
-                x.Base.NetworkPrimitiveFlags = flags;
-                
-                x.Base.NetworkMaterialColor = endColor;
-                x.Base.NetworkScale = x.Transform.localScale = endCubeScale; 
-            });
+                Color = endColor,
+                Scale = endCubeScale
+            };
 
             var line = SpawnLine(startPosition, endPosition, lineSize, lineCol, flags, lineType);
             return (startCube, endCube, line);
@@ -74,14 +68,14 @@ namespace LabExtended.Utilities
             var position = startPosition + (endPosition - startPosition) * 0.5f;
             var rotation = Quaternion.LookRotation(endPosition - startPosition) * Quaternion.Euler(90f, 0f, 0f);
 
-            return PrimitiveToy.Spawn(position, x =>
+            return new PrimitiveToy(type, flags)
             {
-                x.Base.NetworkRotation = x.Base.transform.rotation = rotation;
-                x.Base.NetworkScale = x.Base.transform.localScale = scale;
-                x.Base.NetworkMaterialColor = color.HasValue ? color.Value : Color.white;
-                x.Base.NetworkPrimitiveFlags = flags;
-                x.Base.NetworkPrimitiveType = type;
-            });
+                Rotation = rotation,
+                Position = position,
+                Scale = scale,
+                
+                Color = color ?? Color.white
+            };
         }
 
         public static void UpdateLine(PrimitiveToy toy, Vector3 startPosition, Vector3 endPosition, float size = 0.01f)
