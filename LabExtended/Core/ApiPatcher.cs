@@ -11,6 +11,8 @@ namespace LabExtended.Core
 {
     public static class ApiPatcher
     {
+        public static bool TranspilerDebug { get; set; }
+        
         public static Harmony Harmony { get; } = new($"labextended.patcher.{DateTime.Now.Ticks}");
 
         public static Stopwatch Stopwatch { get; } = new();

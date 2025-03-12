@@ -411,10 +411,18 @@ public static class CustomItemManager
         player.customItems.Clear();
     }
 
+    private static void OnWaiting()
+    {
+        PickupItems.Clear();
+        InventoryItems.Clear();
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
         ItemPickupBase.OnPickupDestroyed += OnItemDespawned;
+        
         InternalEvents.OnPlayerLeft += OnPlayerLeft;
+        InternalEvents.OnRoundWaiting += OnWaiting;
     }
 }

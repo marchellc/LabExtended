@@ -6,6 +6,9 @@ namespace LabExtended.Core.Configs
     {
         [Description("Toggles logging of debug messages.")]
         public bool DebugEnabled { get; set; }
+        
+        [Description("Toggles debug logs of transpilers.")]
+        public bool TranspilerDebugEnabled { get; set; }
 
         [Description("Toggles true color log formatting.")]
         public bool TrueColorEnabled { get; set; } = true;

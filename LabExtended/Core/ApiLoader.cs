@@ -9,7 +9,9 @@ using LabExtended.Patches.Functions;
 using Serialization;
 
 using System.Reflection;
+
 using CommandSystem.Commands.Shared;
+
 using LabApi.Loader;
 using LabApi.Loader.Features.Paths;
 using LabApi.Loader.Features.Plugins;
@@ -72,6 +74,7 @@ namespace LabExtended.Core
                     ApiConfig = YamlParser.Deserializer.Deserialize<ApiConfig>(File.ReadAllText(ApiConfigPath));
 
                 ApiLog.IsTrueColorEnabled = BaseConfig?.TrueColorEnabled ?? true;
+                ApiPatcher.TranspilerDebug = BaseConfig?.TranspilerDebugEnabled ?? false;
             }
             catch (Exception ex)
             {
@@ -97,7 +100,7 @@ namespace LabExtended.Core
         {
             ApiLog.Info("Extended Loader", $"LabAPI has finished loading, registering plugin hooks.");
 
-            LogPatch.OnLogging -= LogHandler;
+            ServerEvents.Logging -= LogHandler;
 
             var loadedAssemblies = ListPool<Assembly>.Shared.Rent();
             
@@ -182,7 +185,7 @@ namespace LabExtended.Core
             else
                 BuildInfoCommand.ModDescription = $"\nLabExtended v{ApiVersion.Version}";
 
-            LogPatch.OnLogging += LogHandler;
+            ServerEvents.Logging += LogHandler;
             ServerEvents.Quitting += QuitHandler;
             
             typeof(ApiLoader).Assembly.InvokeStaticMethods(

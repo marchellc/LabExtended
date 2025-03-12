@@ -1,32 +1,32 @@
-﻿using HarmonyLib;
+﻿using System.Reflection;
+using System.Reflection.Emit;
+
+using HarmonyLib;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions
 {
     [HarmonyPatch(typeof(ServerConsole), nameof(ServerConsole.AddLog))]
     public static class LogPatch
     {
-        public static event Action<string> OnLogging;
-
-        public static bool Prefix(string q, ConsoleColor color)
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions,
+            MethodBase originalMethod)
         {
-            if (string.IsNullOrWhiteSpace(q))
-                return false;
-
-            try
+            return generator.RunTranspiler(instructions, originalMethod, ctx =>
             {
-                OnLogging?.Invoke(q);
-            }
-            catch { }
-
-            ServerConsole.PrintOnOutputs(q, color);
-            ServerConsole.PrintFormattedString(q, color);
-
-            return false;
+                ctx.FindIndex(OpCodes.Call,
+                    AccessTools.Method(typeof(ServerConsole), nameof(ServerConsole.PrintOnOutputs)));
+                
+                ctx.LoadZeroArgument();
+                ctx.Call(typeof(ServerEvents), nameof(ServerEvents.OnLogging), false);
+            });
         }
-        
+
         [LoaderInitialize(-1)]
         private static void OnInit() => ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
     }

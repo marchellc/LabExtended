@@ -74,6 +74,8 @@ namespace LabExtended.Patches.Functions.Items
                         {
                             curCustomItem.IsHeld = false;
                             curCustomItem.OnDeselected();
+
+                            player.Inventory.heldCustomItem = null;
                         }
                     }
                     else
@@ -85,12 +87,16 @@ namespace LabExtended.Patches.Functions.Items
                         {
                             curCustomItem.IsHeld = false;
                             curCustomItem.OnDeselected();
+
+                            player.Inventory.heldCustomItem = null;
                         }
 
                         if (newCustomItem != null)
                         {
                             newCustomItem.IsHeld = true;
                             newCustomItem.OnSelected();
+
+                            player.Inventory.heldCustomItem = newCustomItem;
                         }
                     }
                 }
@@ -106,12 +112,12 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         curCustomItem.IsHeld = false;
                         curCustomItem.OnDeselected();
+
+                        player.Inventory.heldCustomItem = null;
                     }
                 }
-
-                var switchedArgs = new PlayerSelectedItemArgs(player, curItem, newItem, prevIdentifier, __instance.CurItem);
-
-                HookRunner.RunEvent(switchedArgs);
+                
+                HookRunner.RunEvent(new PlayerSelectedItemArgs(player, curItem, newItem, prevIdentifier, __instance.CurItem));
                 return false;
             }
             catch (Exception ex)

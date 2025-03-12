@@ -3,14 +3,35 @@ using LabExtended.Extensions;
 
 namespace LabExtended.Events;
 
+/// <summary>
+/// Server-related events.
+/// </summary>
 public static class ServerEvents
 {
     private static bool shutdownCalled = false;
     
-    public static event Action Quitting;
+    /// <summary>
+    /// Called when the server process quits.
+    /// </summary>
+    public static event Action? Quitting;
+    
+    /// <summary>
+    /// Called when a new message is printed into the server console.
+    /// </summary>
+    public static event Action<string>? Logging; 
 
+    /// <summary>
+    /// Invokes the Quitting event.
+    /// </summary>
     public static void OnQuitting()
         => Quitting.InvokeSafe();
+
+    /// <summary>
+    /// Invokes the Logging event.
+    /// </summary>
+    /// <param name="log">The message that is being logged.</param>
+    public static void OnLogging(string log)
+        => Logging.InvokeSafe(log);
 
     private static void OnQuit()
     {

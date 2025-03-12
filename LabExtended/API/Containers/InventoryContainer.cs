@@ -17,7 +17,9 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
+
 using LabApi.Events.Arguments.PlayerEvents;
+using LabExtended.API.CustomItems;
 using LabExtended.API.Items.Candies;
 
 namespace LabExtended.API.Containers
@@ -28,6 +30,7 @@ namespace LabExtended.API.Containers
     public class InventoryContainer : IDisposable
     {
         internal HashSet<ItemPickupBase> _droppedItems;
+        internal CustomItemInstance? heldCustomItem;
         internal CandyBag _bag;
 
         /// <summary>
@@ -66,6 +69,11 @@ namespace LabExtended.API.Containers
         /// Gets the inventory item holder.
         /// </summary>
         public InventoryInfo UserInventory => Inventory.UserInventory;
+        
+        /// <summary>
+        /// Gets the currently held Custom Item instance.
+        /// </summary>
+        public CustomItemInstance? HeldCustomItem => heldCustomItem;
 
         /// <summary>
         /// Gets the amount of items in this player's inventory.

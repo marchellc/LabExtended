@@ -100,6 +100,7 @@ namespace LabExtended.Patches.Events
                 CustomItemManager.InventoryItems.Remove(item);
 
                 player.customItems.Remove(item);
+                player.Inventory.heldCustomItem = null;
             }
 
             if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
