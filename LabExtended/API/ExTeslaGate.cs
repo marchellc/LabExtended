@@ -41,12 +41,12 @@ namespace LabExtended.API
         /// <summary>
         /// Gets a <see cref="HashSet{T}"/> of roles ignored by all tesla gates.
         /// </summary>
-        public static HashSet<RoleTypeId> IgnoredRoles { get; } = new HashSet<RoleTypeId>();
+        public static HashSet<RoleTypeId> IgnoredRoles { get; } = new();
 
         /// <summary>
         /// Gets a <see cref="HashSet{T}"/> of teams ignored by all tesla gates.
         /// </summary>
-        public static HashSet<Team> IgnoredTeams { get; } = new HashSet<Team>();
+        public static HashSet<Team> IgnoredTeams { get; } = new();
 
         /// <summary>
         /// Gets or sets a custom tick rate for tesla gates.
