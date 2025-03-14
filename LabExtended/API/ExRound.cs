@@ -32,7 +32,7 @@ namespace LabExtended.API
         
         private static Vector3? _roundStartPosition;
 
-        private static GameObject _roundStart;
+        private static GameObject? _roundStart;
         
         /// <summary>
         /// Gets the round's number.
@@ -48,6 +48,11 @@ namespace LabExtended.API
         /// Gets a value indicating whether the round has ended.
         /// </summary>
         public static bool IsEnded => State is RoundState.Ended;
+        
+        /// <summary>
+        /// Gets a value indicating whether or not the round is currently ending.
+        /// </summary>
+        public static bool IsEnding => State is RoundState.Ending;
 
         /// <summary>
         /// Gets a value indicating whether the round is in progress.
@@ -72,16 +77,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the <see cref="GameObject"/> of the background of the waiting for players screen.
         /// </summary>
-        public static GameObject RoundStartBackground
-        {
-            get
-            {
-                if (_roundStart is null)
-                    _roundStart = GameObject.Find("StartRound");
-
-                return _roundStart;
-            }
-        }
+        public static GameObject? RoundStartBackground => _roundStart ??= GameObject.Find("StartRound");
 
         /// <summary>
         /// Gets the date of this round's start.
@@ -116,12 +112,12 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player who enabled the round lock or <see langword="null"/> if the round lock is disabled.
         /// </summary>
-        public static ExPlayer RoundLockEnabledBy => _roundLockTracking?.EnabledBy ?? null;
+        public static ExPlayer? RoundLockEnabledBy => _roundLockTracking?.EnabledBy ?? null;
 
         /// <summary>
         /// Gets the player who enabled the lobby lock or <see langword="null"/> if the lobby lock is disabled.
         /// </summary>
-        public static ExPlayer LobbyLockEnabledBy => _lobbyLockTracking?.EnabledBy ?? null;
+        public static ExPlayer? LobbyLockEnabledBy => _lobbyLockTracking?.EnabledBy ?? null;
 
         /// <summary>
         /// Gets the <see cref="Footprint"/> of the player who enabled the round lock.
@@ -141,11 +137,15 @@ namespace LabExtended.API
             get => _roundLockTracking;
             set
             {
-                if (!value.HasValue && !_roundLockTracking.HasValue)
-                    return;
-
-                if (value.HasValue && value.Value.EnabledBy is null)
-                    value = new RoundLock(ExPlayer.Host);
+                switch (value)
+                {
+                    case null when !_roundLockTracking.HasValue:
+                        return;
+                    
+                    case { EnabledBy: null }:
+                        value = new(ExPlayer.Host);
+                        break;
+                }
 
                 if (value.HasValue && _roundLockTracking.HasValue && _roundLockTracking.Value.EnabledBy == value.Value.EnabledBy)
                     return;
@@ -154,10 +154,10 @@ namespace LabExtended.API
 
                 RoundSummary.RoundLock = _roundLockTracking.HasValue;
 
-                if (_roundLockTracking.HasValue)
-                    ApiLog.Debug("Round API", $"Round Lock enabled by &3{RoundLockEnabledBy?.Nickname ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? null}&r)");
-                else
-                    ApiLog.Debug("Round API", $"Round Lock disabled.");
+                ApiLog.Debug("Round API",
+                    _roundLockTracking.HasValue
+                        ? $"Round Lock enabled by &3{RoundLockEnabledBy?.Nickname ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? "null"}&r)"
+                        : $"Round Lock disabled.");
             }
         }
 
@@ -169,11 +169,15 @@ namespace LabExtended.API
             get => _lobbyLockTracking;
             set
             {
-                if (!value.HasValue && !_lobbyLockTracking.HasValue)
-                    return;
-
-                if (value.HasValue && value.Value.EnabledBy is null)
-                    value = new RoundLock(ExPlayer.Host);
+                switch (value)
+                {
+                    case null when !_lobbyLockTracking.HasValue:
+                        return;
+                    
+                    case { EnabledBy: null }:
+                        value = new(ExPlayer.Host);
+                        break;
+                }
 
                 if (value.HasValue && _lobbyLockTracking.HasValue && _lobbyLockTracking.Value.EnabledBy == value.Value.EnabledBy)
                     return;
@@ -182,10 +186,10 @@ namespace LabExtended.API
 
                 RoundStart.LobbyLock = _lobbyLockTracking.HasValue;
 
-                if (_lobbyLockTracking.HasValue)
-                    ApiLog.Debug("Round API", $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Nickname ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? null}&r)");
-                else
-                    ApiLog.Debug("Round API", $"Lobby Lock disabled.");
+                ApiLog.Debug("Round API",
+                    _lobbyLockTracking.HasValue
+                        ? $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Nickname ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? "null"}&r)"
+                        : $"Lobby Lock disabled.");
             }
         }
 
@@ -208,7 +212,8 @@ namespace LabExtended.API
                 if (DecontaminationController.Singleton is null)
                     return DecontaminationController.DecontaminationPhase.PhaseFunction.None;
                 
-                if (DecontaminationController.Singleton._nextPhase < 0 || DecontaminationController.Singleton._nextPhase >= DecontaminationController.Singleton.DecontaminationPhases.Length)
+                if (DecontaminationController.Singleton._nextPhase < 0 
+                    || DecontaminationController.Singleton._nextPhase >= DecontaminationController.Singleton.DecontaminationPhases.Length)
                     return DecontaminationController.DecontaminationPhase.PhaseFunction.None;
 
                 return DecontaminationController.Singleton.DecontaminationPhases[DecontaminationController.Singleton._nextPhase].Function;
@@ -230,7 +235,7 @@ namespace LabExtended.API
         public static bool IsRoundLocked
         {
             get => _roundLockTracking.HasValue || RoundSummary.RoundLock;
-            set => RoundLock = value ? new RoundLock(ExPlayer.Host) : null;
+            set => RoundLock = value ? new(ExPlayer.Host) : null;
         }
 
         /// <summary>
@@ -239,7 +244,7 @@ namespace LabExtended.API
         public static bool IsLobbyLocked
         {
             get => _lobbyLockTracking.HasValue || RoundStart.LobbyLock;
-            set => LobbyLock = value ? new RoundLock(ExPlayer.Host) : null;
+            set => LobbyLock = value ? new(ExPlayer.Host) : null;
         }
 
         /// <summary>
@@ -248,7 +253,11 @@ namespace LabExtended.API
         public static bool ShouldRestartOnRoundEnd
         {
             get => RoundEndAction is ServerStatic.NextRoundAction.Restart;
-            set => RoundEndAction = value ? ServerStatic.NextRoundAction.Restart : (RoundEndAction is ServerStatic.NextRoundAction.Restart ? ServerStatic.NextRoundAction.DoNothing : ServerStatic.NextRoundAction.Shutdown);
+            set => RoundEndAction = value 
+                ? ServerStatic.NextRoundAction.Restart 
+                : (RoundEndAction is ServerStatic.NextRoundAction.Restart 
+                    ? ServerStatic.NextRoundAction.DoNothing 
+                    : ServerStatic.NextRoundAction.Shutdown);
         }
 
         /// <summary>
@@ -257,7 +266,11 @@ namespace LabExtended.API
         public static bool ShouldShutdownOnRoundEnd
         {
             get => RoundEndAction is ServerStatic.NextRoundAction.Shutdown;
-            set => RoundEndAction = value ? ServerStatic.NextRoundAction.Shutdown : (RoundEndAction is ServerStatic.NextRoundAction.Shutdown ? ServerStatic.NextRoundAction.DoNothing : ServerStatic.NextRoundAction.Restart);
+            set => RoundEndAction = value 
+                ? ServerStatic.NextRoundAction.Shutdown 
+                : (RoundEndAction is ServerStatic.NextRoundAction.Shutdown 
+                    ? ServerStatic.NextRoundAction.DoNothing 
+                    : ServerStatic.NextRoundAction.Restart);
         }
 
         /// <summary>
@@ -685,7 +698,7 @@ namespace LabExtended.API
         }
 
         [LoaderInitialize(1)]
-        private static void Init()
+        private static void OnInit()
         {
             InternalEvents.OnRoundWaiting += OnRoundWait;
         }

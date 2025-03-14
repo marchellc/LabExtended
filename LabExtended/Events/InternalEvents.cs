@@ -46,9 +46,6 @@ namespace LabExtended.Events
         {
             ExRound.State = RoundState.Restarting;
             
-            ExTeslaGate.Gates.Clear();
-            ExTeslaGate.Lookup.Clear();
-            
             OnRoundRestart.InvokeSafe();
             
             RoundEvents.InvokeRestarted();
@@ -62,6 +59,12 @@ namespace LabExtended.Events
             OnRoundStarted.InvokeSafe();
             
             RoundEvents.InvokeStarted();
+        }
+
+        private static void InternalHandleRoundEnding(RoundEndingEventArgs ev)
+        {
+            if (ev.IsAllowed)
+                ExRound.State = RoundState.Ending;
         }
 
         private static void InternalHandleRoundEnd(RoundEndedEventArgs _)
@@ -111,7 +114,7 @@ namespace LabExtended.Events
             
             player.Dispose();
 
-            if (!player.IsServer && !player.IsNpc)
+            if (player is { IsServer: false, IsNpc: false })
                 ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
         }
 
@@ -128,11 +131,16 @@ namespace LabExtended.Events
         [LoaderInitialize(1)]
         private static void RegisterEvents()
         {
-            EventExtensions.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(typeof(PlayerEvents), nameof(PlayerEvents.PreAuthenticating), InternalHandlePlayerAuth);
-            EventExtensions.InsertFirst<LabEventHandler<RoundEndedEventArgs>>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundEnded), InternalHandleRoundEnd);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.WaitingForPlayers), InternalHandleRoundWaiting);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundRestarted), InternalHandleRoundRestart);
-            EventExtensions.InsertFirst<LabEventHandler>(typeof(LabApi.Events.Handlers.ServerEvents), nameof(LabApi.Events.Handlers.ServerEvents.RoundStarted), InternalHandleRoundStart);
+            var plyEvents = typeof(PlayerEvents);
+            var srvEvents = typeof(ServerEvents);
+            
+            plyEvents.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(nameof(PlayerEvents.PreAuthenticating), InternalHandlePlayerAuth);
+            
+            srvEvents.InsertFirst<LabEventHandler<RoundEndingEventArgs>>(nameof(LabApi.Events.Handlers.ServerEvents.RoundEnding), InternalHandleRoundEnding);
+            srvEvents.InsertFirst<LabEventHandler<RoundEndedEventArgs>>(nameof(LabApi.Events.Handlers.ServerEvents.RoundEnded), InternalHandleRoundEnd);
+            srvEvents.InsertFirst<LabEventHandler>(nameof(LabApi.Events.Handlers.ServerEvents.WaitingForPlayers), InternalHandleRoundWaiting);
+            srvEvents.InsertFirst<LabEventHandler>(nameof(LabApi.Events.Handlers.ServerEvents.RoundRestarted), InternalHandleRoundRestart);
+            srvEvents.InsertFirst<LabEventHandler>(nameof(LabApi.Events.Handlers.ServerEvents.RoundStarted), InternalHandleRoundStart);
         }
     }
 }

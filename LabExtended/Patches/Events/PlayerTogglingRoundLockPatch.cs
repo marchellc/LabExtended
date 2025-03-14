@@ -49,8 +49,6 @@ namespace LabExtended.Patches.Events
                 if (state == ExRound.IsRoundLocked)
                 {
                     response = $"Round Lock is already {(state ? "enabled" : "disabled")}.";
-                    __result = true;
-                    return false;
                 }
                 else
                 {
@@ -59,6 +57,7 @@ namespace LabExtended.Patches.Events
                     if (!HookRunner.RunEvent(args, true))
                     {
                         response = $"Round Lock change prevented by a plugin.";
+                        
                         __result = false;
                         return false;
                     }
@@ -71,8 +70,6 @@ namespace LabExtended.Patches.Events
                     RoundSummary.RoundLock = ExRound.IsRoundLocked;
 
                     response = $"Round Lock {(args.NewState ? "enabled" : "disabled")}.";
-                    __result = true;
-                    return false;
                 }
             }
             else
@@ -82,6 +79,7 @@ namespace LabExtended.Patches.Events
                 if (!HookRunner.RunEvent(args, true))
                 {
                     response = $"Round Lock change prevented by a plugin.";
+                    
                     __result = false;
                     return false;
                 }
@@ -91,12 +89,11 @@ namespace LabExtended.Patches.Events
                 else
                     ExRound.RoundLock = null;
 
-                RoundSummary.RoundLock = ExRound.IsRoundLocked;
-
                 response = $"Round Lock {(args.NewState ? "enabled" : "disabled")}.";
-                __result = true;
-                return false;
             }
+
+            __result = true;
+            return false;
         }
     }
 }

@@ -9,21 +9,26 @@
         /// <summary>
         /// The round is waiting for players.
         /// </summary>
-        WaitingForPlayers = 0,
+        WaitingForPlayers = 1,
 
         /// <summary>
         /// The round is in progress.
         /// </summary>
-        InProgress = 1,
+        InProgress = 2,
 
+        /// <summary>
+        /// The round is ending.
+        /// </summary>
+        Ending = 4,
+        
         /// <summary>
         /// The round has ended.
         /// </summary>
-        Ended = 2,
+        Ended = 8,
 
         /// <summary>
         /// The round is restarting.
         /// </summary>
-        Restarting = 4
+        Restarting = 16
     }
 }
