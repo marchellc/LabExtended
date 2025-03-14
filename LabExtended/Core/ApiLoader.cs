@@ -4,8 +4,6 @@ using LabExtended.Extensions;
 using LabExtended.Core.Configs;
 using LabExtended.Core.Hooking;
 
-using LabExtended.Patches.Functions;
-
 using Serialization;
 
 using System.Reflection;
@@ -18,47 +16,124 @@ using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 
 using LabExtended.Events;
+using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Core
 {
+    /// <summary>
+    /// Responsible for loading LabExtended.
+    /// </summary>
     public class ApiLoader : Plugin
     {
+        /// <summary>
+        /// Initializes a new loader instance.
+        /// </summary>
         public ApiLoader()
         {
             Loader = this;
             LoaderPoint();
         }
         
+        /// <summary>
+        /// The message that LabAPI prints once it starts enabling plugins.
+        /// </summary>
         public const string LoadFinishedMessage = "[LOADER] Enabling all plugins";
+        
+        /// <summary>
+        /// The name of the loader plugin.
+        /// </summary>
         public const string LoaderName = "LabExtended";
         
-        public static string DirectoryPath { get; private set; }
-
-        public static string BaseConfigPath { get; private set; }
-        public static string ApiConfigPath { get; private set; }
-
-        public static BaseConfig BaseConfig { get; private set; }
-        public static ApiConfig ApiConfig { get; private set; }
+        /// <summary>
+        /// Gets the loader's assembly.
+        /// </summary>
+        public static Assembly Assembly { get; } = typeof(ApiLoader).Assembly;
         
-        public static ApiLoader Loader { get; private set; }
+        /// <summary>
+        /// Gets the path to the LabExtended directory.
+        /// </summary>
+        public static string? DirectoryPath { get; private set; }
 
+        /// <summary>
+        /// Gets the path to the base config file.
+        /// </summary>
+        public static string? BaseConfigPath { get; private set; }
+        
+        /// <summary>
+        /// Gets the path to the API config file.
+        /// </summary>
+        public static string? ApiConfigPath { get; private set; }
+
+        /// <summary>
+        /// Gets the base config singleton.
+        /// </summary>
+        public static BaseConfig? BaseConfig { get; private set; }
+        
+        /// <summary>
+        /// Gets the API config singleton.
+        /// </summary>
+        public static ApiConfig? ApiConfig { get; private set; }
+        
+        /// <summary>
+        /// Gets the loader singleton.
+        /// </summary>
+        public static ApiLoader? Loader { get; private set; }
+
+        /// <summary>
+        /// Gets the YAML-serialized string of <see cref="BaseConfig"/>.
+        /// </summary>
         public static string SerializedBaseConfig => YamlParser.Serializer.Serialize(BaseConfig ??= new());
+        
+        /// <summary>
+        /// Gets the YAML-serialized string of <see cref="ApiConfig"/>.
+        /// </summary>
         public static string SerializedApiConfig => YamlParser.Serializer.Serialize(ApiConfig ??= new());
         
+        /// <summary>
+        /// Gets the loader's name.
+        /// </summary>
         public override string Name { get; } = "LabExtended";
+        
+        /// <summary>
+        /// Gets the loader's author.
+        /// </summary>
         public override string Author { get; } = "marchellcx";
+        
+        /// <summary>
+        /// Gets the loader's description.
+        /// </summary>
         public override string Description { get; } = "An extended API for LabAPI.";
         
+        /// <summary>
+        /// Gets the loader's current version.
+        /// </summary>
         public override Version Version => ApiVersion.Version;
+        
+        /// <summary>
+        /// Gets the loader's required LabAPI version.
+        /// </summary>
         public override Version RequiredApiVersion => null;
 
+        /// <summary>
+        /// Gets the loader's priority.
+        /// </summary>
         public override LoadPriority Priority { get; } = LoadPriority.Highest;
 
+        /// <summary>
+        /// Dummy method.
+        /// </summary>
         public override void Enable() { }
+        
+        /// <summary>
+        /// Dummy method.
+        /// </summary>
         public override void Disable() { }
         
+        /// <summary>
+        /// Loads both of loader's configs.
+        /// </summary>
         public static void LoadConfig()
         {
             try
@@ -78,10 +153,13 @@ namespace LabExtended.Core
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Extended Loader", $"Failed to load config files due to an exception:\n{ex.ToColoredString()}");
+                ApiLog.Error("LabExtended", $"Failed to load config files due to an exception:\n{ex.ToColoredString()}");
             }
         }
         
+        /// <summary>
+        /// Saves both of loader's configs.
+        /// </summary>
         public static void SaveConfig()
         {
             try
@@ -91,14 +169,14 @@ namespace LabExtended.Core
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Extended Loader", $"Failed to save config files due to an exception:\n{ex.ToColoredString()}");
+                ApiLog.Error("LabExtended", $"Failed to save config files due to an exception:\n{ex.ToColoredString()}");
             }
         }
         
         // This method is invoked by the LogPatch when LabAPI logs it's "enabling all plugins" line.
         private static void LogPoint()
         {
-            ApiLog.Info("Extended Loader", $"LabAPI has finished loading, registering plugin hooks.");
+            ApiLog.Info("LabExtended", $"LabAPI has finished loading, registering plugin hooks.");
 
             ServerEvents.Logging -= LogHandler;
 
@@ -120,6 +198,8 @@ namespace LabExtended.Core
                     {
                         loadedAssemblies.Add(assembly);
 
+                        assembly.RegisterUpdates();
+                        
                         foreach (var asmType in assembly.GetTypes())
                         {
                             if (asmType == type)
@@ -134,11 +214,11 @@ namespace LabExtended.Core
                     if (loadMethod != null)
                         loadMethod.Invoke(loadMethod.IsStatic ? null : plugin, null);
 
-                    ApiLog.Info("Extended Loader", $"Loaded plugin &3{plugin.Name}&r!");
+                    ApiLog.Info("LabExtended", $"Loaded plugin &3{plugin.Name}&r!");
                 }
                 catch (Exception ex)
                 {
-                    ApiLog.Error("Extended Loader", $"Failed while loading plugin &3{plugin.Name}&r:\n{ex.ToColoredString()}");
+                    ApiLog.Error("LabExtended", $"Failed while loading plugin &3{plugin.Name}&r:\n{ex.ToColoredString()}");
                 }
             }
 
@@ -148,19 +228,19 @@ namespace LabExtended.Core
 
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
             
-            ApiPatcher.ApplyPatches(typeof(ApiLoader).Assembly);
+            ApiPatcher.ApplyPatches(Assembly);
 
-            typeof(ApiLoader).Assembly.InvokeStaticMethods(
+            Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0, 
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
 
-            ApiLog.Info("Extended Loader", $"Loading finished!");
+            ApiLog.Info("LabExtended", $"Loading finished!");
         }
         
         // This method is invoked by the loader.
         private static void LoaderPoint()
         {
-            ApiLog.Info("Extended Loader", $"Loading version &1{ApiVersion.Version}&r ..");
+            ApiLog.Info("LabExtended", $"Loading version &1{ApiVersion.Version}&r ..");
 
             DirectoryPath = Path.Combine(PathManager.Configs.FullName, "LabExtended");
 
@@ -172,13 +252,13 @@ namespace LabExtended.Core
             LoadConfig();
             SaveConfig();
 
-            ApiLog.Info("Extended Loader", $"Config files have been loaded.");
+            ApiLog.Info("LabExtended", $"Config files have been loaded.");
 
             if (!ApiVersion.CheckCompatibility()) return;
             
-            HookManager.RegisterAll(typeof(ApiLoader).Assembly);
+            HookManager.RegisterAll(Assembly);
 
-            ApiLog.Info("Extended Loader", $"Waiting for LabAPI ..");
+            ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
 
             if (!string.IsNullOrWhiteSpace(BuildInfoCommand.ModDescription))
                 BuildInfoCommand.ModDescription += $"\nLabExtended v{ApiVersion.Version}";
@@ -187,9 +267,10 @@ namespace LabExtended.Core
 
             ServerEvents.Logging += LogHandler;
             ServerEvents.Quitting += QuitHandler;
-            
-            typeof(ApiLoader).Assembly.InvokeStaticMethods(
-                x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, 
+
+            Assembly.RegisterUpdates();
+            Assembly.InvokeStaticMethods(
+                x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
         }
 

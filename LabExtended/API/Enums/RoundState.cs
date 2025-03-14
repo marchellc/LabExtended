@@ -3,26 +3,27 @@
     /// <summary>
     /// Used to specify the round's current state.
     /// </summary>
-    public enum RoundState
+    [Flags]
+    public enum RoundState : byte
     {
         /// <summary>
         /// The round is waiting for players.
         /// </summary>
-        WaitingForPlayers,
+        WaitingForPlayers = 0,
 
         /// <summary>
         /// The round is in progress.
         /// </summary>
-        InProgress,
+        InProgress = 1,
 
         /// <summary>
         /// The round has ended.
         /// </summary>
-        Ended,
+        Ended = 2,
 
         /// <summary>
         /// The round is restarting.
         /// </summary>
-        Restarting
+        Restarting = 4
     }
 }

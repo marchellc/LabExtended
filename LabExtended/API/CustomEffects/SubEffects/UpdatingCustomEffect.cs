@@ -1,4 +1,4 @@
-﻿using LabExtended.Utilities;
+﻿using LabExtended.Utilities.Update;
 
 using UnityEngine;
 

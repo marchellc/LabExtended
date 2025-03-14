@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
-using LabExtended.Core;
-using LabExtended.Utilities;
+
+using LabExtended.Utilities.Update;
 
 namespace LabExtended.API.Toys.Primitives;
 
