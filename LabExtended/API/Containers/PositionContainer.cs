@@ -263,6 +263,11 @@ namespace LabExtended.API.Containers
         }
 
         /// <summary>
+        /// Checks if player is grounded.
+        /// </summary>
+        public bool IsGrounded => Player.RoleBase is IFpcRole fpcRole && fpcRole.FpcModule.IsGrounded;
+
+        /// <summary>
         /// Gets the player's current ground position, where player is actually standing on.<br />
         /// Returns <see langword="null" /> when Player isn't grounded.
         /// </summary>
