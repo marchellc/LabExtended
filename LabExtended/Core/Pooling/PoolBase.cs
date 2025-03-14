@@ -5,28 +5,19 @@ using NorthwoodLib.Pools;
 
 namespace LabExtended.Core.Pooling;
 
-public abstract class PoolBase<T> : IDisposable
-    where T : class
+public abstract class PoolBase<T> : IDisposable where T : class
 {
-    public static unsafe int TypeSize { get; } = sizeof(T);
-    
     private volatile List<T> _pool;
 
     public PoolBase()
-    {
-        _pool = new List<T>();
-        PoolManager.Register(this);
-    }
-
-
+        => _pool = new List<T>();
+    
     public PoolBase(int size, int? initialSize = null, Func<T> initialConstructor = null)
     {
         _pool = new List<T>(size);
 
         if (initialSize.HasValue && initialConstructor != null)
             Preload(initialSize.Value, initialConstructor);
-
-        PoolManager.Register(this);
     }
     
     public DateTime CreatedAt { get; } = DateTime.Now;
@@ -137,53 +128,10 @@ public abstract class PoolBase<T> : IDisposable
 
             _pool.Clear();
             _pool = null;
-
-            PoolManager.Unregister(this);
         }
     }
 
     public virtual void HandleNewItem(T item) { }
     public virtual void HandleReturn(T item) { }
     public virtual void HandleRent(T item) { }
-
-    public override string ToString()
-        => StringBuilderPool.Shared.BuildString(x =>
-        {
-            x.Append(Name);
-            x.Append(" (ID: ");
-            x.Append(Id);
-            x.Append(")");
-
-            if (_pool is null)
-            {
-                x.Append(" (disposed)");
-                return;
-            }
-
-            if (_pool.Count < 1)
-            {
-                x.Append(" (empty)");
-                return;
-            }
-
-            try
-            {
-                var size = _pool.Count;
-                var memory = size * TypeSize;
-
-                x.Append("- ");
-                x.Append(size);
-                x.Append(" (");
-                x.Append(Mirror.Utils.PrettyBytes(memory));
-                x.Append(")");
-            }
-            catch (Exception ex)
-            {
-                x.Append("- ");
-                x.Append(_pool.Count);
-                x.Append(" (");
-                x.Append(ex.Message);
-                x.Append(")");
-            }
-        });
 }

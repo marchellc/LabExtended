@@ -2,16 +2,51 @@
 
 namespace LabExtended.Core
 {
+	/// <summary>
+	/// Used to print messages to the server console.
+	/// </summary>
     public static class ApiLog
     {
+	    /// <summary>
+	    /// Whether or not True Color formatting is enabled.
+	    /// </summary>
         public static bool IsTrueColorEnabled { get; set; } = true;
         
-        public static void Info(object msg) => Info(null, msg);
-        public static void Warn(object msg) => Warn(null, msg);
-        public static void Error(object msg) => Error(null, msg);
-        public static void Debug(object msg) => Debug(null, msg);
+	    /// <summary>
+	    /// Prints an INFO message to the console.
+	    /// </summary>
+	    /// <param name="msg">The message.</param>
+        public static void Info(object msg) 
+	        => Info(null, msg);
+        
+	    /// <summary>
+	    /// Prints a WARN message to the console.
+	    /// </summary>
+	    /// <param name="msg">The message.</param>
+        public static void Warn(object msg) 
+	        => Warn(null, msg);
+        
+	    /// <summary>
+	    /// Prints an ERROR message to the console.
+	    /// </summary>
+	    /// <param name="msg">The message.</param>
+        public static void Error(object msg) 
+	        => Error(null, msg);
+        
+	    /// <summary>
+	    /// Prints a DEBUG message to the console.
+	    /// </summary>
+	    /// <param name="msg">The message.</param>
+        public static void Debug(object msg) 
+	        => Debug(null, msg);
 
-        public static void Info(string source, object msg)
+	    /// <summary>
+	    /// Prints an INFO message to the console.
+	    /// </summary>
+	    /// <param name="source">Source of this message.</param>
+	    /// <param name="msg">The message.</param>
+	    /// <exception cref="ArgumentNullException"></exception>
+        public static void Info(string? source, object msg)
         {
 	        if (msg is null)
 		        throw new ArgumentNullException(nameof(msg));
@@ -22,7 +57,13 @@ namespace LabExtended.Core
             AppendLog($"&7[&b&6INFO&B&7] &7[&b&2{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
-        public static void Warn(string source, object msg)
+	    /// <summary>
+	    /// Prints a WARN message to the console.
+	    /// </summary>
+	    /// <param name="source">Source of this message.</param>
+	    /// <param name="msg">The message.</param>
+	    /// <exception cref="ArgumentNullException"></exception>
+        public static void Warn(string? source, object msg)
         {
 	        if (msg is null)
 		        throw new ArgumentNullException(nameof(msg));
@@ -33,7 +74,13 @@ namespace LabExtended.Core
 	        AppendLog($"&7[&b&3WARN&B&7] &7[&b&3{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
-        public static void Error(string source, object msg)
+	    /// <summary>
+	    /// Prints an ERROR message to the console.
+	    /// </summary>
+	    /// <param name="source">Source of this message.</param>
+	    /// <param name="msg">The message.</param>
+	    /// <exception cref="ArgumentNullException"></exception>
+        public static void Error(string? source, object msg)
         {
 	        if (msg is null)
 		        throw new ArgumentNullException(nameof(msg));
@@ -44,7 +91,13 @@ namespace LabExtended.Core
 	        AppendLog($"&7[&b&1ERROR&B&7] &7[&b&1{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
-        public static void Debug(string source, object msg)
+	    /// <summary>
+	    /// Prints a DEBUG message to the console.
+	    /// </summary>
+	    /// <param name="source">Source of this message.</param>
+	    /// <param name="msg">The message.</param>
+	    /// <exception cref="ArgumentNullException"></exception>
+        public static void Debug(string? source, object msg)
         { 
             if (ApiLoader.BaseConfig != null && !ApiLoader.BaseConfig.DebugEnabled)
                 return;
@@ -61,7 +114,13 @@ namespace LabExtended.Core
             AppendLog($"&7[&b&5DEBUG&B&7] &7[&b&5{source}&B&7]&r {msg}", ConsoleColor.White);
         }
 
-        public static bool CheckDebug(string sourceName, bool ifMissingConfig = true)
+	    /// <summary>
+	    /// Checks if a specific source can log debug messages.
+	    /// </summary>
+	    /// <param name="sourceName">The source to check.</param>
+	    /// <param name="ifMissingConfig">What to do if the config has not been loaded yet.</param>
+	    /// <returns>true if the source is allowed to show debug</returns>
+        public static bool CheckDebug(string? sourceName, bool ifMissingConfig = true)
         {
 	        if (ApiLoader.BaseConfig is null)
 		        return ifMissingConfig;
