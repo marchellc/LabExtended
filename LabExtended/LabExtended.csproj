@@ -71,4 +71,19 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Core\Hooking\Enums\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Events\Other\ApplyingDamageArgs.cs" />
+      <Compile Remove="Patches\Events\Scp939RemovingMimicryPatch.cs" />
+      <Compile Remove="Patches\Events\Scp079SpawningPingPatch.cs" />
+      <Compile Remove="Patches\Events\PlayerTogglingLobbyLockPatch.cs" />
+      <Compile Remove="Patches\Events\PlayerDroppingCandyPatch.cs" />
+      <Compile Remove="Patches\Events\PlayerGrantingInventoryPatch.cs" />
+      <Compile Remove="Patches\Events\PlayerTeleportPatch.cs" />
+      <Compile Remove="Patches\Events\PlayerSpawningPatch.cs" />
+    </ItemGroup>
+
 </Project>

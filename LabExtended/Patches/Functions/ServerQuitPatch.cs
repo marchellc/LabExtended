@@ -9,7 +9,7 @@ using LabExtended.Extensions;
 namespace LabExtended.Patches.Functions;
 
 /// <summary>
-/// Patches the <see cref="ServerEvents.Quitting"/> event.
+/// Patches the <see cref="ExServerEvents.Quitting"/> event.
 /// </summary>
 public static class ServerQuitPatch
 {
@@ -21,7 +21,7 @@ public static class ServerQuitPatch
         return generator.RunTranspiler(instructions, originalMethod, ctx =>
         {
             ctx.Index = 0;
-            ctx.Call(typeof(ServerEvents), nameof(ServerEvents.OnQuitting));
+            ctx.Call(typeof(ExServerEvents), nameof(ExServerEvents.OnQuitting));
         });
     }
 }

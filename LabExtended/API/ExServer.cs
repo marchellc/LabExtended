@@ -288,6 +288,6 @@ public static class ExServer
     private static void OnInit()
     {
         StaticUnityMethods.OnFixedUpdate += UpdateTickRateAndTime;
-        ServerEvents.Quitting += OnQuitting;
+        ExServerEvents.Quitting += OnQuitting;
     }
 }

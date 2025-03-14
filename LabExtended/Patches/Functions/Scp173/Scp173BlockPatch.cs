@@ -2,8 +2,7 @@
 
 using LabExtended.API;
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Scp173;
+using LabExtended.Events.Player;
 
 using MapGeneration;
 
@@ -16,7 +15,7 @@ namespace LabExtended.Patches.Functions.Scp173
 {
     public static class Scp173BlockPatch
     {
-        [HookPatch(typeof(PlayerObservingScp173Args), true)]
+        [EventPatch(typeof(PlayerObservingScp173EventArgs), true)]
         [HarmonyPatch(typeof(Scp173ObserversTracker), nameof(Scp173ObserversTracker.IsObservedBy))]
         public static bool Prefix(Scp173ObserversTracker __instance, ReferenceHub target, float widthMultiplier, ref bool __result)
         {
@@ -49,7 +48,7 @@ namespace LabExtended.Patches.Functions.Scp173
 
                 if (!Physics.Linecast(position + vector2.x * widthMultiplier * vector + Vector3.up * vector2.y, position2, VisionInformation.VisionLayerMask))
                 {
-                    var lookingEv = new PlayerObservingScp173Args(scp, player, __instance.CastRole, __instance, vision, vision.IsLooking);
+                    var lookingEv = new PlayerObservingScp173EventArgs(scp, player, __instance.CastRole, __instance, vision, vision.IsLooking);
 
                     if (!HookRunner.RunEvent(lookingEv, true))
                         return __result = false;

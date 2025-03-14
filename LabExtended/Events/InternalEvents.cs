@@ -39,7 +39,7 @@ namespace LabExtended.Events
 
             OnRoundWaiting.InvokeSafe();
             
-            RoundEvents.InvokeWaiting();
+            ExRoundEvents.OnWaitingForPlayers();
         }
 
         private static void InternalHandleRoundRestart()
@@ -48,7 +48,7 @@ namespace LabExtended.Events
             
             OnRoundRestart.InvokeSafe();
             
-            RoundEvents.InvokeRestarted();
+            ExRoundEvents.OnRestarting();
         }
 
         private static void InternalHandleRoundStart()
@@ -58,13 +58,14 @@ namespace LabExtended.Events
 
             OnRoundStarted.InvokeSafe();
             
-            RoundEvents.InvokeStarted();
+            ExRoundEvents.OnStarted();
         }
 
         private static void InternalHandleRoundEnding(RoundEndingEventArgs ev)
         {
-            if (ev.IsAllowed)
-                ExRound.State = RoundState.Ending;
+            ExRound.State = RoundState.Ending;
+            
+            ExRoundEvents.OnEnding();
         }
 
         private static void InternalHandleRoundEnd(RoundEndedEventArgs _)
@@ -73,7 +74,7 @@ namespace LabExtended.Events
 
             OnRoundEnded.InvokeSafe();
             
-            RoundEvents.InvokeEnded();
+            ExRoundEvents.OnEnded();
         }
 
         private static void InternalHandlePlayerAuth(PlayerPreAuthenticatingEventArgs ev)
@@ -132,7 +133,7 @@ namespace LabExtended.Events
         private static void RegisterEvents()
         {
             var plyEvents = typeof(PlayerEvents);
-            var srvEvents = typeof(ServerEvents);
+            var srvEvents = typeof(ExServerEvents);
             
             plyEvents.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(nameof(PlayerEvents.PreAuthenticating), InternalHandlePlayerAuth);
             

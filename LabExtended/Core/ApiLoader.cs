@@ -1,8 +1,6 @@
 ﻿using LabExtended.Attributes;
 using LabExtended.Extensions;
-
 using LabExtended.Core.Configs;
-using LabExtended.Core.Hooking;
 
 using Serialization;
 
@@ -178,7 +176,7 @@ namespace LabExtended.Core
         {
             ApiLog.Info("LabExtended", $"LabAPI has finished loading, registering plugin hooks.");
 
-            ServerEvents.Logging -= LogHandler;
+            ExServerEvents.Logging -= LogHandler;
 
             var loadedAssemblies = ListPool<Assembly>.Shared.Rent();
             
@@ -192,21 +190,10 @@ namespace LabExtended.Core
                     var type = plugin.GetType();
                     var assembly = type.Assembly;
 
-                    HookManager.RegisterAll(type, plugin);
-
                     if (!loadedAssemblies.Contains(assembly))
                     {
                         loadedAssemblies.Add(assembly);
-
                         assembly.RegisterUpdates();
-                        
-                        foreach (var asmType in assembly.GetTypes())
-                        {
-                            if (asmType == type)
-                                continue;
-
-                            HookManager.RegisterAll(asmType, null);
-                        }
                     }
                     
                     var loadMethod = type.FindMethod("ExtendedLoad");
@@ -227,7 +214,7 @@ namespace LabExtended.Core
                 y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
 
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
-            
+
             ApiPatcher.ApplyPatches(Assembly);
 
             Assembly.InvokeStaticMethods(
@@ -255,8 +242,6 @@ namespace LabExtended.Core
             ApiLog.Info("LabExtended", $"Config files have been loaded.");
 
             if (!ApiVersion.CheckCompatibility()) return;
-            
-            HookManager.RegisterAll(Assembly);
 
             ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
 
@@ -265,8 +250,8 @@ namespace LabExtended.Core
             else
                 BuildInfoCommand.ModDescription = $"\nLabExtended v{ApiVersion.Version}";
 
-            ServerEvents.Logging += LogHandler;
-            ServerEvents.Quitting += QuitHandler;
+            ExServerEvents.Logging += LogHandler;
+            ExServerEvents.Quitting += QuitHandler;
 
             Assembly.RegisterUpdates();
             Assembly.InvokeStaticMethods(
@@ -284,7 +269,7 @@ namespace LabExtended.Core
 
         private static void QuitHandler()
         {
-            ServerEvents.Quitting -= QuitHandler;
+            ExServerEvents.Quitting -= QuitHandler;
 
             foreach (var plugin in PluginLoader.Plugins.Keys)
             {

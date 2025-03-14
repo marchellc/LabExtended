@@ -23,7 +23,6 @@ public abstract class PoolBase<T> : IDisposable where T : class
     public DateTime CreatedAt { get; } = DateTime.Now;
 
     public int Size => _pool.Count;
-    public int Id { get; internal set; }
     
     public abstract string Name { get; }
 

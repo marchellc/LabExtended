@@ -46,7 +46,8 @@ namespace LabExtended.Events.Player
         /// </summary>
         public bool GiveSpawnProtection { get; set; } = true;
 
-        internal PlayerChangingRoleArgs(ExPlayer? player, PlayerRoleBase previousRole, PlayerRoleBase newRole, RoleChangeReason changeReason, RoleSpawnFlags spawnFlags, NetworkReader spawnData)
+        internal PlayerChangingRoleArgs(ExPlayer? player, PlayerRoleBase previousRole, PlayerRoleBase newRole, 
+            RoleChangeReason changeReason, RoleSpawnFlags spawnFlags, NetworkReader spawnData)
         {
             Player = player;
             PreviousRole = previousRole;

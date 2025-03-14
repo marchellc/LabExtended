@@ -73,7 +73,7 @@ public class VoiceThread : IDisposable
         Task.Run(UpdateInputQueue);
 
         StaticUnityMethods.OnFixedUpdate += UpdateOutputQueue;
-        ServerEvents.Quitting += Dispose;
+        ExServerEvents.Quitting += Dispose;
     }
 
     public void Dispose()
@@ -82,7 +82,7 @@ public class VoiceThread : IDisposable
             return;
 
         StaticUnityMethods.OnFixedUpdate -= UpdateOutputQueue;
-        ServerEvents.Quitting -= Dispose;
+        ExServerEvents.Quitting -= Dispose;
         
         isDisposed = true;
         

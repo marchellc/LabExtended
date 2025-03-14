@@ -6,7 +6,6 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.Core.Hooking;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
@@ -19,6 +18,7 @@ using PlayerRoles.FirstPersonControl;
 using InventorySystem.Items.Usables;
 
 using LabApi.Events.Arguments.PlayerEvents;
+
 using LabExtended.API.CustomItems;
 using LabExtended.API.Items.Candies;
 

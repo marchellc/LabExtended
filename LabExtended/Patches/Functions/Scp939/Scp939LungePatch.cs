@@ -1,7 +1,8 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking;
+using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Events.Scp939;
 
 using Mirror;
@@ -16,13 +17,11 @@ using UnityEngine;
 
 using Utils.Networking;
 
-using LabExtended.Attributes;
-
 namespace LabExtended.Patches.Functions.Scp939
 {
     public static class Scp939LungePatch
     {
-        [HookPatch(typeof(Scp939LungingArgs), true)]
+        [EventPatch(typeof(Scp939LungingEventArgs), true)]
         [HarmonyPatch(typeof(Scp939LungeAbility), nameof(Scp939LungeAbility.ServerProcessCmd))]
         public static bool Prefix(Scp939LungeAbility __instance, NetworkReader reader)
         {
@@ -37,9 +36,9 @@ namespace LabExtended.Patches.Functions.Scp939
             var relative = reader.ReadRelativePosition();
             var target = ExPlayer.Get(hub);
 
-            var lungingArgs = new Scp939LungingArgs(scp, target, __instance.CastRole, __instance);
+            var lungingArgs = new Scp939LungingEventArgs(scp, target, __instance.CastRole, __instance);
 
-            if (!HookRunner.RunEvent(lungingArgs, true))
+            if (!ExScp939Events.OnLunging(lungingArgs))
                 return false;
 
             if (__instance.State != Scp939LungeState.Triggered)

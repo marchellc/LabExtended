@@ -2,7 +2,7 @@
 
 using LabExtended.API;
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
+using LabExtended.Events;
 using LabExtended.Events.Scp3114;
 
 using Mirror;
@@ -13,7 +13,7 @@ namespace LabExtended.Patches.Functions.Scp3114
 {
     public static class Scp3114StranglePatch
     {
-        [HookPatch(typeof(Scp3114StranglingArgs), true)]
+        [EventPatch(typeof(Scp3114StranglingEventArgs), true)]
         [HarmonyPatch(typeof(Scp3114Strangle), nameof(Scp3114Strangle.ServerProcessCmd))]
         public static bool Prefix(Scp3114Strangle __instance, NetworkReader reader)
         {
@@ -25,7 +25,7 @@ namespace LabExtended.Patches.Functions.Scp3114
 
             if (player != null 
                 && (!scp.Toggles.CanStrangleAs3114 || !player.Toggles.CanBeStrangledBy3114 
-                                                   || !HookRunner.RunEvent(new Scp3114StranglingArgs(scp, player), true)))
+                                                   || !ExScp3114Events.OnStrangling(new(scp, player))))
             {
                 __instance.SyncTarget = null;
 

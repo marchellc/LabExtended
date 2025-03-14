@@ -12,8 +12,6 @@ using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
 
 using LabExtended.Core;
-using LabExtended.Core.Hooking;
-
 using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Events.Settings;
@@ -262,7 +260,7 @@ namespace LabExtended.API.Settings
                     player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                     player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
 
-                    HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, menu, player));
+                    HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(menuSetting, menu, player));
 
                     OnCreated.InvokeSafe(player, menuSetting);
                 }
@@ -409,7 +407,7 @@ namespace LabExtended.API.Settings
                                 player.settingsIdLookup.Add(builtSetting.CustomId, builtSetting);
                                 player.settingsAssignedIdLookup.Add(builtSetting.AssignedId, builtSetting);
 
-                                HookRunner.RunEvent(new SettingsEntryCreatedArgs(builtSetting, null, player));
+                                HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(builtSetting, null, player));
 
                                 OnCreated.InvokeSafe(player, builtSetting);
                             }
@@ -460,7 +458,7 @@ namespace LabExtended.API.Settings
                                         player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                                         player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
                                         
-                                        HookRunner.RunEvent(new SettingsEntryCreatedArgs(menuSetting, builtMenu, player));
+                                        HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(menuSetting, builtMenu, player));
 
                                         OnCreated.InvokeSafe(player, menuSetting);
                                     }
@@ -501,13 +499,13 @@ namespace LabExtended.API.Settings
 
                 if (player.SettingsReport.HasValue)
                 {
-                    HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, player.SettingsReport.Value));
+                    HookRunner.RunEvent(new PlayerSettingsStatusReportReceivedEventArgs(player, userStatusReport, player.SettingsReport.Value));
 
                     player.SettingsReport = userStatusReport;
                     return;
                 }
                 
-                HookRunner.RunEvent(new SettingsStatusReportReceivedArgs(player, userStatusReport, null));
+                HookRunner.RunEvent(new PlayerSettingsStatusReportReceivedEventArgs(player, userStatusReport, null));
 
                 player.SettingsReport = userStatusReport;
             }
@@ -570,7 +568,7 @@ namespace LabExtended.API.Settings
                     
                 entry.InternalOnUpdated();
 
-                HookRunner.RunEvent(new SettingsEntryUpdatedArgs(entry));
+                HookRunner.RunEvent(new PlayerSettingsEntryUpdatedEventArgs(entry));
 
                 OnUpdated.InvokeSafe(player, entry);
 

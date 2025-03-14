@@ -2,7 +2,7 @@
 
 using LabExtended.API;
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
+using LabExtended.Events;
 using LabExtended.Events.Scp049;
 using LabExtended.Extensions;
 
@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions.Scp049
     {
         public static double NullTargetCooldown = 2.5;
 
-        [HookPatch(typeof(Scp049SensingTargetArgs), true)]
+        [EventPatch(typeof(Scp049SensingTargetEventArgs), true)]
         [HarmonyPatch(typeof(Scp049SenseAbility), nameof(Scp049SenseAbility.ServerProcessCmd))]
         public static bool Prefix(Scp049SenseAbility __instance, NetworkReader reader)
         {
@@ -51,12 +51,14 @@ namespace LabExtended.Patches.Functions.Scp049
             if (!__instance.Target.roleManager.CurrentRole.Is<FpcStandardRoleBase>(out var fpc))
                 return false;
 
-            if (!VisionInformation.GetVisionInformation(__instance.Owner, __instance.Owner.PlayerCameraReference, fpc.CameraPosition, fpc.FpcModule.CharController.radius, __instance._distanceThreshold, true, true, 0, false).IsLooking)
+            if (!VisionInformation.GetVisionInformation(__instance.Owner, __instance.Owner.PlayerCameraReference, 
+                    fpc.CameraPosition, fpc.FpcModule.CharController.radius, __instance._distanceThreshold, 
+                    true, true, 0, false).IsLooking)
                 return false;
 
-            var sensingArgs = new Scp049SensingTargetArgs(scp, target, __instance.CastRole, __instance);
+            var sensingArgs = new Scp049SensingTargetEventArgs(scp, target, __instance.CastRole, __instance);
 
-            if (!HookRunner.RunEvent(sensingArgs, true) || sensingArgs.Target is null)
+            if (!ExScp049Events.OnSensingTarget(sensingArgs) || sensingArgs.Target is null)
             {
                 if (sensingArgs.Cooldown > 0)
                     __instance.Cooldown.Trigger(sensingArgs.Cooldown);

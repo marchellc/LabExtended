@@ -5,19 +5,17 @@ using InventorySystem.Items;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
-using LabExtended.Attributes;
 
 using LabExtended.Core;
-using LabExtended.Core.Hooking;
-
+using LabExtended.Attributes;
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class SwitchItemPatch
     {
-        [HookPatch(typeof(PlayerSelectingItemArgs), true)]
-        [HookPatch(typeof(PlayerSelectedItemArgs), true)]
+        [EventPatch(typeof(PlayerSelectingItemArgs), true)]
+        [EventPatch(typeof(PlayerSelectedItemArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.ServerSelectItem))]
         public static bool Prefix(Inventory __instance, ushort itemSerial)
         {

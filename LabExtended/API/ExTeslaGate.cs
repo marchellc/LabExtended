@@ -6,7 +6,6 @@ using LabExtended.API.Wrappers;
 using LabExtended.Attributes;
 
 using LabExtended.Core;
-using LabExtended.Core.Hooking;
 using LabExtended.Events;
 using LabExtended.Events.Map;
 using LabExtended.Events.Player;
@@ -367,9 +366,9 @@ namespace LabExtended.API
             {
                 if (!Base.InProgress)
                 {
-                    var triggerEv = new TeslaGateTriggeringArgs(this, Base.next079burst);
+                    var triggerEv = new TeslaGateTriggeringEventArgs(this, Base.next079burst);
 
-                    if (HookRunner.RunEvent(triggerEv, true))
+                    if (ExMapEvents.OnTeslaGateTriggering(triggerEv))
                     {
                         Base.next079burst = triggerEv.IsInstant;
                         Base.RpcPlayAnimation();
@@ -385,12 +384,12 @@ namespace LabExtended.API
             if (shouldIdle)
             {
                 Base.RpcDoIdle();
-                HookRunner.RunEvent(new TeslaGateStartedIdlingArgs(this));
+                ExMapEvents.OnTeslaGateStartedIdling(new(this));
             }
             else
             {
                 Base.RpcDoneIdling();
-                HookRunner.RunEvent(new TeslaGateStoppedIdlingArgs(this));
+                ExMapEvents.OnTeslaGateStoppedIdling(new(this));
             }
         }
 

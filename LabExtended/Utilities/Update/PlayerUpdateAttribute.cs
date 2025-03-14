@@ -3,7 +3,7 @@
 namespace LabExtended.Utilities.Update;
 
 /// <summary>
-/// Tells the <see cref="PlayerUpdateHelper.RegisterUpdates"/> method that a method markes with this attribute
+/// Tells the <see cref="PlayerUpdateHelper.RegisterUpdates"/> method that a method marked with this attribute
 /// should be registered.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]

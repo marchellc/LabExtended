@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Map;
 using LabExtended.Extensions;
+
+using LabExtended.Events;
+using LabExtended.Events.Map;
 
 using Mirror;
 
@@ -15,8 +16,8 @@ namespace LabExtended.Patches.Functions.Scp106
 {
     public static class Scp106PocketItemsUpdatePatch
     {
-        [HookPatch(typeof(PocketDimensionDroppingItemArgs), true)]
-        [HookPatch(typeof(PocketDimensionDestroyingItemArgs), true)]
+        [EventPatch(typeof(PocketDimensionDroppingItemEventArgs), true)]
+        [EventPatch(typeof(PocketDimensionDestroyingItemEventArgs), true)]
         [HarmonyPatch(typeof(Scp106PocketItemManager), nameof(Scp106PocketItemManager.Update))]
         public static bool Prefix()
         {
@@ -44,13 +45,13 @@ namespace LabExtended.Patches.Functions.Scp106
                         {
                             var pickup = pair.Key;
 
-                            if (item.Remove && HookRunner.RunEvent(new PocketDimensionDestroyingItemArgs(pickup), true))
+                            if (item.Remove && ExMapEvents.OnPocketDimensionDestroyingItem(new(pickup)))
                                 pickup.DestroySelf();
                             else if (pickup.TryGetRigidbody(out var rigidbody))
                             {
-                                var droppingArgs = new PocketDimensionDroppingItemArgs(pickup, item.DropPosition.Position, new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel));
+                                var droppingArgs = new PocketDimensionDroppingItemEventArgs(pickup, item.DropPosition.Position, new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel));
 
-                                if (HookRunner.RunEvent(droppingArgs, true))
+                                if (ExMapEvents.OnPocketDimensionDroppingItem(droppingArgs))
                                 {
                                     rigidbody.velocity = droppingArgs.Velocity;
                                     pickup.transform.position = droppingArgs.Position;

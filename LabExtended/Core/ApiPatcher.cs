@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 
-using LabExtended.Core.Hooking;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
@@ -46,31 +45,31 @@ namespace LabExtended.Core
                         if (!method.HasAttribute<HarmonyPatch>(out var harmonyPatch))
                             continue;
 
-                        var hookPatchAttributes = method.GetCustomAttributes<HookPatchAttribute>();
-                        var hookRegistered = false;
-                        var hookDenied = false;
+                        var eventPatchAttributes = method.GetCustomAttributes<EventPatchAttribute>();
+                        var eventRegistered = false;
+                        var eventDenied = false;
 
-                        foreach (var hookPatch in hookPatchAttributes)
+                        foreach (var eventPatch in eventPatchAttributes)
                         {
-                            if (hookPatch.EventType != null)
+                            if (eventPatch.EventType != null)
                             {
-                                if (config != null && config.DisabledPatches.Contains(hookPatch.EventType.Name))
+                                if (config != null && config.DisabledPatches.Contains(eventPatch.EventType.Name))
                                 {
-                                    ApiLog.Warn("API Patcher", $"Event patch &1{hookPatch.EventType.Name}&r was disabled by config.");
+                                    ApiLog.Warn("API Patcher", $"Event patch &1{eventPatch.EventType.Name}&r was disabled by config.");
 
-                                    hookDenied = true;
+                                    eventDenied = true;
                                     break;
                                 }
 
-                                if (HookManager.AnyRegistered(hookPatch.EventType))
-                                    hookRegistered = true;
+                                if (ApiEvents.CountEvents(eventPatch.EventType) > 0)
+                                    eventRegistered = true;
                             }
                         }
 
-                        if (hookDenied)
+                        if (eventDenied)
                             continue;
 
-                        if (hookPatchAttributes.Any(x => x.EventType != null && !x.IsFunctionPatch) && !hookRegistered)
+                        if (eventPatchAttributes.Any(x => x.EventType != null && !x.IsFunctionPatch) && !eventRegistered)
                             continue;
 
                         if (config != null && config.DisabledPatches.Contains($"{method.DeclaringType.Name}.*"))
@@ -110,9 +109,9 @@ namespace LabExtended.Core
                             {
                                 patches.Add(new Tuple<MethodInfo, MethodBase>(patchMethod, targetMethod));
 
-                                if (hookPatchAttributes.Any())
+                                if (eventPatchAttributes.Any())
                                 {
-                                    foreach (var hookPatch in hookPatchAttributes)
+                                    foreach (var hookPatch in eventPatchAttributes)
                                     {
                                         if (hookPatch.EventType != null)
                                         {
@@ -128,6 +127,8 @@ namespace LabExtended.Core
                                 else
                                 {
                                     OtherPatches.Add(patchMethod, targetMethod);
+                                    
+                                    ApiLog.Debug("API Patcher", $"Applied patch for method &1{targetMethod?.GetMemberName() ?? "null"}&r (&3{patchMethod.Name}&r)");
                                 }
                             }
                             else

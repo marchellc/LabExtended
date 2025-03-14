@@ -39,7 +39,7 @@ public class ImageCommand : VanillaParentCommandBase
 
     [LoaderInitialize(1)]
     private static void OnInit()
-        => RoundEvents.OnRoundRestarted += OnRoundRestart;
+        => ExRoundEvents.Restarting += OnRoundRestart;
     #endregion
 
     public override string Command { get; } = "image";

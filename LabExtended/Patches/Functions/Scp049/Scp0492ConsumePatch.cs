@@ -1,20 +1,19 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Core.Hooking;
+using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Events.Scp0492;
 
 using PlayerRoles;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.PlayableScps.Scp049.Zombies;
 
-using LabExtended.Attributes;
-
 namespace LabExtended.Patches.Functions.Scp049
 {
     public static class Scp0492ConsumePatch
     {
-        [HookPatch(typeof(Scp0492ConsumingRagdollArgs), true)]
+        [EventPatch(typeof(Scp0492ConsumingRagdollEventArgs), true)]
         [HarmonyPatch(typeof(ZombieConsumeAbility), nameof(ZombieConsumeAbility.ServerValidateBegin))]
         public static bool Prefix(ZombieConsumeAbility __instance, BasicRagdoll ragdoll, ref byte __result)
         {
@@ -59,9 +58,9 @@ namespace LabExtended.Patches.Functions.Scp049
                 return false;
             }
 
-            var consumingArgs = new Scp0492ConsumingRagdollArgs(scp, target, ragdoll);
+            var consumingArgs = new Scp0492ConsumingRagdollEventArgs(scp, target, ragdoll);
 
-            if (!HookRunner.RunEvent(consumingArgs, true))
+            if (!ExScp0492Events.OnConsumingRagdoll(consumingArgs))
             {
                 __result = (byte)(consumingArgs.Code == 0 ? 2 : consumingArgs.Code);
                 return false;

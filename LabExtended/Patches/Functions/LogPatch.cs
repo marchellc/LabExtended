@@ -23,7 +23,7 @@ namespace LabExtended.Patches.Functions
                     AccessTools.Method(typeof(ServerConsole), nameof(ServerConsole.PrintOnOutputs)));
                 
                 ctx.LoadZeroArgument();
-                ctx.Call(typeof(ServerEvents), nameof(ServerEvents.OnLogging), false);
+                ctx.Call(typeof(ExServerEvents), nameof(ExServerEvents.OnLogging), false);
             });
         }
 
