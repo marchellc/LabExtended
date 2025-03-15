@@ -7,6 +7,11 @@
     public enum RoundState : byte
     {
         /// <summary>
+        /// The round's state is unknown (not used, mostly here for bitwise operations).
+        /// </summary>
+        Unknown = 0,
+        
+        /// <summary>
         /// The round is waiting for players.
         /// </summary>
         WaitingForPlayers = 1,

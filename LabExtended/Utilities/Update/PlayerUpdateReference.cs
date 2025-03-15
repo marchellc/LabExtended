@@ -31,6 +31,11 @@ public class PlayerUpdateReference
     public RoundState? BlacklistedStates { get; set; } = null;
     
     /// <summary>
+    /// Gets or sets the whitelisted round states.
+    /// </summary>
+    public RoundState? WhitelistedStates { get; set; } = null;
+    
+    /// <summary>
     /// Gets the compiled method to call during OnUpdate.
     /// </summary>
     public Action? OnUpdate { get; internal set; }

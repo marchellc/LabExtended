@@ -105,8 +105,10 @@ public static class PlayerUpdateHelper
                 if (method.CreateDelegate(typeof(Action)) is not Action updateMethod)
                     continue;
 
-                var updateReference = updateMethod.RegisterUpdate(playerUpdateAttribute.TimeDelay,
-                    playerUpdateAttribute.BlacklistedRoundStates);
+                var updateReference = updateMethod.RegisterUpdate(
+                    playerUpdateAttribute.TimeDelay > 0f ? playerUpdateAttribute.TimeDelay : null,
+                    playerUpdateAttribute.BlacklistedRoundStates != RoundState.Unknown ? playerUpdateAttribute.BlacklistedRoundStates : null,
+                    playerUpdateAttribute.WhitelistedRoundStates != RoundState.Unknown ? playerUpdateAttribute.WhitelistedRoundStates : null);
                 
                 if (updateReference is null)
                     continue;
@@ -131,10 +133,11 @@ public static class PlayerUpdateHelper
     /// <param name="onUpdate">The method to register.</param>
     /// <param name="timeDelay">The delay between each execution (in seconds).</param>
     /// <param name="blacklistedStates">The round states at which this method will not be called.</param>
+    /// <param name="whitelistedStates">The only round states at which this method will be called.</param>
     /// <returns>The reference to this update method.</returns>
     /// <exception cref="ArgumentNullException"></exception>
     public static PlayerUpdateReference RegisterUpdate(this Action onUpdate, float? timeDelay = null,
-        RoundState? blacklistedStates = null)
+        RoundState? blacklistedStates = null, RoundState? whitelistedStates = null)
     {
         if (onUpdate is null)
             throw new ArgumentNullException(nameof(onUpdate));
@@ -171,6 +174,10 @@ public static class PlayerUpdateHelper
 
                 reference.RemainingTime = reference.DelayTime;
             }
+
+            if (reference.WhitelistedStates.HasValue
+                && (ExRound.State & reference.WhitelistedStates.Value) != reference.WhitelistedStates.Value)
+                return;
 
             if (reference.BlacklistedStates.HasValue
                 && (ExRound.State & reference.BlacklistedStates.Value) == reference.BlacklistedStates.Value)
