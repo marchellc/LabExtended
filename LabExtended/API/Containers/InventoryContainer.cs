@@ -6,7 +6,7 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.Events.Player;
+using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
 
 using UnityEngine;
@@ -17,11 +17,6 @@ using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
 
-using LabApi.Events.Arguments.PlayerEvents;
-
-using LabExtended.API.CustomItems;
-using LabExtended.API.Items.Candies;
-
 namespace LabExtended.API.Containers
 {
     /// <summary>
@@ -31,7 +26,6 @@ namespace LabExtended.API.Containers
     {
         internal HashSet<ItemPickupBase> _droppedItems;
         internal CustomItemInstance? heldCustomItem;
-        internal CandyBag _bag;
 
         /// <summary>
         /// Creates a new <see cref="InventoryContainer"/> instance.
@@ -84,11 +78,6 @@ namespace LabExtended.API.Containers
         /// Whether or not the player has any items.
         /// </summary>
         public bool HasAnyItems => Inventory.UserInventory.Items.Count > 0;
-
-        /// <summary>
-        /// Gets the player's SCP-330 candy bag (or <see langword="null"/> if the player doesn't have one).
-        /// </summary>
-        public CandyBag CandyBag => _bag;
 
         /// <summary>
         /// Gets a list of all items.
@@ -411,7 +400,7 @@ namespace LabExtended.API.Containers
             if (pickupRigidbody is null)
                 throw new Exception($"Pickup {itemType} cannot be thrown");
 
-            LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(new PlayerThrowingItemEventArgs(Inventory._hub, pickupInstance, pickupRigidbody));
+            LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(new LabApi.Events.Arguments.PlayerEvents.PlayerThrowingItemEventArgs(Inventory._hub, pickupInstance, pickupRigidbody));
             
             var velocity = Inventory._hub.GetVelocity();
             var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
@@ -423,9 +412,6 @@ namespace LabExtended.API.Containers
             velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
             
             velocity *= force;
-
-            HookRunner.RunEvent(new PlayerThrowingItemArgs(ExPlayer.Get(Inventory._hub), itemPrefab, pickupInstance,
-                pickupRigidbody, Inventory._hub.PlayerCameraReference.position, velocity, angular), true);
 
             pickupRigidbody.position = Inventory._hub.PlayerCameraReference.position;
             pickupRigidbody.velocity = velocity;
@@ -459,9 +445,6 @@ namespace LabExtended.API.Containers
                 HashSetPool<ItemPickupBase>.Shared.Return(_droppedItems);
                 _droppedItems = null;
             }
-            
-            _bag?.Dispose();
-            _bag = null;
         }
 
         public override string ToString()

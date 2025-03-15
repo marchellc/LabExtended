@@ -2,6 +2,7 @@
 
 using Interactables.Interobjects.DoorUtils;
 
+using LabExtended.API;
 using LabExtended.Attributes;
 
 using LabExtended.Events;
@@ -24,7 +25,7 @@ namespace LabExtended.Patches.Events
             if (!string.IsNullOrWhiteSpace(doorName) && DoorNametagExtension.NamedDoors.TryGetValue(doorName, out var triggerNameTag))
                 triggerDoor = triggerNameTag.TargetDoor;
 
-            var spawningArgs = new SpawningStructureEventArgs(structure, tr, triggerDoor);
+            var spawningArgs = new SpawningStructureEventArgs(structure, tr, triggerDoor != null ? Door.Get(triggerDoor) : null);
 
             if (!ExMapEvents.OnSpawningStructure(spawningArgs))
                 return false;

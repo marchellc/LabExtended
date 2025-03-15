@@ -1,4 +1,4 @@
-﻿using Interactables.Interobjects.DoorUtils;
+﻿using LabExtended.API;
 
 using MapGeneration.Distributors;
 
@@ -24,7 +24,7 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// The door that needs to be opened for this structure to spawn.
         /// </summary>
-        public DoorVariant TriggerDoor { get; set; }
+        public Door TriggerDoor { get; set; }
 
         /// <summary>
         /// Creates a new <see cref="SpawningStructureEventArgs"/> instance.
@@ -32,7 +32,7 @@ namespace LabExtended.Events.Map
         /// <param name="structure">The structure being spawned.</param>
         /// <param name="transform">The structure's parent transform.</param>
         /// <param name="triggerDoor">The structure's trigger door.</param>
-        public SpawningStructureEventArgs(SpawnableStructure structure, Transform transform, DoorVariant triggerDoor)
+        public SpawningStructureEventArgs(SpawnableStructure structure, Transform transform, Door triggerDoor)
         {
             Structure = structure;
             Transform = transform;

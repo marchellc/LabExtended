@@ -10,16 +10,13 @@ using LabApi.Events.Handlers;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
-using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
+
 using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpScp244Patch
     {
-        [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(Scp244SearchCompletor), nameof(Scp244SearchCompletor.Complete))]
         public static bool Prefix(Scp244SearchCompletor __instance)
         {
@@ -46,20 +43,6 @@ namespace LabExtended.Patches.Functions.Items
             
             if (!pickingUpArgs.IsAllowed)
             {
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-
-            var pickingUpEv = new PlayerPickingUpItemArgs(player, scp244DeployablePickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, false);
-
-            if (!HookRunner.RunEvent(pickingUpEv, true))
-            {
-                if (pickingUpEv.DestroyPickup)
-                {
-                    __instance.TargetPickup.DestroySelf();
-                    return false;
-                }
-
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
@@ -103,19 +86,16 @@ namespace LabExtended.Patches.Functions.Items
 
                     CustomItemManager.PickupItems.Remove(scp244DeployablePickup);
                     CustomItemManager.InventoryItems.Add(item, customItemInstance);
-                    
+
                     player.customItems.Add(item, customItemInstance);
                 }
-                
+
                 scp244DeployablePickup.State = Scp244State.PickedUp;
 
                 __instance.CheckCategoryLimitHint();
 
-                if (pickingUpEv.DestroyPickup)
-                {
-                    scp244DeployablePickup.State = Scp244State.Destroyed;
-                    scp244DeployablePickup.DestroySelf();
-                }
+                scp244DeployablePickup.State = Scp244State.Destroyed;
+                scp244DeployablePickup.DestroySelf();
 
                 PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.ReferenceHub, item));
             }

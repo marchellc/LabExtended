@@ -1,9 +1,12 @@
-﻿using LabExtended.API;
+﻿using LabApi.Events;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
+using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
-using LabExtended.Events.Player;
 
 using LabExtended.Utilities.Unity;
 
@@ -153,16 +156,19 @@ namespace LabExtended.Core.Networking.Synchronization.Position
             }
         }
 
-        private static void OnPlayerRoleChange(PlayerChangedRoleArgs args)
+        private static void OnSpawned(PlayerSpawnedEventArgs args)
         {
-            if (args.PreviousRole is not IFpcRole || args.Player is null)
+            if (args.Player is not ExPlayer player)
+                return;
+            
+            if (args.Role is not IFpcRole)
                 return;
             
             ExPlayer.AllPlayers.ForEach(ply =>
             {
                 if (ply != args.Player && 
-                    args.Player.SentPositions != null &&
-                    args.Player.SentPositions.TryGetValue(ply.NetworkId, out var sent))
+                    player.SentPositions != null &&
+                    player.SentPositions.TryGetValue(ply.NetworkId, out var sent))
                 {
                     sent.IsReset = true;
                 }
@@ -177,7 +183,8 @@ namespace LabExtended.Core.Networking.Synchronization.Position
         [LoaderInitialize(3)]
         private static void Init()
         {
-            InternalEvents.OnRoleChanged += OnPlayerRoleChange;
+            typeof(PlayerEvents).InsertFirst<LabEventHandler<PlayerSpawnedEventArgs>>(nameof(PlayerEvents.Spawned), OnSpawned);
+            
             InternalEvents.OnRoundRestart += OnRoundRestart;
 
             PlayerLoopHelper.ModifySystem(x =>

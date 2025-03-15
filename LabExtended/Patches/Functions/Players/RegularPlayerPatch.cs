@@ -28,7 +28,7 @@ public static class RegularPlayerPatch
             
             Player.Dictionary.Remove(referenceHub);
             
-            InternalEvents.InternalHandlePlayerLeave(player);
+            InternalEvents.HandlePlayerLeave(player);
             
             player.Dispose();
         }

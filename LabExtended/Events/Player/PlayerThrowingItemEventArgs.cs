@@ -1,10 +1,5 @@
-﻿using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
-
+﻿using LabApi.Features.Wrappers;
 using LabExtended.API;
-using LabExtended.API.Containers;
-
-using LabExtended.Core.Events;
 
 using UnityEngine;
 
@@ -13,23 +8,22 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when a player tries to throw an item.
     /// </summary>
-    public class PlayerThrowingItemArgs : BoolCancellableEvent
+    public class PlayerThrowingItemEventArgs : BooleanEventArgs
     {
         /// <summary>
         /// Gets the throwing player.
         /// </summary>
-        public ExPlayer? Player { get; }
+        public ExPlayer Player { get; }
 
         /// <summary>
         /// Gets the item to be thrown.
-        /// <para>This <b>will</b> be a prefab in case it's called by <see cref="InventoryContainer.ThrowItem{T}(ItemType, ushort?)"/>!</para>
         /// </summary>
-        public ItemBase Item { get; }
+        public Item Item { get; }
 
         /// <summary>
         /// Gets the pickup to be thrown.
         /// </summary>
-        public ItemPickupBase Pickup { get; }
+        public Pickup Pickup { get; }
 
         /// <summary>
         /// Gets the pickup's <see cref="UnityEngine.Rigidbody"/>.
@@ -51,7 +45,18 @@ namespace LabExtended.Events.Player
         /// </summary>
         public Vector3 AngularVelocity { get; set; }
 
-        internal PlayerThrowingItemArgs(ExPlayer? player, ItemBase item, ItemPickupBase pickup, Rigidbody rigidbody, Vector3 position, Vector3 velocity, Vector3 angularVelocity)
+        /// <summary>
+        /// Creates a new <see cref="PlayerThrowingItemEventArgs"/> instance.
+        /// </summary>
+        /// <param name="player">The player throwing an item.</param>
+        /// <param name="item">The item being thrown.</param>
+        /// <param name="pickup">Pickup of the item being thrown.</param>
+        /// <param name="rigidbody">Rigidbody component of the item's pickup.</param>
+        /// <param name="position">The starting position of the pickup.</param>
+        /// <param name="velocity">The pickup's velocity.</param>
+        /// <param name="angularVelocity">The pickup's angular velocity.</param>
+        public PlayerThrowingItemEventArgs(ExPlayer player, Item item, Pickup pickup, Rigidbody rigidbody, 
+            Vector3 position, Vector3 velocity, Vector3 angularVelocity)
         {
             Player = player;
             Item = item;

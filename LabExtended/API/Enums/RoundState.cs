@@ -17,12 +17,12 @@
         InProgress = 2,
 
         /// <summary>
-        /// The round is ending.
+        /// The round is ending (before the end screen shows)
         /// </summary>
         Ending = 4,
         
         /// <summary>
-        /// The round has ended.
+        /// The round has ended (occurs ~1.5 secs after Ended).
         /// </summary>
         Ended = 8,
 

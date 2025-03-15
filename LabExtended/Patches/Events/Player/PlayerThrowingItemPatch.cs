@@ -6,25 +6,29 @@ using InventorySystem.Items.Usables.Scp330;
 
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
-
+using LabApi.Features.Wrappers;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
 using LabExtended.Extensions;
+
+using LabExtended.Events;
+using LabExtended.Events.Player;
 
 using PlayerRoles.FirstPersonControl;
 
 using UnityEngine;
 
-namespace LabExtended.Patches.Events
+using PlayerDroppingItemEventArgs = LabExtended.Events.Player.PlayerDroppingItemEventArgs;
+using PlayerThrowingItemEventArgs = LabExtended.Events.Player.PlayerThrowingItemEventArgs;
+
+namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerThrowingItemPatch
     {
-        [HookPatch(typeof(PlayerThrowingItemArgs), true)]
-        [HookPatch(typeof(PlayerDroppingItemArgs), true)]
+        [EventPatch(typeof(PlayerThrowingItemEventArgs), true)]
+        [EventPatch(typeof(PlayerDroppingItemEventArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.UserCode_CmdDropItem__UInt16__Boolean))]
         public static bool Prefix(Inventory __instance, ushort itemSerial, bool tryThrow)
         {
@@ -39,16 +43,16 @@ namespace LabExtended.Patches.Events
             if (!__instance.UserInventory.Items.TryGetValue(itemSerial, out var item) || !item.AllowHolster)
                 return false;
 
-            var droppingArgs = new PlayerDroppingItemEventArgs(player.ReferenceHub, item);
+            var droppingArgs = new LabApi.Events.Arguments.PlayerEvents.PlayerDroppingItemEventArgs(player.ReferenceHub, item);
 
             PlayerEvents.OnDroppingItem(droppingArgs);
 
             if (!droppingArgs.IsAllowed)
                 return false;
 
-            var droppingEv = new PlayerDroppingItemArgs(player, item, tryThrow);
+            var droppingEv = new PlayerDroppingItemEventArgs(player, item, tryThrow);
 
-            if (!HookRunner.RunEvent(droppingEv, true))
+            if (!ExPlayerEvents.OnDroppingItem(droppingEv))
                 return false;
 
             CustomItemManager.InventoryItems.TryGetValue(item, out var customItemInstance);
@@ -73,9 +77,6 @@ namespace LabExtended.Patches.Events
             { 
                 pickup = __instance.ServerDropItem(itemSerial);
             }
-            
-            if (item is Scp330Bag)
-                player.Inventory._bag = null;
 
             __instance.SendItemsNextFrame = true;
 
@@ -105,7 +106,7 @@ namespace LabExtended.Patches.Events
 
             if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
             {
-                var throwingArgs = new PlayerThrowingItemEventArgs(player.ReferenceHub, pickup, rigidbody);
+                var throwingArgs = new LabApi.Events.Arguments.PlayerEvents.PlayerThrowingItemEventArgs(player.ReferenceHub, pickup, rigidbody);
 
                 PlayerEvents.OnThrowingItem(throwingArgs);
 
@@ -121,9 +122,10 @@ namespace LabExtended.Patches.Events
                 velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
                 velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
 
-                var throwingEv = new PlayerThrowingItemArgs(player, item, pickup, rigidbody, __instance._hub.PlayerCameraReference.position, velocity, angular);
+                var throwingEv = new PlayerThrowingItemEventArgs(player, droppingArgs.Item, Pickup.Get(pickup), rigidbody, 
+                    __instance._hub.PlayerCameraReference.position, velocity, angular);
 
-                if (!HookRunner.RunEvent(throwingEv, true))
+                if (!ExPlayerEvents.OnThrowingItem(throwingEv))
                     return false;
 
                 velocity = throwingEv.Velocity;

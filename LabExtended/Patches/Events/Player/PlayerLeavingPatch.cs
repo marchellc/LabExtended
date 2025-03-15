@@ -1,20 +1,21 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
 using LabExtended.Extensions;
+using LabExtended.Attributes;
+
+using LabExtended.Events;
+using LabExtended.Events.Player;
 
 using LiteNetLib;
 
 using Mirror.LiteNetLib4Mirror;
 
-namespace LabExtended.Patches.Events
+namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerLeavingPatch
     {
-        [HookPatch(typeof(PlayerLeavingArgs), true)]
+        [EventPatch(typeof(PlayerLeavingEventArgs))]
         [HarmonyPatch(typeof(LiteNetLib4MirrorServer), nameof(LiteNetLib4MirrorServer.OnPeerDisconnected))]
         public static bool Prefix(NetPeer peer, DisconnectInfo disconnectinfo)
         {
@@ -22,8 +23,8 @@ namespace LabExtended.Patches.Events
             
             if ((player = ExPlayer.Get(peer)) is null)
                 return true;
-
-            HookRunner.RunEvent(new PlayerLeavingArgs(player, disconnectinfo.Reason is DisconnectReason.Timeout, disconnectinfo));
+            
+            ExPlayerEvents.OnLeaving(new(player, disconnectinfo is { Reason: DisconnectReason.Timeout }, disconnectinfo));
             
             LiteNetLib4MirrorCore.LastDisconnectError = disconnectinfo.SocketErrorCode;
             LiteNetLib4MirrorCore.LastDisconnectReason = disconnectinfo.Reason;

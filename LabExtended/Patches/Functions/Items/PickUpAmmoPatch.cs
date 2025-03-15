@@ -9,16 +9,12 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpAmmoPatch
     {
-        [HookPatch(typeof(PlayerPickingUpAmmoArgs), true)]
         [HarmonyPatch(typeof(AmmoSearchCompletor), nameof(AmmoSearchCompletor.Complete))]
         public static bool Prefix(AmmoSearchCompletor __instance)
         {
@@ -38,7 +34,6 @@ namespace LabExtended.Patches.Functions.Items
 
             var curAmmo = __instance.CurrentAmmo;
             var ammo = (uint)Math.Min(curAmmo + ammoPickup.SavedAmmo, __instance.MaxAmmo) - curAmmo;
-
             var pickingUpArgs = new PlayerPickingUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId, (ushort)ammo, ammoPickup);
 
             PlayerEvents.OnPickingUpAmmo(pickingUpArgs);
@@ -48,22 +43,6 @@ namespace LabExtended.Patches.Functions.Items
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
-
-            var pickUpEv = new PlayerPickingUpAmmoArgs(player, ammoPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, (ammoPickup.SavedAmmo - ammo) <= 0, ammo);
-
-            if (!HookRunner.RunEvent(pickUpEv, true))
-            {
-                if (pickUpEv.DestroyPickup)
-                {
-                    __instance.TargetPickup.DestroySelf();
-                    return false;
-                }
-
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-            
-            ammo = pickUpEv.Amount;
 
             if (ammo > 0)
             {
@@ -83,12 +62,8 @@ namespace LabExtended.Patches.Functions.Items
                 PlayerEvents.OnPickedUpAmmo(new PlayerPickedUpAmmoEventArgs(player.ReferenceHub, ammoPickup.Info.ItemId,
                     (ushort)ammo, ammoPickup));
             }
-
-            if (pickUpEv.DestroyPickup)
-                ammoPickup.DestroySelf();
-            else
-                ammoPickup.UnlockPickup();
-
+            
+            ammoPickup.UnlockPickup();
             return false;
         }
     }

@@ -1,4 +1,4 @@
-﻿using InventorySystem.Items.Pickups;
+﻿using LabApi.Features.Wrappers;
 
 namespace LabExtended.Events.Map
 {
@@ -10,13 +10,13 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// Gets the item that is being destroyed.
         /// </summary>
-        public ItemPickupBase Item { get; }
+        public Pickup Pickup { get; }
 
         /// <summary>
         /// Creates a new <see cref="PocketDimensionDestroyingItemEventArgs"/> instance.
         /// </summary>
         /// <param name="item">The item that is being destroyed.</param>
-        public PocketDimensionDestroyingItemEventArgs(ItemPickupBase item)
-            => Item = item;
+        public PocketDimensionDestroyingItemEventArgs(Pickup item)
+            => Pickup = item;
     }
 }

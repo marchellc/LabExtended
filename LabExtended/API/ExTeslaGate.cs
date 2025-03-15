@@ -356,7 +356,7 @@ namespace LabExtended.API
                 if (shouldTrigger || !Base.PlayerInRange(player.ReferenceHub) || Base.InProgress) 
                     continue;
                 
-                if (!HookRunner.RunEvent(new PlayerTriggeringTeslaGateArgs(player, this), true))
+                if (!ExPlayerEvents.OnTriggeringTeslaGate(new(player, this)))
                     continue;
 
                 shouldTrigger = true;

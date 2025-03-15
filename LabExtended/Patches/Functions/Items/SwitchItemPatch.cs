@@ -3,19 +3,23 @@
 using InventorySystem;
 using InventorySystem.Items;
 
+using LabApi.Features.Wrappers;
+
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 
 using LabExtended.Core;
 using LabExtended.Attributes;
+
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class SwitchItemPatch
     {
-        [EventPatch(typeof(PlayerSelectingItemArgs), true)]
-        [EventPatch(typeof(PlayerSelectedItemArgs), true)]
+        [EventPatch(typeof(PlayerSelectingItemEventArgs), true)]
+        [EventPatch(typeof(PlayerSelectedItemEventArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.ServerSelectItem))]
         public static bool Prefix(Inventory __instance, ushort itemSerial)
         {
@@ -34,12 +38,15 @@ namespace LabExtended.Patches.Functions.Items
                 ItemBase newItem = null;
 
                 var prevIdentifier = __instance.NetworkCurItem;
-                var switchingArgs = new PlayerSelectingItemArgs(player, __instance.CurInstance, itemSerial);
+                
+                var switchingArgs = new PlayerSelectingItemEventArgs(player,
+                    curItem != null ? Item.Get(curItem) : null,
+                    newItem != null ? Item.Get(newItem) : null);
 
-                if (!HookRunner.RunEvent(switchingArgs, true))
+                if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
 
-                itemSerial = switchingArgs.NextSerial;
+                itemSerial = switchingArgs.NextItem?.Serial ?? 0;
 
                 var flag = __instance.CurItem.SerialNumber == 0 || __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out curItem) && __instance.CurInstance != null;
 
@@ -115,7 +122,8 @@ namespace LabExtended.Patches.Functions.Items
                     }
                 }
                 
-                HookRunner.RunEvent(new PlayerSelectedItemArgs(player, curItem, newItem, prevIdentifier, __instance.CurItem));
+                ExPlayerEvents.OnSelectedItem(new(player, curItem, newItem, prevIdentifier, 
+                    newItem?.ItemId ?? ItemIdentifier.None));
                 return false;
             }
             catch (Exception ex)

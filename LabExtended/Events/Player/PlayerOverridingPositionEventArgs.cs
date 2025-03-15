@@ -1,5 +1,4 @@
 ﻿using LabExtended.API;
-using LabExtended.Core.Events;
 
 using UnityEngine;
 
@@ -8,7 +7,7 @@ namespace LabExtended.Events.Player
     /// <summary>
     /// Gets called when the player's position is about to get overriden.
     /// </summary>
-    public class PlayerTeleportingArgs : BoolCancellableEvent
+    public class PlayerOverridingPositionEventArgs : BooleanEventArgs
     {
         /// <summary>
         /// Gets the teleporting player.
@@ -25,11 +24,17 @@ namespace LabExtended.Events.Player
         /// </summary>
         public Vector3 NewPosition { get; set; }
 
-        internal PlayerTeleportingArgs(ExPlayer player, Vector3 currentPosition, Vector3 newPosition)
+        /// <summary>
+        /// Creates a new <see cref="PlayerOverridingPositionEventArgs"/> instance.
+        /// </summary>
+        /// <param name="player">The teleporting player.</param>
+        /// <param name="currentPosition">Current position of the player.</param>
+        /// <param name="newPosition">New position of the player.</param>
+        public PlayerOverridingPositionEventArgs(ExPlayer player, Vector3 currentPosition, Vector3 newPosition)
         {
             Player = player;
-            CurrentPosition = currentPosition;
             NewPosition = newPosition;
+            CurrentPosition = currentPosition;
         }
     }
 }

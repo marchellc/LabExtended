@@ -2,8 +2,8 @@
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
+using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Events.Player;
 
 using LabExtended.Utilities.Update;
 using LabExtended.Utilities.Generation;
@@ -246,13 +246,15 @@ namespace LabExtended.API.RemoteAdmin
         {
             IsRemoteAdminOpen = (DateTime.Now - _lastListRequestTime).TotalSeconds < 1.1 + Player.Ping;
 
-            if (IsRemoteAdminOpen != _wasOpen)
-            {
-                _wasOpen = IsRemoteAdminOpen;
+            if (IsRemoteAdminOpen == _wasOpen) 
+                return;
+            
+            _wasOpen = IsRemoteAdminOpen;
 
-                if (IsRemoteAdminOpen)
-                    HookRunner.RunEvent(new PlayerOpenedRemoteAdminArgs(Player));
-            }
+            if (IsRemoteAdminOpen)
+                ExPlayerEvents.OnOpenedRemoteAdmin(new(Player));
+            else
+                ExPlayerEvents.OnClosedRemoteAdmin(new(Player));
         }
     }
 }

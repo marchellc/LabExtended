@@ -1,21 +1,19 @@
 ﻿using CommandSystem;
 using CommandSystem.Commands.RemoteAdmin;
 
-using GameCore;
-
 using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.API.Internal;
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
+
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
-namespace LabExtended.Patches.Events
+namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerTogglingLobbyLockPatch
     {
-        [HookPatch(typeof(PlayerTogglingLobbyLockArgs))]
+        [EventPatch(typeof(PlayerTogglingLobbyLockEventArgs))]
         [HarmonyPatch(typeof(LobbyLockCommand), nameof(LobbyLockCommand.Execute))]
         public static bool Prefix(ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {
@@ -51,51 +49,46 @@ namespace LabExtended.Patches.Events
                 if (state == ExRound.IsLobbyLocked)
                 {
                     response = $"Lobby Lock is already {(state ? "enabled" : "disabled")}.";
+                    
                     __result = true;
                     return false;
                 }
                 else
                 {
-                    var args = new PlayerTogglingLobbyLockArgs(player, !state);
+                    var args = new PlayerTogglingLobbyLockEventArgs(player, state);
 
-                    if (!HookRunner.RunEvent(args, true))
+                    if (!ExPlayerEvents.OnTogglingLobbyLock(args))
                     {
                         response = $"Lobby Lock change prevented by a plugin.";
+                        
                         __result = false;
                         return false;
                     }
+                    
+                    ExRound.IsLobbyLocked = args.IsEnabled;
 
-                    if (args.NewState)
-                        ExRound.LobbyLock = new RoundLock(player);
-                    else
-                        ExRound.LobbyLock = null;
-
-                    RoundStart.LobbyLock = ExRound.IsLobbyLocked;
-
-                    response = $"Lobby Lock {(args.NewState ? "enabled" : "disabled")}.";
+                    response = $"Lobby Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
+                    
                     __result = true;
                     return false;
                 }
             }
             else
             {
-                var args = new PlayerTogglingLobbyLockArgs(player, ExRound.IsLobbyLocked);
+                var args = new PlayerTogglingLobbyLockEventArgs(player, !ExRound.IsLobbyLocked);
 
-                if (!HookRunner.RunEvent(args, true))
+                if (!ExPlayerEvents.OnTogglingLobbyLock(args))
                 {
                     response = $"Lobby Lock change prevented by a plugin.";
+                    
                     __result = false;
                     return false;
                 }
+                
+                ExRound.IsLobbyLocked = args.IsEnabled;
 
-                if (args.NewState)
-                    ExRound.LobbyLock = new RoundLock(player);
-                else
-                    ExRound.LobbyLock = null;
-
-                RoundStart.LobbyLock = ExRound.IsLobbyLocked;
-
-                response = $"Lobby Lock {(args.NewState ? "enabled" : "disabled")}.";
+                response = $"Lobby Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
+                
                 __result = true;
                 return false;
             }

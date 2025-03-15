@@ -1,4 +1,4 @@
-﻿using InventorySystem.Items.Pickups;
+﻿using LabApi.Features.Wrappers;
 
 using MapGeneration.Distributors;
 
@@ -17,14 +17,14 @@ namespace LabExtended.Events.Map
         /// <summary>
         /// Gets the spawned pickup.
         /// </summary>
-        public ItemPickupBase Pickup { get; }
+        public Pickup Pickup { get; }
 
         /// <summary>
         /// Creates a new DistributedPickupEventArgs instance.
         /// </summary>
         /// <param name="spawnpoint">The pickup's spawnpoint.</param>
         /// <param name="pickup">The spawned pickup.</param>
-        public DistributedPickupEventArgs(ItemSpawnpoint spawnpoint, ItemPickupBase pickup)
+        public DistributedPickupEventArgs(ItemSpawnpoint spawnpoint, Pickup pickup)
         {
             SpawnPoint = spawnpoint;
             Pickup = pickup;

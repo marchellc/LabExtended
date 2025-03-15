@@ -9,16 +9,13 @@ using LabApi.Events.Handlers;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
-using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
+
 using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpItemPatch
     {
-        [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(ItemSearchCompletor), nameof(ItemSearchCompletor.Complete))]
         public static bool Prefix(ItemSearchCompletor __instance)
         {
@@ -42,20 +39,6 @@ namespace LabExtended.Patches.Functions.Items
 
             if (!pickingUpArgs.IsAllowed)
             {
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-
-            var pickingUpEv = new PlayerPickingUpItemArgs(player, __instance.TargetPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, true);
-
-            if (!HookRunner.RunEvent(pickingUpEv, true))
-            {
-                if (pickingUpEv.DestroyPickup)
-                {
-                    __instance.TargetPickup.DestroySelf();
-                    return false;
-                }
-
                 __instance.TargetPickup.UnlockPickup();
                 return false;
             }
@@ -104,9 +87,7 @@ namespace LabExtended.Patches.Functions.Items
                 }
                 
                 __instance.CheckCategoryLimitHint();
-
-                if (pickingUpEv.DestroyPickup)
-                    __instance.TargetPickup.DestroySelf();
+                __instance.TargetPickup.DestroySelf();
 
                 PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.ReferenceHub, item));
             }

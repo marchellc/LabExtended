@@ -4,16 +4,16 @@ using CommandSystem.Commands.RemoteAdmin;
 using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.API.Internal;
 using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
+
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
-namespace LabExtended.Patches.Events
+namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerTogglingRoundLockPatch
     {
-        [HookPatch(typeof(PlayerTogglingRoundLockArgs))]
+        [EventPatch(typeof(PlayerTogglingRoundLockEventArgs))]
         [HarmonyPatch(typeof(RoundLockCommand), nameof(RoundLockCommand.Execute))]
         public static bool Prefix(ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {
@@ -52,9 +52,9 @@ namespace LabExtended.Patches.Events
                 }
                 else
                 {
-                    var args = new PlayerTogglingRoundLockArgs(player, !state);
+                    var args = new PlayerTogglingRoundLockEventArgs(player, state);
 
-                    if (!HookRunner.RunEvent(args, true))
+                    if (!ExPlayerEvents.OnTogglingRoundLock(args))
                     {
                         response = $"Round Lock change prevented by a plugin.";
                         
@@ -62,34 +62,26 @@ namespace LabExtended.Patches.Events
                         return false;
                     }
 
-                    if (args.NewState)
-                        ExRound.RoundLock = new RoundLock(player);
-                    else
-                        ExRound.RoundLock = null;
+                    ExRound.IsRoundLocked = args.IsEnabled;
 
-                    RoundSummary.RoundLock = ExRound.IsRoundLocked;
-
-                    response = $"Round Lock {(args.NewState ? "enabled" : "disabled")}.";
+                    response = $"Round Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
                 }
             }
             else
             {
-                var args = new PlayerTogglingRoundLockArgs(player, ExRound.IsRoundLocked);
+                var args = new PlayerTogglingRoundLockEventArgs(player, !ExRound.IsRoundLocked);
 
-                if (!HookRunner.RunEvent(args, true))
+                if (!ExPlayerEvents.OnTogglingRoundLock(args))
                 {
                     response = $"Round Lock change prevented by a plugin.";
                     
                     __result = false;
                     return false;
                 }
+                
+                ExRound.IsRoundLocked = args.IsEnabled;
 
-                if (args.NewState)
-                    ExRound.RoundLock = new RoundLock(player);
-                else
-                    ExRound.RoundLock = null;
-
-                response = $"Round Lock {(args.NewState ? "enabled" : "disabled")}.";
+                response = $"Round Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
             }
 
             __result = true;

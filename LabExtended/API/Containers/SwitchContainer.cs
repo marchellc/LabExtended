@@ -10,8 +10,14 @@ namespace LabExtended.API.Containers
     /// </summary>
     public class SwitchContainer
     {
+        /// <summary>
+        /// Default switches for real players.
+        /// </summary>
         public static SwitchContainer DefaultPlayerSwitches { get; } = new();
 
+        /// <summary>
+        /// Default switches for dummy players.
+        /// </summary>
         public static SwitchContainer DefaultNpcSwitches { get; } = new()
         {
             IsVisibleInRemoteAdmin = true,
@@ -30,9 +36,21 @@ namespace LabExtended.API.Containers
             ShouldReceivePositions = false,
         };
 
-        public static SwitchContainer PlayerConfig => ApiLoader.ApiConfig.OtherSection.PlayerToggles;
-        public static SwitchContainer NpcConfig => ApiLoader.ApiConfig.OtherSection.NpcToggles;
+        /// <summary>
+        /// Switches for real players from the config file.
+        /// </summary>
+        public static SwitchContainer PlayerConfig => ApiLoader.ApiConfig?.OtherSection?.PlayerToggles ?? DefaultPlayerSwitches;
+        
+        /// <summary>
+        /// Switches for dummy players from the config file.
+        /// </summary>
+        public static SwitchContainer NpcConfig => ApiLoader.ApiConfig?.OtherSection?.NpcToggles ?? DefaultNpcSwitches;
 
+        /// <summary>
+        /// Gets a new instance of real player switches.
+        /// </summary>
+        /// <param name="useConfigValues">Whether or not to copy values from config.</param>
+        /// <returns>The created instance.</returns>
         public static SwitchContainer GetNewPlayerToggles(bool useConfigValues = true)
         {
             var toggles = new SwitchContainer();
@@ -41,6 +59,11 @@ namespace LabExtended.API.Containers
             return toggles;
         }
 
+        /// <summary>
+        /// Gets a new instance of dummy player switches.
+        /// </summary>
+        /// <param name="useConfigValues">Whether or not to copy values from config.</param>
+        /// <returns>The created instance.</returns>
         public static SwitchContainer GetNewNpcToggles(bool useConfigValues = true)
         {
             var toggles = new SwitchContainer();
@@ -298,9 +321,24 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool ShouldReceiveOwnPosition { get; set; } = false;
 
-        public void ResetToPlayer(bool fromConfig = true) => Copy(fromConfig ? PlayerConfig : DefaultPlayerSwitches);
-        public void ResetToNpc(bool fromConfig = true) => Copy(fromConfig ? NpcConfig : DefaultNpcSwitches);
+        /// <summary>
+        /// Resets the values of these switches to real players.
+        /// </summary>
+        /// <param name="fromConfig">Whether or not to reset to values from the config.</param>
+        public void ResetToPlayer(bool fromConfig = true) 
+            => Copy(fromConfig ? PlayerConfig : DefaultPlayerSwitches);
+        
+        /// <summary>
+        /// Resets the values of these switches to dummy players.
+        /// </summary>
+        /// <param name="fromConfig">Whether or not to reset to values from the config.</param>
+        public void ResetToNpc(bool fromConfig = true) 
+            => Copy(fromConfig ? NpcConfig : DefaultNpcSwitches);
 
+        /// <summary>
+        /// Copies switches from another container.
+        /// </summary>
+        /// <param name="other">The other container.</param>
         public void Copy(SwitchContainer other)
         {
             if (other is null)

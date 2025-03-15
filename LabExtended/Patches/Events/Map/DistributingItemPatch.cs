@@ -6,7 +6,7 @@ using InventorySystem.Items.Pickups;
 
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
-
+using LabApi.Features.Wrappers;
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
@@ -146,7 +146,7 @@ namespace LabExtended.Patches.Events.Map
             if (string.IsNullOrWhiteSpace(doorName) || !DoorNametagExtension.NamedDoors.TryGetValue(doorName, out var door))
             {
                 ItemDistributor.SpawnPickup(pickup);
-                ExMapEvents.OnDistributedPickup(new(spawnpoint, pickup));
+                ExMapEvents.OnDistributedPickup(new(spawnpoint, Pickup.Get(pickup)));
             }
             else
                 distributor.RegisterUnspawnedObject(door.TargetDoor, pickup.gameObject);

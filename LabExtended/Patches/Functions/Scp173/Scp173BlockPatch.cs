@@ -2,6 +2,7 @@
 
 using LabExtended.API;
 using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Events.Player;
 
 using MapGeneration;
@@ -46,11 +47,12 @@ namespace LabExtended.Patches.Functions.Scp173
             {
                 var vector2 = visibilityReferencePoints[i];
 
-                if (!Physics.Linecast(position + vector2.x * widthMultiplier * vector + Vector3.up * vector2.y, position2, VisionInformation.VisionLayerMask))
+                if (!Physics.Linecast(position + vector2.x * widthMultiplier * vector + Vector3.up * vector2.y, position2, 
+                        VisionInformation.VisionLayerMask))
                 {
                     var lookingEv = new PlayerObservingScp173EventArgs(scp, player, __instance.CastRole, __instance, vision, vision.IsLooking);
 
-                    if (!HookRunner.RunEvent(lookingEv, true))
+                    if (!ExPlayerEvents.OnObservingScp173(lookingEv))
                         return __result = false;
 
                     if (!lookingEv.IsLooking)

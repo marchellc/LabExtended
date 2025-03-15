@@ -2,7 +2,7 @@
 
 using UserSettings.ServerSpecific;
 
-namespace LabExtended.Events.Settings;
+namespace LabExtended.Events.Player;
 
 public class PlayerSettingsStatusReportReceivedEventArgs : EventArgs
 {

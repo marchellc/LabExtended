@@ -27,7 +27,7 @@ public static class HostPlayerPatch
             Server.Host = player;
             ExPlayer.host = player;
             
-            InternalEvents.InternalHandlePlayerJoin(player);
+            InternalEvents.HandlePlayerJoin(player);
         }
 
         return false;
@@ -40,7 +40,7 @@ public static class HostPlayerPatch
         {
             ExPlayer.host = null;
             
-            InternalEvents.InternalHandlePlayerLeave(hostPlayer);
+            InternalEvents.HandlePlayerLeave(hostPlayer);
             
             hostPlayer.Dispose();
 

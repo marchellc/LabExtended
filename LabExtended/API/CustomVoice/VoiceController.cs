@@ -363,28 +363,31 @@ public class VoiceController : IDisposable
         }
     }
 
-    private void HandleSpawn(PlayerSpawningArgs args)
+    private void HandleSpawn(PlayerSpawningEventArgs args)
     {
-        if (!Player || !args.Player || args.Player != Player)
+        if (args.Player is not ExPlayer player)
+            return;
+
+        if (player != Player)
             return;
         
         foreach (var profile in _profiles)
         {
-            if (!profile.Value.OnChangingRole(args.NewRole))
-            {        
-                if (profile.Value.IsActive)
-                {
-                    profile.Value.IsActive = false;
-                    profile.Value.Disable();
-                }
+            if (!profile.Value.OnChangingRole(args.Role.RoleTypeId))
+            {
+                if (!profile.Value.IsActive) 
+                    continue;
+                
+                profile.Value.IsActive = false;
+                profile.Value.Disable();
             }
             else
             {
-                if (!profile.Value.IsActive)
-                {
-                    profile.Value.Enable();
-                    profile.Value.IsActive = true;
-                }
+                if (profile.Value.IsActive)
+                    continue;
+                
+                profile.Value.Enable();
+                profile.Value.IsActive = true;
             }
         }
     }

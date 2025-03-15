@@ -10,16 +10,13 @@ using LabApi.Events.Handlers;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
-using LabExtended.Core.Hooking;
+
 using LabExtended.Extensions;
-using LabExtended.Events.Player;
-using LabExtended.Attributes;
 
 namespace LabExtended.Patches.Functions.Items
 {
     public static class PickUpArmorPatch
     {
-        [HookPatch(typeof(PlayerPickingUpItemArgs), true)]
         [HarmonyPatch(typeof(ArmorSearchCompletor), nameof(ArmorSearchCompletor.Complete))]
         public static bool Prefix(ArmorSearchCompletor __instance)
         {
@@ -76,20 +73,6 @@ namespace LabExtended.Patches.Functions.Items
                 }
             }
 
-            var pickingUpEv = new PlayerPickingUpItemArgs(player, __instance.TargetPickup, __instance, __instance.Hub.searchCoordinator.SessionPipe, __instance.Hub.searchCoordinator, true);
-
-            if (!HookRunner.RunEvent(pickingUpEv, true))
-            {
-                if (pickingUpEv.DestroyPickup)
-                {
-                    __instance.TargetPickup.DestroySelf();
-                    return false;
-                }
-
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-
             ItemBase item = null;
             
             if (customItemInstance != null)
@@ -133,9 +116,8 @@ namespace LabExtended.Patches.Functions.Items
                 
                 if (item is BodyArmor bodyArmor)
                     BodyArmorUtils.RemoveEverythingExceedingLimits(__instance.Hub.inventory, bodyArmor);
-
-                if (pickingUpEv.DestroyPickup)
-                    __instance.TargetPickup.DestroySelf();
+                
+                __instance.TargetPickup.DestroySelf();
 
                 PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(player.ReferenceHub, item));
             }

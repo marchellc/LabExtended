@@ -1,20 +1,22 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
-using LabExtended.Core;
-using LabExtended.Core.Hooking;
+using LabExtended.API.Enums;
 
-using LabExtended.Events.Player;
+using LabExtended.Core;
 using LabExtended.Extensions;
+using LabExtended.Attributes;
+
+using LabExtended.Events;
+using LabExtended.Events.Player;
 
 using RemoteAdmin;
 
-namespace LabExtended.Patches.Events
+namespace LabExtended.Patches.Events.Player
 {
-    public static class PlayerSendingAdminChatMessagePatch
+    public static class PlayerSendingStaffChatMessagePatch
     {
-        [HookPatch(typeof(PlayerSendingAdminChatMessageArgs))]
+        [EventPatch(typeof(PlayerSendingStaffChatMessageEventArgs))]
         [HarmonyPatch(typeof(CommandProcessor), nameof(CommandProcessor.ProcessAdminChat))]
         public static bool Prefix(string q, CommandSender sender)
         {
@@ -27,6 +29,10 @@ namespace LabExtended.Patches.Events
             if (!ExPlayer.TryGet(sender, out var player))
                 return true;
 
+            if (!ExPlayerEvents.OnReceivingRemoteAdminRequest(new(player, RemoteAdminRequestType.StaffChat, q))
+                && !player.IsNorthwoodStaff)
+                return false;
+
             q = Misc.SanitizeRichText(q, "[", "]");
 
             if (string.IsNullOrWhiteSpace(q.Remove("@")))
@@ -35,9 +41,9 @@ namespace LabExtended.Patches.Events
             if (q.Length >= 2000)
                 q = q.SubstringPostfix(2000, "...");
 
-            var sendingArgs = new PlayerSendingAdminChatMessageArgs(player, q);
+            var sendingArgs = new PlayerSendingStaffChatMessageEventArgs(player, q);
 
-            if (!HookRunner.RunEvent(sendingArgs, true))
+            if (!ExPlayerEvents.OnSendingStaffChatMessage(sendingArgs) && !player.IsNorthwoodStaff)
                 return false;
 
             q = sendingArgs.Message;

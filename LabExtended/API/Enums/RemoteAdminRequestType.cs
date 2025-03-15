@@ -34,6 +34,11 @@
         /// A team status request.
         /// </summary>
         TeamStatus = 8,
+        
+        /// <summary>
+        /// Staff chat message.
+        /// </summary>
+        StaffChat = 254,
 
         /// <summary>
         /// External Lookup request.

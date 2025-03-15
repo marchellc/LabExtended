@@ -11,9 +11,20 @@ namespace LabExtended.Events;
 /// </summary>
 public static class ExVoiceChatEvents
 {
+    /// <summary>
+    /// Used to handle the <see cref="ExVoiceChatEvents.ReceivingVoiceMessage"/> event.
+    /// </summary>
     public delegate void ReceivingVoiceMessageEventHandler(ExPlayer player, ExPlayer receiver, ref VoiceMessage message);
+    
+    /// <summary>
+    /// Used to handle the <see cref="ExVoiceChatEvents.SendingVoiceMessage"/> event.
+    /// </summary>
     public delegate void SendingVoiceMessageEventHandler(ExPlayer speaker, ref VoiceMessage message);
 
+    /// <summary>
+    /// Used to handle the <see cref="ExVoiceChatEvents.StoppedSpeaking"/> event.
+    /// <remarks>speakingDuration is in seconds.</remarks>
+    /// </summary>
     public delegate void StoppedSpeakingEventHandler(ExPlayer speaker, float speakingDuration,
         Dictionary<DateTime, VoiceMessage>? sentPackets);
     

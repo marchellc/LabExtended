@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 
+using LabApi.Features.Wrappers;
+
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
@@ -45,11 +47,12 @@ namespace LabExtended.Patches.Functions.Scp106
                         {
                             var pickup = pair.Key;
 
-                            if (item.Remove && ExMapEvents.OnPocketDimensionDestroyingItem(new(pickup)))
+                            if (item.Remove && ExMapEvents.OnPocketDimensionDestroyingItem(new(Pickup.Get(pickup))))
                                 pickup.DestroySelf();
+                            
                             else if (pickup.TryGetRigidbody(out var rigidbody))
                             {
-                                var droppingArgs = new PocketDimensionDroppingItemEventArgs(pickup, item.DropPosition.Position, new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel));
+                                var droppingArgs = new PocketDimensionDroppingItemEventArgs(Pickup.Get(pickup), item.DropPosition.Position, new Vector3(Scp106PocketItemManager.RandomVel, Physics.gravity.y, Scp106PocketItemManager.RandomVel));
 
                                 if (ExMapEvents.OnPocketDimensionDroppingItem(droppingArgs))
                                 {

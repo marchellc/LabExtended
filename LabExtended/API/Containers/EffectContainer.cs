@@ -5,18 +5,15 @@ using CustomRendering;
 using InventorySystem.Items.Usables.Scp244.Hypothermia;
 
 using LabExtended.Core;
+using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.API.CustomEffects;
+using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
 
 using System.Reflection;
-
-using LabExtended.API.CustomEffects;
-using LabExtended.Core.Pooling.Pools;
-
-using LabExtended.Events;
-using LabExtended.Events.Player;
-
+using LabApi.Events.Arguments.PlayerEvents;
 using UnityEngine;
 
 namespace LabExtended.API.Containers
@@ -158,7 +155,7 @@ namespace LabExtended.API.Containers
                 
                 CustomEffects = DictionaryPool<Type, CustomEffect>.Shared.Rent();
 
-                InternalEvents.OnSpawning += OnRoleChanged;
+                InternalEvents.OnRoleChanged += OnRoleChanged;
 
                 if (props.Count != _properties.Count())
                 {
@@ -580,10 +577,10 @@ namespace LabExtended.API.Containers
                 CustomEffects = null;
             }
 
-            InternalEvents.OnSpawning -= OnRoleChanged;
+            InternalEvents.OnRoleChanged -= OnRoleChanged;
         }
 
-        private void OnRoleChanged(PlayerSpawningArgs args)
+        private void OnRoleChanged(PlayerChangedRoleEventArgs args)
         {
             if (!Player || args.Player != Player)
                 return;

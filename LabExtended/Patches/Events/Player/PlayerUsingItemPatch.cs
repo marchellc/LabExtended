@@ -10,21 +10,16 @@ using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomUsables;
-using LabExtended.Attributes;
-using LabExtended.Core.Hooking;
-using LabExtended.Events.Player;
 
 using Mirror;
 
 using UnityEngine;
-
 using Utils.Networking;
 
-namespace LabExtended.Patches.Events
+namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerUsingItemPatch
     {
-        [HookPatch(typeof(PlayerUsingItemArgs))]
         [HarmonyPatch(typeof(UsableItemsController), nameof(UsableItemsController.ServerReceivedStatus))]
         public static bool Prefix(NetworkConnection conn, StatusMessage msg)
         {
@@ -76,18 +71,16 @@ namespace LabExtended.Patches.Events
                 if (!curUsable.CanStartUsing)
                     return false;
 
-                var usingArgs = new PlayerUsingItemArgs(player, curUsable, UsableItemsController.GetCooldown(curUsable.ItemSerial, curUsable, player.Inventory.UsableItemsHandler), curUsable.ItemTypeId.GetSpeedMultiplier(player.ReferenceHub));
-
-                if (!HookRunner.RunEvent(usingArgs, true))
-                    return false;
-
-                if (usingArgs.RemainingCooldown > 0f)
+                var cooldown = UsableItemsController.GetCooldown(curUsable.ItemSerial, curUsable, player.Inventory.UsableItemsHandler);
+                var speed = curUsable.ItemTypeId.GetSpeedMultiplier(player.ReferenceHub);
+                
+                if (cooldown > 0f)
                 {
-                    player.Connection.Send(new ItemCooldownMessage(curUsable.ItemSerial, usingArgs.RemainingCooldown));
+                    player.Connection.Send(new ItemCooldownMessage(curUsable.ItemSerial, cooldown));
                     return false;
                 }
 
-                if (usingArgs.SpeedMultiplier > 0f)
+                if (speed > 0f)
                 {
                     var usingEventArgs = new PlayerUsingItemEventArgs(player.ReferenceHub, curUsable);
 

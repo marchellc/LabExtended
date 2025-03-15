@@ -56,7 +56,7 @@ namespace LabExtended.API;
 public class ExPlayer : Player, IDisposable
 {
     internal static Dictionary<string, string> preauthData = new(byte.MaxValue);
-    internal static ExPlayer host;
+    internal static ExPlayer? host;
 
     /// <summary>
     /// Gets a list of all players on the server.
@@ -110,7 +110,7 @@ public class ExPlayer : Player, IDisposable
             {
                 host = new(hostHub, SwitchContainer.GetNewNpcToggles(true));
 
-                InternalEvents.InternalHandlePlayerJoin(host);
+                InternalEvents.HandlePlayerJoin(host);
 
                 Server.Host = host;
                 return host;
@@ -1173,6 +1173,7 @@ public class ExPlayer : Player, IDisposable
     public void Send<T>(T message, int channel = 0) where T : struct, NetworkMessage
         => (ClientConnection ?? Connection)?.Send(message, channel);
 
+    /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
         if (host != null && host == this)

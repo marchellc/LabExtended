@@ -14,7 +14,6 @@ using LabExtended.API.Settings.Entries.Dropdown;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Events.Settings;
 
 using NorthwoodLib.Pools;
 
@@ -35,9 +34,6 @@ namespace LabExtended.API.Settings
             get => ServerSpecificSettingsSync.Version;
             set => ServerSpecificSettingsSync.Version = value;
         }
-
-        public static event Action<ExPlayer?, SettingsEntry> OnUpdated;
-        public static event Action<ExPlayer, SettingsEntry> OnCreated;
 
         public static void SyncEntries(ExPlayer player)
         {
@@ -259,10 +255,8 @@ namespace LabExtended.API.Settings
 
                     player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                     player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
-
-                    HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(menuSetting, menu, player));
-
-                    OnCreated.InvokeSafe(player, menuSetting);
+                    
+                    ExPlayerEvents.OnSettingsEntryCreated(new(menuSetting, menu, player));
                 }
             }
             
@@ -407,9 +401,7 @@ namespace LabExtended.API.Settings
                                 player.settingsIdLookup.Add(builtSetting.CustomId, builtSetting);
                                 player.settingsAssignedIdLookup.Add(builtSetting.AssignedId, builtSetting);
 
-                                HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(builtSetting, null, player));
-
-                                OnCreated.InvokeSafe(player, builtSetting);
+                                ExPlayerEvents.OnSettingsEntryCreated(new(builtSetting, null, player));
                             }
                         }
 
@@ -458,9 +450,7 @@ namespace LabExtended.API.Settings
                                         player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                                         player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
                                         
-                                        HookRunner.RunEvent(new PlayerSettingsEntryCreatedEventArgs(menuSetting, builtMenu, player));
-
-                                        OnCreated.InvokeSafe(player, menuSetting);
+                                        ExPlayerEvents.OnSettingsEntryCreated(new(menuSetting, builtMenu, player));
                                     }
                                 }
                             }
@@ -499,13 +489,13 @@ namespace LabExtended.API.Settings
 
                 if (player.SettingsReport.HasValue)
                 {
-                    HookRunner.RunEvent(new PlayerSettingsStatusReportReceivedEventArgs(player, userStatusReport, player.SettingsReport.Value));
-
+                    ExPlayerEvents.OnSettingsStatusReportReceived(new(player, userStatusReport, player.SettingsReport.Value));
+                    
                     player.SettingsReport = userStatusReport;
                     return;
                 }
                 
-                HookRunner.RunEvent(new PlayerSettingsStatusReportReceivedEventArgs(player, userStatusReport, null));
+                ExPlayerEvents.OnSettingsStatusReportReceived(new(player, userStatusReport, null));
 
                 player.SettingsReport = userStatusReport;
             }
@@ -567,10 +557,8 @@ namespace LabExtended.API.Settings
                     entry.Base.DeserializeValue(reader);
                     
                 entry.InternalOnUpdated();
-
-                HookRunner.RunEvent(new PlayerSettingsEntryUpdatedEventArgs(entry));
-
-                OnUpdated.InvokeSafe(player, entry);
+                
+                ExPlayerEvents.OnSettingsEntryUpdated(new(entry));
 
                 if (entry.Menu != null)
                 {
@@ -613,7 +601,7 @@ namespace LabExtended.API.Settings
         }
 
         [LoaderInitialize(1)]
-        private static void Init()
+        private static void OnInit()
         {
             InternalEvents.OnPlayerLeft += OnPlayerLeft;
             InternalEvents.OnPlayerJoined += OnPlayerJoined;

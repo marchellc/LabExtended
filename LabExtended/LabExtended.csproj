@@ -72,10 +72,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Core\Hooking\Enums\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Compile Remove="Events\Other\ApplyingDamageArgs.cs" />
       <Compile Remove="Patches\Events\Scp939RemovingMimicryPatch.cs" />
       <Compile Remove="Patches\Events\Scp079SpawningPingPatch.cs" />
