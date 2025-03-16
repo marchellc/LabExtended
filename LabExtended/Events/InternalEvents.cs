@@ -124,7 +124,7 @@ namespace LabExtended.Events
         private static void OnInit()
         {
             var plyEvents = typeof(PlayerEvents);
-            var srvEvents = typeof(ExServerEvents);
+            var srvEvents = typeof(ServerEvents);
             
             plyEvents.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(nameof(PlayerEvents.PreAuthenticating), HandlePlayerAuth);
             plyEvents.InsertFirst<LabEventHandler<PlayerChangedRoleEventArgs>>(nameof(PlayerEvents.ChangedRole), HandleRoleChange);
