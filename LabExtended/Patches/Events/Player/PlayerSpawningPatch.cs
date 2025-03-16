@@ -44,12 +44,12 @@ namespace LabExtended.Patches.Events.Player
                     if (!player.Position.FakedList.KeepOnRoleChange 
                         || (!player.Position.FakedList.KeepOnDeath 
                             && changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died))
-                        player.Position.FakedList.ClearValues(true, true);
+                        player.Position.FakedList.ClearValues(clearValues: true, resetGlobalValue: false);
 
                     if (!player.Role.FakedList.KeepOnRoleChange 
                         || (!player.Role.FakedList.KeepOnDeath 
                             && changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died))
-                        player.Role.FakedList.ClearValues(true, true);
+                        player.Role.FakedList.ClearValues(clearValues: true, resetGlobalValue: false);
                     
                     newRole = changingArgs.NewRole;
                     reason = changingArgs.ChangeReason;
