@@ -34,8 +34,8 @@ namespace LabExtended.Patches.Functions.Items
                 if (!player.Toggles.CanSwitchItems)
                     return false;
 
-                ItemBase curItem = null;
-                ItemBase newItem = null;
+                ItemBase curItem = __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out var curItemBase) ? curItemBase : null;
+                ItemBase newItem = itemSerial != 0 && __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out var newItemBase) ? newItemBase : null;
 
                 var prevIdentifier = __instance.NetworkCurItem;
                 
@@ -56,7 +56,7 @@ namespace LabExtended.Patches.Functions.Items
                 if (curItem != null)
                     CustomItemManager.InventoryItems.TryGetValue(curItem, out curCustomItem);
                 
-                if (itemSerial == 0 || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
+                if (itemSerial == 0 || itemSerial == newItem?.ItemSerial || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
                         return false;
