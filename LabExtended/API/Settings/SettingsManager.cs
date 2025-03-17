@@ -489,13 +489,22 @@ namespace LabExtended.API.Settings
 
                 if (player.SettingsReport.HasValue)
                 {
-                    ExPlayerEvents.OnSettingsStatusReportReceived(new(player, userStatusReport, player.SettingsReport.Value));
+                    ExPlayerEvents.OnSettingsStatusReportReceived(new(player, userStatusReport, 
+                        player.SettingsReport.Value));
+                    
+                    if (userStatusReport.TabOpen && !player.SettingsReport.Value.TabOpen)
+                        ExPlayerEvents.OnSettingsTabOpened(new(player));
+                    else if (!userStatusReport.TabOpen && player.SettingsReport.Value.TabOpen)
+                        ExPlayerEvents.OnSettingsTabClosed(new(player));
                     
                     player.SettingsReport = userStatusReport;
                     return;
                 }
                 
                 ExPlayerEvents.OnSettingsStatusReportReceived(new(player, userStatusReport, null));
+                
+                if (userStatusReport.TabOpen)
+                    ExPlayerEvents.OnSettingsTabOpened(new(player));
 
                 player.SettingsReport = userStatusReport;
             }

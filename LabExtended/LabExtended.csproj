@@ -9,12 +9,19 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <AssemblyName>0LabExtended</AssemblyName>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <Title>LabExtended</Title>
+        <Authors>marchellc</Authors>
+        <Description>An extension for the LabAPI modding framework. </Description>
+        <Copyright>2025</Copyright>
+        <PackageProjectUrl>https://github.com/marchellc/LabExtended</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/marchellc/LabExtended</RepositoryUrl>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugSymbols>true</DebugSymbols>
       <DebugType>embedded</DebugType>
+      <DocumentationFile>bin\Release\LabExtended.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>

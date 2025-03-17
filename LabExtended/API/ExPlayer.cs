@@ -53,6 +53,9 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.API;
 
+/// <summary>
+/// Player management class.
+/// </summary>
 public class ExPlayer : Player, IDisposable
 {
     internal static Dictionary<string, string> preauthData = new(byte.MaxValue);
@@ -71,7 +74,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
     /// </summary>
-    public static List<ExPlayer?> AllPlayers { get; } = new(ExServer.MaxSlots * 2);
+    public static List<ExPlayer> AllPlayers { get; } = new(ExServer.MaxSlots * 2);
 
     /// <summary>
     /// Gets a count of all players on the server.
@@ -106,17 +109,16 @@ public class ExPlayer : Player, IDisposable
             if (Server.Host != null)
                 return host = (ExPlayer)Server.Host;
 
-            if (ReferenceHub.TryGetHostHub(out var hostHub))
-            {
-                host = new(hostHub, SwitchContainer.GetNewNpcToggles(true));
+            if (!ReferenceHub.TryGetHostHub(out var hostHub))
+                throw new Exception("Could not fetch the host's ReferenceHub");
+            
+            host = new(hostHub, SwitchContainer.GetNewNpcToggles(true));
 
-                InternalEvents.HandlePlayerJoin(host);
+            InternalEvents.HandlePlayerJoin(host);
 
-                Server.Host = host;
-                return host;
-            }
+            Server.Host = host;
+            return host;
 
-            throw new Exception("Could not fetch the host's ReferenceHub");
         }
     }
 
@@ -428,19 +430,34 @@ public class ExPlayer : Player, IDisposable
     internal Dictionary<int, SettingsEntry>?
         settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
 
-    public ExPlayer(string nickname) : this(DummyUtils.SpawnDummy(nickname), SwitchContainer.GetNewNpcToggles(true))
+    /// <summary>
+    /// Spawns a new dummy player with the specified nickname.
+    /// </summary>
+    /// <param name="nickname">The nickname to add to the dummy (Dummy will be set if left null).</param>
+    public ExPlayer(string? nickname = null) : this(DummyUtils.SpawnDummy(nickname ?? "Dummy"), SwitchContainer.GetNewNpcToggles(true))
     {
-        
+
     }
 
+    /// <summary>
+    /// Creates a new <see cref="ExPlayer"/> instance.
+    /// </summary>
+    /// <param name="referenceHub">The player's <see cref="ReferenceHub"/> component.</param>
     public ExPlayer(ReferenceHub referenceHub) : this(referenceHub, SwitchContainer.GetNewPlayerToggles(true))
     {
 
     }
 
+    /// <summary>
+    /// Creates a new <see cref="ExPlayer"/> instance.
+    /// </summary>
+    /// <param name="referenceHub">The player's <see cref="ReferenceHub"/> component.</param>
+    /// <param name="toggles">The player's toggles.</param>
+    /// <exception cref="ArgumentNullException"></exception>
     public ExPlayer(ReferenceHub referenceHub, SwitchContainer toggles) : base(referenceHub)
     {
-        if (referenceHub is null) throw new ArgumentNullException(nameof(referenceHub));
+        if (referenceHub is null) 
+            throw new ArgumentNullException(nameof(referenceHub));
 
         Toggles = toggles ?? throw new ArgumentNullException(nameof(toggles));
 
@@ -510,6 +527,9 @@ public class ExPlayer : Player, IDisposable
             host = this;
 
             Toggles.ShouldSendPosition = false;
+
+            Toggles.CanBlockScp173 = false;
+            Toggles.CanBlockRoundEnd = false;
             
             Toggles.IsVisibleToScp939 = false;
             Toggles.IsVisibleInRemoteAdmin = false;
@@ -527,7 +547,7 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's hint cache.
     /// <para><i>null for players that cannot receive hints (ie. NPCs and the server player).</i></para>
     /// </summary>
-    public HintCache Hints { get; }
+    public HintCache? Hints { get; }
 
     /// <summary>
     /// Gets the player's position container.
@@ -1139,7 +1159,7 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     /// <typeparam name="T">Type of the component to get / add.</typeparam>
     /// <returns>The instance of <see cref="T"/>.</returns>
-    public T? GetOrAddComponent<T>()
+    public T GetOrAddComponent<T>()
         => GameObject.TryFindComponent<T>(out var component)
             ? component
             : (T)(object)GameObject.AddComponent(typeof(T));
