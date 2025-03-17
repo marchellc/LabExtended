@@ -1,105 +1,81 @@
-﻿using LabExtended.API;
+﻿using LabApi.Features.Enums;
 
-using LabExtended.Commands.Arguments;
-using LabExtended.Commands.Responses;
+using LabExtended.API;
+using LabExtended.Commands.Interfaces;
 
-namespace LabExtended.Commands.Contexts
+namespace LabExtended.Commands.Contexts;
+
+/// <summary>
+/// Represents the context of a command execution.
+/// </summary>
+public struct CommandContext
 {
-    public class CommandContext : Interfaces.ICommandContext
+    /// <summary>
+    /// Gets the player who used the command.
+    /// </summary>
+    public ExPlayer Sender { get; }
+    
+    /// <summary>
+    /// Gets the command's instance.
+    /// </summary>
+    public CommandBase Instance { get; }
+    
+    /// <summary>
+    /// Gets the command's data.
+    /// </summary>
+    public CommandInstance Command { get; }
+    
+    /// <summary>
+    /// Gets the overload that is being invoked.
+    /// </summary>
+    public CommandOverload Overload { get; }
+    
+    /// <summary>
+    /// Gets the list of tokens that were parsed.
+    /// </summary>
+    public List<ICommandToken> Tokens { get; }
+    
+    /// <summary>
+    /// Gets the list of arguments (<see cref="Line"/> split by spaces).
+    /// </summary>
+    public List<string> Args { get; }
+    
+    /// <summary>
+    /// Gets or sets the response to this context.
+    /// </summary>
+    public CommandResponse? Response { get; set; }
+    
+    /// <summary>
+    /// Gets the source of the command.
+    /// </summary>
+    public CommandType Type { get; }
+    
+    /// <summary>
+    /// Gets the command line.
+    /// </summary>
+    public string Line { get; }
+
+    /// <summary>
+    /// Creates a new <see cref="CommandContext"/> instance.
+    /// </summary>
+    /// <param name="sender">Player who sent the command.</param>
+    /// <param name="instance">Instance of the command handler.</param>
+    /// <param name="data">Data of the command.</param>
+    /// <param name="overload">Overload of the command.</param>
+    /// <param name="tokens">The parsed tokens.</param>
+    /// <param name="args">The parsed arguments.</param>
+    /// <param name="type">The command source type.</param>
+    /// <param name="line">The command's full line.</param>
+    public CommandContext(ExPlayer sender, CommandBase instance, CommandInstance data, CommandOverload overload,
+        List<ICommandToken> tokens, List<string> args, CommandType type, string line)
     {
-        public string RawInput { get; }
-        public string[] RawArgs { get; }
-
-        public ArgumentCollection Args { get; }
-        public CustomCommand Command { get; }
-        public ExPlayer Sender { get; }
-
-        public bool IsHost { get; }
-
-        public Interfaces.ICommandResponse Response { get; private set; }
-
-        public CommandContext(string arg, string[] args, ArgumentCollection collection, CustomCommand cmd, ExPlayer sender)
-        {
-            RawInput = arg;
-            RawArgs = args;
-
-            Args = collection;
-            Command = cmd;
-
-            Sender = sender;
-            IsHost = sender.IsServer;
-        }
-
-        public void Respond(object response, bool success)
-        {
-            if (Response != null)
-                throw new InvalidOperationException($"A response has already been created.");
-
-            if (response is null || response is "" || response is " ")
-                throw new ArgumentNullException(nameof(response));
-
-            Response = new CommandResponse(response.ToString(), success);
-        }
-
-        public void Respond(IEnumerable<object> lines, bool success)
-        {
-            if (Response != null)
-                throw new InvalidOperationException($"A response has already been created.");
-
-            if (lines is null)
-                throw new ArgumentNullException(nameof(lines));
-
-            var str = "";
-
-            foreach (var line in lines)
-                str += $"{line}\n";
-
-            Response = new CommandResponse(str, success);
-        }
-
-        public void RespondFail(object response)
-            => Respond(response, false);
-
-        public void RespondFail(IEnumerable<object> lines)
-            => Respond(lines, false);
-
-        public void RespondOk(object response)
-            => Respond(response, true);
-
-        public void RespondOk(IEnumerable<object> lines)
-            => Respond(lines, true);
-
-        public void RespondContinued(object response, Action<ContinuedContext> onContinued)
-        {
-            if (Response != null)
-                throw new InvalidOperationException($"A response has already been created.");
-
-            if (response is null || response is "" || response is " ")
-                throw new ArgumentNullException(nameof(response));
-
-            if (onContinued is null)
-                throw new ArgumentNullException(nameof(onContinued));
-
-            Response = new Responses.ContinuedResponse(response.ToString(), onContinued);
-        }
-
-        public void RespondContinued(IEnumerable<object> lines, Action<ContinuedContext> onContinued)
-        {
-            if (Response != null)
-                throw new InvalidOperationException($"A response has already been created.");
-
-            if (onContinued is null)
-                throw new ArgumentNullException(nameof(onContinued));
-
-            if (lines is null)
-                throw new ArgumentNullException(nameof(lines));
-
-            var str = "";
-
-            foreach (var line in lines)
-                str += $"{line}\n";
-
-            Response = new Responses.ContinuedResponse(str, onContinued);
-        }
+        Sender = sender;
+        Instance = instance;
+        Command = data;
+        Overload = overload;
+        Tokens = tokens;
+        Args = args;
+        Type = type;
+        Line = line;
     }
 }
