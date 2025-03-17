@@ -35,7 +35,8 @@ namespace LabExtended.Utilities.Values
 
         public bool KeepOnDeath { get; set; }
         public bool KeepOnRoleChange { get; set; }
-        
+        public bool KeepGlobalOnRoleChange { get; set; } = true;
+
         public bool HasGlobalValue => hasGlobalValue;
 
         public T this[uint netId]

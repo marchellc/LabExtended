@@ -41,15 +41,13 @@ namespace LabExtended.Patches.Events.Player
                                                 && changingArgs.ChangeReason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)
                 {
-                    if (!player.Position.FakedList.KeepOnRoleChange 
-                        || (!player.Position.FakedList.KeepOnDeath 
-                            && changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died))
-                        player.Position.FakedList.ClearValues(true, true);
+                    bool clearPositionValues = !player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath &&
+                        changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died);
+                    player.Position.FakedList.ClearValues(clearPositionValues, !player.Position.FakedList.KeepGlobalOnRoleChange);
 
-                    if (!player.Role.FakedList.KeepOnRoleChange 
-                        || (!player.Role.FakedList.KeepOnDeath 
-                            && changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died))
-                        player.Role.FakedList.ClearValues(true, true);
+                    bool clearRoleValues = !player.Role.FakedList.KeepOnRoleChange || (!player.Role.FakedList.KeepOnDeath &&
+                        changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died);
+                    player.Role.FakedList.ClearValues(clearRoleValues, !player.Role.FakedList.KeepGlobalOnRoleChange);
                     
                     newRole = changingArgs.NewRole;
                     reason = changingArgs.ChangeReason;

@@ -243,6 +243,9 @@ public class ExPlayer : Player, IDisposable
     /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
     public static ExPlayer? Get(string nameOrId, double minNameScore = 0.85)
     {
+        string lowerNameOrId = nameOrId.ToLower();
+        ExPlayer? bestMatch = null;
+        double bestMatchValue = double.MinValue;
         for (var index = 0; index < AllPlayers.Count; index++)
         {
             var player = AllPlayers[index];
@@ -253,16 +256,24 @@ public class ExPlayer : Player, IDisposable
             if (player.IsServer)
                 continue;
 
-            if (player.UserId == nameOrId || player.ClearUserId == nameOrId ||
-                player.PlayerId.ToString() == nameOrId
-                || player.ConnectionId.ToString() == nameOrId || player.NetworkId.ToString() == nameOrId)
+            if (player.UserId.ToLower() == lowerNameOrId || player.ClearUserId.ToLower() == lowerNameOrId ||
+                player.PlayerId.ToString() == nameOrId || player.NetworkId.ToString() == nameOrId)
                 return player;
 
-            if (player.Nickname.GetSimilarity(nameOrId) >= minNameScore)
+            string lowerNickname = player.Nickname.ToLower();
+            double similarity = lowerNickname.GetSimilarity(lowerNameOrId);
+            if (similarity == 1.0)
                 return player;
+
+            if ((lowerNickname.Contains(lowerNameOrId) || similarity >= minNameScore) &&
+                similarity > bestMatchValue)
+            {
+                bestMatchValue = similarity;
+                bestMatch = player;
+            }
         }
 
-        return null;
+        return bestMatch;
     }
 
     /// <summary>
