@@ -35,7 +35,7 @@ namespace LabExtended.Patches.Functions.Items
                     return false;
 
                 ItemBase curItem = __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out var curItemBase) ? curItemBase : null;
-                ItemBase newItem = itemSerial != 0 && __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out var newItemBase) ? newItemBase : null;
+                ItemBase newItem = itemSerial != 0 && __instance.UserInventory.Items.TryGetValue(itemSerial, out var newItemBase) ? newItemBase : null;
 
                 var prevIdentifier = __instance.NetworkCurItem;
                 
