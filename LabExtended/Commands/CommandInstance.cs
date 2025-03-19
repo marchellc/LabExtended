@@ -91,6 +91,11 @@ public class CommandInstance
     public bool IsStatic { get; }
     
     /// <summary>
+    /// Whether or not this command supports continuations.
+    /// </summary>
+    public bool IsContinuable { get; }
+    
+    /// <summary>
     /// Creates a new <see cref="CommandInstance"/> instance.
     /// </summary>
     public CommandInstance(Type type, CommandInstance parent, List<CommandInstance> children, string name, 
@@ -100,7 +105,6 @@ public class CommandInstance
         Type = type;
         Parent = parent;
         Aliases = aliases;
-        IsStatic = isStatic;
         FullName = fullName;
         Children = children;
         Description = description;
@@ -108,6 +112,9 @@ public class CommandInstance
         SupportsRemoteAdmin = type.InheritsType<IRemoteAdminCommand>();
         SupportsServer = type.InheritsType<IServerCommand>();
         SupportsPlayer = type.InheritsType<IPlayerCommand>();
+
+        IsContinuable = type.InheritsType<ContinuableCommandBase>();
+        IsStatic = isStatic && !IsContinuable;
         
         Constructor = FastReflection.ForConstructor(AccessTools.DeclaredConstructor(type));
 
