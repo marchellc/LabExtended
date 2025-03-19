@@ -13,31 +13,39 @@ using LabExtended.Extensions;
 
 using NetworkManagerUtils;
 
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8604 // Possible null reference argument.
+
 namespace LabExtended.Events
 {
     internal static class InternalEvents
     {
-        internal static event Action OnRoundRestart;
-        internal static event Action OnRoundWaiting;
-        internal static event Action OnRoundStarted;
-        internal static event Action OnRoundEnded;
+        internal static event Action? OnRoundRestart;
+        internal static event Action? OnRoundWaiting;
+        internal static event Action? OnRoundStarted;
+        internal static event Action? OnRoundEnded;
 
-        internal static event Action<ExPlayer> OnPlayerJoined;
-        internal static event Action<ExPlayer?> OnPlayerLeft; 
+        internal static event Action<ExPlayer>? OnPlayerJoined;
+        internal static event Action<ExPlayer>? OnPlayerLeft; 
         
-        internal static event Action<PlayerChangedRoleEventArgs> OnRoleChanged;
-        internal static event Action<PlayerSpawningEventArgs> OnSpawning; 
+        internal static event Action<PlayerChangedRoleEventArgs>? OnRoleChanged;
+        internal static event Action<PlayerSpawningEventArgs>? OnSpawning; 
 
         internal static void HandlePlayerJoin(ExPlayer player)
         {
-            if (!player.IsServer)
-            {
-                OnPlayerJoined.InvokeSafe(player);
+            if (player.IsServer)
+                return;
+            
+            OnPlayerJoined.InvokeSafe(player);
 
-                if (!player.IsNpc)
-                    ApiLog.Info("LabExtended",
-                        $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");
-            }
+            if (player.IsNpc) 
+                return;
+            
+            ApiLog.Info("LabExtended",
+                $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");
+
+            ExPlayerEvents.OnJoined(player);
         }
 
         internal static void HandlePlayerLeave(ExPlayer? player)
@@ -63,6 +71,8 @@ namespace LabExtended.Events
 
             if (player is { IsServer: false, IsNpc: false })
                 ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
+            
+            ExPlayerEvents.OnLeft(player);
         }
 
         private static void HandleSpawning(PlayerSpawningEventArgs args)
