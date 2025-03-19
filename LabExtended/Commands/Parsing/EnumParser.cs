@@ -35,7 +35,7 @@ namespace LabExtended.Commands.Parsing
 
             void Register(MethodInfo getter, string name)
             {
-                if (getter is null || getter.IsStatic)
+                if (getter is null || getter.IsStatic || dict.ContainsKey(name))
                     return;
                 
                 var method = FastReflection.ForMethod(getter);
