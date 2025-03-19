@@ -1,4 +1,5 @@
-﻿using LabExtended.Commands.Interfaces;
+﻿using LabExtended.Commands.Contexts;
+using LabExtended.Commands.Interfaces;
 
 namespace LabExtended.Commands.Tokens;
 
@@ -7,6 +8,16 @@ namespace LabExtended.Commands.Tokens;
 /// </summary>
 public class PropertyToken : ICommandToken
 {
+    /// <summary>
+    /// Gets all registered properties.
+    /// </summary>
+    public static Dictionary<string, KeyValuePair<Type, Func<CommandContext, object>>> Properties { get; } = new();
+    
+    /// <summary>
+    /// Gets or sets the character used to identify property command tokens.
+    /// </summary>
+    public static char Token { get; set; } = '$';
+    
     /// <summary>
     /// Gets an instance of the property token.
     /// </summary>

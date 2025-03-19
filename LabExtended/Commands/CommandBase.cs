@@ -4,6 +4,9 @@ using LabExtended.API;
 
 using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Interfaces;
+using LabExtended.Commands.Parameters;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace LabExtended.Commands;
 
@@ -58,15 +61,16 @@ public class CommandBase
     public CommandResponse? Response
     {
         get => Context.Response;
-        set
-        {
-            var ctx = Context;
-            
-            ctx.Response = value;
-
-            Context = ctx;
-        }
+        set => Context.Response = value;
     }
+
+    /// <summary>
+    /// Called when an overload is called for the first time.
+    /// </summary>
+    /// <param name="overloadName">The name of the overload.</param>
+    /// <param name="parameters">The overload's parameters.</param>
+    public virtual void OnInitializeOverload(string overloadName,
+        Dictionary<string, CommandParameterBuilder> parameters) { }
 
     /// <summary>
     /// Responds to the command.
@@ -89,4 +93,11 @@ public class CommandBase
     /// <param name="content">The message to respond with.</param>
     public void Fail(object content)
         => Response = new(false, false, content.ToString());
+
+    /// <summary>
+    /// Writes a message into the sender's console.
+    /// </summary>
+    /// <param name="content">The message to show.</param>
+    public void Write(object content)
+        => Sender.SendRemoteAdminMessage(content, true, true, CommandData.Name);
 }

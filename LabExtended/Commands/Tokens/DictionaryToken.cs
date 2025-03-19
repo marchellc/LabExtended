@@ -8,6 +8,16 @@ namespace LabExtended.Commands.Tokens;
 public class DictionaryToken : ICommandToken
 {
     /// <summary>
+    /// Gets or sets the starting token of a dictionary.
+    /// </summary>
+    public static char StartToken { get; set; } = '{';
+    
+    /// <summary>
+    /// Gets or sets the ending token of a dictionary.
+    /// </summary>
+    public static char EndToken { get; set; } = '}';
+    
+    /// <summary>
     /// Gets an instance of <see cref="DictionaryToken"/>.
     /// </summary>
     public static DictionaryToken Instance { get; } = new();

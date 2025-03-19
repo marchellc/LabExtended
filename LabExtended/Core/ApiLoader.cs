@@ -1,8 +1,4 @@
-﻿using LabExtended.Attributes;
-using LabExtended.Extensions;
-using LabExtended.Core.Configs;
-
-using Serialization;
+﻿using Serialization;
 
 using System.Reflection;
 
@@ -14,6 +10,11 @@ using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 
 using LabExtended.Events;
+using LabExtended.Commands;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
+
+using LabExtended.Core.Configs;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
@@ -254,6 +255,8 @@ namespace LabExtended.Core
             ExServerEvents.Quitting += QuitHandler;
 
             Assembly.RegisterUpdates();
+            Assembly.RegisterCommands();
+            
             Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);

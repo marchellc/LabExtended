@@ -10,11 +10,6 @@ public class CommandAttribute : Attribute
     /// Gets or sets the name of the command.
     /// </summary>
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the name of the parent command.
-    /// </summary>
-    public string ParentName { get; set; } = string.Empty;
     
     /// <summary>
     /// Gets or sets the description of the command.

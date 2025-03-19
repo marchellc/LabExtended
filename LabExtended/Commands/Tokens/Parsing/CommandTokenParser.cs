@@ -1,10 +1,9 @@
 ﻿using LabExtended.Commands.Enums;
-using LabExtended.Commands.Tokens;
 using LabExtended.Commands.Interfaces;
 
 #pragma warning disable CS8605 // Unboxing a possibly null value.
 
-namespace LabExtended.Commands;
+namespace LabExtended.Commands.Tokens.Parsing;
 
 /// <summary>
 /// Used to parse command argument values.
@@ -15,44 +14,14 @@ public static class CommandTokenParser
     /// Gets or sets the character used to identify escape tokens.
     /// </summary>
     public static char EscapeToken { get; set; } = '\\';
-    
-    /// <summary>
-    /// Gets or sets the character used to identify a full string token.
-    /// </summary>
-    public static char StringToken { get; set; } = '\"';
-    
-    /// <summary>
-    /// Gets or sets the character used to identify property command tokens.
-    /// </summary>
-    public static char PropertyToken { get; set; } = '$';
-
-    /// <summary>
-    /// Gets or sets the character used to identify string command token start.
-    /// </summary>
-    public static char StringLiteralTokenStart { get; set; } = '{';
-    
-    /// <summary>
-    /// Gets or sets the character used to identify string command token end.
-    /// </summary>
-    public static char StringLiteralTokenEnd { get; set; } = '}';
-    
-    /// <summary>
-    /// Gets or sets the character used to identify collections.
-    /// </summary>
-    public static char CollectionStartToken { get; set; } = '[';
-    
-    /// <summary>
-    /// Gets or sets the character used to identify the end of a collection.
-    /// </summary>
-    public static char CollectionEndToken { get; set; } = ']';
 
     /// <summary>
     /// Parsers all tokens in a string.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="list"></param>
+    /// <param name="input">The string to parse.</param>
+    /// <param name="list">The list of tokens to save parsed tokens to.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public static void ParseTokens(string input, List<ICommandToken> list)
+    public static CommandTokenParserResult ParseTokens(string input, List<ICommandToken> list)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentNullException(nameof(input));
@@ -74,19 +43,22 @@ public static class CommandTokenParser
                 nextChar = input[i + 1];
             else
                 nextChar = null;
+            
+            if (i - 1 >= 0)
+                previousChar = input[i - 1];
+            else
+                previousChar = null;
 
             // A helper function used to append to the current string token or start a new one
             void AppendToStringToken(bool endCurrentToken, bool endCurrentStage)
             {
                 if (currentToken is not StringToken stringToken)
-                    stringToken = (StringToken)(currentToken = Tokens.StringToken.Instance.NewToken());
+                    stringToken = (StringToken)(currentToken = StringToken.Instance.NewToken());
                 
                 stringToken.Value += currentChar;
                 
                 if (endCurrentToken)
                     EndCurrentToken(endCurrentStage);
-                
-                previousChar = currentChar;
             }
 
             // A helper function used to end the current stage (and add the current token to the list if present)
@@ -99,12 +71,10 @@ public static class CommandTokenParser
                 
                 if (endStage)
                     currentStage = TokenParserStage.None;
-
-                previousChar = currentChar;
             }
 
             // Handle string
-            if (currentChar == StringToken && previousChar != EscapeToken)
+            if (currentChar == StringToken.Token && previousChar != EscapeToken)
             {
                 // End token if already active
                 if (currentStage is TokenParserStage.StringFull)
@@ -121,26 +91,8 @@ public static class CommandTokenParser
                 continue;
             }
 
-            // Handle the end of a string literal
-            if (currentChar == StringLiteralTokenEnd 
-                && previousChar != EscapeToken
-                && currentStage is TokenParserStage.StringLiteralPropertyName
-                && currentToken is PropertyToken literalPropertyToken)
-            {
-                var literalToken = (StringLiteralToken)StringLiteralToken.Instance.NewToken();
-
-                literalToken.Token = literalPropertyToken;
-                list.Add(literalToken);
-                
-                currentToken = null;
-                currentStage = TokenParserStage.None;
-                
-                previousChar = currentChar;
-                continue;
-            }
-
             // Handle the custom property token ($)
-            if (currentChar == PropertyToken && previousChar != EscapeToken)
+            if (currentChar == PropertyToken.Token && previousChar != EscapeToken)
             {
                 // End the token if we finished the name.
                 if (currentStage is TokenParserStage.PropertyName)
@@ -148,21 +100,12 @@ public static class CommandTokenParser
                     EndCurrentToken(true);
                     continue;
                 }
-
-                // Handle string literals (start with ${ by default)
-                if (nextChar == StringLiteralTokenStart)
-                {
-                    currentStage = TokenParserStage.StringLiteralPropertyName;
-                    currentToken = Tokens.PropertyToken.Instance.NewToken();
-                    
-                    continue;
-                }
                 
                 EndCurrentToken(false);
 
                 // Set the current stage & token to property
                 currentStage = TokenParserStage.PropertyKey;
-                currentToken = Tokens.PropertyToken.Instance.NewToken();
+                currentToken = PropertyToken.Instance.NewToken();
 
                 continue;
             }
@@ -174,12 +117,6 @@ public static class CommandTokenParser
                     // Switch to property name
                     currentStage = TokenParserStage.PropertyName;
                     continue;
-                
-                // Handle string literal property splitter
-                case '.' when currentStage is TokenParserStage.StringLiteralPropertyKey:
-                    // Switch to string literal property name
-                    currentStage = TokenParserStage.StringLiteralPropertyName;
-                    continue;
             }
 
             // Handle property name / key.
@@ -188,25 +125,26 @@ public static class CommandTokenParser
                 switch (currentStage)
                 {
                     // Append to key if the current stage is the key
-                    case TokenParserStage.PropertyKey or TokenParserStage.StringLiteralPropertyKey:
+                    case TokenParserStage.PropertyKey:
                         propertyToken.Key += currentChar;
                         continue;
                     
                     // Append to name if the current stage is the name
-                    case TokenParserStage.PropertyName or TokenParserStage.StringLiteralPropertyName:
+                    case TokenParserStage.PropertyName:
                         propertyToken.Name += currentChar;
                         continue;
                 }
             }
 
             // Handle the start of a collection ([)
-            if (currentChar == CollectionStartToken && previousChar != EscapeToken)
+            if (currentChar == CollectionToken.StartToken && previousChar != EscapeToken)
             {
                 if (currentStage is TokenParserStage.Collection or TokenParserStage.DictionaryKey or TokenParserStage.DictionaryValue)
-                    throw new Exception($"Invalid character at position {i}: Found a collection start token while already in a collection.");
+                    return new(input, "Found another collection start token while already in a collection!",
+                        currentChar, i, currentStage);
 
                 // Handle a dictionary start ([{)
-                if (nextChar == StringLiteralTokenStart)
+                if (nextChar == DictionaryToken.StartToken)
                 {
                     EndCurrentToken(true);
 
@@ -226,9 +164,9 @@ public static class CommandTokenParser
             }
 
             // End the collection token if we detect a collection end token (] or }])
-            if (currentChar == CollectionEndToken 
+            if (currentChar == CollectionToken.EndToken 
                 && previousChar != EscapeToken
-                && (currentStage is TokenParserStage.Collection || previousChar == StringLiteralTokenEnd))
+                && (currentStage is TokenParserStage.Collection || previousChar == DictionaryToken.EndToken))
             {
                 EndCurrentToken(true);
                 continue;
@@ -262,10 +200,12 @@ public static class CommandTokenParser
                 if (currentChar is ',' && previousChar != EscapeToken)
                 {
                     if (string.IsNullOrWhiteSpace(valueDictionaryToken.CurKey))
-                        throw new Exception($"Invalid dictionary key at position {i}");
+                        return new(input, "Dictionary keys cannot be white-spaced or empty!", 
+                            currentChar, i, currentStage);
                     
                     if (string.IsNullOrWhiteSpace(valueDictionaryToken.CurValue))
-                        throw new Exception($"Invalid dictionary value at position {i}");
+                        return new(input, "Dictionary values cannot be white-spaced or empty!", 
+                            currentChar, i, currentStage);
                     
                     valueDictionaryToken.Values[valueDictionaryToken.CurKey] = valueDictionaryToken.CurValue;
                     
@@ -322,5 +262,7 @@ public static class CommandTokenParser
             if (!nextChar.HasValue)
                 EndCurrentToken(true);
         }
+
+        return new(input);
     }
 }
