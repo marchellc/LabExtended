@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Tokens;
 /// <summary>
 /// Represents a parsed string literal.
 /// </summary>
-public struct StringLiteralToken : ICommandToken
+public class StringLiteralToken : ICommandToken
 {
     /// <summary>
     /// Gets an instance of the <see cref="StringLiteralToken"/>.
