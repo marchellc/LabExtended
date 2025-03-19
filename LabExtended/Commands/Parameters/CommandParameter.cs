@@ -1,5 +1,7 @@
-﻿using LabExtended.Commands.Interfaces;
-using LabExtended.Commands.Tokens;
+﻿using System.ComponentModel;
+using System.Reflection;
+
+using LabExtended.Commands.Interfaces;
 
 namespace LabExtended.Commands.Parameters;
 
@@ -8,35 +10,21 @@ namespace LabExtended.Commands.Parameters;
 /// </summary>
 public class CommandParameter
 {
-    private Type? type;
+    /// <summary>
+    /// Gets the parameter's type.
+    /// </summary>
+    public CommandParameterType Type { get; }
+    
+    /// <summary>
+    /// Gets the name of the parameter.
+    /// </summary>
+    public string Name { get; internal set; }
+    
+    /// <summary>
+    /// Gets the description of the parameter.
+    /// </summary>
+    public string Description { get; internal set; }
 
-    /// <summary>
-    /// Gets the type of the parameter.
-    /// </summary>
-    public Type? Type
-    {
-        get => type;
-        set
-        {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
-            
-            if (!CommandParameterParser.TryGetParser(value, out var parser))
-                throw new Exception($"No parameter parsers were registered for type {value.FullName}");
-            
-            type = value;
-            
-            IsString = value == typeof(string);
-            
-            Parser = parser;
-        }
-    }
-    
-    /// <summary>
-    /// Gets a value indicating whether or not the <see cref="Type"/> is a string.
-    /// </summary>
-    public bool IsString { get; private set; }
-    
     /// <summary>
     /// Whether or not this parameter is optional.
     /// </summary>
@@ -46,11 +34,30 @@ public class CommandParameter
     /// Gets the default value.
     /// </summary>
     public object? DefaultValue { get; internal set; }
-    
+
     /// <summary>
-    /// Gets the parameter's parser.
+    /// Creates a new <see cref="CommandParameter"/> instance.
     /// </summary>
-    public CommandParameterParser? Parser { get; private set; }
+    /// <param name="parameterInfo">The targeted parameter.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public CommandParameter(ParameterInfo parameterInfo)
+    {
+        if (parameterInfo is null)
+            throw new ArgumentNullException(nameof(parameterInfo));
+
+        Type = new(parameterInfo);
+
+        Name = parameterInfo.Name;
+        HasDefault = parameterInfo.HasDefaultValue;
+        DefaultValue = parameterInfo.DefaultValue;
+
+        var descriptionAttribute = parameterInfo.GetCustomAttribute<DescriptionAttribute>();
+        
+        if (descriptionAttribute != null)
+            Description = descriptionAttribute.Description;
+
+        Description ??= "None";
+    }
 
     /// <summary>
     /// Gets a value indicating whether or not the token can be accepted by this parameter.
@@ -61,10 +68,7 @@ public class CommandParameter
     {
         if (token is null)
             throw new ArgumentNullException(nameof(token));
-
-        if (IsString && token is StringToken)
-            return true;
         
-        return Parser.AcceptsToken(token);
+        return Type.Parser.AcceptsToken(token);
     }
 }

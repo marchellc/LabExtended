@@ -1235,8 +1235,6 @@ public class ExPlayer : Player, IDisposable
             ply.PersonalGhostFlags &= ~GhostBit;
         });
 
-        CustomCommand._continuedContexts.Remove(NetworkId);
-
         if (Hints != null)
             ObjectPool<HintCache>.Shared.Return(Hints);
 

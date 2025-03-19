@@ -8,6 +8,16 @@ namespace LabExtended.Commands.Tokens;
 public class CollectionToken : ICommandToken
 {
     /// <summary>
+    /// Gets or sets the character used to identify collections.
+    /// </summary>
+    public static char StartToken { get; set; } = '[';
+    
+    /// <summary>
+    /// Gets or sets the character used to identify the end of a collection.
+    /// </summary>
+    public static char EndToken { get; set; } = ']';
+    
+    /// <summary>
     /// Gets an instance of <see cref="CollectionToken"/>.
     /// </summary>
     public static CollectionToken Instance { get; } = new();

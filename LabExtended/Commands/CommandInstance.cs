@@ -26,11 +26,6 @@ public class CommandInstance
     public CommandBase StaticInstance { get; }
     
     /// <summary>
-    /// Gets the command's parent.
-    /// </summary>
-    public CommandInstance Parent { get; }
-    
-    /// <summary>
     /// Gets the command's instance pool.
     /// </summary>
     public List<CommandBase> DynamicPool { get; } = new();
@@ -41,11 +36,6 @@ public class CommandInstance
     public List<CommandOverload> Overloads { get; } = new();
     
     /// <summary>
-    /// Gets the command's children.
-    /// </summary>
-    public List<CommandInstance> Children { get; }
-    
-    /// <summary>
     /// Gets the constructor of the command's type.
     /// </summary>
     public Func<object[], object> Constructor { get; }
@@ -54,11 +44,6 @@ public class CommandInstance
     /// Gets the name of the command.
     /// </summary>
     public string Name { get; }
-    
-    /// <summary>
-    /// Gets the command's full name (including it's parent).
-    /// </summary>
-    public string FullName { get; }
     
     /// <summary>
     /// Gets the description of the command.
@@ -98,15 +83,11 @@ public class CommandInstance
     /// <summary>
     /// Creates a new <see cref="CommandInstance"/> instance.
     /// </summary>
-    public CommandInstance(Type type, CommandInstance parent, List<CommandInstance> children, string name, 
-        string description, string fullName, bool isStatic, List<string> aliases)
+    public CommandInstance(Type type, string name, string description, bool isStatic, List<string> aliases)
     {
         Name = name;
         Type = type;
-        Parent = parent;
         Aliases = aliases;
-        FullName = fullName;
-        Children = children;
         Description = description;
 
         SupportsRemoteAdmin = type.InheritsType<IRemoteAdminCommand>();

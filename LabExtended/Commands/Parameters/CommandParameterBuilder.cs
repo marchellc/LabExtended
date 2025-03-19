@@ -1,4 +1,6 @@
-﻿namespace LabExtended.Commands.Parameters;
+﻿using System.Reflection;
+
+namespace LabExtended.Commands.Parameters;
 
 /// <summary>
 /// Builds command parameters.
@@ -8,31 +10,52 @@ public class CommandParameterBuilder
     /// <summary>
     /// The built command parameter.
     /// </summary>
-    public CommandParameter Result { get; } = new();
+    public CommandParameter Result { get; }
 
     /// <summary>
-    /// Sets the parameter's type.
+    /// Creates a new <see cref="CommandParameterBuilder"/> instance.
     /// </summary>
-    /// <param name="parameterType">The type to set.</param>
-    /// <returns>This builder instance.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public CommandParameterBuilder WithType(Type parameterType)
+    /// <param name="parameterInfo">The target parameter.</param>
+    public CommandParameterBuilder(ParameterInfo parameterInfo)
     {
-        if (parameterType is null)
-            throw new ArgumentNullException(nameof(parameterType));
+        if (parameterInfo is null)
+            throw new ArgumentNullException(nameof(parameterInfo));
         
-        Result.Type = parameterType;
+        Result = new(parameterInfo);
+    }
+
+    /// <summary>
+    /// Sets the name of the parameter.
+    /// </summary>
+    /// <param name="name">The parameter's name.</param>
+    /// <returns>This builder instance.</returns>
+    public CommandParameterBuilder WithName(string name)
+    {
+        Result.Name = name;
         return this;
     }
 
     /// <summary>
-    /// Sets the parameter's type.
+    /// Sets the description of the parameter.
     /// </summary>
-    /// <typeparam name="T">The type to set.</typeparam>
+    /// <param name="description">The parameter's description.</param>
     /// <returns>This builder instance.</returns>
-    public CommandParameterBuilder WithType<T>()
+    public CommandParameterBuilder WithDescription(string description)
     {
-        Result.Type = typeof(T);
+        Result.Description = description;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the parameter's default value.
+    /// </summary>
+    /// <param name="defaultValue">The default value to set.</param>
+    /// <returns>This builder instance.</returns>
+    public CommandParameterBuilder WithDefault(object? defaultValue = null)
+    {
+        Result.HasDefault = true;
+        Result.DefaultValue = defaultValue;
+        
         return this;
     }
 }
