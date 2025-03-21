@@ -66,8 +66,6 @@ namespace LabExtended.Events
             }
             
             OnPlayerLeft.InvokeSafe(player);
-            
-            player.Dispose();
 
             if (player is { IsServer: false, IsNpc: false })
                 ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");

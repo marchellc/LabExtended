@@ -26,8 +26,6 @@ public static class HostPlayerPatch
 
             Server.Host = player;
             ExPlayer.host = player;
-            
-            InternalEvents.HandlePlayerJoin(player);
         }
 
         return false;

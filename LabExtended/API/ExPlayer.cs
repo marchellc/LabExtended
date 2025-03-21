@@ -535,6 +535,8 @@ public class ExPlayer : Player, IDisposable
             Toggles.IsVisibleInRemoteAdmin = false;
             Toggles.IsVisibleInSpectatorList = false;
         }
+        
+        InternalEvents.HandlePlayerJoin(this);
     }
 
     /// <summary>
