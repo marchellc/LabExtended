@@ -356,7 +356,7 @@ namespace LabExtended.API.Settings
             }
         }
 
-        private static void OnPlayerJoined(ExPlayer player)
+        private static void OnPlayerVerified(ExPlayer player)
         {
             try
             {
@@ -613,7 +613,7 @@ namespace LabExtended.API.Settings
         private static void OnInit()
         {
             InternalEvents.OnPlayerLeft += OnPlayerLeft;
-            InternalEvents.OnPlayerJoined += OnPlayerJoined;
+            InternalEvents.OnPlayerVerified += OnPlayerVerified;
         }
     }
 }

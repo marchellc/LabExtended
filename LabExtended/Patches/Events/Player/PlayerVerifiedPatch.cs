@@ -36,7 +36,7 @@ public static class PlayerVerifiedPatch
 
             ctx.Call(typeof(ExPlayer), nameof(ExPlayer.Get), false,
                 [typeof(ReferenceHub)]); // Get the ExPlayer instance from the loaded ReferenceHub
-            ctx.Call(typeof(ExPlayerEvents), nameof(ExPlayerEvents.OnVerified)); // Call the event
+            ctx.Call(typeof(InternalEvents), nameof(InternalEvents.HandlePlayerVerified)); // Call the event
         });
     }
 }

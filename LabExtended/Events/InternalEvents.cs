@@ -26,26 +26,36 @@ namespace LabExtended.Events
         internal static event Action? OnRoundStarted;
         internal static event Action? OnRoundEnded;
 
+        internal static event Action<ExPlayer>? OnPlayerVerified; 
         internal static event Action<ExPlayer>? OnPlayerJoined;
         internal static event Action<ExPlayer>? OnPlayerLeft; 
         
         internal static event Action<PlayerChangedRoleEventArgs>? OnRoleChanged;
-        internal static event Action<PlayerSpawningEventArgs>? OnSpawning; 
+        internal static event Action<PlayerSpawningEventArgs>? OnSpawning;
 
-        internal static void HandlePlayerJoin(ExPlayer player)
+        internal static void HandlePlayerVerified(ExPlayer player)
         {
             if (player.IsServer)
                 return;
             
-            OnPlayerJoined.InvokeSafe(player);
-
+            OnPlayerVerified.InvokeSafe(player);
+            
             if (player.IsNpc) 
                 return;
             
             ApiLog.Info("LabExtended",
                 $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");
+            
+            ExPlayerEvents.OnVerified(player);
+        }
 
-            ExPlayerEvents.OnJoined(player);
+        internal static void HandlePlayerJoin(ExPlayer player)
+        {
+            if (!player.IsServer)
+                OnPlayerJoined.InvokeSafe(player);
+
+            if (!player.IsNpc) 
+                ExPlayerEvents.OnJoined(player);
         }
 
         internal static void HandlePlayerLeave(ExPlayer? player)
