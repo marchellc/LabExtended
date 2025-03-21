@@ -1017,7 +1017,7 @@ public class ExPlayer : Player, IDisposable
     /// Sends a new hint.
     /// </summary>
     /// <param name="content">Text of the hint.</param>
-    /// <param name="duration">Duration of the hint.</param>
+    /// <param name="duration">Duration of the hint (in seconds).</param>
     public new void SendHint(string content, float duration)
         => SendHint(content, (ushort)duration, false);
 
@@ -1026,7 +1026,7 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     /// <param name="content">Text of the hint.</param>
     /// <param name="effects">Unused.</param>
-    /// <param name="duration">Duration of the hint.</param>
+    /// <param name="duration">Duration of the hint (in seconds).</param>
     public new void SendHint(string content, HintEffect[] effects, float duration)
         => SendHint(content, (ushort)duration, false);
 
@@ -1034,7 +1034,7 @@ public class ExPlayer : Player, IDisposable
     /// Sends a new hint.
     /// </summary>
     /// <param name="content">Text of the hint.</param>
-    /// <param name="duration">Duration of the hint.</param>
+    /// <param name="duration">Duration of the hint (in seconds).</param>
     /// <param name="isPriority">Whether to show the hint immediately.</param>
     public void SendHint(object content, ushort duration, bool isPriority = false)
         => this.ShowHint(content.ToString(), duration, isPriority);

@@ -26,10 +26,9 @@ namespace LabExtended.Patches.Functions.SpectatorList
             foreach (var player in ExPlayer.AllPlayers)
             {
                 var sentRole = player.Role.Type;
-                var fakedRole = !player.Toggles.IsVisibleInSpectatorList ? RoleTypeId.Spectator : RoleTypeId.None;
 
                 if (player.Role.Role is IObfuscatedRole obfuscatedRole) sentRole = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
-                if (fakedRole != RoleTypeId.None) sentRole = fakedRole;
+                if (!player.Toggles.IsVisibleInSpectatorList) sentRole = RoleTypeId.Spectator;
 
                 new RoleSyncInfo(player.ReferenceHub, sentRole, receiver.ReferenceHub).Write(writer);
 

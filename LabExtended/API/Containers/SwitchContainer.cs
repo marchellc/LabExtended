@@ -86,6 +86,7 @@ namespace LabExtended.API.Containers
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player is visible in the Spectator List.
+        /// <para><b>WARNING: If disabled, this player will be invisible while spectating.</b></para>
         /// </summary>
         public bool IsVisibleInSpectatorList { get; set; } = true;
 

@@ -55,7 +55,7 @@ namespace LabExtended.API.Hints
             if (CurrentMessage is null)
                 return false;
 
-            if (Stopwatch.ElapsedMilliseconds >= CurrentMessage.Duration)
+            if (Stopwatch.Elapsed.Seconds >= CurrentMessage.Duration)
             {
                 RemoveCurrent();
                 return true;

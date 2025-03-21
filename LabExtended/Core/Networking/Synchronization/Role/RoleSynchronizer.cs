@@ -19,36 +19,36 @@ namespace LabExtended.Core.Networking.Synchronization.Role
 
             for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
             {
-                var player = ExPlayer.AllPlayers[i];
+                var target = ExPlayer.AllPlayers[i];
 
-                if (player is null || !player || player.Role is null || player.SentRoles is null)
+                if (target is null || target.Role is null || target.SentRoles is null)
                     continue;
 
                 for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
                 {
-                    var other = ExPlayer.AllPlayers[x];
-                    var role = player.Role.Type;
+                    var receiver = ExPlayer.AllPlayers[x];
+                    var role = target.Role.Type;
 
-                    if (other is null || !other || other.Role is null)
+                    if (receiver is null || !receiver || receiver.Role is null)
                         continue;
 
-                    if (player.Role.Role is IObfuscatedRole obfuscatedRole)
-                        role = obfuscatedRole.GetRoleForUser(other.ReferenceHub);
+                    if (target.Role.Role is IObfuscatedRole obfuscatedRole)
+                        role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
 
-                    if (player.Role.FakedList.GlobalValue != RoleTypeId.None)
-                        role = player.Role.FakedList.GlobalValue;
+                    if (target.Role.FakedList.HasGlobalValue)
+                        role = target.Role.FakedList.GlobalValue;
 
-                    if (player.Role.FakedList.TryGetValue(other, out var fakedRole))
+                    if (target.Role.FakedList.TryGetValue(receiver, out var fakedRole))
                         role = fakedRole;
 
-                    if (!other.Role.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
+                    if (!receiver.Role.IsAlive && !target.Toggles.IsVisibleInSpectatorList)
                         role = RoleTypeId.Spectator;
 
-                    if (player.SentRoles.TryGetValue(other.NetworkId, out var sentRole) && sentRole == role)
+                    if (target.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) && sentRole == role)
                         continue;
 
-                    player.SentRoles[other.NetworkId] = role;
-                    other.Connection.Send(new RoleSyncInfo(player.ReferenceHub, role, other.ReferenceHub));
+                    target.SentRoles[receiver.NetworkId] = role;
+                    receiver.Connection.Send(new RoleSyncInfo(target.ReferenceHub, role, receiver.ReferenceHub));
                 }
             }
         }

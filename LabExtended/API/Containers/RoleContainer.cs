@@ -31,7 +31,7 @@ namespace LabExtended.API.Containers
 
         public PlayerRoleManager Manager { get; }
 
-        public FakeValue<RoleTypeId> FakedList { get; } = new FakeValue<RoleTypeId>() { GlobalValue = RoleTypeId.None };
+        public FakeValue<RoleTypeId> FakedList { get; } = new();
         
         public PlayerRoleBase Role => Manager.CurrentRole;
         public Type Class => Role.GetType();

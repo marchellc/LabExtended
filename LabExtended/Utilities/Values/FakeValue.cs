@@ -6,10 +6,10 @@ namespace LabExtended.Utilities.Values
     {
         private readonly Dictionary<uint, T> _values;
 
-        private T? globalValue;
+        private T globalValue;
         private bool hasGlobalValue;
 
-        public T? GlobalValue
+        public T GlobalValue
         {
             get
             {
@@ -20,22 +20,19 @@ namespace LabExtended.Utilities.Values
             }
             set
             {
-                if (value is null)
-                {
-                    hasGlobalValue = false;
-                    globalValue = default;
-                }
-                else
-                {
-                    hasGlobalValue = true;
-                    globalValue = value;
-                }
+                globalValue = value;
+                hasGlobalValue = true;
             }
+        }
+
+        public void ResetGlobalValue() {
+            hasGlobalValue = false;
+            globalValue = default;
         }
 
         public bool KeepOnDeath { get; set; }
         public bool KeepOnRoleChange { get; set; }
-        public bool KeepGlobalOnRoleChange { get; set; } = true;
+        public bool KeepGlobalOnRoleChange { get; set; }
 
         public bool HasGlobalValue => hasGlobalValue;
 
@@ -130,8 +127,7 @@ namespace LabExtended.Utilities.Values
 
             if (resetGlobalValue)
             {
-                hasGlobalValue = false;
-                globalValue = default;
+                ResetGlobalValue();
             }
         }
     }
