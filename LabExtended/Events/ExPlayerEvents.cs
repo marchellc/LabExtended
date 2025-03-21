@@ -18,6 +18,11 @@ public static class ExPlayerEvents
     public static event Action<ExPlayer>? Joined;
 
     /// <summary>
+    /// Gets called when a player finishes authentification.
+    /// </summary>
+    public static event Action<ExPlayer>? Verified; 
+
+    /// <summary>
     /// Gets called after the player's object is destroyed.
     /// </summary>
     public static event Action<ExPlayer>? Left; 
@@ -101,6 +106,13 @@ public static class ExPlayerEvents
     /// <param name="player">Player who joined.</param>
     public static void OnJoined(ExPlayer player)
         => Joined.InvokeSafe(player);
+    
+    /// <summary>
+    /// Invokes the <see cref="Verified"/> event.
+    /// </summary>
+    /// <param name="player">The player who just verified.</param>
+    public static void OnVerified(ExPlayer player)
+        => Verified.InvokeSafe(player);
     
     /// <summary>
     /// Invokes the <see cref="Left"/> event.

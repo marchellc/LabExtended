@@ -18,7 +18,7 @@ public class TranspilerContext
     {
         public OpCode ExpectedCode;
         public object? ExpectedOperand;
-        public int Offset;
+        public int? Offset;
     }
 
     private CodeMatch? prevMatch;
@@ -84,7 +84,7 @@ public class TranspilerContext
     /// <param name="expectedCode">The expected OpCode.</param>
     /// <param name="expectedOperand">The expected operand.</param>
     /// <param name="offset">The after index offset.</param>
-    public void CheckAfterIndex(OpCode expectedCode, object? expectedOperand = null, int offset = -1)
+    public void CheckAfterIndex(OpCode expectedCode, object? expectedOperand = null, int? offset = null)
         => afterMatch = new CodeMatch { ExpectedCode = expectedCode, ExpectedOperand = expectedOperand, Offset = offset };
 
     /// <summary>
@@ -93,7 +93,7 @@ public class TranspilerContext
     /// <param name="expectedCode">The expected OpCode.</param>
     /// <param name="expectedOperand">The expected operand.</param>
     /// <param name="offset">The before index offset.</param>
-    public void CheckBeforeIndex(OpCode expectedCode, object? expectedOperand = null, int offset = -1)
+    public void CheckBeforeIndex(OpCode expectedCode, object? expectedOperand = null, int? offset = null)
         => prevMatch = new CodeMatch { ExpectedCode = expectedCode, ExpectedOperand = expectedOperand, Offset = offset };
     
     /// <summary>
@@ -104,9 +104,14 @@ public class TranspilerContext
     /// <param name="offset"></param>
     /// <returns>The found index.</returns>
     /// <exception cref="Exception"></exception>
-    public int FindIndex(OpCode expectedOpCode, object? expectedOperand = null, int offset = -1)
+    public int FindIndex(OpCode expectedOpCode, object? expectedOperand = null, int? offset = null)
     {
-        for (var i = offset < 0 ? 0 : offset; i < Instructions.Count; i++)
+        var i = 0;
+        
+        if (offset.HasValue)
+            i += offset.Value;
+        
+        for (; i < Instructions.Count; i++)
         {
             var instruction = Instructions[i];
 
@@ -120,8 +125,10 @@ public class TranspilerContext
 
             if (prevMatch.HasValue)
             {
-                var prevOffset = prevMatch.Value.Offset < 0 ? 0 : prevMatch.Value.Offset;
-                var prevIndex = i - prevOffset;
+                var prevIndex = i;
+                
+                if (prevMatch.Value.Offset.HasValue)
+                    prevIndex += prevMatch.Value.Offset.Value;
 
                 if (i >= 0 && i < Instructions.Count)
                 {
@@ -139,8 +146,10 @@ public class TranspilerContext
 
             if (afterMatch.HasValue)
             {
-                var afterOffset = afterMatch.Value.Offset < 0 ? 0 : afterMatch.Value.Offset;
-                var afterIndex = i + afterOffset;
+                var afterIndex = i;
+                
+                if (afterMatch.Value.Offset.HasValue)
+                    afterIndex += afterMatch.Value.Offset.Value;
 
                 if (afterIndex >= 0 && afterIndex < Instructions.Count)
                 {
@@ -160,7 +169,33 @@ public class TranspilerContext
             return Index;
         }
 
-        throw new Exception($"Could not find expected OpCode {expectedOpCode}.");
+        ApiLog.Error("Transpiler Context",
+            $"\nCould not find targeted code in method &1{Method.GetMemberName()}&r!\n" +
+                 $"&3Targeted OpCode&r: &6{expectedOpCode}&r\n" +
+                 $"&3Targeted Operand&r: &6{expectedOperand?.ToString() ?? "null"}&r\n" +
+                 $"&3Targeted Offset&r: &6{offset}&r");
+        
+        ApiLog.Error("Transpiler Context", StringBuilderPool.Shared.BuildString(x =>
+        {
+            x.AppendLine($"&3Method Size&r = &6{Instructions.Count}&r");
+
+            if (Instructions.Count > 0)
+                x.AppendLine();
+
+            for (var i = 0; i < Instructions.Count; i++)
+            {
+                var instruction = Instructions[i];
+
+                x.Append($"&3Method Index&r &1{i}&r = &6{instruction.opcode}&r");
+
+                if (instruction.operand != null)
+                    x.Append($" &2({instruction.operand})&r");
+
+                x.AppendLine();
+            }
+        }));
+        
+        return -1;
     }
 
     /// <summary>
