@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
+
 using LabExtended.Extensions;
+
 using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
 
@@ -55,7 +57,7 @@ public class CommandOverload
     /// <summary>
     /// Gets the overload's name.
     /// </summary>
-    public string Name { get; }
+    public string Name { get; internal set; }
     
     /// <summary>
     /// Gets the overload's buffer.
@@ -64,20 +66,31 @@ public class CommandOverload
 
     /// <summary>
     /// Creates a new <see cref="CommandOverload"/> instance.
+    /// <param name="target">The method that this overload targets.</param>
     /// </summary>
     public CommandOverload(MethodInfo target)
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
+
+        var parameters = target.GetAllParameters();
         
         Target = target;
-        ParameterCount = target.GetAllParameters().Length;
-        RequiredParameters = target.GetAllParameters().Count(x => !x.HasDefaultValue);
+        ParameterCount = parameters.Length;
+        RequiredParameters = parameters.Count(x => !x.HasDefaultValue);
 
         IsCoroutine = target.ReturnType == typeof(IEnumerator<float>);
         
         Method = FastReflection.ForMethod(Target);
 
-        Buffer = new([ParameterCount], () => [ParameterCount]);
+        foreach (var parameter in parameters)
+        {
+            var builder = new CommandParameterBuilder(parameter);
+            
+            ParameterBuilders.Add(parameter.Name, builder);
+            Parameters.Add(builder.Result);
+        }
+
+        Buffer = new(new object[ParameterCount], () => new object[ParameterCount]);
     }
 }

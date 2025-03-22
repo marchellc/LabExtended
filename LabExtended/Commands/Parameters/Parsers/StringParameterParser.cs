@@ -10,7 +10,8 @@ namespace LabExtended.Commands.Parameters.Parsers;
 public class StringParameterParser : CommandParameterParser
 {
     /// <inheritdoc cref="CommandParameterParser.Parse"/>
-    public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex, CommandContext context)
+    public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex,
+        CommandContext context, CommandParameter parameter)
     {
         if (token is StringToken stringToken)
             return new(true, stringToken.Value, null);

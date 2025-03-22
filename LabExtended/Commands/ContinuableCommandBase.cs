@@ -3,9 +3,14 @@
 using LabExtended.API;
 using LabExtended.Events;
 using LabExtended.Attributes;
+using LabExtended.Commands.Contexts;
+using LabExtended.Core;
 using LabExtended.Extensions;
-
+using LabExtended.Utilities.Update;
 using NorthwoodLib.Pools;
+using UnityEngine;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace LabExtended.Commands;
 
@@ -14,20 +19,30 @@ namespace LabExtended.Commands;
 /// </summary>
 public abstract class ContinuableCommandBase : CommandBase
 {
+    internal float remainingTime = 0f;
+    
+    internal bool updateAssigned;
+    internal bool hasExpired;
+    
     /// <summary>
     /// Gets the list of pending continuations.
     /// </summary>
     public static Dictionary<uint, ContinuableCommandBase> History { get; } = new();
-
+    
     /// <summary>
-    /// Gets the previously invoked command instance.
+    /// Gets the command's previous context.
     /// </summary>
-    public ContinuableCommandBase? Previous { get; internal set; }
+    public CommandContext PreviousContext { get; internal set; }
     
     /// <summary>
     /// Gets called once a command is continued.
     /// </summary>
     public abstract void OnContinued();
+
+    /// <summary>
+    /// Gets called once the command times out.
+    /// </summary>
+    public virtual void OnTimedOut() { }
 
     /// <summary>
     /// Responds to the player with a continuation.
@@ -48,6 +63,29 @@ public abstract class ContinuableCommandBase : CommandBase
         Response = new(true, true, StringBuilderPool.Shared.BuildString(contentBuilder));
     }
 
+    internal void Reset()
+    {
+        hasExpired = false;
+    }
+
+    internal void Update()
+    {
+        if (!hasExpired)
+        {
+            remainingTime -= Time.deltaTime;
+
+            if (remainingTime <= 0f)
+            {
+                hasExpired = true;
+                
+                OnTimedOut();
+
+                if (History.TryGetKey(this, out var netId))
+                    History.Remove(netId);
+            }
+        }
+    }
+    
     private static void OnPlayerLeft(ExPlayer player)
         => History.Remove(player.NetworkId);
 

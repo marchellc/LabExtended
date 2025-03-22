@@ -11,19 +11,13 @@ namespace LabExtended.Commands.Custom.Testing;
 public class TestCommand : CommandBase, IAllCommand
 {
     /// <summary>
-    /// A default no-body testing overload.
+    /// A default testing overload.
     /// </summary>
     [CommandOverload("test")]
-    public void TestOverload(string word)
+    public void TestOverload(
+        [CommandParameter("Word", "Testing word")] string word,
+        [CommandParameter("Second Word", "The second testing word")] string secondWord)
     {
-        Ok($"Test passed: {word}");
-    }
-
-    /// <inheritdoc cref="CommandBase.OnInitializeOverload"/>
-    public override void OnInitializeOverload(string overloadName, Dictionary<string, CommandParameterBuilder> parameters)
-    {
-        base.OnInitializeOverload(overloadName, parameters);
-
-        parameters["word"].WithDescription("A word");
+        Ok($"Test passed: {word} + {secondWord}");
     }
 }

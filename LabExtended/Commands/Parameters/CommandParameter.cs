@@ -1,7 +1,10 @@
-﻿using System.ComponentModel;
-using System.Reflection;
+﻿using System.Reflection;
 
+using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
+
+#pragma warning disable CS8618, CS9264
+#pragma warning disable CS8601 // Possible null reference assignment.
 
 namespace LabExtended.Commands.Parameters;
 
@@ -14,6 +17,11 @@ public class CommandParameter
     /// Gets the parameter's type.
     /// </summary>
     public CommandParameterType Type { get; }
+
+    /// <summary>
+    /// Gets the list of parameter arguments.
+    /// </summary>
+    public List<ICommandParameterArgument> Arguments { get; } = new();
     
     /// <summary>
     /// Gets the name of the parameter.
@@ -24,6 +32,16 @@ public class CommandParameter
     /// Gets the description of the parameter.
     /// </summary>
     public string Description { get; internal set; }
+    
+    /// <summary>
+    /// Gets the <see cref="CommandSystem.IUsageProvider.Usage"/> alias of this parameter.
+    /// </summary>
+    public string? UsageAlias => Type?.Parser?.UsageAlias;
+
+    /// <summary>
+    /// Gets the type's friendly alias.
+    /// </summary>
+    public string? FriendlyAlias => Type?.Parser?.FriendlyAlias;
 
     /// <summary>
     /// Whether or not this parameter is optional.
@@ -50,25 +68,19 @@ public class CommandParameter
         Name = parameterInfo.Name;
         HasDefault = parameterInfo.HasDefaultValue;
         DefaultValue = parameterInfo.DefaultValue;
+        Description = "None";
 
-        var descriptionAttribute = parameterInfo.GetCustomAttribute<DescriptionAttribute>();
-        
-        if (descriptionAttribute != null)
-            Description = descriptionAttribute.Description;
+        var parameterAttribute = parameterInfo.GetCustomAttribute<CommandParameterAttribute>();
 
-        Description ??= "None";
-    }
-
-    /// <summary>
-    /// Gets a value indicating whether or not the token can be accepted by this parameter.
-    /// </summary>
-    /// <param name="token">The token.</param>
-    /// <returns>true if the token is acceptable</returns>
-    public bool AcceptsToken(ICommandToken token)
-    {
-        if (token is null)
-            throw new ArgumentNullException(nameof(token));
-        
-        return Type.Parser.AcceptsToken(token);
+        if (parameterAttribute != null)
+        {
+            Arguments.AddRange(parameterAttribute.Arguments);
+            
+            if (!string.IsNullOrWhiteSpace(parameterAttribute.Name))
+                Name = parameterAttribute.Name;
+            
+            if (!string.IsNullOrWhiteSpace(parameterAttribute.Description))
+                Description = parameterAttribute.Description;
+        }
     }
 }

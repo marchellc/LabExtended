@@ -1,10 +1,16 @@
-﻿using LabApi.Features.Enums;
+﻿using System.Text;
 
-using LabExtended.API;
+using LabApi.Features.Enums;
 
 using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
+
+using LabExtended.API;
+using LabExtended.Extensions;
+using LabExtended.Utilities;
+
+using NorthwoodLib.Pools;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
@@ -76,9 +82,17 @@ public class CommandBase
     /// Responds to the command.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
-    /// <param name="isSuccess">Whether or not the command was succesfully executed.</param>
+    /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
     public void Respond(object content, bool isSuccess = true)
         => Response = new(isSuccess, false, content.ToString());
+
+    /// <summary>
+    /// Responds to the command.
+    /// </summary>
+    /// <param name="contentBuilder">Delegate used to build the command's response.</param>
+    /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
+    public void Respond(Action<StringBuilder> contentBuilder, bool isSuccess = true)
+        => Response = new(isSuccess, false, StringBuilderPool.Shared.BuildString(contentBuilder));
     
     /// <summary>
     /// Responds to the command with a success.
@@ -88,16 +102,64 @@ public class CommandBase
         => Response = new(true, false, content.ToString());
     
     /// <summary>
+    /// Responds to the command with a success.
+    /// </summary>
+    /// <param name="contentBuilder">The delegate used to build the command's response.</param>
+    public void Ok(Action<StringBuilder> contentBuilder)
+        => Response = new(true, false, StringBuilderPool.Shared.BuildString(contentBuilder));
+    
+    /// <summary>
     /// Responds to the command with a failure.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
     public void Fail(object content)
         => Response = new(false, false, content.ToString());
+    
+    /// <summary>
+    /// Responds to the command with a failure.
+    /// </summary>
+    /// <param name="contentBuilder">The delegate used to build the command's response.</param>
+    public void Fail(Action<StringBuilder> contentBuilder)
+        => Response = new(false, false, StringBuilderPool.Shared.BuildString(contentBuilder));
 
     /// <summary>
     /// Writes a message into the sender's console.
     /// </summary>
     /// <param name="content">The message to show.</param>
-    public void Write(object content)
-        => Sender.SendRemoteAdminMessage(content, true, true, CommandData.Name);
+    /// <param name="success">Whether or not to show the message as successful.</param>
+    public void Write(object content, bool success = true)
+        => Sender.SendRemoteAdminMessage(content, success, true, CommandData.Name);
+
+    /// <summary>
+    /// Writes a message into the sender's console.
+    /// </summary>
+    /// <param name="contentBuilder">The delegate used to build the message.</param>
+    /// <param name="success">Whether or not to show the message as successful.</param>
+    public void Write(Action<StringBuilder> contentBuilder, bool success = true)
+    {
+        if (CommandType is CommandType.Client)
+            Sender.SendConsoleMessage(StringBuilderPool.Shared.BuildString(contentBuilder), success ? "green" : "red");
+        else
+            Sender.SendRemoteAdminMessage(StringBuilderPool.Shared.BuildString(contentBuilder), success, true, CommandData.Name);
+    }
+
+    /// <summary>
+    /// Writes a message into the sender's console (you should use this method if you want to respond from another thread).
+    /// </summary>
+    /// <param name="content">The content of the message.</param>
+    /// <param name="success">Whether or not to show the message as successful.</param>
+    public void WriteThread(object content, bool success = true)
+    {
+        ThreadUtils.RunOnMainThread(() => Write(content, success));
+    }
+    
+    /// <summary>
+    /// Writes a message into the sender's console (you should use this method if you want to respond from another thread).
+    /// </summary>
+    /// <param name="contentBuilder">The delegate used to build the message.</param>
+    /// <param name="success">Whether or not to show the message as successful.</param>
+    public void WriteThread(Action<StringBuilder> contentBuilder, bool success = true)
+    {
+        ThreadUtils.RunOnMainThread(() => Write(contentBuilder, success));
+    }
 }

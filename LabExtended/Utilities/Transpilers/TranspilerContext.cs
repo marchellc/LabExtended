@@ -557,6 +557,15 @@ public class TranspilerContext
 
         return Insert(new(OpCodes.Stloc_S, local.LocalIndex), labelNames);
     }
+    
+    /// <summary>
+    /// Stores a value from the stack into a local variable.
+    /// </summary>
+    /// <param name="localIndex">The variable index.</param>
+    /// <param name="labelNames">The labels to add with this instruction.</param>
+    /// <returns>This context.</returns>
+    public TranspilerContext StoreInLocal(int localIndex, params string[] labelNames)
+        => Insert(new(OpCodes.Stloc, localIndex), labelNames);
 
     /// <summary>
     /// Pushes a value onto the stack from a local variable.
@@ -576,6 +585,15 @@ public class TranspilerContext
 
         return Insert(new(OpCodes.Ldloc_S, local.LocalIndex), labelNames);
     }
+    
+    /// <summary>
+    /// Pushes a value onto the stack from a local variable.
+    /// </summary>
+    /// <param name="localIndex">The local variable's index.</param>
+    /// <param name="labelNames">The labels to add with this instruction.</param>
+    /// <returns>This context.</returns>
+    public TranspilerContext LoadFromLocal(int localIndex, params string[] labelNames)  
+        => Insert(new(OpCodes.Ldloc, localIndex), labelNames);
     
     /// <summary>
     /// Pushes the Ldc_I4_1 (or Ldc_I4_0 if value is false) opcode onto the stack.

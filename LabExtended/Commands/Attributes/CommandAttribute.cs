@@ -12,6 +12,11 @@ public class CommandAttribute : Attribute
     public string Name { get; set; } = string.Empty;
     
     /// <summary>
+    /// Gets or sets the permission required by this command.
+    /// </summary>
+    public string Permission { get; set; }
+    
+    /// <summary>
     /// Gets or sets the description of the command.
     /// </summary>
     public string Description { get; set; } = string.Empty;
@@ -20,6 +25,16 @@ public class CommandAttribute : Attribute
     /// Whether or not this command should use a static instance.
     /// </summary>
     public bool IsStatic { get; set; } = false;
+
+    /// <summary>
+    /// Whether or not this command should be hidden from the help command & Remote Admin's suggestions.
+    /// </summary>
+    public bool IsHidden { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the timeout of a continuable command (in seconds).
+    /// </summary>
+    public float TimeOut { get; set; } = 0f;
 
     /// <summary>
     /// Gets a list of the command's aliases.

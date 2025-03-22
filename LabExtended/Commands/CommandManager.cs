@@ -3,23 +3,27 @@
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
 using LabApi.Features.Enums;
-
+using LabApi.Features.Permissions;
+using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
 using LabExtended.Commands.Tokens.Parsing;
 
-using LabExtended.Core;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
+using LabExtended.Utilities.Unity;
 
 using MEC;
 
 using NorthwoodLib.Pools;
 
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace LabExtended.Commands;
@@ -29,7 +33,13 @@ namespace LabExtended.Commands;
 /// </summary>
 public static class CommandManager
 {
-    private static readonly char[] spaceSeparator = [' '];
+    internal static readonly char[] spaceSeparator = [' '];
+    internal static IEnumerator<float>? helperCoroutine;
+
+    /// <summary>
+    /// Gets called after a command is executed.
+    /// </summary>
+    public static event Action<CommandContext>? Executed; 
     
     /// <summary>
     /// Gets a list of all registered commands.
@@ -72,18 +82,18 @@ public static class CommandManager
                 continue;
             }
             
-            if (commandAttribute.IsStatic && type.InheritsType<ContinuableCommandBase>())
-                ApiLog.Warn("Command Manager", $"Command &3{type.FullName}&r enabled it's &6IsStatic&r property, " +
-                                               $"but continuable commands cannot be static.");
+            if (!commandAttribute.IsStatic && type.InheritsType<ContinuableCommandBase>())
+                ApiLog.Warn("Command Manager", $"Command &3{type.FullName}&r disabled it's &6IsStatic&r property, " +
+                                               $"but continuable commands must be static.");
             
-            var instance = new CommandInstance(type, commandAttribute.Name, commandAttribute.Description,
-                commandAttribute.IsStatic, commandAttribute.Aliases);
+            var instance = new CommandInstance(type, commandAttribute.Name, commandAttribute.Permission, commandAttribute.Description,
+                commandAttribute.IsStatic,  commandAttribute.IsHidden, commandAttribute.TimeOut > 0f ? commandAttribute.TimeOut : null, commandAttribute.Aliases);
 
             if (instance is { SupportsPlayer: false, SupportsServer: false, SupportsRemoteAdmin: false })
             {
                 ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any enabled input sources." +
                                                $"You can enable those by adding one of the source interfaces to the command class" +
-                                               $"(for example IRemoteAdminCommand, or for simplicity IAllCommand or IServerCommand)");
+                                               $"(for example &2IRemoteAdminCommand&r, or for simplicity &2IAllCommand&r or &2IServerCommand&r)");
                 
                 continue;
             }
@@ -105,9 +115,9 @@ public static class CommandManager
                 }
 
                 var overload = new CommandOverload(method);
-
-                foreach (var parameter in method.GetAllParameters())
-                    overload.ParameterBuilders.Add(parameter.Name, new(parameter));
+                
+                if (!string.IsNullOrWhiteSpace(commandOverloadAttribute.Name))
+                    overload.Name = commandOverloadAttribute.Name;
                 
                 instance.Overloads.Add(overload);
             }
@@ -128,335 +138,278 @@ public static class CommandManager
         return registered;
     }
 
-    // Handles custom command execution.
-    private static void OnCommand(CommandExecutingEventArgs args)
+    /// <summary>
+    /// Attempts to invoke a command.
+    /// </summary>
+    /// <param name="command">The command to invoke.</param>
+    /// <param name="results">Parsing results to copy to buffer.</param>
+    /// <returns>true if the command was successfully invoked</returns>
+    public static bool TryInvokeCommand(CommandBase command, List<CommandParameterParserResult> results)
     {
-        if (!ExPlayer.TryGet(args.Sender, out var player))
-            return;
+        var buffer = CopyBuffer(command.Context, results);
         
-        ApiLog.Debug("Command Manager", $"Handling command event, sender &1{args.Sender.LogName}&r");
-
         try
         {
-            var commandLine = string.Join(" ", args.Arguments.Array);
+            var result = command.Overload.Method(command, buffer);
+
+            if (result is IEnumerator<float> coroutine)
+                RunCoroutineCommand(command.Context, coroutine);
             
-            ApiLog.Debug("Command Manager", $"Joined commandLine: &6{commandLine}&r");
+            command.Overload.Buffer.Return(buffer);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            command.Overload.Buffer.Return(buffer);
+            command.Context.Response = new(false, false, command.Context.FormatExceptionResponse(ex));
+            
+            return false;
+        }
+    }
 
-            if (ContinuableCommandBase.History.TryGetValue(player.NetworkId, out var history))
+    /// <summary>
+    /// Attempts to find an overload compatible with parsed arguments.
+    /// </summary>
+    /// <param name="ctx">The command context.</param>
+    /// <param name="results">The parsed results.</param>
+    /// <param name="result">The parser result.</param>
+    /// <returns>true if an overload was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryFindOverload(CommandContext ctx, List<CommandParameterParserResult> results, out CommandParameterParserResult result)
+    {
+        if (ctx is null)
+            throw new ArgumentNullException(nameof(ctx));
+        
+        if (results is null)
+            throw new ArgumentNullException(nameof(results));
+        
+        if (ctx.Command.Overloads.Count == 1)
+        {
+            ctx.Overload = ctx.Command.Overloads[0];
+
+            result = CommandParameterParserUtils.ParseParameters(ctx, results);
+
+            if (!result.Success)
+                return false;
+
+            if (results.Count(r => r.Success) != ctx.Overload.ParameterCount)
             {
-                ApiLog.Debug("Command Manager", $"Player has an active continuable command");
-                
-                ContinuableCommandBase.History.Remove(player.NetworkId);
-
-                args.IsAllowed = false;
-
-                var newCommand = history.CommandData.GetInstance() as ContinuableCommandBase;
-                var newArgs = ListPool<string>.Shared.Rent(args.Arguments.Array);
-
-                var commandContext = new CommandContext()
-                {
-                    Sender = player,
-                    Command = history.CommandData,
-                    Line = commandLine,
-                    Args = newArgs,
-                    Type = args.CommandType,
-                    Instance = newCommand
-                };
-
-                newCommand.Previous = history;
-                newCommand.Context = commandContext;
-                
-                ApiLog.Debug("Command Manager", $"Running continuable command");
-
-                RunContinuableCommand(commandContext, newCommand);
+                result = new(false, null, "INVALID_ARGS");
+                return false;
             }
-            else
+            
+            return true;
+        }
+
+        for (var i = 0; i < ctx.Command.Overloads.Count; i++)
+        {
+            var overload = ctx.Command.Overloads[i];
+
+            results.Clear();
+            result = CommandParameterParserUtils.ParseParameters(ctx, results);
+
+            if (!result.Success)
+                continue;
+
+            if (results.Count(r => r.Success) != overload.ParameterCount)
             {
-                if (args.CommandFound && !ApiLoader.ApiConfig.CommandSection.AllowOverride)
+                result = new(false, null, "INVALID_ARGS");
+                return false;
+            }
+
+            ctx.Overload = overload;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to find a command for a given command line.
+    /// </summary>
+    /// <param name="commandLine">The command line.</param>
+    /// <param name="type">The type of executed command.</param>
+    /// <param name="command">The target command.</param>
+    /// <returns>true if the command was found</returns>
+    public static bool TryFindCommand(string commandLine, CommandType? type, out CommandInstance? command)
+        => TryFindCommand(commandLine, type, null, out command, out _);
+
+    /// <summary>
+    /// Attempts to find a command for a given command line.
+    /// </summary>
+    /// <param name="commandLine">The command line.</param>
+    /// <param name="type">The type of executed command.</param>
+    /// <param name="rawArgs">A list of raw arguments separated by a space.</param>
+    /// <param name="targetCommand">The target command.</param>
+    /// <param name="fixedCommandLine">The fixed command line.</param>
+    /// <returns>true if the command was found</returns>
+    public static bool TryFindCommand(string commandLine, CommandType? type, List<string>? rawArgs, out CommandInstance? targetCommand, out string? fixedCommandLine)
+    {
+        if (string.IsNullOrWhiteSpace(commandLine))
+            throw new ArgumentNullException(nameof(commandLine));
+        
+        var commandLineSplit = commandLine.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
+        
+        for (var i = 0; i < Commands.Count; i++)
+        {
+            var cmd = Commands[i];
+
+            if (type.HasValue)
+            {
+                switch (type)
                 {
-                    ApiLog.Debug("Command Manager", $"Base-game command was found and override is disabled");
+                    case CommandType.Client when !cmd.SupportsPlayer:
+                    case CommandType.Console when !cmd.SupportsServer:
+                    case CommandType.RemoteAdmin when !cmd.SupportsRemoteAdmin:
+                        continue;
+                }
+            }
+
+            if (commandLineSplit.Length < cmd.NameParts.Length)
+                continue;
+
+            var isMatched = false;
+                    
+            for (var x = 0; x < commandLineSplit.Length; x++)
+            {
+                if (x < cmd.NameParts.Length)
+                {
+                    if (!string.Equals(commandLineSplit[x], cmd.NameParts[x], StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        isMatched = false;
+                        break;
+                    }
+                }
+                
+                rawArgs?.Add(commandLineSplit[x].Trim(spaceSeparator));
+                
+                isMatched = true;
+            }
+                    
+            if (!isMatched)
+                continue;
+
+            targetCommand = cmd;
+            
+            fixedCommandLine = commandLine.Substring(cmd.Name.Length, commandLine.Length - cmd.Name.Length)
+                .TrimStart(spaceSeparator)
+                .TrimEnd(spaceSeparator);
+            return true;
+        }
+
+        fixedCommandLine = null;
+        targetCommand = null;
+
+        return false;
+    }
+
+    // Handles custom command execution.
+    private static void OnCommand(CommandExecutingEventArgs ev)
+    {
+        if (ev.CommandFound && !ApiLoader.ApiConfig.CommandSection.AllowOverride)
+            return;
+        
+        try
+        {       
+            if (!ExPlayer.TryGet(ev.Sender, out var player))
+                return;
+            
+            if (HandleContinuable(ev, player, out var line))
+                return;
+
+            var args = ListPool<string>.Shared.Rent();
+
+            if (!TryFindCommand(line, ev.CommandType, args, out var command, out line))
+            {
+                ListPool<string>.Shared.Return(args);
+                return;
+            }
+
+            ev.IsAllowed = false;
+
+            if (command.Permission != null && !player.HasPermissions(command.Permission))
+            {
+                ev.Sender.Respond(CommandResponseFormatter.FormatMissingPermissionsFailure(command.Permission, command.Name, ev.CommandType));
+                
+                ListPool<string>.Shared.Return(args);
+                return;
+            }
+
+            var tokens = ListPool<ICommandToken>.Shared.Rent();
+            var context = new CommandContext();
+            
+            context.Args = args;
+            context.Line = line;
+            context.Sender = player;
+            context.Tokens = tokens;
+            context.Command = command;
+
+            context.Type = ev.CommandType;
+
+            if (line?.Length > 0)
+            {
+                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens);
+
+                if (!tokenParsingResult.IsSuccess)
+                {
+                    context.Response = new(false, false, context.FormatTokenParserFailure(tokenParsingResult));
+
+                    OnExecuted(context);
                     return;
                 }
-
-                var commandFound = false;
-                var command = default(CommandInstance);
-                
-                ApiLog.Debug("Command Manager", $"Searching for commands .. (&1{Commands.Count}&r)");
-                
-                Commands.ForEach(cmd =>
-                {
-                    ApiLog.Debug("Command Manager", $"Checking command &1{cmd.Name}&r");
-                        
-                    if (commandFound)
-                        return;
-
-                    switch (args.CommandType)
-                    {
-                        case CommandType.Client when !cmd.SupportsPlayer:
-                        case CommandType.Console when !cmd.SupportsServer:
-                        case CommandType.RemoteAdmin when !cmd.SupportsRemoteAdmin:
-                            ApiLog.Debug("Command Manager", $"Command does not support source console");
-                            return;
-                    }
-
-                    if (!commandLine.StartsWith(cmd.Name))
-                    {
-                        ApiLog.Debug("Command Manager", $"commandLine check failed");
-                        return;
-                    }
-
-                    commandLine = commandLine.Substring(0, cmd.Name.Length);
-                    command = cmd;
-                    commandFound = true;
-                        
-                    ApiLog.Debug("Command Manager", $"Command has been found: &1{cmd.Name}&r");
-                });
-
-                if (commandFound)
-                {
-                    args.IsAllowed = false;
-
-                    var commandArgs =
-                        ListPool<string>.Shared.Rent(commandLine.Split(spaceSeparator,
-                            StringSplitOptions.RemoveEmptyEntries));
-                    var commandTokens = ListPool<ICommandToken>.Shared.Rent();
-
-                    var commandContext = new CommandContext()
-                    {
-                        Sender = player,
-                        Command = command,
-                        Args = commandArgs,
-                        Line = commandLine,
-                        Tokens = commandTokens,
-                        Type = args.CommandType
-                    };
-
-                    ApiLog.Debug("Command Manager", $"Parsing tokens");
-
-                    if (!string.IsNullOrWhiteSpace(commandLine))
-                    {
-                        var tokenResult = CommandTokenParser.ParseTokens(commandLine, commandTokens);
-
-                        if (!tokenResult.IsSuccess)
-                        {
-                            ApiLog.Debug("Command Manager", $"Token parsing failed: &1{tokenResult.Error}&r");
-
-                            ListPool<ICommandToken>.Shared.Return(commandTokens);
-                            ListPool<string>.Shared.Rent(commandArgs);
-
-                            if (args.CommandType is CommandType.Console or CommandType.RemoteAdmin)
-                            {
-                                player.SendRemoteAdminMessage(FormatTokenParserFailure(commandContext, tokenResult,
-                                    true, false), false, true, command.Name);
-                            }
-                            else
-                            {
-                                player.SendConsoleMessage(FormatTokenParserFailure(commandContext, tokenResult,
-                                    false, true), "red");
-                            }
-
-                            return;
-                        }
-                    }
-
-                    ApiLog.Debug("Command Manager", $"Token parsing success");
-
-                    var parserResults = ListPool<CommandParameterParserResult>.Shared.Rent(5);
-
-                    var targetOverload = default(CommandOverload);
-                    var targetBuffer = default(object[]);
-
-                    if (command.Overloads.Count == 1)
-                    {
-                        ApiLog.Debug("Command Manager", $"Selecting single overload");
-
-                        targetOverload = command.Overloads[0];
-
-                        var successCount = parserResults.Count(x => x.Success);
-
-                        ApiLog.Debug("Command Manager",
-                            $"Successful parameters: &2{successCount}&r / &3{targetOverload.ParameterCount}&r");
-
-                        if (successCount != targetOverload.Parameters.Count)
-                        {
-                            ApiLog.Debug("Command Manager", $"Overload parsing failed");
-                            return;
-                        }
-
-                        targetBuffer = targetOverload.Buffer.Rent();
-
-                        for (int i = 0; i < parserResults.Count; i++)
-                            targetBuffer[i] = parserResults[i].Value;
-
-                        ApiLog.Debug("Command Manager",
-                            $"Selected first overload (&1{targetOverload.Target.GetMemberName(true)}&r)");
-                    }
-                    else
-                    {
-                        ApiLog.Debug("Command Manager", $"Selecting from multiple overloads");
-
-                        command.Overloads.ForEach(ov =>
-                        {
-                            if (targetOverload != null)
-                                return;
-
-                            parserResults.Clear();
-
-                            if (parserResults.Capacity < ov.Parameters.Count)
-                                parserResults.Capacity = ov.Parameters.Count;
-
-                            ApiLog.Debug("Command Manager", $"Parsing overload &1{ov.Target.GetMemberName()}&r");
-
-                            CommandParameterParser.ParseParameters(ov, commandTokens, parserResults,
-                                commandContext);
-
-                            var successCount = parserResults.Count(x => x.Success);
-
-                            ApiLog.Debug("Command Manager",
-                                $"Successful parameters: &2{successCount}&r / &3{ov.ParameterCount}&r");
-
-                            if (successCount != ov.Parameters.Count)
-                            {
-                                ApiLog.Debug("Command Manager", $"Overload parsing failed");
-                                return;
-                            }
-
-                            targetOverload = ov;
-                            targetBuffer = ov.Buffer.Rent();
-
-                            for (int i = 0; i < parserResults.Count; i++)
-                                targetBuffer[i] = parserResults[i].Value;
-
-                            ApiLog.Debug("Command Manager",
-                                $"Selected target overload &1{targetOverload.Target.GetMemberName(true)}&r");
-                        });
-                    }
-
-                    ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
-
-                    if (targetOverload is null)
-                    {
-                        ApiLog.Debug("Command Manager", $"No overload was found");
-
-                        ListPool<ICommandToken>.Shared.Return(commandTokens);
-                        ListPool<string>.Shared.Rent(commandArgs);
-
-                        if (args.CommandType is CommandType.Console or CommandType.RemoteAdmin)
-                        {
-                            player.SendRemoteAdminMessage(FormatNoOverloadsFailure(commandContext, true, false),
-                                false, true, command.Name);
-                        }
-                        else
-                        {
-                            player.SendConsoleMessage(FormatNoOverloadsFailure(commandContext, false, true),
-                                "red");
-                        }
-                    }
-                    else
-                    {
-                        ApiLog.Debug("Command Manager", $"Overload found, constructing instance");
-
-                        var instance = command.GetInstance();
-
-                        instance.Context = commandContext;
-
-                        commandContext.Instance = instance;
-                        commandContext.Overload = targetOverload;
-
-                        ApiLog.Debug("Command Manager", $"Set up instance");
-
-                        if (!targetOverload.IsInitialized)
-                        {
-                            ApiLog.Debug("Command Manager", $"Initializing overload");
-
-                            instance.OnInitializeOverload(targetOverload.Name, targetOverload.ParameterBuilders);
-
-                            targetOverload.Parameters.Clear();
-                            targetOverload.ParameterBuilders.ForEach(
-                                p => targetOverload.Parameters.Add(p.Value.Result));
-
-                            targetOverload.IsInitialized = true;
-
-                            ApiLog.Debug("Command Manager", $"Overload initialized");
-                        }
-
-                        ApiLog.Debug("Command Manager", $"Invoking overload");
-
-                        object? result = null;
-
-                        try
-                        {
-                            result = targetOverload.Method(instance, targetBuffer);
-                        }
-                        catch (Exception ex)
-                        {
-                            ApiLog.Error("Command Manager", ex);
-
-                            if (args.CommandType is CommandType.Console or CommandType.RemoteAdmin)
-                            {
-                                player.SendRemoteAdminMessage(FormatExceptionResponse(commandContext, ex,
-                                    true, false), false, true, command.Name);
-                            }
-                            else
-                            {
-                                player.SendConsoleMessage(FormatExceptionResponse(commandContext, ex,
-                                    false, true), "red");
-                            }
-
-                            return;
-                        }
-
-                        ApiLog.Debug("Command Manager",
-                            $"Overload invoked, result: &1{result?.GetType()?.FullName ?? "null"}&r");
-
-                        if (result is IEnumerator<float> coroutine)
-                        {
-                            ApiLog.Debug("Command Manager", $"Running coroutine");
-
-                            RunCoroutineCommand(commandContext, coroutine);
-                        }
-                        else
-                        {
-                            ApiLog.Debug("Command Manager", $"Returning response");
-
-                            if (commandContext.Response.HasValue)
-                            {
-                                if (args.CommandType is CommandType.Console or CommandType.RemoteAdmin)
-                                {
-                                    player.SendRemoteAdminMessage(
-                                        FormatCommandResponse(commandContext, true, false),
-                                        commandContext.Response?.IsSuccess ?? false, true, command.Name);
-                                }
-                                else
-                                {
-                                    player.SendConsoleMessage(FormatCommandResponse(commandContext, false, true),
-                                        commandContext.Response is { IsSuccess: true } ? "green" : "red");
-                                }
-                            }
-
-                            if (commandContext is
-                                {
-                                    Response: { IsContinuted: true },
-                                    Instance: ContinuableCommandBase continuableCommand
-                                })
-                                ContinuableCommandBase.History[commandContext.Sender.NetworkId] = continuableCommand;
-                        }
-
-                        ApiLog.Debug("Command Manager", $"Returning buffer");
-
-                        targetOverload.Buffer.Return(targetBuffer);
-
-                        if (!command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling)
-                            command.DynamicPool.Add(instance);
-
-                        ApiLog.Debug("Command Manager", $"Command execution completed");
-                    }
-                }
             }
+            
+            var parserResults = ListPool<CommandParameterParserResult>.Shared.Rent();
+
+            if (!TryFindOverload(context, parserResults, out var parserResult))
+            {
+                if (!context.Response.HasValue)
+                {
+                    if (parserResult.Error is "MISSING_ARGS")
+                        context.Response = new(false, false, context.FormatMissingArgumentsFailure());
+                    else if (parserResult.Error is "INVALID_ARGS")
+                        context.Response = new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                    else
+                        context.Response = new(false, false, context.FormatNoOverloadsFailure());
+                }
+
+                OnExecuted(context);
+                return;
+            }
+            
+            var instance = command.GetInstance();
+
+            if (instance is null)
+            {
+                context.Response = new(false, false, "Failed to retrieve command instance!");
+                
+                OnExecuted(context);
+                return;
+            }
+
+            instance.Context = context;
+            context.Instance = instance;
+
+            if (!context.Overload.IsInitialized)
+            {
+                instance.OnInitializeOverload(context.Overload.Name, context.Overload.ParameterBuilders);
+                
+                context.Overload.IsInitialized = true;
+            }
+
+            TryInvokeCommand(instance, parserResults);
+            
+            OnExecuted(context);
+            
+            ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
         }
         catch (Exception ex)
         {
             ApiLog.Error("Command Manager", $"An error occured while executing command:\n{ex.ToColoredString()}");
+
+            ev.IsAllowed = false;
+            ev.Sender.Respond(ex.Message, false);
         }
     }
 
@@ -470,189 +423,109 @@ public static class CommandManager
         {
             ApiLog.Error("Command Manager", $"An error occured while handling continuable command &1{ctx.Command.Name}&r:\n" +
                                             $"{ex.ToColoredString()}");
-            
-            if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
-            {
-                ctx.Sender.SendRemoteAdminMessage(FormatExceptionResponse(ctx, ex, 
-                    true, false), false, true, ctx.Command.Name);
-            }
-            else
-            {
-                ctx.Sender.SendConsoleMessage(FormatExceptionResponse(ctx, ex, 
-                    false, true), "red");
-            }
 
-            return;
+            ctx.Response = new(false, false, ex.Message);
         }
-
-        if (ctx.Response.HasValue)
-        {
-            if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
-            {
-                ctx.Sender.SendRemoteAdminMessage(FormatCommandResponse(ctx, true, false),
-                    ctx.Response.Value.IsSuccess, true, ctx.Command.Name);
-            }
-            else
-            {
-                ctx.Sender.SendConsoleMessage(FormatCommandResponse(ctx, false, true),
-                    ctx.Response.Value.IsSuccess ? "green" : "red");
-            }
-        }
-
-        if (command.Response is { IsContinuted: true })
-            ContinuableCommandBase.History[ctx.Sender.NetworkId] = command;
         
-        if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling)
-            ctx.Command.DynamicPool.Add(command);
+        OnExecuted(ctx);
     }
 
     private static void RunCoroutineCommand(CommandContext ctx, IEnumerator<float> coroutine)
     {
-        if (ctx.Response.HasValue)
-        {
-            if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
-            {
-                ctx.Sender.SendRemoteAdminMessage(FormatCommandResponse(ctx, true, false),
-                    ctx.Response?.IsSuccess ?? false, true, ctx.Command.Name);
-            }
-            else
-            {
-                ctx.Sender.SendConsoleMessage(FormatCommandResponse(ctx, false, true),
-                    ctx.Response is { IsSuccess: true } ? "green" : "red");
-            }
-        }
+        ctx.WriteResponse(out _);
+
+        Timing.RunCoroutine(helperCoroutine ??= HelperCoroutine(), Segment.FixedUpdate);
+        return;
 
         IEnumerator<float> HelperCoroutine()
         {
-            var handle = Timing.RunCoroutine(coroutine);
+            while (coroutine.MoveNext())
+                yield return coroutine.Current;
             
-            yield return Timing.WaitUntilDone(handle);
-            
-            if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
-            {
-                ctx.Sender.SendRemoteAdminMessage(FormatCommandResponse(ctx, true, false),
-                    ctx.Response?.IsSuccess ?? false, true, ctx.Command.Name);
-            }
-            else
-            {
-                ctx.Sender.SendConsoleMessage(FormatCommandResponse(ctx, false, true),
-                    ctx.Response is { IsSuccess: true } ? "green" : "red");
-            }
-            
-            if (ctx is { Response: { IsContinuted: true }, Instance: ContinuableCommandBase continuableCommand })
-                ContinuableCommandBase.History[ctx.Sender.NetworkId] = continuableCommand;
+            OnExecuted(ctx);
+        }
+    }
 
-            if (!ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling)
-                ctx.Command.DynamicPool.Add(ctx.Instance);
+    private static bool HandleContinuable(CommandExecutingEventArgs ev, ExPlayer player, out string line)
+    {
+        line = string.Join(" ", ev.Arguments.Array);
+        
+        if (!ContinuableCommandBase.History.TryGetValue(player.NetworkId, out var history)) 
+            return false;
+        
+        ContinuableCommandBase.History.Remove(player.NetworkId);
+
+        ev.IsAllowed = false;
+
+        var command = history.CommandData.GetInstance() as ContinuableCommandBase;
+        var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
+
+        var context = new CommandContext()
+        {
+            Args = args,
+            Line = line,
+            Sender = player,
+            Instance = command,
+                
+            Type = ev.CommandType,
+            Command = history.CommandData,
+        };
+
+        command.PreviousContext = command.Context;
+        command.Context = context;
+
+        RunContinuableCommand(context, command);
+        return true;
+    }
+
+    private static void OnExecuted(CommandContext ctx)
+    {
+        if (ctx.WriteResponse(out var continuableCommand))
+        {
+            ContinuableCommandBase.History[ctx.Sender.NetworkId] = continuableCommand;
+
+            if (continuableCommand.CommandData.TimeOut.HasValue)
+            {
+                continuableCommand.remainingTime = continuableCommand.CommandData.TimeOut.Value;
+
+                if (!continuableCommand.updateAssigned)
+                {
+                    PlayerLoopHelper.AfterLoop += continuableCommand.Update;
+
+                    continuableCommand.updateAssigned = true;
+                    continuableCommand.Reset();
+                }
+            }
         }
 
-        Timing.RunCoroutine(HelperCoroutine());
+        if (!ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling)
+            ctx.Command.DynamicPool.Add(ctx.Instance);
+        
+        Executed.InvokeSafe(ctx);
+
+        if (ctx.Args != null)
+            ListPool<string>.Shared.Return(ctx.Args);
+        
+        if (ctx.Tokens != null)
+            ListPool<ICommandToken>.Shared.Return(ctx.Tokens);
+        
+        ctx.Args = null;
+        ctx.Tokens = null;
     }
 
-    private static string FormatCommandResponse(CommandContext ctx, bool allowColors, bool isConsole)
+    private static object[] CopyBuffer(CommandContext ctx, List<CommandParameterParserResult> results)
     {
-        return StringBuilderPool.Shared.BuildString(x =>
+        var buffer = ctx.Overload.Buffer.Rent();
+
+        if (ctx.Overload.ParameterCount != 0)
         {
-            if (isConsole)
+            for (var i = 0; i < ctx.Overload.ParameterCount; i++)
             {
-                x.Append($"[");
-                x.Append(ctx.Command.Name);
-                x.Append("] ");
+                buffer[i] = results[i].Value;
             }
+        }
 
-            x.AppendLine(ctx.Response.Value.Content);
-        });
-    }
-
-    private static string FormatExceptionResponse(CommandContext ctx, Exception ex, bool allowColors, bool isConsole)
-    {
-        return StringBuilderPool.Shared.BuildString(x =>
-        {
-            if (isConsole)
-            {
-                x.Append($"[");
-                x.Append(ctx.Command.Name);
-                x.Append("] ");
-            }
-
-            x.AppendLine("Failed while invoking command: ");
-            x.AppendLine(ex.Message);
-        });
-    }
-
-    private static string FormatNoOverloadsFailure(CommandContext ctx, bool allowColors, bool isConsole)
-    {
-        return StringBuilderPool.Shared.BuildString(x =>
-        {
-            if (isConsole)
-            {
-                x.Append($"[");
-                x.Append(ctx.Command.Name);
-                x.Append("] ");
-            }
-
-            x.AppendLine("Failed while searching for compatible command overloads.");
-            x.AppendLine($"Use \"help {ctx.Command.Name}\" to get a list of command overloads.");
-        });
-    }
-
-    private static string FormatTokenParserFailure(CommandContext ctx, CommandTokenParserResult result, bool allowColors, bool isConsole)
-    {
-        return StringBuilderPool.Shared.BuildString(x =>
-        {
-            if (isConsole)
-            {
-                x.Append($"[");
-                x.Append(ctx.Command.Name);
-                x.Append("] ");
-            }
-
-            x.Append("Failed while parsing command arguments at position ");
-            x.Append(result.Position.Value);
-            x.Append(", faulty character: ");
-            x.Append(result.Character.Value);
-                
-            x.AppendLine();
-            x.AppendLine();
-            
-            if (allowColors)
-            {
-                x.Append("<color=green>");
-
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(result.Input[i]);
-                
-                x.Append("</color>");
-                
-                x.Append("<color=red>");
-                x.Append(result.Character.Value);
-                x.Append("</color>");
-
-                x.Append("<color=green>");
-                
-                for (var i = result.Position.Value; i < result.Input.Length; i++)
-                    x.Append(result.Input[i]);
-                
-                x.AppendLine("</color>");
-                
-                x.Append("<color=red>");
-
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(" ");
-
-                x.Append("^^</color>");
-            }
-            else
-            {
-                x.AppendLine(result.Input);
-                
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(" ");
-                
-                x.Append("^^");
-            }
-            
-        });
+        return buffer;
     }
 
     [LoaderInitialize(1)]

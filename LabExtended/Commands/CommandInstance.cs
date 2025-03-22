@@ -46,6 +46,16 @@ public class CommandInstance
     public string Name { get; }
     
     /// <summary>
+    /// Gets the name split by spaces.
+    /// </summary>
+    public string[] NameParts { get; }
+    
+    /// <summary>
+    /// Gets the permission required by this command.
+    /// </summary>
+    public string Permission { get; }
+    
+    /// <summary>
     /// Gets the description of the command.
     /// </summary>
     public string Description { get; }
@@ -76,18 +86,30 @@ public class CommandInstance
     public bool IsStatic { get; }
     
     /// <summary>
+    /// Whether or not this command should be hidden from Remote Admin's suggestions.
+    /// </summary>
+    public bool IsHidden { get; }
+    
+    /// <summary>
     /// Whether or not this command supports continuations.
     /// </summary>
     public bool IsContinuable { get; }
     
     /// <summary>
+    /// Gets the timeout of a continuable command.
+    /// </summary>
+    public float? TimeOut { get; }
+    
+    /// <summary>
     /// Creates a new <see cref="CommandInstance"/> instance.
     /// </summary>
-    public CommandInstance(Type type, string name, string description, bool isStatic, List<string> aliases)
+    public CommandInstance(Type type, string name, string permission, string description, bool isStatic, bool isHidden, float? timeOut, List<string> aliases)
     {
         Name = name;
         Type = type;
+        TimeOut = timeOut;
         Aliases = aliases;
+        Permission = permission;
         Description = description;
 
         SupportsRemoteAdmin = type.InheritsType<IRemoteAdminCommand>();
@@ -95,12 +117,20 @@ public class CommandInstance
         SupportsPlayer = type.InheritsType<IPlayerCommand>();
 
         IsContinuable = type.InheritsType<ContinuableCommandBase>();
-        IsStatic = isStatic && !IsContinuable;
+        IsStatic = isStatic || IsContinuable;
+        IsHidden = isHidden;
         
-        Constructor = FastReflection.ForConstructor(AccessTools.DeclaredConstructor(type));
+        Constructor = FastReflection.ForConstructor(AccessTools.Constructor(type));
+        
+        NameParts = name.Split(CommandManager.spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
 
         if (IsStatic)
+        {
             StaticInstance = (CommandBase)Constructor(Array.Empty<object>());
+
+            if (StaticInstance is null)
+                throw new Exception($"Could not construct static instance of {type.FullName}");
+        }
     }
 
     /// <summary>
@@ -109,7 +139,7 @@ public class CommandInstance
     /// <returns>The retrieved command instance.</returns>
     public CommandBase GetInstance()
     {
-        if (IsStatic)
+        if (IsStatic && StaticInstance != null)
             return StaticInstance;
 
         if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && DynamicPool.Count > 0)
