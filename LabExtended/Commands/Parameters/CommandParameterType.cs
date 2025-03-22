@@ -82,7 +82,7 @@ public class CommandParameterType
                     throw new Exception($"Could not generate a constructor for type {value.FullName}");
             }
 
-            if (!this.TryGetParser(out var parser))
+            if (!CommandParameterParserUtils.TryGetParser(value, out var parser))
                 throw new Exception($"No parsers are registered for type: {value.FullName}");
 
             Parser = parser;

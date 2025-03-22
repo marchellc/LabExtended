@@ -1,19 +1,21 @@
-﻿using LabExtended.Core;
+﻿using LabExtended.Attributes;
+using LabExtended.Commands.Parameters.Parsers.Wrappers;
 using LabExtended.Extensions;
+using LabExtended.Core;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Commands.Parameters;
 
 using Contexts;
 using Parsers;
-using Tokens;
 
 /// <summary>
 /// Used to manage argument parsing.
 /// </summary>
 public static class CommandParameterParserUtils
-{
-        /// <summary>
+{ 
+    /// <summary>
     /// Gets a list of all registered parsers.
     /// </summary>
     public static Dictionary<Type, CommandParameterParser> Parsers { get; } = new()
@@ -24,16 +26,89 @@ public static class CommandParameterParserUtils
     /// <summary>
     /// Attempts to find a suitable parameter parser.
     /// </summary>
-    /// <param name="parameterType">The type to find the parser for.</param>
+    /// <param name="type">The type to find the parser for.</param>
     /// <param name="parser">The found parser instance.</param>
     /// <returns>true if the parser was found</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryGetParser(this CommandParameterType parameterType, out CommandParameterParser parser)
+    public static bool TryGetParser(Type type, out CommandParameterParser parser)
     {
-        if (parameterType is null)
-            throw new ArgumentNullException(nameof(parameterType));
-        
-        return Parsers.TryGetValue(parameterType.Type, out parser);
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
+        if (Parsers.TryGetValue(type, out parser))
+            return true;
+
+        if (type.IsEnum)
+        {
+            parser = new EnumParameterParser(type);
+            
+            Parsers.Add(type, parser);
+            return true;
+        }
+
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType();
+            
+            parser = new ArrayWrapperParser(parser, elementType);
+            
+            Parsers.Add(type, parser);
+            return true;
+        }
+
+        if (type.IsConstructedGenericType)
+        {
+            var genericDefinition = type.GetGenericTypeDefinition();
+            var genericArgs = type.GetGenericArguments();
+
+            if (genericDefinition != null)
+            {
+                if (genericDefinition == typeof(List<>))
+                {
+                    var elementType = genericArgs[0];
+                    
+                    if (!TryGetParser(elementType, out var elementParser))
+                        return false;
+                    
+                    parser = new ListWrapperParser(elementParser, type);
+                    
+                    Parsers.Add(type, parser);
+                    return true;
+                }
+
+                if (genericDefinition == typeof(HashSet<>))
+                {
+                    var elementType = genericArgs[0];
+                    
+                    if (!TryGetParser(elementType, out var elementParser))
+                        return false;
+                    
+                    parser = new HashSetWrapperParser(elementParser, type);
+                    
+                    Parsers.Add(type, parser);
+                    return true;
+                }
+
+                if (genericDefinition == typeof(Dictionary<,>))
+                {
+                    var keyType = genericArgs[0];
+                    var valueType = genericArgs[1];
+
+                    if (!TryGetParser(keyType, out var keyParser))
+                        return false;
+                    
+                    if (!TryGetParser(valueType, out var valueParser))
+                        return false;
+                    
+                    parser = new DictionaryWrapperParser(type, keyParser, valueParser);
+                    
+                    Parsers.Add(type, parser);
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -92,52 +167,11 @@ public static class CommandParameterParserUtils
                 if (i < context.Tokens.Count)
                 {
                     var parameterToken = context.Tokens[i];
-
-                    if (parameterToken is PropertyToken propertyToken)
-                    {
-                        var propertyKey = string.Concat(propertyToken.Key, ".", propertyToken.Name);
-
-                        if (!PropertyToken.Properties.TryGetValue(propertyKey, out var property))
-                        {
-                            parserResults.Add(new(false, null, $"Unknown property: {propertyKey}", parameter));
-                            continue;
-                        }
-
-                        if (property.Key != parameter.Type.Type)
-                        {
-                            var propertyValue = property.Value(context);
-
-                            if (propertyValue is null)
-                            {
-                                parserResults.Add(new(false, null, 
-                                    $"Property {propertyKey} cannot be converted because it has a null value.", parameter));
-                                continue;
-                            }
-                            
-                            parserResults.Add(new(true, 
-                                Convert.ChangeType(propertyValue, parameter.Type.Type), null, parameter));
-                        }
-                        else
-                        {
-                            var propertyValue = property.Value(context);
-
-                            if (propertyValue is null)
-                            {
-                                parserResults.Add(new(false, null, 
-                                    $"Property {propertyKey} cannot be converted because it has a null value.", parameter));
-                                continue;
-                            }
-                            
-                            parserResults.Add(new(true, propertyValue, null, parameter));
-                        }
-
-                        continue;
-                    }
                     
                     if (!parameter.Type.Parser.AcceptsToken(parameterToken))
                     {
                         parserResults.Add(new(false, null,
-                            $"Token {parameterToken.GetType().Name} is not acceptable by parameter at position {i}", parameter));
+                            $"Token {parameterToken.GetType().Name} is not acceptable.", parameter));
                     }
                     else
                     {
@@ -166,5 +200,35 @@ public static class CommandParameterParserUtils
         }
 
         return new(true, null, null);
+    }
+
+    [LoaderInitialize(10)]
+    private static void OnInit()
+    {
+        try
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    foreach (var type in assembly.GetTypes())
+                    {
+                        try
+                        {
+                            if (!type.IsEnum)
+                                continue;
+                            
+                            if (Parsers.ContainsKey(type))
+                                continue;
+                            
+                            Parsers.Add(type, new EnumParameterParser(type));
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
     }
 }
