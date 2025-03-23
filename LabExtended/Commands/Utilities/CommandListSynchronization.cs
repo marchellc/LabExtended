@@ -23,7 +23,7 @@ public static class CommandListSynchronization
         if (CommandManager.Commands.Count < 1)
             return;
         
-        QueryProcessor.CommandData ToData(CommandInstance command, CommandOverload ov, string name)
+        QueryProcessor.CommandData ToData(CommandInstance command, string name)
         {
             var data = new QueryProcessor.CommandData();
 
@@ -32,29 +32,26 @@ public static class CommandListSynchronization
             data.Hidden = command.IsHidden;
             data.Description = command.Description;
 
-            data.Usage = ov.Parameters.CompileParameters();
+            data.Usage = command.Overload.Parameters.CompileParameters();
             return data;
         }
         
         CommandManager.Commands.ForEach(cmd =>
         {
-            cmd.Overloads.ForEach(ov =>
+            commands.Add(ToData(cmd, cmd.Name));
+
+            if (cmd.Aliases.Count > 0)
             {
-                commands.Add(ToData(cmd, ov, cmd.Name));
+                var aliasParts = ListPool<string>.Shared.Rent(cmd.NameParts);
 
-                if (cmd.Aliases.Count > 0)
+                cmd.Aliases.ForEach(alias =>
                 {
-                    var aliasParts = ListPool<string>.Shared.Rent(cmd.NameParts);
+                    aliasParts[aliasParts.Count - 1] = alias;
+                    commands.Add(ToData(cmd, string.Join(" ", aliasParts)));
+                });
 
-                    cmd.Aliases.ForEach(alias =>
-                    {
-                        aliasParts[aliasParts.Count - 1] = alias;
-                        commands.Add(ToData(cmd, ov, string.Join(" ", aliasParts)));
-                    });
-
-                    ListPool<string>.Shared.Return(aliasParts);
-                }
-            });
+                ListPool<string>.Shared.Return(aliasParts);
+            }
         });
     }
 }

@@ -1,6 +1,6 @@
 ﻿using LabExtended.Commands.Enums;
-using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Utilities;
+using LabExtended.Commands.Interfaces;
 
 using LabExtended.Core;
 
@@ -26,7 +26,7 @@ public static class CommandTokenParser
     /// <param name="input">The string to parse.</param>
     /// <param name="list">The list of tokens to save parsed tokens to.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public static CommandTokenParserResult ParseTokens(string input, List<ICommandToken> list)
+    public static CommandTokenParserResult ParseTokens(string input, List<ICommandToken> list, int parameterCount)
     {
         if (string.IsNullOrWhiteSpace(input))
             throw new ArgumentNullException(nameof(input));
@@ -41,8 +41,9 @@ public static class CommandTokenParser
         var nextChar = default(char?);
 
         var isTokenStart = false;
+        var isAppended = false;
         
-        ApiLog.Debug("CommandTokenParser", $"Parsing input: &1{input}&r");
+        ApiLog.Debug("Command Token Parser", $"Parsing input: &1{input}&r");
 
         for (int i = 0; i < input.Length; i++)
         {
@@ -58,7 +59,7 @@ public static class CommandTokenParser
             else
                 previousChar = null;
 
-            ApiLog.Debug("CommandTokenParser", $"\nLooping Start" +
+            ApiLog.Debug("Command Token Parser", $"\nLooping Start" +
                                                $"\n&3Index&r: &6{i}&r" +
                                                $"\n&3Current&r: &6{currentChar}&r" +
                                                $"\n&3Previous&r: &6{previousChar}&r" +
@@ -71,19 +72,19 @@ public static class CommandTokenParser
             // Handle string tokens inside collections
             if (isTokenStart)
             {
-                ApiLog.Debug("CommandTokenParser", $"IsTokenStart is true");
+                ApiLog.Debug("Command Token Parser", $"IsTokenStart is true");
 
                 // Collection tokens
                 if (currentToken is CollectionToken stringCollectionToken)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Current Token is Collection");
+                    ApiLog.Debug("Command Token Parser", $"Current Token is Collection");
 
                     if (stringCollectionToken.Value is null)
                         stringCollectionToken.Value = string.Empty;
 
                     stringCollectionToken.Value += currentChar;
 
-                    ApiLog.Debug("CommandTokenParser", $"Appended to collection");
+                    ApiLog.Debug("Command Token Parser", $"Appended to collection");
                     continue;
                 }
 
@@ -93,44 +94,45 @@ public static class CommandTokenParser
                     // Keys
                     if (currentStage is TokenParserStage.DictionaryKey)
                     {
-                        ApiLog.Debug("CommandTokenParser", $"Current Stage is DictionaryKey");
+                        ApiLog.Debug("Command Token Parser", $"Current Stage is DictionaryKey");
 
                         if (stringDictionaryToken.CurKey is null)
                             stringDictionaryToken.CurKey = string.Empty;
 
                         stringDictionaryToken.CurKey += currentChar;
 
-                        ApiLog.Debug("CommandTokenParser", $"Appended to dictionary key");
+                        ApiLog.Debug("Command Token Parser", $"Appended to dictionary key");
                         continue;
                     }
 
                     // Values
                     if (currentStage is TokenParserStage.DictionaryValue)
                     {
-                        ApiLog.Debug("CommandTokenParser", $"Current Stage is DictionaryValue");
+                        ApiLog.Debug("Command Token Parser", $"Current Stage is DictionaryValue");
 
                         if (stringDictionaryToken.CurValue is null)
                             stringDictionaryToken.CurValue = string.Empty;
 
                         stringDictionaryToken.CurValue += currentChar;
 
-                        ApiLog.Debug("CommandTokenParser", $"Appended to dictionary value");
+                        ApiLog.Debug("Command Token Parser", $"Appended to dictionary value");
                         continue;
                     }
                 }
             }
 
             // Handle string
-            if (currentChar == StringToken.Token && previousChar != EscapeToken)
+            if (parameterCount > list.Count && currentChar == StringToken.Token && previousChar != EscapeToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Current Char is StringToken");
+                ApiLog.Debug("Command Token Parser", $"Current Char is StringToken");
 
                 // End token if already active
                 if (currentStage is TokenParserStage.StringFull)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Ending current string token");
+                    ApiLog.Debug("Command Token Parser", $"Ending current string token");
                     
-                    list.Add(currentToken);
+                    if (currentToken != null)
+                        list.Add(currentToken);
 
                     currentToken = null;
                     currentStage = TokenParserStage.None;
@@ -143,18 +145,18 @@ public static class CommandTokenParser
                     or TokenParserStage.DictionaryKey
                     or TokenParserStage.DictionaryValue)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Starting IsTokenStart {currentStage}");
+                    ApiLog.Debug("Command Token Parser", $"Starting IsTokenStart {currentStage}");
 
                     // End the collection token
                     if (isTokenStart)
                     {
-                        ApiLog.Debug("CommandTokenParser", $"Disabled IsTokenStart");
+                        ApiLog.Debug("Command Token Parser", $"Disabled IsTokenStart");
 
                         isTokenStart = false;
                         continue;
                     }
 
-                    ApiLog.Debug("CommandTokenParser", $"Enabled IsTokenStart");
+                    ApiLog.Debug("Command Token Parser", $"Enabled IsTokenStart");
 
                     // Start the collection token
                     isTokenStart = true;
@@ -184,11 +186,11 @@ public static class CommandTokenParser
                 currentToken = stringToken;
                 currentStage = TokenParserStage.StringFull;
 
-                ApiLog.Debug("CommandTokenParser", $"Started StringToken");
+                ApiLog.Debug("Command Token Parser", $"Started StringToken");
                 continue;
             }
             
-            if (currentStage is TokenParserStage.StringFull && currentToken is StringToken stringFullToken)
+            if (parameterCount > list.Count && currentStage is TokenParserStage.StringFull && currentToken is StringToken stringFullToken)
             {
                 stringFullToken.Value += currentChar;
                 continue;
@@ -198,7 +200,7 @@ public static class CommandTokenParser
             if (currentChar == PropertyToken.StartToken && previousChar != EscapeToken
                                                    && nextChar == PropertyToken.BracketStartToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Starting property token");
+                ApiLog.Debug("Command Token Parser", $"Starting property token");
                 
                 if (currentToken != null)
                     list.Add(currentToken);
@@ -214,7 +216,7 @@ public static class CommandTokenParser
                 && previousChar != EscapeToken
                 && currentStage is TokenParserStage.PropertyKey)
             {
-                ApiLog.Debug("CommandTokenParser",
+                ApiLog.Debug("Command Token Parser",
                     $"Switching to property name (key: {(currentToken as PropertyToken)?.Key ?? "null"}");
 
                 currentStage = TokenParserStage.PropertyName;
@@ -224,31 +226,31 @@ public static class CommandTokenParser
             // Handle properties
             if (currentToken is PropertyToken propertyToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Handling property token");
+                ApiLog.Debug("Command Token Parser", $"Handling property token");
 
                 if (currentStage is TokenParserStage.PropertyKey)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Stage is PropertyKey");
+                    ApiLog.Debug("Command Token Parser", $"Stage is PropertyKey");
 
                     if (propertyToken.Key is null)
                         propertyToken.Key = string.Empty;
 
                     propertyToken.Key += currentChar;
 
-                    ApiLog.Debug("CommandTokenParser", $"Appended to PropertyKey");
+                    ApiLog.Debug("Command Token Parser", $"Appended to PropertyKey");
                     continue;
                 }
 
                 if (currentStage is TokenParserStage.PropertyName)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Stage is PropertyName");
+                    ApiLog.Debug("Command Token Parser", $"Stage is PropertyName");
 
                     if (propertyToken.Name is null)
                         propertyToken.Name = string.Empty;
 
                     propertyToken.Name += currentChar;
 
-                    ApiLog.Debug("CommandTokenParser", $"Appended to PropertyName");
+                    ApiLog.Debug("Command Token Parser", $"Appended to PropertyName");
                     continue;
                 }
             }
@@ -257,7 +259,7 @@ public static class CommandTokenParser
                 && previousChar != EscapeToken
                 && previousChar != PropertyToken.StartToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Handling dictionary start token");
+                ApiLog.Debug("Command Token Parser", $"Handling dictionary start token");
 
                 if (currentToken != null)
                     list.Add(currentToken);
@@ -271,16 +273,18 @@ public static class CommandTokenParser
             if ((currentChar == DictionaryToken.EndToken || currentChar == PropertyToken.BracketEndToken) 
                 && previousChar != EscapeToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Ending dictionary / property token");
+                ApiLog.Debug("Command Token Parser", $"Ending dictionary / property token");
                 
-                list.Add(currentToken);
+                if (currentToken != null)
+                    list.Add(currentToken);
+                
                 continue;
             }
 
             // Handle the start of a collection ([)
             if (currentChar == CollectionToken.StartToken && previousChar != EscapeToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Starting collection token");
+                ApiLog.Debug("Command Token Parser", $"Starting collection token");
 
                 if (currentToken != null)
                     list.Add(currentToken);
@@ -296,7 +300,7 @@ public static class CommandTokenParser
                 && previousChar != EscapeToken
                 && currentStage is TokenParserStage.Collection)
             {
-                ApiLog.Debug("CommandTokenParser", $"Ending collection token");
+                ApiLog.Debug("Command Token Parser", $"Ending collection token");
 
                 if (currentToken != null)
                     list.Add(currentToken);
@@ -307,27 +311,27 @@ public static class CommandTokenParser
             // Handle dictionary keys ({key = value, key = value, key = value})
             if (currentStage is TokenParserStage.DictionaryKey && currentToken is DictionaryToken dictionaryToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Handling dictionary");
+                ApiLog.Debug("Command Token Parser", $"Handling dictionary");
 
                 if (dictionaryToken.CurKey is null)
                 {
                     if (char.IsWhiteSpace(currentChar))
                     {
-                        ApiLog.Debug("CommandTokenParser", $"Current char is whitespace");
+                        ApiLog.Debug("Command Token Parser", $"Current char is whitespace");
                         continue;
                     }
 
                     dictionaryToken.CurKey = string.Empty;
                 }
 
-                ApiLog.Debug("CommandTokenParser", $"Appended to dictionary key");
+                ApiLog.Debug("Command Token Parser", $"Appended to dictionary key");
 
                 dictionaryToken.CurKey += currentChar;
 
                 // Handle dictionary splitter
                 if (nextChar == DictionaryToken.SplitToken)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Next char is splitter");
+                    ApiLog.Debug("Command Token Parser", $"Next char is splitter");
                     currentStage = TokenParserStage.DictionaryValue;
                 }
 
@@ -341,14 +345,14 @@ public static class CommandTokenParser
                 // Handle dictionary splitter
                 if (currentChar == DictionaryToken.SplitToken && previousChar != EscapeToken)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Current char is splitter");
+                    ApiLog.Debug("Command Token Parser", $"Current char is splitter");
                     continue;
                 }
 
                 // Handle next dictionary pair
                 if (currentChar == CollectionToken.SplitToken && previousChar != EscapeToken)
                 {
-                    ApiLog.Debug("CommandTokenParser", $"Current char is collection splitter");
+                    ApiLog.Debug("Command Token Parser", $"Current char is collection splitter");
 
                     if (string.IsNullOrWhiteSpace(valueDictionaryToken.CurKey))
                         return new(input, "Dictionary keys cannot be white-spaced or empty!",
@@ -365,7 +369,7 @@ public static class CommandTokenParser
 
                     currentStage = TokenParserStage.DictionaryKey;
 
-                    ApiLog.Debug("CommandTokenParser", $"Set stage to DictionaryKey");
+                    ApiLog.Debug("Command Token Parser", $"Set stage to DictionaryKey");
                     continue;
                 }
 
@@ -378,19 +382,19 @@ public static class CommandTokenParser
 
                 valueDictionaryToken.CurValue += currentChar;
 
-                ApiLog.Debug("CommandTokenParser", $"Appended to dictionary value");
+                ApiLog.Debug("Command Token Parser", $"Appended to dictionary value");
                 continue;
             }
 
             // Handle collection items
             if (currentStage is TokenParserStage.Collection && currentToken is CollectionToken collectionToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Handling collection");
+                ApiLog.Debug("Command Token Parser", $"Handling collection");
 
                 // Handle collection item splitting
                 if (currentChar == CollectionToken.SplitToken && previousChar != EscapeToken && collectionToken.Value != null)
                 {
-                    ApiLog.Debug("CommandTokenParser",
+                    ApiLog.Debug("Command Token Parser",
                         $"Current char is collection splitter (value: {collectionToken.Value})");
 
                     collectionToken.Values.Add(collectionToken.Value);
@@ -407,16 +411,17 @@ public static class CommandTokenParser
 
                     collectionToken.Value += currentChar;
 
-                    ApiLog.Debug("CommandTokenParser", $"Appended to collection value");
+                    ApiLog.Debug("Command Token Parser", $"Appended to collection value");
                     continue;
                 }
             }
 
             // No cases matched, just append
-            if (!char.IsWhiteSpace(currentChar) ||
-                currentStage is TokenParserStage.String) // Prevent a leading whitespace
+            // TODO: For some odd reason the second string only has a trailing whitespace
+            if ((!char.IsWhiteSpace(currentChar) ||
+                currentStage is TokenParserStage.String) && parameterCount > list.Count) // Prevent a leading whitespace
             {
-                ApiLog.Debug("CommandTokenParser", $"Appending current char to string");
+                ApiLog.Debug("Command Token Parser", $"Appending current char to string");
 
                 StringToken stringToken = null;
 
@@ -442,12 +447,38 @@ public static class CommandTokenParser
                 currentStage = TokenParserStage.String;
                 
                 stringToken.Value += currentChar;
+                
+                if (nextChar.HasValue && char.IsWhiteSpace(nextChar.Value))
+                {
+                    list.Add(stringToken);
+
+                    currentToken = null;
+                    currentStage = TokenParserStage.None;
+                }
+                
+                // End the current token if the next char is null (we're at the end)
+                if (!nextChar.HasValue)
+                {
+                    ApiLog.Debug("Command Token Parser", $"End reached");
+
+                    if (currentToken != null)
+                        list.Add(currentToken);
+                }
+                
+                continue;
+            }
+            if (list.Count > 0 && parameterCount == list.Count && list[list.Count - 1] is StringToken previousToken)
+            {
+                if (isAppended)
+                    previousToken.Value += currentChar;
+                
+                isAppended = true;
             }
 
             // End the current token if the next char is null (we're at the end)
             if (!nextChar.HasValue)
             {
-                ApiLog.Debug("CommandTokenParser", $"End reached");
+                ApiLog.Debug("Command Token Parser", $"End reached");
                 
                 if (currentToken != null)
                     list.Add(currentToken);

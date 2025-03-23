@@ -91,9 +91,9 @@ public static class CommandManager
 
             if (instance is { SupportsPlayer: false, SupportsServer: false, SupportsRemoteAdmin: false })
             {
-                ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any enabled input sources." +
+                ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any enabled input sources. " +
                                                $"You can enable those by adding one of the source interfaces to the command class" +
-                                               $"(for example &2IRemoteAdminCommand&r, or for simplicity &2IAllCommand&r or &2IServerCommand&r)");
+                                               $"(for example &1IRemoteAdminCommand&r, or for simplicity &1IAllCommand&r or &1IServerCommand&r)");
                 
                 continue;
             }
@@ -108,9 +108,9 @@ public static class CommandManager
 
                 if (method.ReturnType != typeof(void) && method.ReturnType != typeof(IEnumerator<float>))
                 {
-                    ApiLog.Warn("Command Manager", $"Method &3{method.GetMemberName()}&r cannot be used as an overload" +
+                    ApiLog.Warn("Command Manager", $"Method &3{method.GetMemberName()}&r cannot be used as an overload " +
                                                    $"because it's return type is not supported (&1{method.ReturnType.FullName}&r)." +
-                                                   $"Command method's should return only &2void&r or an &2IEnumerator<float>&r coroutine.");
+                                                   $"Command method's should return only &1void&r or an &1IEnumerator<float>&r coroutine.");
                     continue;
                 }
 
@@ -118,21 +118,38 @@ public static class CommandManager
                 
                 if (!string.IsNullOrWhiteSpace(commandOverloadAttribute.Name))
                     overload.Name = commandOverloadAttribute.Name;
-                
-                instance.Overloads.Add(overload);
+
+                instance.Overload = overload;
+                break;
             }
 
-            if (instance.Overloads.Count < 1)
+            if (instance.Overload is null)
             {
                 ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any suitable overloads.");
                 continue;
             }
-            
+
+            var commandInstance = instance.GetInstance();
+
+            if (commandInstance != null)
+            {
+                commandInstance.OnInitializeOverload(instance.Overload.ParameterBuilders);
+                
+                instance.Overload.IsInitialized = true;
+
+                if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && !instance.IsStatic)
+                    instance.DynamicPool.Add(commandInstance);
+            }
+            else
+            {
+                ApiLog.Warn("Command Manager", $"Overload of command &3{instance.Name}&r could not be initialized due to not being able to construct " +
+                                               $"a command instance, this command may behave unexpectedly when first used.");
+            }
+
             Commands.Add(instance);
             registered.Add(instance);
             
-            ApiLog.Debug("Command Manager", $"Registered command &3{instance.Name}&r (&6{type.FullName}&r) " +
-                                            $"with &3{instance.Overloads.Count} overload(s)");
+            ApiLog.Debug("Command Manager", $"Registered command &3{instance.Name}&r (&6{type.FullName}&r)");
         }
 
         return registered;
@@ -165,64 +182,6 @@ public static class CommandManager
             
             return false;
         }
-    }
-
-    /// <summary>
-    /// Attempts to find an overload compatible with parsed arguments.
-    /// </summary>
-    /// <param name="ctx">The command context.</param>
-    /// <param name="results">The parsed results.</param>
-    /// <param name="result">The parser result.</param>
-    /// <returns>true if an overload was found</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryFindOverload(CommandContext ctx, List<CommandParameterParserResult> results, out CommandParameterParserResult result)
-    {
-        if (ctx is null)
-            throw new ArgumentNullException(nameof(ctx));
-        
-        if (results is null)
-            throw new ArgumentNullException(nameof(results));
-        
-        if (ctx.Command.Overloads.Count == 1)
-        {
-            ctx.Overload = ctx.Command.Overloads[0];
-
-            result = CommandParameterParserUtils.ParseParameters(ctx, results);
-
-            if (!result.Success)
-                return false;
-
-            if (results.Count(r => r.Success) != ctx.Overload.ParameterCount)
-            {
-                result = new(false, null, "INVALID_ARGS");
-                return false;
-            }
-            
-            return true;
-        }
-
-        for (var i = 0; i < ctx.Command.Overloads.Count; i++)
-        {
-            var overload = ctx.Command.Overloads[i];
-
-            results.Clear();
-            result = CommandParameterParserUtils.ParseParameters(ctx, results);
-
-            if (!result.Success)
-                continue;
-
-            if (results.Count(r => r.Success) != overload.ParameterCount)
-            {
-                result = new(false, null, "INVALID_ARGS");
-                return false;
-            }
-
-            ctx.Overload = overload;
-            return true;
-        }
-
-        result = default;
-        return false;
     }
 
     /// <summary>
@@ -344,12 +303,13 @@ public static class CommandManager
             context.Sender = player;
             context.Tokens = tokens;
             context.Command = command;
+            context.Overload = command.Overload;
 
             context.Type = ev.CommandType;
 
             if (line?.Length > 0)
             {
-                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens);
+                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens, command.Overload.ParameterCount);
 
                 if (!tokenParsingResult.IsSuccess)
                 {
@@ -361,8 +321,9 @@ public static class CommandManager
             }
             
             var parserResults = ListPool<CommandParameterParserResult>.Shared.Rent();
+            var parserResult = CommandParameterParserUtils.ParseParameters(context, parserResults);
 
-            if (!TryFindOverload(context, parserResults, out var parserResult))
+            if (!parserResult.Success)
             {
                 if (!context.Response.HasValue)
                 {
@@ -373,7 +334,15 @@ public static class CommandManager
                     else
                         context.Response = new(false, false, context.FormatNoOverloadsFailure());
                 }
+                
+                OnExecuted(context);
+                return;
+            }
 
+            if (parserResults.Count(r => r.Success) != command.Overload.ParameterCount)
+            {
+                context.Response ??= new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                
                 OnExecuted(context);
                 return;
             }
@@ -393,7 +362,7 @@ public static class CommandManager
 
             if (!context.Overload.IsInitialized)
             {
-                instance.OnInitializeOverload(context.Overload.Name, context.Overload.ParameterBuilders);
+                instance.OnInitializeOverload(context.Overload.ParameterBuilders);
                 
                 context.Overload.IsInitialized = true;
             }
@@ -498,7 +467,7 @@ public static class CommandManager
             }
         }
 
-        if (!ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling)
+        if (!ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && ctx.Instance != null)
             ctx.Command.DynamicPool.Add(ctx.Instance);
         
         Executed.InvokeSafe(ctx);

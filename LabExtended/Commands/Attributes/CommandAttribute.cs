@@ -24,7 +24,7 @@ public class CommandAttribute : Attribute
     /// <summary>
     /// Whether or not this command should use a static instance.
     /// </summary>
-    public bool IsStatic { get; set; } = false;
+    public bool IsStatic { get; set; } = true;
 
     /// <summary>
     /// Whether or not this command should be hidden from the help command & Remote Admin's suggestions.

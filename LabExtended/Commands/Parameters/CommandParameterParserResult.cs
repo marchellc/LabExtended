@@ -32,7 +32,7 @@ public struct CommandParameterParserResult
     /// <param name="value">The parsed value.</param>
     /// <param name="error">The parsing error.</param>
     /// <param name="parameter">The failed parameter.</param>
-    public CommandParameterParserResult(bool success, object? value, string? error, CommandParameter? parameter = null)
+    public CommandParameterParserResult(bool success, object? value, string? error, CommandParameter parameter)
     {
         Success = success;
         Value = value;

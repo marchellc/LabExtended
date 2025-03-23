@@ -192,7 +192,7 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Client)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(ctx.Command.Name);
                 x.Append("] ");
             }
@@ -211,7 +211,7 @@ internal static class CommandResponseFormatter
                     x.Append("[");
                     x.Append(i);
                     x.Append("]</color> <color=yellow>");
-                    x.Append(result.Parameter.Name);
+                    x.Append(result.Parameter?.Name ?? "null");
                     x.Append("</color>:");
 
                     if (result.Success)
@@ -224,16 +224,16 @@ internal static class CommandResponseFormatter
                         x.Append(result.Error);
                         x.Append("</color>");
                         
-                        if (result.Parameter.FriendlyAlias?.Length > 0)
+                        if (result.Parameter?.FriendlyAlias?.Length > 0)
                         {
-                            x.Append("<i>(");
+                            x.Append(" <i>(");
                             x.Append(result.Parameter.FriendlyAlias);
                             x.Append(")</i>");
                         }
                         else
                         {
-                            x.Append("<i>(");
-                            x.Append(result.Parameter.Type.Type.Name);
+                            x.Append(" <i>(");
+                            x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
                             x.Append(")</i>");
                         }
                     }
@@ -243,7 +243,7 @@ internal static class CommandResponseFormatter
                     x.Append("[");
                     x.Append(i);
                     x.Append("] ");
-                    x.Append(result.Parameter.Name);
+                    x.Append(result.Parameter?.Name ?? "null");
                     x.Append(":");
 
                     if (result.Success)
@@ -255,22 +255,20 @@ internal static class CommandResponseFormatter
                         x.Append(" ");
                         x.Append(result.Error);
 
-                        if (result.Parameter.FriendlyAlias?.Length > 0)
+                        if (result.Parameter?.FriendlyAlias?.Length > 0)
                         {
-                            x.Append("(");
+                            x.Append(" (");
                             x.Append(result.Parameter.FriendlyAlias);
                             x.Append(")");
                         }
                         else
                         {
-                            x.Append("(");
-                            x.Append(result.Parameter.Type.Type.Name);
+                            x.Append(" (");
+                            x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
                             x.Append(")");
                         }
                     }
                 }
-
-                x.AppendLine();
             }
         });
     }

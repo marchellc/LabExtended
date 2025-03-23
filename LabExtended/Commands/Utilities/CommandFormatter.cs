@@ -87,53 +87,56 @@ public static class CommandFormatter
             if (commandInstance.TimeOut.HasValue)
                 x.AppendLine($"Time Out: {commandInstance.TimeOut.Value}s");
 
-            x.AppendLine($"{commandInstance.Overloads.Count} overload(s):");
+            x.AppendLine();
+            x.AppendLine($"Overload:");
+            x.AppendLine($" Name: {commandInstance.Overload.Name}");
+            x.AppendLine($" Method: {commandInstance.Overload.Target.GetMemberName()}");
+            x.AppendLine($" Is Coroutine: {commandInstance.Overload.IsCoroutine}");
+            x.AppendLine($" Is Initialized: {commandInstance.Overload.IsInitialized}");
 
-            for (var i = 0; i < commandInstance.Overloads.Count; i++)
+            if (commandInstance.Overload.ParameterCount > 0)
+                x.AppendLine($" Parameters ({commandInstance.Overload.ParameterCount}):");
+
+            for (var y = 0; y < commandInstance.Overload.Parameters.Count; y++)
             {
-                var overload = commandInstance.Overloads[i];
+                var parameter = commandInstance.Overload.Parameters[y];
 
-                x.AppendLine();
-                x.AppendLine($"Overload [{i}]:");
-                x.AppendLine($" Name: {overload.Name}");
-                x.AppendLine($" Method: {overload.Target.GetMemberName()}");
-                x.AppendLine($" Is Coroutine: {overload.IsCoroutine}");
-                x.AppendLine($" Is Initialized: {overload.IsInitialized}");
+                x.AppendLine($"  Parameter [{y}]:");
+                x.AppendLine($"   Name: {parameter.Name}");
+                x.AppendLine($"   Description: {parameter.Description}");
 
-                if (overload.ParameterCount > 0)
-                    x.AppendLine($" Parameters ({overload.ParameterCount}):");
+                if (parameter.UsageAlias?.Length > 0)
+                    x.AppendLine($"   Usage Alias: {parameter.UsageAlias}");
 
-                for (var y = 0; y < overload.Parameters.Count; y++)
+                if (parameter.FriendlyAlias?.Length > 0)
+                    x.AppendLine($"   Friendly Alias: {parameter.FriendlyAlias}");
+
+                if (parameter.HasDefault)
+                    x.AppendLine($"   Default Value: {parameter.DefaultValue?.ToString() ?? "null"}");
+
+                x.AppendLine($"   Type: {parameter.Type.Type.FullName}");
+                x.AppendLine($"    Parser: {parameter.Type.Parser?.GetType()?.FullName ?? "null"}");
+
+                if (parameter.Type.KeyType != null)
+                    x.AppendLine($"    Key Type: {parameter.Type.KeyType.FullName}");
+
+                if (parameter.Type.ValueType != null)
+                    x.AppendLine($"    Value Type: {parameter.Type.ValueType.FullName}");
+
+                if (parameter.Arguments.Count > 0)
                 {
-                    var parameter = overload.Parameters[y];
+                    x.AppendLine($"    Arguments:");
 
-                    x.AppendLine($"  Parameter [{y}]:");
-                    x.AppendLine($"   Name: {parameter.Name}");
-                    x.AppendLine($"   Description: {parameter.Description}");
-                    
-                    if (parameter.UsageAlias?.Length > 0)
-                        x.AppendLine($"   Usage Alias: {parameter.UsageAlias}");
-                    
-                    if (parameter.FriendlyAlias?.Length > 0)
-                        x.AppendLine($"   Friendly Alias: {parameter.FriendlyAlias}");
-
-                    if (parameter.HasDefault)
-                        x.AppendLine($"   Default Value: {parameter.DefaultValue?.ToString() ?? "null"}");
-
-                    x.AppendLine($"   Type: {parameter.Type.Type.FullName}");
-                    x.AppendLine($"    Parser: {parameter.Type.Parser?.GetType()?.FullName ?? "null"}");
-
-                    if (parameter.Type.KeyType != null)
-                        x.AppendLine($"    Key Type: {parameter.Type.KeyType.FullName}");
-
-                    if (parameter.Type.ValueType != null)
-                        x.AppendLine($"    Value Type: {parameter.Type.ValueType.FullName}");
-
-                    x.AppendLine($"    Is String: {parameter.Type.IsString}");
-                    x.AppendLine($"    Is List: {parameter.Type.IsList}");
-                    x.AppendLine($"    Is Array: {parameter.Type.IsArray}");
-                    x.AppendLine($"    Is Dictionary: {parameter.Type.IsDictionary}");
+                    foreach (var arg in parameter.Arguments)
+                    {
+                        x.AppendLine($"     - {arg}");
+                    }
                 }
+
+                x.AppendLine($"    Is String: {parameter.Type.IsString}");
+                x.AppendLine($"    Is List: {parameter.Type.IsList}");
+                x.AppendLine($"    Is Array: {parameter.Type.IsArray}");
+                x.AppendLine($"    Is Dictionary: {parameter.Type.IsDictionary}");
             }
         });
     }

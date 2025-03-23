@@ -35,6 +35,16 @@ public abstract class ContinuableCommandBase : CommandBase
     public CommandContext PreviousContext { get; internal set; }
     
     /// <summary>
+    /// The remaining time till timeout (in seconds).
+    /// </summary>
+    public float RemainingTime => remainingTime;
+
+    /// <summary>
+    /// Whether or not the command has timed out.
+    /// </summary>
+    public bool HasTimedOut => hasExpired;
+    
+    /// <summary>
     /// Gets called once a command is continued.
     /// </summary>
     public abstract void OnContinued();

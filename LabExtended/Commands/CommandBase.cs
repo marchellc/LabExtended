@@ -73,10 +73,8 @@ public class CommandBase
     /// <summary>
     /// Called when an overload is called for the first time.
     /// </summary>
-    /// <param name="overloadName">The name of the overload.</param>
     /// <param name="parameters">The overload's parameters.</param>
-    public virtual void OnInitializeOverload(string overloadName,
-        Dictionary<string, CommandParameterBuilder> parameters) { }
+    public virtual void OnInitializeOverload(Dictionary<string, CommandParameterBuilder> parameters) { }
 
     /// <summary>
     /// Responds to the command.

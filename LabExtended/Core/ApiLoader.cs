@@ -113,7 +113,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the loader's required LabAPI version.
         /// </summary>
-        public override Version RequiredApiVersion => null;
+        public override Version? RequiredApiVersion { get; } = null;
 
         /// <summary>
         /// Gets the loader's priority.

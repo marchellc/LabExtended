@@ -27,8 +27,6 @@ namespace LabExtended.Core
 
             try
             {
-                ApiLog.Info("API Patcher", $"Patching assembly &1{assembly.GetName().Name}&r");
-
                 Stopwatch.Restart();
 
                 var types = assembly.GetTypes();
@@ -118,17 +116,13 @@ namespace LabExtended.Core
                                             if (EventPatches.TryGetValue(hookPatch.EventType, out var eventPatches))
                                                 eventPatches.Add(new Tuple<MethodBase, MethodInfo>(targetMethod, patchMethod));
                                             else
-                                                EventPatches[hookPatch.EventType] = new List<Tuple<MethodBase, MethodInfo>>() { new Tuple<MethodBase, MethodInfo>(targetMethod, patchMethod) };
-
-                                            ApiLog.Debug("API Patcher", $"Applied patch for event &1{hookPatch.EventType.Name}&r (&3{patchMethod.Name}&r)");
+                                                EventPatches[hookPatch.EventType] = new() { new(targetMethod, patchMethod) };
                                         }
                                     }
                                 }
                                 else
                                 {
                                     OtherPatches.Add(patchMethod, targetMethod);
-                                    
-                                    ApiLog.Debug("API Patcher", $"Applied patch for method &1{targetMethod?.GetMemberName() ?? "null"}&r (&3{patchMethod.Name}&r)");
                                 }
                             }
                             else

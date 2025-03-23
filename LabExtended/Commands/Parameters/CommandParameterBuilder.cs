@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 
+using LabExtended.Commands.Interfaces;
+
 namespace LabExtended.Commands.Parameters;
 
 /// <summary>
@@ -56,6 +58,35 @@ public class CommandParameterBuilder
         Result.HasDefault = true;
         Result.DefaultValue = defaultValue;
         
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a new argument to this parameter.
+    /// </summary>
+    /// <typeparam name="T">The argument's type.</typeparam>
+    /// <returns>This builder instance.</returns>
+    public CommandParameterBuilder WithArgument<T>() where T : ICommandParameterArgument, new()
+    {
+        if (Result.Arguments.Any(x => x is T))
+            throw new Exception($"Only a single parameter argument of a type is allowed ({typeof(T).FullName})");
+        
+        Result.Arguments.Add(new T());
+        return this;
+    }
+    
+    /// <summary>
+    /// Adds a new argument to this parameter.
+    /// </summary>
+    /// <param name="parameterArgument">The argument.</param>
+    /// <returns>This builder instance.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public CommandParameterBuilder WithArgument(ICommandParameterArgument parameterArgument)
+    {
+        if (parameterArgument is null)
+            throw new ArgumentNullException(nameof(parameterArgument));
+        
+        Result.Arguments.Add(parameterArgument);
         return this;
     }
 }

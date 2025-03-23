@@ -1,5 +1,6 @@
 ﻿using LabExtended.Attributes;
-
+using LabExtended.Commands.Interfaces;
+using LabExtended.Commands.Tokens;
 using NorthwoodLib.Pools;
 
 using UnityEngine;
@@ -181,48 +182,69 @@ public static class CommandParameterParserUtils
             throw new ArgumentNullException(nameof(parserResults));
 
         if (context.Tokens.Count < context.Overload.RequiredParameters)
-            return new(false, null, "MISSING_ARGS");
+            return new(false, null, "MISSING_ARGS", null);
         
         if (context.Tokens.Count < 1)
-            return new(true, null, null);
+            return new(true, null, null, null);
         
-        ApiLog.Debug("CommandParameterParserUtils", $"Parsing overload &1{context.Overload.Name}&r with &6{context.Overload.Parameters.Count}&r parameters " +
+        ApiLog.Debug("Command Parameter Parser", $"Parsing overload &1{context.Overload.Name}&r with &6{context.Overload.Parameters.Count}&r parameters " +
                                                     $"(from method &6{context.Overload.Target.GetMemberName()}&r)" +
-                                                    $"with &6{context.Tokens.Count}&r token(s)");
+                                                    $" with &6{context.Tokens.Count}&r token(s)");
 
         for (var i = 0; i < context.Tokens.Count; i++)
-            ApiLog.Debug("CommandParameterParserUtils", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
-        
+            ApiLog.Debug("Command Parameter Parser", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
+
         for (var i = 0; i < context.Overload.ParameterCount; i++)
         {
             var parameter = context.Overload.Parameters[i];
-
+            
             try
             {
                 if (i < context.Tokens.Count)
                 {
                     var parameterToken = context.Tokens[i];
-                    
+
                     if (!parameter.Type.Parser.AcceptsToken(parameterToken))
                     {
                         parserResults.Add(new(false, null,
                             $"Token {parameterToken.GetType().Name} is not acceptable.", parameter));
+                        continue;
                     }
-                    else
+
+                    var parameterResult =
+                        parameter.Type.Parser.Parse(context.Tokens, parameterToken, i, context, parameter);
+
+                    if (parameterResult.Success)
                     {
-                        parserResults.Add(parameter.Type.Parser.Parse(context.Tokens, parameterToken, i, context, parameter));
+                        string? argumentError = null;
+
+                        foreach (var argument in parameter.Arguments)
+                        {
+                            if (!argument.IsValid(parameterResult.Value, context, parameter, out var error))
+                            {
+                                argumentError = error;
+                                break;
+                            }
+                        }
+
+                        if (argumentError != null)
+                        {
+                            parserResults.Add(new(false, null, argumentError, parameter));
+                            continue;
+                        }
                     }
+
+                    parserResults.Add(parameterResult);
                 }
                 else
                 {
                     if (!parameter.HasDefault)
                     {
                         parserResults.Add(new(false, null, "MISSING_ARGS", parameter));
+                        continue;
                     }
-                    else
-                    {
-                        parserResults.Add(new(true, parameter.DefaultValue, null, parameter));
-                    }
+                    
+                    parserResults.Add(new(true, parameter.DefaultValue, null, parameter));
                 }
             }
             catch (Exception ex)
@@ -234,7 +256,7 @@ public static class CommandParameterParserUtils
             }
         }
 
-        return new(true, null, null);
+        return new(true, null, null, null);
     }
 
     [LoaderInitialize(10)]

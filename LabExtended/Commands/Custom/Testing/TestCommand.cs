@@ -1,6 +1,7 @@
 ﻿using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
+using LabExtended.Commands.Parameters.Arguments;
 
 namespace LabExtended.Commands.Custom.Testing;
 
@@ -16,8 +17,18 @@ public class TestCommand : CommandBase, IAllCommand
     [CommandOverload("test")]
     public void TestOverload(
         [CommandParameter("Word", "Testing word")] string word,
-        [CommandParameter("Second Word", "The second testing word")] string secondWord)
+        [CommandParameter("Second Word", "The second testing word")] string secondWord,
+        [CommandParameter("Third Word", "The third testing word")] string thirdWord)
     {
-        Ok($"Test passed: {word} + {secondWord}");
+        Ok($"Test passed: {word} + {secondWord} + {thirdWord}");
+    }
+
+    /// <inheritdoc cref="CommandBase.OnInitializeOverload"/>
+    public override void OnInitializeOverload(Dictionary<string, CommandParameterBuilder> parameters)
+    {
+        base.OnInitializeOverload(parameters);
+
+        parameters["word"]
+            .WithArgument(new StringLengthRangeArgument(1, 3));
     }
 }

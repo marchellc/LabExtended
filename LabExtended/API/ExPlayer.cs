@@ -1081,11 +1081,12 @@ public class ExPlayer : Player, IDisposable
     public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
     {
         if (content is null)
-            return;
+            throw new ArgumentNullException(nameof(content));
 
         if (IsServer)
         {
-            ServerConsole.AddLog(content.ToString(), ConsoleColor.Green);
+            ServerConsole.AddLog(content.ToString(), success ? ConsoleColor.Green
+                                                                : ConsoleColor.Red);
             return;
         }
 

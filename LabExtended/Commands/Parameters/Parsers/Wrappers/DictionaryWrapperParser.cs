@@ -107,7 +107,7 @@ public class DictionaryWrapperParser : CommandParameterParser
 
             if (!valueResult.Success)
                 return new(false, null,
-                    $"Could not convert value of pair at position {dictionaryIndex}: {valueResult.Error}");
+                    $"Could not convert value of pair at position {dictionaryIndex}: {valueResult.Error}", parameter);
             
             dictionary.Add(pair.Key, valueResult.Value);
             dictionaryIndex++;

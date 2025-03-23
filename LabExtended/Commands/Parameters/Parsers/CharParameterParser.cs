@@ -18,11 +18,11 @@ public class CharParameterParser : CommandParameterParser
         CommandParameter parameter)
     {
         if (token is StringToken stringToken)
-            return new(true, stringToken.Value[0], null);
+            return new(true, stringToken.Value[0], null, parameter);
         
         if (token.TryProcessProperty(context, out var result))
             return new(true, result.ToString()[0], null, parameter);
 
-        return new(false, null, $"Unsupported token: {token.GetType().Name}");
+        return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
     }
 }

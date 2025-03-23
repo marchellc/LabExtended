@@ -26,14 +26,14 @@ public class CommandInstance
     public CommandBase StaticInstance { get; }
     
     /// <summary>
+    /// Gets the command's overload.
+    /// </summary>
+    public CommandOverload Overload { get; internal set; }
+    
+    /// <summary>
     /// Gets the command's instance pool.
     /// </summary>
     public List<CommandBase> DynamicPool { get; } = new();
-    
-    /// <summary>
-    /// Gets the command's overloads.
-    /// </summary>
-    public List<CommandOverload> Overloads { get; } = new();
     
     /// <summary>
     /// Gets the constructor of the command's type.
@@ -147,7 +147,7 @@ public class CommandInstance
 
         if (Constructor([]) is not CommandBase instance)
             throw new Exception($"Could not construct type {Type.FullName}");
-
+        
         return instance;
     }
 }
