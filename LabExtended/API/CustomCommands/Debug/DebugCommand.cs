@@ -16,6 +16,7 @@ namespace LabExtended.API.CustomCommands.Debug
         public override void LoadGeneratedCommands()
         {
             RegisterCommand(new SetSwitchCommand());
+            RegisterCommand(new NpcSwitchesCommand());
             RegisterCommand(new SetGravityCommand());
             RegisterCommand(new SetPitchCommand());
             RegisterCommand(new SettingsTestCommand());
