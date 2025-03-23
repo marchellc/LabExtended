@@ -38,6 +38,8 @@ public class DictionaryWrapperParser : CommandParameterParser
         DictionaryType = dictionaryType;
         ValueParser = valueParser;
         KeyParser = keyParser;
+        
+        IsStringDictionary = dictionaryType == typeof(Dictionary<string, string>);
     }
     
     /// <summary>
@@ -59,7 +61,13 @@ public class DictionaryWrapperParser : CommandParameterParser
     /// Gets the constructor of the dictionary.
     /// </summary>
     public Func<object[], object> DictionaryConstructor { get; }
+    
+    /// <summary>
+    /// Whether or not the dictionary has a string key and value.
+    /// </summary>
+    public bool IsStringDictionary { get; }
 
+    /// <inheritdoc cref="CommandParameterParser.Parse"/>
     public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex, CommandContext context,
         CommandParameter parameter)
     {
@@ -73,11 +81,15 @@ public class DictionaryWrapperParser : CommandParameterParser
                 parameter);
         }
 
-        var dictionaryIndex = 0;
         var dictionaryToken = token as DictionaryToken;
+
+        if (IsStringDictionary)
+            return new(true, dictionaryToken.Values, null, parameter);
+        
+        var dictionaryIndex = 0;
         var dictionary = (IDictionary)(DictionaryConstructor([dictionaryToken.Values.Count]));
 
-        var stringToken = (StringToken)StringToken.Instance.NewToken();
+        var stringToken = StringToken.Instance.NewToken<StringToken>();
         
         foreach (var pair in dictionaryToken.Values)
         {
@@ -101,6 +113,7 @@ public class DictionaryWrapperParser : CommandParameterParser
             dictionaryIndex++;
         }
 
+        stringToken.ReturnToken();
         return new(true, dictionary, null, parameter);
     }
 }

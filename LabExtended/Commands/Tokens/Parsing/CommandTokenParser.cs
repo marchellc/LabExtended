@@ -1,5 +1,6 @@
 ﻿using LabExtended.Commands.Enums;
 using LabExtended.Commands.Interfaces;
+using LabExtended.Commands.Utilities;
 
 using LabExtended.Core;
 
@@ -168,7 +169,7 @@ public static class CommandTokenParser
                     {
                         list.Add(currentToken);
 
-                        stringToken = (StringToken)(StringToken.Instance.NewToken());
+                        stringToken = StringToken.Instance.NewToken<StringToken>();
                     }
                     else
                     {
@@ -177,7 +178,7 @@ public static class CommandTokenParser
                 }
                 else
                 {
-                    stringToken = (StringToken)(StringToken.Instance.NewToken());
+                    stringToken = StringToken.Instance.NewToken<StringToken>();
                 }
 
                 currentToken = stringToken;
@@ -194,8 +195,8 @@ public static class CommandTokenParser
             }
 
             // Handle the custom property token ($)
-            if (currentChar == PropertyToken.Token && previousChar != EscapeToken
-                                                   && nextChar == DictionaryToken.StartToken)
+            if (currentChar == PropertyToken.StartToken && previousChar != EscapeToken
+                                                   && nextChar == PropertyToken.BracketStartToken)
             {
                 ApiLog.Debug("CommandTokenParser", $"Starting property token");
                 
@@ -209,7 +210,7 @@ public static class CommandTokenParser
             }
 
             // Switch property
-            if (currentChar == '.'
+            if (currentChar == PropertyToken.SplitToken
                 && previousChar != EscapeToken
                 && currentStage is TokenParserStage.PropertyKey)
             {
@@ -254,7 +255,7 @@ public static class CommandTokenParser
 
             if (currentChar == DictionaryToken.StartToken
                 && previousChar != EscapeToken
-                && previousChar != PropertyToken.Token)
+                && previousChar != PropertyToken.StartToken)
             {
                 ApiLog.Debug("CommandTokenParser", $"Handling dictionary start token");
 
@@ -267,13 +268,12 @@ public static class CommandTokenParser
                 continue;
             }
 
-            if (currentChar == DictionaryToken.EndToken && previousChar != EscapeToken)
+            if ((currentChar == DictionaryToken.EndToken || currentChar == PropertyToken.BracketEndToken) 
+                && previousChar != EscapeToken)
             {
-                ApiLog.Debug("CommandTokenParser", $"Ending dictionary token");
-
-                if (currentToken != null)
-                    list.Add(currentToken);
+                ApiLog.Debug("CommandTokenParser", $"Ending dictionary / property token");
                 
+                list.Add(currentToken);
                 continue;
             }
 
@@ -325,7 +325,7 @@ public static class CommandTokenParser
                 dictionaryToken.CurKey += currentChar;
 
                 // Handle dictionary splitter
-                if (nextChar == ':')
+                if (nextChar == DictionaryToken.SplitToken)
                 {
                     ApiLog.Debug("CommandTokenParser", $"Next char is splitter");
                     currentStage = TokenParserStage.DictionaryValue;
@@ -339,14 +339,14 @@ public static class CommandTokenParser
                 currentToken is DictionaryToken valueDictionaryToken)
             {
                 // Handle dictionary splitter
-                if (currentChar == ':' && previousChar != EscapeToken)
+                if (currentChar == DictionaryToken.SplitToken && previousChar != EscapeToken)
                 {
                     ApiLog.Debug("CommandTokenParser", $"Current char is splitter");
                     continue;
                 }
 
                 // Handle next dictionary pair
-                if (currentChar is ',' && previousChar != EscapeToken)
+                if (currentChar == CollectionToken.SplitToken && previousChar != EscapeToken)
                 {
                     ApiLog.Debug("CommandTokenParser", $"Current char is collection splitter");
 
@@ -388,7 +388,7 @@ public static class CommandTokenParser
                 ApiLog.Debug("CommandTokenParser", $"Handling collection");
 
                 // Handle collection item splitting
-                if (currentChar is ',' && previousChar != EscapeToken && collectionToken.Value != null)
+                if (currentChar == CollectionToken.SplitToken && previousChar != EscapeToken && collectionToken.Value != null)
                 {
                     ApiLog.Debug("CommandTokenParser",
                         $"Current char is collection splitter (value: {collectionToken.Value})");
@@ -426,7 +426,7 @@ public static class CommandTokenParser
                     {
                         list.Add(currentToken);
 
-                        stringToken = (StringToken)(StringToken.Instance.NewToken());
+                        stringToken = StringToken.Instance.NewToken<StringToken>();
                     }
                     else
                     {
@@ -435,7 +435,7 @@ public static class CommandTokenParser
                 }
                 else
                 {
-                    stringToken = (StringToken)(StringToken.Instance.NewToken());
+                    stringToken = StringToken.Instance.NewToken<StringToken>();
                 }
 
                 currentToken = stringToken;

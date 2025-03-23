@@ -1,13 +1,18 @@
 ﻿using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Interfaces;
 
+using LabExtended.Core.Pooling;
+using LabExtended.Core.Pooling.Pools;
+
 namespace LabExtended.Commands.Tokens;
 
 /// <summary>
 /// Represents a custom property token.
 /// </summary>
-public class PropertyToken : ICommandToken
+public class PropertyToken : PoolObject, ICommandToken
 {
+    private PropertyToken() { }
+    
     /// <summary>
     /// Gets all registered properties.
     /// </summary>
@@ -16,7 +21,22 @@ public class PropertyToken : ICommandToken
     /// <summary>
     /// Gets or sets the character used to identify property command tokens.
     /// </summary>
-    public static char Token { get; set; } = '$';
+    public static char StartToken { get; set; } = '$';
+
+    /// <summary>
+    /// Gets or sets the property bracket start character.
+    /// </summary>
+    public static char BracketStartToken { get; set; } = '{';
+    
+    /// <summary>
+    /// Gets or sets the property bracket end character.
+    /// </summary>
+    public static char BracketEndToken { get; set; } = '}';
+    
+    /// <summary>
+    /// Gets or sets the character used to split a property key and name.
+    /// </summary>
+    public static char SplitToken { get; set; } = '.';
     
     /// <summary>
     /// Gets an instance of the property token.
@@ -35,5 +55,18 @@ public class PropertyToken : ICommandToken
 
     /// <inheritdoc cref="ICommandToken.NewToken"/>
     public ICommandToken NewToken()
-        => new PropertyToken();
+        => ObjectPool<PropertyToken>.Shared.Rent(null, () => new());
+
+    /// <inheritdoc cref="ICommandToken.ReturnToken"/>
+    public void ReturnToken()
+        => ObjectPool<PropertyToken>.Shared.Return(this);
+
+    /// <inheritdoc cref="PoolObject.OnReturned"/>
+    public override void OnReturned()
+    {
+        base.OnReturned();
+        
+        Key = string.Empty;
+        Name = string.Empty;
+    }
 }

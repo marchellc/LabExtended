@@ -27,6 +27,11 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
     /// Gets the element parser.
     /// </summary>
     public CommandParameterParser Parser { get; }
+    
+    /// <summary>
+    /// Whether or not the target type is a string list.
+    /// </summary>
+    public virtual bool IsStringList { get; }
 
     /// <inheritdoc cref="CommandParameterParser.UsageAlias"/>
     public override string? UsageAlias => Parser.UsageAlias;
@@ -67,11 +72,15 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
         }
         
         var collectionToken = token as CollectionToken;
+
+        if (IsStringList)
+            return new(true, collectionToken.Values, null, parameter);
+        
         var collectionState = default(object);
         var collection = CreateCollection(collectionToken.Values.Count);
 
         var index = 0;
-        var stringToken = (StringToken)(StringToken.Instance.NewToken());
+        var stringToken = StringToken.Instance.NewToken<StringToken>();
         
         foreach (var stringElement in collectionToken.Values)
         {
@@ -86,6 +95,7 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
             AddToCollection(collection, elementResult.Value, ref collectionState);
         }
         
+        stringToken.ReturnToken();
         return new(true, collection, null, parameter);
     }
 }

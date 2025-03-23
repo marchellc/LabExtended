@@ -10,4 +10,9 @@ public interface ICommandToken
     /// </summary>
     /// <returns>The new token instance.</returns>
     ICommandToken NewToken();
+
+    /// <summary>
+    /// Returns this token instance to the pool.
+    /// </summary>
+    void ReturnToken();
 }

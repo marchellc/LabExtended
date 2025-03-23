@@ -16,6 +16,8 @@ public class ListWrapperParser : CollectionWrapperParserBase
     {
         CollectionType = collectionType;
         CollectionConstructor = FastReflection.ForConstructor(AccessTools.Constructor(collectionType, [typeof(int)]));
+
+        IsStringList = collectionType == typeof(List<string>);
     }
     
     /// <summary>
@@ -27,6 +29,9 @@ public class ListWrapperParser : CollectionWrapperParserBase
     /// Gets the constructor of the collection.
     /// </summary>
     public Func<object[], object> CollectionConstructor { get; }
+
+    /// <inheritdoc cref="CollectionWrapperParserBase.IsStringList"/>
+    public override bool IsStringList { get; }
 
     /// <inheritdoc cref="CollectionWrapperParserBase.CreateCollection"/>
     public override object CreateCollection(int collectionSize)

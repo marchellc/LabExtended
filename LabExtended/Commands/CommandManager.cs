@@ -505,10 +505,14 @@ public static class CommandManager
 
         if (ctx.Args != null)
             ListPool<string>.Shared.Return(ctx.Args);
-        
+
         if (ctx.Tokens != null)
+        {
+            ctx.Tokens.ForEach(t => t.ReturnToken());
+            
             ListPool<ICommandToken>.Shared.Return(ctx.Tokens);
-        
+        }
+
         ctx.Args = null;
         ctx.Tokens = null;
     }
