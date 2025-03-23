@@ -1,14 +1,19 @@
 ﻿using LabExtended.Attributes;
-using LabExtended.Commands.Parameters.Parsers.Wrappers;
-using LabExtended.Extensions;
-using LabExtended.Core;
 
 using NorthwoodLib.Pools;
 
+using UnityEngine;
+
 namespace LabExtended.Commands.Parameters;
 
+using API;
+using Core;
 using Contexts;
+using Utilities;
+using Extensions;
+
 using Parsers;
+using Parsers.Wrappers;
 
 /// <summary>
 /// Used to manage argument parsing.
@@ -20,7 +25,37 @@ public static class CommandParameterParserUtils
     /// </summary>
     public static Dictionary<Type, CommandParameterParser> Parsers { get; } = new()
     {
-        [typeof(string)] = new StringParameterParser()
+        [typeof(char)] = new CharParameterParser(),
+        [typeof(string)] = new StringParameterParser(),
+        
+        [typeof(bool)] = new DelegateParameterParser<bool>(CommandDelegateParsers.TryParseBool, "Boolean (true / false)"),
+        
+        [typeof(byte)] = new DelegateParameterParser<byte>(CommandDelegateParsers.TryParseByte, $"A number ranging from {byte.MinValue} to {byte.MaxValue}"),
+        [typeof(sbyte)] = new DelegateParameterParser<sbyte>(CommandDelegateParsers.TryParseSByte, $"A number ranging from {sbyte.MinValue} to {sbyte.MaxValue}"),
+        
+        [typeof(short)] = new DelegateParameterParser<short>(CommandDelegateParsers.TryParseShort, $"A number ranging from {short.MinValue} to {short.MaxValue}"),
+        [typeof(ushort)] = new DelegateParameterParser<ushort>(CommandDelegateParsers.TryParseUShort, $"A number ranging from {ushort.MinValue} to {ushort.MaxValue}"),
+        
+        [typeof(int)] = new DelegateParameterParser<int>(CommandDelegateParsers.TryParseInt, $"A number ranging from {int.MinValue} to {int.MaxValue}"),
+        [typeof(uint)] = new DelegateParameterParser<uint>(CommandDelegateParsers.TryParseUInt, $"A number ranging from {uint.MinValue} to {uint.MaxValue}"),
+        
+        [typeof(long)] = new DelegateParameterParser<long>(CommandDelegateParsers.TryParseLong, $"A number ranging from {long.MinValue} to {long.MaxValue}"),
+        [typeof(ulong)] = new DelegateParameterParser<ulong>(CommandDelegateParsers.TryParseULong, $"A number ranging from {ulong.MinValue} to {ulong.MaxValue}"),
+        
+        [typeof(float)] = new DelegateParameterParser<float>(CommandDelegateParsers.TryParseFloat, $"A number ranging from {float.MinValue} to {float.MaxValue}"),
+        [typeof(double)] = new DelegateParameterParser<double>(CommandDelegateParsers.TryParseDouble, $"A number ranging from {double.MinValue} to {double.MaxValue}"),
+        [typeof(decimal)] = new DelegateParameterParser<decimal>(CommandDelegateParsers.TryParseDecimal, $"A number ranging from {decimal.MinValue} to {decimal.MaxValue}"),
+        
+        [typeof(DateTime)] = new DelegateParameterParser<DateTime>(CommandDelegateParsers.TryParseDate, "A date."),
+        
+        [typeof(TimeSpan)] = new TimeSpanParameterParser(),
+        [typeof(Color)] = new ColorParameterParser(),
+        
+        [typeof(Quaternion)] = new QuaternionParameterParser(),
+        [typeof(Vector3)] = new Vector3ParameterParser(),
+        [typeof(Vector2)] = new Vector2ParameterParser(),
+        
+        [typeof(ExPlayer)] = new PlayerParameterParser(),
     };
 
     /// <summary>
