@@ -1,9 +1,12 @@
 ﻿using HarmonyLib;
+using Mirror;
 
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
 using LabExtended.Events;
+
+using static LabExtended.API.Containers.SwitchContainer;
 
 namespace LabExtended.Patches.Functions.Players;
 
@@ -13,7 +16,7 @@ public static class RegularPlayerPatch
     public static bool JoinPrefix(ReferenceHub referenceHub)
     {
         if (referenceHub != null && !referenceHub.isLocalPlayer)
-            _ = new ExPlayer(referenceHub);
+            _ = new ExPlayer(referenceHub, referenceHub.connectionToClient.GetType() != typeof(NetworkConnectionToClient) ? GetNewNpcToggles() : GetNewPlayerToggles());
 
         return false;
     }
