@@ -227,7 +227,8 @@ namespace LabExtended.Core
             if (method.declaringType is null)
                 return null;
 
-            if (string.IsNullOrWhiteSpace(method.methodName))
+            if (string.IsNullOrWhiteSpace(method.methodName) && (!method.methodType.HasValue ||
+                (method.methodType.Value != MethodType.Constructor && method.methodType.Value != MethodType.StaticConstructor)))
                 return null;
 
             if (method.methodType.HasValue && method.methodType.Value != MethodType.Normal)
@@ -236,7 +237,7 @@ namespace LabExtended.Core
                 {
                     case MethodType.Constructor:
                     case MethodType.StaticConstructor:
-                        return AccessTools.Constructor(method.declaringType, null, method.methodType.Value is MethodType.StaticConstructor);
+                        return AccessTools.Constructor(method.declaringType, method.argumentTypes, method.methodType.Value is MethodType.StaticConstructor);
 
                     case MethodType.Setter:
                         return AccessTools.PropertySetter(method.declaringType, method.methodName);
