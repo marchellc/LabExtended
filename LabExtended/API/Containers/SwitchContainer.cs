@@ -29,6 +29,7 @@ namespace LabExtended.API.Containers
             CanBlockScp173 = false,
             CanCountAs079ExpTarget = false,
             CanBeResurrectedBy049 = false,
+            CanBeScp049Target = false,
             CanBePocketDimensionItemTarget = false,
             
             PreventsRecontaining079 = false,
