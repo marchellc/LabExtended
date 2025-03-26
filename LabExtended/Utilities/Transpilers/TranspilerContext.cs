@@ -120,7 +120,7 @@ public class TranspilerContext
             
             if ((expectedOperand is null && instruction.operand != null)
                 || (expectedOperand != null && instruction.operand is null)
-                || !instruction.OperandIs(expectedOperand))
+                || (expectedOperand != null && !instruction.OperandIs(expectedOperand)))
                 continue;
 
             if (prevMatch.HasValue)
