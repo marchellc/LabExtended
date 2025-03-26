@@ -34,7 +34,7 @@ public class CommandBase
     /// <summary>
     /// Gets information about the currently executing command.
     /// </summary>
-    public CommandInstance CommandData => Context.Command;
+    public CommandData CommandData => Context.Command;
     
     /// <summary>
     /// Gets the overload that is being executed.
@@ -72,9 +72,11 @@ public class CommandBase
 
     /// <summary>
     /// Called when an overload is called for the first time.
+    /// <remarks><b><paramref name="overloadName"/> will be null if the default overload is being initialized!</b></remarks>
     /// </summary>
+    /// <param name="overloadName">Name of the overload that is being initialized.</param>
     /// <param name="parameters">The overload's parameters.</param>
-    public virtual void OnInitializeOverload(Dictionary<string, CommandParameterBuilder> parameters) { }
+    public virtual void OnInitializeOverload(string? overloadName, Dictionary<string, CommandParameterBuilder> parameters) { }
 
     /// <summary>
     /// Responds to the command.

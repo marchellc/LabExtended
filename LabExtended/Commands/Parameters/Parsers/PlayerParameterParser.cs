@@ -2,6 +2,7 @@
 using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Interfaces;
+using LabExtended.Core;
 
 namespace LabExtended.Commands.Parameters.Parsers;
 
@@ -23,22 +24,27 @@ public class PlayerParameterParser : CommandParameterParser
         
         if (token is PropertyToken propertyToken)
         {
+            ApiLog.Debug("PlayerParameterParser", $"token is PropertyToken");
+            
             if (propertyToken.TryProcessProperty(context, out var result))
-            {
+            {            
+                ApiLog.Debug("PlayerParameterParser", $"Processed property, result: {result}");
+
                 if (result is ExPlayer)
+                {
+                    ApiLog.Debug("PlayerParameterParser", $"Result is ExPlayer");
                     return new(true, result, null, parameter);
+                }
 
                 sourceString = result.ToString();
-            }
-            else if (propertyToken.Key == "context" && propertyToken.Name == "sender")
-            {
-                return new(true, context.Sender, null, parameter);
             }
         }
         else if (token is StringToken stringToken)
         {
             sourceString = stringToken.Value;
         }
+        
+        ApiLog.Debug("PlayerParameterParser", $"sourceString: {sourceString}");
         
         if (ExPlayer.TryGet(sourceString, 0.85, out var player))
             return new(true, player, null, parameter);

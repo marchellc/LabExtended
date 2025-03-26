@@ -70,22 +70,6 @@ internal static class CommandResponseFormatter
         });
     }
 
-    internal static string FormatNoOverloadsFailure(this CommandContext ctx)
-    {
-        return StringBuilderPool.Shared.BuildString(x =>
-        {
-            if (ctx.Type is CommandType.Client)
-            {
-                x.Append($"[");
-                x.Append(ctx.Command.Name);
-                x.Append("] ");
-            }
-
-            x.AppendLine("Failed while searching for compatible command overloads.");
-            x.AppendLine($"Use \"help {ctx.Command.Name}\" to get a list of command overloads.");
-        });
-    }
-
     internal static string FormatMissingPermissionsFailure(string requiredPermission, string commandName, CommandType type)
     {
         return StringBuilderPool.Shared.BuildString(x =>
@@ -97,18 +81,17 @@ internal static class CommandResponseFormatter
                 x.Append("] ");
             }
 
-            if (type is CommandType.RemoteAdmin)
-            {
-                x.Append("You are missing the required <color=red>");
-                x.Append(requiredPermission);
-                x.AppendLine("</color> permission to execute this command.");
-            }
-            else
-            {
-                x.Append("You are missing the required ");
-                x.Append(requiredPermission);
-                x.AppendLine(" permission to execute this command.");
-            }
+            x.Append("You are missing the required \"");
+            x.Append(requiredPermission);
+            x.AppendLine("\" permission to execute this command.");
+        });
+    }
+
+    internal static string FormatUnknownOverloadFailure(CommandData commandData, string overloadName)
+    {
+        return StringBuilderPool.Shared.BuildString(x =>
+        {
+            x.AppendLine($"Unknown command overload: {overloadName} (use \"help {commandData.Name}\" to view a list of valid overloads)");
         });
     }
 
@@ -131,56 +114,25 @@ internal static class CommandResponseFormatter
 
                 x.AppendLine();
 
-                if (ctx.Type is CommandType.RemoteAdmin)
-                {
-                    x.Append("<color=yellow>");
-                    x.Append("[");
-                    x.Append(i);
-                    x.Append("] ");
-                    x.Append("</color><color=red>");
-                    x.Append(parameter.Name);
-                    x.Append("</color>");
-                    x.Append(" <i>(");
-                    x.Append(parameter.Description);
-                    x.Append(")");
-                    
-                    if (parameter.FriendlyAlias?.Length > 0)
-                    {
-                        x.Append(" (");
-                        x.Append(parameter.FriendlyAlias);
-                        x.Append(")");
-                    }
-                    else
-                    {
-                        x.Append(" (");
-                        x.Append(parameter.Type.Type.Name);
-                        x.Append(")");
-                    }
+                x.Append("[");
+                x.Append(i);
+                x.Append("] ");
+                x.Append(parameter.Name);
+                x.Append(" (");
+                x.Append(parameter.Description);
+                x.Append(")");
 
-                    x.Append("</i>");
+                if (parameter.FriendlyAlias?.Length > 0)
+                {
+                    x.Append(" (");
+                    x.Append(parameter.FriendlyAlias);
+                    x.Append(")");
                 }
                 else
                 {
-                    x.Append("[");
-                    x.Append(i);
-                    x.Append("] ");
-                    x.Append(parameter.Name);
                     x.Append(" (");
-                    x.Append(parameter.Description);
+                    x.Append(parameter.Type.Type.Name);
                     x.Append(")");
-                    
-                    if (parameter.FriendlyAlias?.Length > 0)
-                    {
-                        x.Append(" (");
-                        x.Append(parameter.FriendlyAlias);
-                        x.Append(")");
-                    }
-                    else
-                    {
-                        x.Append(" (");
-                        x.Append(parameter.Type.Type.Name);
-                        x.Append(")");
-                    }
                 }
             }
         });
@@ -205,68 +157,32 @@ internal static class CommandResponseFormatter
 
                 x.AppendLine();
 
-                if (ctx.Type is CommandType.RemoteAdmin)
-                {
-                    x.Append("<color=red>");
-                    x.Append("[");
-                    x.Append(i);
-                    x.Append("]</color> <color=yellow>");
-                    x.Append(result.Parameter?.Name ?? "null");
-                    x.Append("</color>:");
+                x.Append("[");
+                x.Append(i);
+                x.Append("] ");
+                x.Append(result.Parameter?.Name ?? "null");
+                x.Append(":");
 
-                    if (result.Success)
-                    {
-                        x.Append(" <color=green>OK</color>");
-                    }
-                    else
-                    {
-                        x.Append(" <color=red>");
-                        x.Append(result.Error);
-                        x.Append("</color>");
-                        
-                        if (result.Parameter?.FriendlyAlias?.Length > 0)
-                        {
-                            x.Append(" <i>(");
-                            x.Append(result.Parameter.FriendlyAlias);
-                            x.Append(")</i>");
-                        }
-                        else
-                        {
-                            x.Append(" <i>(");
-                            x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
-                            x.Append(")</i>");
-                        }
-                    }
+                if (result.Success)
+                {
+                    x.Append(" OK");
                 }
                 else
                 {
-                    x.Append("[");
-                    x.Append(i);
-                    x.Append("] ");
-                    x.Append(result.Parameter?.Name ?? "null");
-                    x.Append(":");
+                    x.Append(" ");
+                    x.Append(result.Error);
 
-                    if (result.Success)
+                    if (result.Parameter?.FriendlyAlias?.Length > 0)
                     {
-                        x.Append(" OK");
+                        x.Append(" (");
+                        x.Append(result.Parameter.FriendlyAlias);
+                        x.Append(")");
                     }
                     else
                     {
-                        x.Append(" ");
-                        x.Append(result.Error);
-
-                        if (result.Parameter?.FriendlyAlias?.Length > 0)
-                        {
-                            x.Append(" (");
-                            x.Append(result.Parameter.FriendlyAlias);
-                            x.Append(")");
-                        }
-                        else
-                        {
-                            x.Append(" (");
-                            x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
-                            x.Append(")");
-                        }
+                        x.Append(" (");
+                        x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
+                        x.Append(")");
                     }
                 }
             }
@@ -288,47 +204,16 @@ internal static class CommandResponseFormatter
             x.Append(result.Position.Value);
             x.Append(", faulty character: ");
             x.Append(result.Character.Value);
-                
+
             x.AppendLine();
             x.AppendLine();
-            
-            if (ctx.Type is CommandType.RemoteAdmin)
-            {
-                x.Append("<color=green>");
 
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(result.Input[i]);
-                
-                x.Append("</color>");
-                
-                x.Append("<color=red>");
-                x.Append(result.Character.Value);
-                x.Append("</color>");
+            x.AppendLine(result.Input);
 
-                x.Append("<color=green>");
-                
-                for (var i = result.Position.Value; i < result.Input.Length; i++)
-                    x.Append(result.Input[i]);
-                
-                x.AppendLine("</color>");
-                
-                x.Append("<color=red>");
+            for (var i = 0; i < result.Position.Value; i++)
+                x.Append(" ");
 
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(" ");
-
-                x.Append("^^</color>");
-            }
-            else
-            {
-                x.AppendLine(result.Input);
-                
-                for (var i = 0; i < result.Position.Value; i++)
-                    x.Append(" ");
-                
-                x.Append("^^");
-            }
-            
+            x.Append("^^");
         });
     }
 }

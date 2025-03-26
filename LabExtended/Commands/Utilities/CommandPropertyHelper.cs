@@ -1,6 +1,7 @@
 ﻿using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Tokens;
+using LabExtended.Core;
 
 namespace LabExtended.Commands.Utilities;
 
@@ -28,13 +29,21 @@ public static class CommandPropertyHelper
         
         var propertyName = string.Concat(propertyToken.Key, ".", propertyToken.Name);
 
+        ApiLog.Debug("Command Property Helper", $"Processing property: {propertyName}");
+
         if (!PropertyToken.Properties.TryGetValue(propertyName, out var property))
+        {
+            ApiLog.Debug("Command Property Helper", $"Unknown property: {propertyName}");
             return false;
+        }
 
         var propertyValue = property.Value(context);
 
         if (propertyValue is null)
+        {
+            ApiLog.Debug("Command Property Helper", $"Property is null");
             return false;
+        }
 
         result = propertyValue;
         return true;

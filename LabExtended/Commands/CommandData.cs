@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Commands.Interfaces;
+
 using LabExtended.Core;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -12,7 +13,7 @@ namespace LabExtended.Commands;
 /// <summary>
 /// Represents a registered command.
 /// </summary>
-public class CommandInstance
+public class CommandData
 {
     /// <summary>
     /// Gets the command's type.
@@ -23,17 +24,37 @@ public class CommandInstance
     /// Gets the command's static instance.
     /// <remarks>null if <see cref="IsStatic"/> is false</remarks>
     /// </summary>
-    public CommandBase StaticInstance { get; }
+    public CommandBase? StaticInstance { get; }
     
     /// <summary>
-    /// Gets the command's overload.
+    /// Gets the command's default overload (if any).
     /// </summary>
-    public CommandOverload Overload { get; internal set; }
+    public CommandOverload? DefaultOverload { get; internal set; }
+    
+    /// <summary>
+    /// Gets the command's parent.
+    /// </summary>
+    public CommandData? Parent { get; internal set; }
+
+    /// <summary>
+    /// Gets the command's path.
+    /// </summary>
+    public List<string> Path { get; } = new();
+    
+    /// <summary>
+    /// Gets the command's aliases.
+    /// </summary>
+    public List<string> Aliases { get; }
     
     /// <summary>
     /// Gets the command's instance pool.
     /// </summary>
     public List<CommandBase> DynamicPool { get; } = new();
+    
+    /// <summary>
+    /// Gets the command's overloads.
+    /// </summary>
+    public Dictionary<string, CommandOverload> Overloads { get; } = new();
     
     /// <summary>
     /// Gets the constructor of the command's type.
@@ -46,11 +67,6 @@ public class CommandInstance
     public string Name { get; }
     
     /// <summary>
-    /// Gets the name split by spaces.
-    /// </summary>
-    public string[] NameParts { get; }
-    
-    /// <summary>
     /// Gets the permission required by this command.
     /// </summary>
     public string Permission { get; }
@@ -59,11 +75,6 @@ public class CommandInstance
     /// Gets the description of the command.
     /// </summary>
     public string Description { get; }
-    
-    /// <summary>
-    /// Gets the command's aliases (full aliases).
-    /// </summary>
-    public List<string> Aliases { get; }
     
     /// <summary>
     /// Whether or not this command can be used in the Remote Admin panel.
@@ -101,9 +112,9 @@ public class CommandInstance
     public float? TimeOut { get; }
     
     /// <summary>
-    /// Creates a new <see cref="CommandInstance"/> instance.
+    /// Creates a new <see cref="CommandData"/> instance.
     /// </summary>
-    public CommandInstance(Type type, string name, string permission, string description, bool isStatic, bool isHidden, float? timeOut, List<string> aliases)
+    public CommandData(Type type, string name, string permission, string description, bool isStatic, bool isHidden, float? timeOut, List<string> aliases)
     {
         Name = name;
         Type = type;
@@ -121,8 +132,6 @@ public class CommandInstance
         IsHidden = isHidden;
         
         Constructor = FastReflection.ForConstructor(AccessTools.Constructor(type));
-        
-        NameParts = name.Split(CommandManager.spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
 
         if (IsStatic)
         {

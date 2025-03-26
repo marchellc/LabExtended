@@ -3,6 +3,7 @@ using LabExtended.Commands.Interfaces;
 
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Tokens;
 
@@ -42,6 +43,31 @@ public class PropertyToken : PoolObject, ICommandToken
     /// Gets an instance of the property token.
     /// </summary>
     public static PropertyToken Instance { get; } = new();
+
+    /// <summary>
+    /// Registers a new property.
+    /// </summary>
+    /// <param name="key">The property key.</param>
+    /// <param name="name">The property name.</param>
+    /// <param name="property">The property getter.</param>
+    public static void RegisterProperty<T>(string key, string name, Func<CommandContext, object> property)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            throw new ArgumentNullException(nameof(key));
+        
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentNullException(nameof(name));
+        
+        if (property is null)
+            throw new ArgumentNullException(nameof(property));
+
+        var fullKey = $"{key.ToLowerInvariant()}.{name.ToLowerInvariant()}";
+        
+        if (Properties.ContainsKey(fullKey))
+            throw new Exception($"Property {fullKey} already registered");
+        
+        Properties.Add(fullKey, new(typeof(T), property));
+    }
     
     /// <summary>
     /// Gets or sets the key of the property.

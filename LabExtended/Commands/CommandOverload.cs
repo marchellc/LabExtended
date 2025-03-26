@@ -60,6 +60,11 @@ public class CommandOverload
     public string Name { get; internal set; }
     
     /// <summary>
+    /// Gets the overload's description.
+    /// </summary>
+    public string Description { get; internal set; }
+    
+    /// <summary>
     /// Gets the overload's buffer.
     /// </summary>
     public ReusableValue<object[]> Buffer { get; }

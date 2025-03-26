@@ -62,31 +62,31 @@ public class CommandParameterBuilder
     }
 
     /// <summary>
-    /// Adds a new argument to this parameter.
+    /// Adds a new restriction to this parameter.
     /// </summary>
     /// <typeparam name="T">The argument's type.</typeparam>
     /// <returns>This builder instance.</returns>
-    public CommandParameterBuilder WithArgument<T>() where T : ICommandParameterArgument, new()
+    public CommandParameterBuilder WithRestriction<T>() where T : ICommandParameterRestriction, new()
     {
-        if (Result.Arguments.Any(x => x is T))
+        if (Result.Restrictions.Any(x => x is T))
             throw new Exception($"Only a single parameter argument of a type is allowed ({typeof(T).FullName})");
         
-        Result.Arguments.Add(new T());
+        Result.Restrictions.Add(new T());
         return this;
     }
     
     /// <summary>
-    /// Adds a new argument to this parameter.
+    /// Adds a new restriction to this parameter.
     /// </summary>
-    /// <param name="parameterArgument">The argument.</param>
+    /// <param name="parameterRestriction">The argument.</param>
     /// <returns>This builder instance.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public CommandParameterBuilder WithArgument(ICommandParameterArgument parameterArgument)
+    public CommandParameterBuilder WithRestriction(ICommandParameterRestriction parameterRestriction)
     {
-        if (parameterArgument is null)
-            throw new ArgumentNullException(nameof(parameterArgument));
+        if (parameterRestriction is null)
+            throw new ArgumentNullException(nameof(parameterRestriction));
         
-        Result.Arguments.Add(parameterArgument);
+        Result.Restrictions.Add(parameterRestriction);
         return this;
     }
 }

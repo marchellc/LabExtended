@@ -23,7 +23,7 @@ public static class CommandListSynchronization
         if (CommandManager.Commands.Count < 1)
             return;
         
-        QueryProcessor.CommandData ToData(CommandInstance command, string name)
+        QueryProcessor.CommandData ToData(CommandData command, CommandOverload ov, string name, string? aliasOf = null)
         {
             var data = new QueryProcessor.CommandData();
 
@@ -32,25 +32,38 @@ public static class CommandListSynchronization
             data.Hidden = command.IsHidden;
             data.Description = command.Description;
 
-            data.Usage = command.Overload.Parameters.CompileParameters();
+            data.Usage = ov.Parameters.CompileParameters();
+            
+            if (aliasOf != null)
+                data.AliasOf = aliasOf;
+            
             return data;
         }
         
         CommandManager.Commands.ForEach(cmd =>
         {
-            commands.Add(ToData(cmd, cmd.Name));
+            if (cmd.DefaultOverload != null)
+                commands.Add(ToData(cmd, cmd.DefaultOverload, cmd.Name));
+
+            foreach (var overload in cmd.Overloads)
+                commands.Add(ToData(cmd, overload.Value, $"{cmd.Name} {overload.Key}"));
 
             if (cmd.Aliases.Count > 0)
             {
-                var aliasParts = ListPool<string>.Shared.Rent(cmd.NameParts);
+                var aliasSwapBuffer = ListPool<string>.Shared.Rent(cmd.Path);
 
-                cmd.Aliases.ForEach(alias =>
+                foreach (var alias in cmd.Aliases)
                 {
-                    aliasParts[aliasParts.Count - 1] = alias;
-                    commands.Add(ToData(cmd, string.Join(" ", aliasParts)));
-                });
+                    if (cmd.DefaultOverload != null)
+                        commands.Add(ToData(cmd, cmd.DefaultOverload, alias, cmd.Name));
 
-                ListPool<string>.Shared.Return(aliasParts);
+                    aliasSwapBuffer[aliasSwapBuffer.Count - 1] = alias;
+
+                    foreach (var overload in cmd.Overloads)
+                        commands.Add(ToData(cmd, overload.Value, $"{string.Join(" ", aliasSwapBuffer)} {overload.Key}", $"{cmd.Name} {overload.Key}"));
+                }
+                
+                ListPool<string>.Shared.Return(aliasSwapBuffer);
             }
         });
     }

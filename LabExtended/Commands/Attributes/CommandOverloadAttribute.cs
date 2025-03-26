@@ -6,17 +6,31 @@
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public class CommandOverloadAttribute : Attribute
 {
+    internal readonly bool isDefaultOverload = false;
+    
     /// <summary>
     /// Gets the overload's custom name.
     /// </summary>
     public string? Name { get; }
+    
+    /// <summary>
+    /// Gets the overload's description.
+    /// </summary>
+    public string? Description { get; }
 
     /// <summary>
     /// Creates a new <see cref="CommandOverloadAttribute"/> instance.
     /// </summary>
-    /// <param name="customName">The custom name of the overload.</param>
-    public CommandOverloadAttribute(string? customName = null)
+    public CommandOverloadAttribute() => isDefaultOverload = true;
+
+    /// <summary>
+    /// Creates a new <see cref="CommandOverloadAttribute"/> instance.
+    /// </summary>
+    /// <param name="name">Name of the overload.</param>
+    /// <param name="description">Description of the overload.</param>
+    public CommandOverloadAttribute(string name, string description = "No description")
     {
-        Name = customName;
+        Name = name;
+        Description = description;
     }
 }

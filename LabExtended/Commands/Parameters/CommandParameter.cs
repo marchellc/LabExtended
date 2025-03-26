@@ -21,7 +21,7 @@ public class CommandParameter
     /// <summary>
     /// Gets the list of parameter arguments.
     /// </summary>
-    public List<ICommandParameterArgument> Arguments { get; } = new();
+    public List<ICommandParameterRestriction> Restrictions { get; } = new();
     
     /// <summary>
     /// Gets the name of the parameter.
@@ -74,7 +74,7 @@ public class CommandParameter
 
         if (parameterAttribute != null)
         {
-            Arguments.AddRange(parameterAttribute.Arguments);
+            Restrictions.AddRange(parameterAttribute.Restrictions);
             
             if (!string.IsNullOrWhiteSpace(parameterAttribute.Name))
                 Name = parameterAttribute.Name;

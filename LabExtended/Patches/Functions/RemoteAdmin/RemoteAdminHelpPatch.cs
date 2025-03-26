@@ -7,6 +7,7 @@ using LabApi.Features.Enums;
 
 using LabExtended.Commands;
 using LabExtended.Commands.Utilities;
+using NorthwoodLib.Pools;
 
 namespace LabExtended.Patches.Functions.RemoteAdmin;
 
@@ -67,16 +68,22 @@ public static class RemoteAdminHelpPatch
         }
         else
         {
-            if (CommandManager.TryFindCommand(string.Join(" ", arguments), null, out var foundCommand)
+            var args = ListPool<string>.Shared.Rent(arguments);
+            
+            if (CommandManager.TryGetCommand(args, null, out var foundCommand)
                 && !foundCommand.IsHidden)
             {
+                ListPool<string>.Shared.Return(args);
+                
                 response = foundCommand.GetString();
-
+                
                 __result = true;
                 return false;
             }
             else
             {
+                ListPool<string>.Shared.Return(args);
+                
                 response = $"Unknown command!";
                 return __result = false;
             }

@@ -27,30 +27,18 @@ public static class CommandFormatter
             
             foreach (var command in CommandManager.Commands)
             {
-                x.Append($"[{command.Name.ToUpper()}] {command.Description} (");
-
-                if (command.SupportsPlayer)
+                if (command.DefaultOverload != null)
                 {
-                    x.Append("PLY");
+                    x.Append($"{command.Name} ({command.Description})");
+
+                    if (command.Aliases.Count > 0)
+                        x.Append($" (aliases: {string.Join(", ", command.Aliases)})");
+                    
+                    x.AppendLine();
                 }
 
-                if (command.SupportsServer)
-                {
-                    if (command.SupportsPlayer)
-                        x.Append(", ");
-
-                    x.Append("SRV");
-                }
-
-                if (command.SupportsRemoteAdmin)
-                {
-                    if (command.SupportsPlayer || command.SupportsServer)
-                        x.Append(", ");
-
-                    x.Append("RA");
-                }
-
-                x.AppendLine(")");
+                foreach (var overload in command.Overloads)
+                    x.AppendLine($"{command.Name} {overload.Key} ({overload.Value.Description})");
             }
         });
     }
@@ -58,86 +46,88 @@ public static class CommandFormatter
     /// <summary>
     /// Converts the command into an info-help string.
     /// </summary>
-    /// <param name="commandInstance">The command instance.</param>
+    /// <param name="commandData">The command instance.</param>
     /// <returns>The string.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static string GetString(this CommandInstance commandInstance)
+    public static string GetString(this CommandData commandData)
     {
-        if (commandInstance is null)
-            throw new ArgumentNullException(nameof(commandInstance));
+        if (commandData is null)
+            throw new ArgumentNullException(nameof(commandData));
         
         return StringBuilderPool.Shared.BuildString(x =>
         {
-            x.AppendLine($"Command \"{commandInstance.Name}\"");
-            x.AppendLine($"Description: {commandInstance.Description}");
-            x.AppendLine($"Type: {commandInstance.Type.FullName}");
+            x.AppendLine($"[COMMAND \"{commandData.Name}\"]");
+            x.AppendLine($"- Description: {commandData.Description}");
+            x.AppendLine($"- Type: {commandData.Type.FullName}");
 
-            if (commandInstance.Permission != null)
-                x.AppendLine($"Permission: {commandInstance.Permission}");
+            if (commandData.Permission != null)
+                x.AppendLine($"- Permission: {commandData.Permission}");
 
-            if (commandInstance.Aliases.Count > 0)
-                x.AppendLine($"Aliases: {string.Join(", ", commandInstance.Aliases)}");
+            if (commandData.Aliases.Count > 0)
+                x.AppendLine($"- Aliases: {string.Join(", ", commandData.Aliases)}");
 
-            x.AppendLine($"Supports Remote Admin: {commandInstance.SupportsRemoteAdmin}");
-            x.AppendLine($"Supports Server Console: {commandInstance.SupportsServer}");
-            x.AppendLine($"Supports Player Console: {commandInstance.SupportsPlayer}");
+            x.AppendLine($"- Supports Remote Admin: {commandData.SupportsRemoteAdmin}");
+            x.AppendLine($"- Supports Server Console: {commandData.SupportsServer}");
+            x.AppendLine($"- Supports Player Console: {commandData.SupportsPlayer}");
 
-            x.AppendLine($"Can Be Continued: {commandInstance.IsContinuable}");
+            x.AppendLine($"- Can Be Continued: {commandData.IsContinuable}");
 
-            if (commandInstance.TimeOut.HasValue)
-                x.AppendLine($"Time Out: {commandInstance.TimeOut.Value}s");
+            if (commandData.TimeOut.HasValue)
+                x.AppendLine($"- Time Out: {commandData.TimeOut.Value}s");
 
-            x.AppendLine();
-            x.AppendLine($"Overload:");
-            x.AppendLine($" Name: {commandInstance.Overload.Name}");
-            x.AppendLine($" Method: {commandInstance.Overload.Target.GetMemberName()}");
-            x.AppendLine($" Is Coroutine: {commandInstance.Overload.IsCoroutine}");
-            x.AppendLine($" Is Initialized: {commandInstance.Overload.IsInitialized}");
-
-            if (commandInstance.Overload.ParameterCount > 0)
-                x.AppendLine($" Parameters ({commandInstance.Overload.ParameterCount}):");
-
-            for (var y = 0; y < commandInstance.Overload.Parameters.Count; y++)
+            void AppendOverload(string overloadHeader, CommandOverload overload)
             {
-                var parameter = commandInstance.Overload.Parameters[y];
+                x.AppendLine();
+                x.AppendLine($"-> {overloadHeader}");
 
-                x.AppendLine($"  Parameter [{y}]:");
-                x.AppendLine($"   Name: {parameter.Name}");
-                x.AppendLine($"   Description: {parameter.Description}");
+                if (string.IsNullOrWhiteSpace(overload.Name) || (commandData.DefaultOverload != null && overload == commandData.DefaultOverload))
+                    x.Append($" -< Usage: \"{commandData.Name}");
+                else
+                    x.Append($" -< Usage: \"{commandData.Name} {overload.Name}");
 
-                if (parameter.UsageAlias?.Length > 0)
-                    x.AppendLine($"   Usage Alias: {parameter.UsageAlias}");
-
-                if (parameter.FriendlyAlias?.Length > 0)
-                    x.AppendLine($"   Friendly Alias: {parameter.FriendlyAlias}");
-
-                if (parameter.HasDefault)
-                    x.AppendLine($"   Default Value: {parameter.DefaultValue?.ToString() ?? "null"}");
-
-                x.AppendLine($"   Type: {parameter.Type.Type.FullName}");
-                x.AppendLine($"    Parser: {parameter.Type.Parser?.GetType()?.FullName ?? "null"}");
-
-                if (parameter.Type.KeyType != null)
-                    x.AppendLine($"    Key Type: {parameter.Type.KeyType.FullName}");
-
-                if (parameter.Type.ValueType != null)
-                    x.AppendLine($"    Value Type: {parameter.Type.ValueType.FullName}");
-
-                if (parameter.Arguments.Count > 0)
+                if (overload.Parameters.Count > 0)
                 {
-                    x.AppendLine($"    Arguments:");
-
-                    foreach (var arg in parameter.Arguments)
+                    foreach (var parameter in overload.Parameters)
                     {
-                        x.AppendLine($"     - {arg}");
+                        if (parameter.HasDefault)
+                        {
+                            x.Append($" ({parameter.Name})");
+                        }
+                        else
+                        {
+                            x.Append($" [{parameter.Name}]");
+                        }
                     }
                 }
 
-                x.AppendLine($"    Is String: {parameter.Type.IsString}");
-                x.AppendLine($"    Is List: {parameter.Type.IsList}");
-                x.AppendLine($"    Is Array: {parameter.Type.IsArray}");
-                x.AppendLine($"    Is Dictionary: {parameter.Type.IsDictionary}");
+                x.AppendLine("\"");
+
+                if (overload.ParameterCount > 0)
+                {
+                    x.AppendLine($" -< Parameters ({overload.ParameterCount}):");
+
+                    for (var y = 0; y < overload.Parameters.Count; y++)
+                    {
+                        var parameter = overload.Parameters[y];
+
+                        x.Append($"  -< [{y}] {parameter.Name} ({parameter.Description})");
+
+                        if (parameter.HasDefault)
+                            x.Append($" (default: {parameter.DefaultValue?.ToString() ?? "null"})");
+                        
+                        foreach (var restriction in parameter.Restrictions)
+                            x.Append($"\n   --> Restriction: {restriction}");
+                        
+                        x.AppendLine();
+                    }
+                }
             }
+
+            if (commandData.DefaultOverload != null)
+                AppendOverload("Default Overload", commandData.DefaultOverload);
+            
+            foreach (var overload in commandData.Overloads)
+                AppendOverload($"Overload \"{overload.Key}\"", overload.Value);
         });
     }
 }

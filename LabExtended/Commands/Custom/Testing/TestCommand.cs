@@ -14,7 +14,7 @@ public class TestCommand : CommandBase, IAllCommand
     /// <summary>
     /// A default testing overload.
     /// </summary>
-    [CommandOverload("test")]
+    [CommandOverload]
     public void TestOverload(
         [CommandParameter("Word", "Testing word")] string word,
         [CommandParameter("Second Word", "The second testing word")] string secondWord,
@@ -23,12 +23,28 @@ public class TestCommand : CommandBase, IAllCommand
         Ok($"Test passed: {word} + {secondWord} + {thirdWord}");
     }
 
-    /// <inheritdoc cref="CommandBase.OnInitializeOverload"/>
-    public override void OnInitializeOverload(Dictionary<string, CommandParameterBuilder> parameters)
+    [CommandOverload("list", "Tests list behaviour")]
+    public void ListOverload([CommandParameter("List", "The list of words")] List<string> words)
     {
-        base.OnInitializeOverload(parameters);
+        Ok($"Words ({words.Count}): {string.Join(" + ", words)}");
+    }
 
-        parameters["word"]
-            .WithArgument(new StringLengthRangeArgument(1, 3));
+    [CommandOverload("dict", "Tests dictionary behaviour")]
+    public void DictionaryOverload(
+        [CommandParameter("Dictionary", "The dictionary of words")] Dictionary<string, string> words)
+    {
+        Ok($"Words ({words.Count}): {string.Join(" + ", words)}");
+    }
+
+    /// <inheritdoc cref="CommandBase.OnInitializeOverload"/>
+    public override void OnInitializeOverload(string? overloadName, Dictionary<string, CommandParameterBuilder> parameters)
+    {
+        base.OnInitializeOverload(overloadName, parameters);
+
+        if (overloadName is null)
+        {
+            parameters["word"]
+                .WithRestriction(new StringLengthRangeRestriction(1, 3));
+        }
     }
 }

@@ -22,15 +22,15 @@ public class CommandParameterAttribute : Attribute
     /// <summary>
     /// Gets a list of assigned arguments.
     /// </summary>
-    public List<ICommandParameterArgument> Arguments { get; } = new();
+    public List<ICommandParameterRestriction> Restrictions { get; } = new();
     
     /// <summary>
     /// Creates a new <see cref="CommandParameterAttribute"/> instance.
     /// </summary>
     /// <param name="name">The argument's custom name.</param>
     /// <param name="description">The argument's custom description.</param>
-    /// <param name="parameterArguments">The argument's parameter types.</param>
-    public CommandParameterAttribute(string? name, string? description, params Type[] parameterArguments) : this(parameterArguments)
+    /// <param name="parameterRestrictions">The argument's parameter types.</param>
+    public CommandParameterAttribute(string? name, string? description, params Type[] parameterRestrictions) : this(parameterRestrictions)
     {
         Name = name;
         Description = description;
@@ -39,26 +39,26 @@ public class CommandParameterAttribute : Attribute
     /// <summary>
     /// Creates a new <see cref="CommandParameterAttribute"/> instance.
     /// </summary>
-    /// <param name="parameterArguments">The arguments for this parameter.</param>
-    public CommandParameterAttribute(params Type[] parameterArguments)
+    /// <param name="parameterRestrictions">The arguments for this parameter.</param>
+    public CommandParameterAttribute(params Type[] parameterRestrictions)
     {
-        for (var i = 0; i < parameterArguments.Length; i++)
+        for (var i = 0; i < parameterRestrictions.Length; i++)
         {
-            var argument = parameterArguments[i];
+            var argument = parameterRestrictions[i];
             
             if (argument is null)
-                throw new ArgumentException($"Parameter argument type at index {i} cannot be null", nameof(parameterArguments));
+                throw new ArgumentException($"Parameter argument type at index {i} cannot be null", nameof(parameterRestrictions));
             
-            if (!argument.InheritsType<ICommandParameterArgument>())
-                throw new ArgumentException($"Parameter arguments must implement the ICommandParameterArgument interface (type: {argument.FullName}, index: {i})", 
-                    nameof(parameterArguments));
+            if (!argument.InheritsType<ICommandParameterRestriction>())
+                throw new ArgumentException($"Parameter arguments must implement the ICommandParameterRestriction interface (type: {argument.FullName}, index: {i})", 
+                    nameof(parameterRestrictions));
             
             var staticField = argument.FindField(f => f.IsStatic && f is { IsInitOnly: true, Name: "Instance" } && f.FieldType == argument);
             
-            if (staticField != null && staticField.GetValue(null) is ICommandParameterArgument argumentInstance)
-                Arguments.Add(argumentInstance);
-            else if (Activator.CreateInstance(argument) is ICommandParameterArgument argumentInstantiated)
-                Arguments.Add(argumentInstantiated);
+            if (staticField != null && staticField.GetValue(null) is ICommandParameterRestriction argumentInstance)
+                Restrictions.Add(argumentInstance);
+            else if (Activator.CreateInstance(argument) is ICommandParameterRestriction argumentInstantiated)
+                Restrictions.Add(argumentInstantiated);
             else
                 throw new ArgumentException(
                     $"Could not get instance of parameter argument {argument.FullName} (index: {i})");

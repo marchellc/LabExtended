@@ -6,7 +6,7 @@ namespace LabExtended.Commands.Parameters.Arguments;
 /// <summary>
 /// Specifies the minimum and / or maximum length of a string.
 /// </summary>
-public class StringLengthRangeArgument : ICommandParameterArgument
+public class StringLengthRangeRestriction : ICommandParameterRestriction
 {
     /// <summary>
     /// Gets the minimum length of a string.
@@ -19,17 +19,17 @@ public class StringLengthRangeArgument : ICommandParameterArgument
     public int? MaximumLength { get; }
 
     /// <summary>
-    /// Creates a new <see cref="StringLengthRangeArgument"/> instance.
+    /// Creates a new <see cref="StringLengthRangeRestriction"/> instance.
     /// </summary>
     /// <param name="minimumLength">The minimum length.</param>
     /// <param name="maximumLength">The maximum length.</param>
-    public StringLengthRangeArgument(int? minimumLength, int? maximumLength)
+    public StringLengthRangeRestriction(int? minimumLength, int? maximumLength)
     {
         MinimumLength = minimumLength;
         MaximumLength = maximumLength;
     }
 
-    /// <inheritdoc cref="ICommandParameterArgument.IsValid"/>
+    /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>
     public bool IsValid(object argument, CommandContext context, CommandParameter parameter, out string? error)
     {
         error = null;
@@ -52,7 +52,7 @@ public class StringLengthRangeArgument : ICommandParameterArgument
         return true;
     }
 
-    /// <inheritdoc cref="StringLengthRangeArgument"/>
+    /// <inheritdoc cref="StringLengthRangeRestriction"/>
     public override string ToString()
         => $"String Length Range (Minimum Length: {MinimumLength ?? -1} | Maximum Length: {MaximumLength ?? -1})";
 }

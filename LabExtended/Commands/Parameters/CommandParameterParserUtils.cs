@@ -218,9 +218,9 @@ public static class CommandParameterParserUtils
                     {
                         string? argumentError = null;
 
-                        foreach (var argument in parameter.Arguments)
+                        foreach (var restriction in parameter.Restrictions)
                         {
-                            if (!argument.IsValid(parameterResult.Value, context, parameter, out var error))
+                            if (!restriction.IsValid(parameterResult.Value, context, parameter, out var error))
                             {
                                 argumentError = error;
                                 break;

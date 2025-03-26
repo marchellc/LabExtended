@@ -14,7 +14,7 @@ public class CommandAttribute : Attribute
     /// <summary>
     /// Gets or sets the permission required by this command.
     /// </summary>
-    public string Permission { get; set; }
+    public string? Permission { get; set; }
     
     /// <summary>
     /// Gets or sets the description of the command.
@@ -35,7 +35,7 @@ public class CommandAttribute : Attribute
     /// Gets or sets the timeout of a continuable command (in seconds).
     /// </summary>
     public float TimeOut { get; set; } = 0f;
-
+    
     /// <summary>
     /// Gets a list of the command's aliases.
     /// </summary>
@@ -65,7 +65,7 @@ public class CommandAttribute : Attribute
         Name = name;
         Description = description;
 
-        for (int i = 0; i < aliases.Length; i++)
+        for (var i = 0; i < aliases.Length; i++)
         {
             if (string.IsNullOrWhiteSpace(aliases[i]))
                 throw new ArgumentNullException(nameof(aliases));

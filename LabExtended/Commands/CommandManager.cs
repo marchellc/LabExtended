@@ -44,7 +44,7 @@ public static class CommandManager
     /// <summary>
     /// Gets a list of all registered commands.
     /// </summary>
-    public static List<CommandInstance> Commands { get; } = new(byte.MaxValue);
+    public static List<CommandData> Commands { get; } = new(byte.MaxValue);
 
     /// <summary>
     /// Registers all commands found in a given assembly.
@@ -52,12 +52,12 @@ public static class CommandManager
     /// <param name="assembly">The assembly to search for commands in.</param>
     /// <returns>List of registered commands.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static List<CommandInstance> RegisterCommands(this Assembly assembly)
+    public static List<CommandData> RegisterCommands(this Assembly assembly)
     {
         if (assembly is null)
             throw new ArgumentNullException(nameof(assembly));
         
-        var registered = new List<CommandInstance>();
+        var registered = new List<CommandData>();
 
         foreach (var type in assembly.GetTypes())
         {
@@ -86,17 +86,19 @@ public static class CommandManager
                 ApiLog.Warn("Command Manager", $"Command &3{type.FullName}&r disabled it's &6IsStatic&r property, " +
                                                $"but continuable commands must be static.");
             
-            var instance = new CommandInstance(type, commandAttribute.Name, commandAttribute.Permission, commandAttribute.Description,
+            var instance = new CommandData(type, commandAttribute.Name, commandAttribute.Permission, commandAttribute.Description,
                 commandAttribute.IsStatic,  commandAttribute.IsHidden, commandAttribute.TimeOut > 0f ? commandAttribute.TimeOut : null, commandAttribute.Aliases);
 
             if (instance is { SupportsPlayer: false, SupportsServer: false, SupportsRemoteAdmin: false })
             {
                 ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any enabled input sources. " +
                                                $"You can enable those by adding one of the source interfaces to the command class" +
-                                               $"(for example &1IRemoteAdminCommand&r, or for simplicity &1IAllCommand&r or &1IServerCommand&r)");
+                                               $"(for example &1IRemoteAdminCommand&r, or for simplicity &1IAllCommand&r or &1IServerSideCommand&r)");
                 
                 continue;
             }
+            
+            instance.Path.AddRange(instance.Name.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLowerInvariant()));
 
             foreach (var method in type.GetAllMethods())
             {
@@ -116,16 +118,39 @@ public static class CommandManager
 
                 var overload = new CommandOverload(method);
                 
-                if (!string.IsNullOrWhiteSpace(commandOverloadAttribute.Name))
-                    overload.Name = commandOverloadAttribute.Name;
+                overload.Name = commandOverloadAttribute.Name;
+                overload.Description = commandOverloadAttribute.Description;
 
-                instance.Overload = overload;
-                break;
+                if (commandOverloadAttribute.isDefaultOverload)
+                {
+                    if (instance.DefaultOverload != null)
+                    {
+                        ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r " +
+                                                        $"was specified as the default overload, but the command already has one " +
+                                                        $"(&3{instance.DefaultOverload.Target.GetMemberName()}&r)");
+                        
+                        continue;
+                    }
+                    
+                    instance.DefaultOverload = overload;
+                }
+                else
+                {
+                    if (instance.Overloads.ContainsKey(commandOverloadAttribute.Name))
+                    {
+                        ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r" +
+                                                        $"cannot be added as an overload because an overload with the same name already exists.");
+                        
+                        continue;
+                    }
+
+                    instance.Overloads.Add(commandOverloadAttribute.Name, overload);
+                }
             }
 
-            if (instance.Overload is null)
+            if (instance.DefaultOverload is null && instance.Overloads.Count == 0)
             {
-                ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any suitable overloads.");
+                ApiLog.Warn("Command Manager", $"Command &1{type.FullName}&r does not have any overloads.");
                 continue;
             }
 
@@ -133,16 +158,24 @@ public static class CommandManager
 
             if (commandInstance != null)
             {
-                commandInstance.OnInitializeOverload(instance.Overload.ParameterBuilders);
+                if (instance.DefaultOverload != null)
+                {
+                    commandInstance.OnInitializeOverload(null, instance.DefaultOverload.ParameterBuilders);
+                    instance.DefaultOverload.IsInitialized = true;
+                }
                 
-                instance.Overload.IsInitialized = true;
-
+                foreach (var overload in instance.Overloads)
+                {
+                    commandInstance.OnInitializeOverload(overload.Key, overload.Value.ParameterBuilders);
+                    overload.Value.IsInitialized = true;
+                }
+                
                 if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && !instance.IsStatic)
                     instance.DynamicPool.Add(commandInstance);
             }
             else
             {
-                ApiLog.Warn("Command Manager", $"Overload of command &3{instance.Name}&r could not be initialized due to not being able to construct " +
+                ApiLog.Warn("Command Manager", $"Overloads of command &3{instance.Name}&r could not be initialized due to not being able to construct " +
                                                $"a command instance, this command may behave unexpectedly when first used.");
             }
 
@@ -184,85 +217,6 @@ public static class CommandManager
         }
     }
 
-    /// <summary>
-    /// Attempts to find a command for a given command line.
-    /// </summary>
-    /// <param name="commandLine">The command line.</param>
-    /// <param name="type">The type of executed command.</param>
-    /// <param name="command">The target command.</param>
-    /// <returns>true if the command was found</returns>
-    public static bool TryFindCommand(string commandLine, CommandType? type, out CommandInstance? command)
-        => TryFindCommand(commandLine, type, null, out command, out _);
-
-    /// <summary>
-    /// Attempts to find a command for a given command line.
-    /// </summary>
-    /// <param name="commandLine">The command line.</param>
-    /// <param name="type">The type of executed command.</param>
-    /// <param name="rawArgs">A list of raw arguments separated by a space.</param>
-    /// <param name="targetCommand">The target command.</param>
-    /// <param name="fixedCommandLine">The fixed command line.</param>
-    /// <returns>true if the command was found</returns>
-    public static bool TryFindCommand(string commandLine, CommandType? type, List<string>? rawArgs, out CommandInstance? targetCommand, out string? fixedCommandLine)
-    {
-        if (string.IsNullOrWhiteSpace(commandLine))
-            throw new ArgumentNullException(nameof(commandLine));
-        
-        var commandLineSplit = commandLine.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
-        
-        for (var i = 0; i < Commands.Count; i++)
-        {
-            var cmd = Commands[i];
-
-            if (type.HasValue)
-            {
-                switch (type)
-                {
-                    case CommandType.Client when !cmd.SupportsPlayer:
-                    case CommandType.Console when !cmd.SupportsServer:
-                    case CommandType.RemoteAdmin when !cmd.SupportsRemoteAdmin:
-                        continue;
-                }
-            }
-
-            if (commandLineSplit.Length < cmd.NameParts.Length)
-                continue;
-
-            var isMatched = false;
-                    
-            for (var x = 0; x < commandLineSplit.Length; x++)
-            {
-                if (x < cmd.NameParts.Length)
-                {
-                    if (!string.Equals(commandLineSplit[x], cmd.NameParts[x], StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        isMatched = false;
-                        break;
-                    }
-                }
-                
-                rawArgs?.Add(commandLineSplit[x].Trim(spaceSeparator));
-                
-                isMatched = true;
-            }
-                    
-            if (!isMatched)
-                continue;
-
-            targetCommand = cmd;
-            
-            fixedCommandLine = commandLine.Substring(cmd.Name.Length, commandLine.Length - cmd.Name.Length)
-                .TrimStart(spaceSeparator)
-                .TrimEnd(spaceSeparator);
-            return true;
-        }
-
-        fixedCommandLine = null;
-        targetCommand = null;
-
-        return false;
-    }
-
     // Handles custom command execution.
     private static void OnCommand(CommandExecutingEventArgs ev)
     {
@@ -277,13 +231,10 @@ public static class CommandManager
             if (HandleContinuable(ev, player, out var line))
                 return;
 
-            var args = ListPool<string>.Shared.Rent();
+            var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
 
-            if (!TryFindCommand(line, ev.CommandType, args, out var command, out line))
-            {
-                ListPool<string>.Shared.Return(args);
+            if (!TryGetCommand(args, ev.CommandType, out var command))
                 return;
-            }
 
             ev.IsAllowed = false;
 
@@ -295,6 +246,25 @@ public static class CommandManager
                 return;
             }
 
+            if (args.Count > 0 && command.Overloads.TryGetValue(args[0].ToLowerInvariant(), out var overload))
+            {
+                args.RemoveAt(0);
+            }
+            else
+            {
+                if (command.DefaultOverload is null)
+                {
+                    ev.Sender.Respond(CommandResponseFormatter.FormatUnknownOverloadFailure(command, args[0]));
+
+                    ListPool<string>.Shared.Return(args);
+                    return;
+                }
+                
+                overload = command.DefaultOverload;
+            }
+
+            line = string.Join(" ", args);
+            
             var tokens = ListPool<ICommandToken>.Shared.Rent();
             var context = new CommandContext();
             
@@ -303,13 +273,13 @@ public static class CommandManager
             context.Sender = player;
             context.Tokens = tokens;
             context.Command = command;
-            context.Overload = command.Overload;
+            context.Overload = overload;
 
             context.Type = ev.CommandType;
 
             if (line?.Length > 0)
             {
-                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens, command.Overload.ParameterCount);
+                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens, overload.ParameterCount);
 
                 if (!tokenParsingResult.IsSuccess)
                 {
@@ -331,15 +301,13 @@ public static class CommandManager
                         context.Response = new(false, false, context.FormatMissingArgumentsFailure());
                     else if (parserResult.Error is "INVALID_ARGS")
                         context.Response = new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
-                    else
-                        context.Response = new(false, false, context.FormatNoOverloadsFailure());
                 }
                 
                 OnExecuted(context);
                 return;
             }
 
-            if (parserResults.Count(r => r.Success) != command.Overload.ParameterCount)
+            if (parserResults.Count(r => r.Success) != overload.ParameterCount)
             {
                 context.Response ??= new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
                 
@@ -362,7 +330,7 @@ public static class CommandManager
 
             if (!context.Overload.IsInitialized)
             {
-                instance.OnInitializeOverload(context.Overload.ParameterBuilders);
+                instance.OnInitializeOverload(context.Overload.Name, context.Overload.ParameterBuilders);
                 
                 context.Overload.IsInitialized = true;
             }
@@ -499,6 +467,56 @@ public static class CommandManager
         }
 
         return buffer;
+    }
+    
+    internal static bool TryGetCommand(List<string> args, CommandType? commandType, out CommandData? foundCommand)
+    {
+        foundCommand = null;
+        
+        if (args.Count < 1)
+            return false;
+
+        for (var i = 0; i < Commands.Count; i++)
+        {
+            var command = Commands[i];
+
+            if (commandType is CommandType.Client && !command.SupportsPlayer)
+                continue;
+
+            if (commandType is CommandType.Console && !command.SupportsServer)
+                continue;
+            
+            if (commandType is CommandType.RemoteAdmin && !command.SupportsRemoteAdmin)
+                continue;
+            
+            if (args.Count < command.Path.Count)
+                continue;
+
+            var matched = true;
+
+            for (var x = 0; x < command.Path.Count; x++)
+            {
+                if (string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (x + 1 >= command.Path.Count
+                    && command.Aliases.Any(alias => string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
+                    continue;
+                
+                matched = false;
+                break;
+            }
+
+            if (matched)
+            {
+                args.RemoveRange(0, command.Path.Count);
+                
+                foundCommand = command;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     [LoaderInitialize(1)]

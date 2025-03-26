@@ -25,7 +25,7 @@ public class CommandContext
     /// <summary>
     /// Gets the command's data.
     /// </summary>
-    public CommandInstance Command { get; internal set; }
+    public CommandData Command { get; internal set; }
     
     /// <summary>
     /// Gets the overload that is being invoked.
