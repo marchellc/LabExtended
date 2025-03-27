@@ -45,18 +45,20 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
         CommandParameter parameter)
     {
         var sourceString = string.Empty;
-        
-        if (token is PropertyToken propertyToken)
+
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<object>(context, null, out var result))
         {
-            if (propertyToken.TryProcessProperty(context, out var result) && result.GetType() == parameter.Type.Type)
+            if (result.GetType() == parameter.Type.Type)
                 return new(true, result, null, parameter);
 
-            sourceString = result.ToString();
+            return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
         }
-        else if (token is StringToken stringToken)
-        {
+        
+        if (token is StringToken stringToken)
             sourceString = stringToken.Value;
-        }
+        else
+            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
 
         if (ToAxis(sourceString, out var preResult))
             return new(true, preResult, null, parameter);

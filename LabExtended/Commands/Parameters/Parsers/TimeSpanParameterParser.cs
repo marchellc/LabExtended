@@ -21,17 +21,14 @@ public class TimeSpanParameterParser : CommandParameterParser
     {
         var sourceString = string.Empty;
 
-        if (token is PropertyToken propertyToken)
-        {
-            if (propertyToken.TryProcessProperty(context, out var result) && result is TimeSpan)
-                return new(true, result, null, parameter);
-
-            sourceString = result.ToString();
-        }
-        else if (token is StringToken stringToken)
-        {
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<TimeSpan>(context, null, out var result))
+            return new(true, result, null, parameter);
+        
+        if (token is StringToken stringToken)
             sourceString = stringToken.Value;
-        }
+        else
+            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
         
         sourceString = sourceString.Replace(".", ",");
 

@@ -36,17 +36,31 @@ public class DelegateParameterParser<T> : CommandParameterParser
     public TryParseDelegate ParserDelegate { get; }
 
     /// <inheritdoc cref="CommandParameterParser.Parse"/>
-    public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex, CommandContext context,
+    public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex,
+        CommandContext context,
         CommandParameter parameter)
     {
         var sourceString = string.Empty;
-        
-        if (token is StringToken stringToken)
+
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<object>(context, null, out var result))
+        {
+            if (result.GetType() == parameter.Type.Type)
+                return new(true, result, null, parameter);
+
+            if (result is string str)
+                sourceString = str;
+            else
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+        }
+        else if (token is StringToken stringToken)
+        {
             sourceString = stringToken.Value;
-        else if (token is PropertyToken propertyToken && propertyToken.TryProcessProperty(context, out var result))
-            sourceString = result.ToString();
+        }
         else
+        {
             return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+        }
 
         if (!ParserDelegate(sourceString, out var error, out var value))
             return new(false, null, error, parameter);

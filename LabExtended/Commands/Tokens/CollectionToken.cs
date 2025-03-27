@@ -33,11 +33,6 @@ public class CollectionToken : PoolObject, ICommandToken
     public static CollectionToken Instance { get; } = new();
 
     /// <summary>
-    /// Gets or sets the value that is currently being parsed.
-    /// </summary>
-    public string Value { get; set; } = string.Empty;
-
-    /// <summary>
     /// Gets a list of all parsed values.
     /// </summary>
     public List<string> Values { get; } = new();
@@ -54,8 +49,7 @@ public class CollectionToken : PoolObject, ICommandToken
     public override void OnReturned()
     {
         base.OnReturned();
-        
-        Value = string.Empty;
+
         Values.Clear();
     }
 }

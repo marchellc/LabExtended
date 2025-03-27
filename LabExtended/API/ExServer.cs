@@ -2,6 +2,7 @@
 
 using LabExtended.Core;
 using LabExtended.Attributes;
+using LabExtended.Commands.Attributes;
 using LabExtended.Events;
 
 using MEC;
@@ -17,6 +18,7 @@ using UnityEngine;
 
 namespace LabExtended.API;
 
+[CommandPropertyAlias("server")]
 public static class ExServer
 {
     private static volatile float deltaTime;
@@ -27,16 +29,19 @@ public static class ExServer
     /// <summary>
     /// Gets the server's version.
     /// </summary>
+    [CommandPropertyAlias("version")]
     public static System.Version Version => ApiVersion.Game;
 
     /// <summary>
     /// Gets the time of the server starting.
     /// </summary>
+    [CommandPropertyAlias("startTime")]
     public static DateTime StartedAt => DateTime.Now - TimeSpan.FromSeconds(Time.realtimeSinceStartupAsDouble);
 
     /// <summary>
     /// Gets the amount of time that passed since the server started.
     /// </summary>
+    [CommandPropertyAlias("startElapsed")]
     public static TimeSpan TimeSinceStarted => TimeSpan.FromSeconds(Time.realtimeSinceStartupAsDouble);
 
     /// <summary>
@@ -77,16 +82,19 @@ public static class ExServer
     /// <summary>
     /// Gets the server's connection port.
     /// </summary>
+    [CommandPropertyAlias("port")]
     public static ushort Port => ServerStatic.ServerPort;
 
     /// <summary>
     /// Gets the servers actual tick rate (rounded).
     /// </summary>
+    [CommandPropertyAlias("tps")]
     public static float Tps => tps;
 
     /// <summary>
     /// Gets the amount of time required for last frame.
     /// </summary>
+    [CommandPropertyAlias("frameTime")]
     public static float FrameTime => deltaTime;
 
     /// <summary>
@@ -102,6 +110,7 @@ public static class ExServer
     /// <summary>
     /// Gets or sets the server's name.
     /// </summary>
+    [CommandPropertyAlias("name")]
     public static string Name
     {
         get => ServerConsole.ServerName;
@@ -115,6 +124,7 @@ public static class ExServer
     /// <summary>
     /// Gets or sets the server's connection IP.
     /// </summary>
+    [CommandPropertyAlias("ip")]
     public static string Ip
     {
         get => ServerConsole.Ip;
@@ -196,6 +206,7 @@ public static class ExServer
     /// <summary>
     /// Gets or sets the server's maximum amount of players.
     /// </summary>
+    [CommandPropertyAlias("slots")]
     public static int MaxSlots
     {
         get => CustomNetworkManager.slots;

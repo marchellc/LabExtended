@@ -189,7 +189,7 @@ internal static class CommandResponseFormatter
         });
     }
 
-    internal static string FormatTokenParserFailure(this CommandContext ctx, CommandTokenParserResult result)
+    internal static string FormatTokenParserFailure(this CommandContext ctx)
     {
         return StringBuilderPool.Shared.BuildString(x =>
         {
@@ -200,20 +200,7 @@ internal static class CommandResponseFormatter
                 x.Append("] ");
             }
 
-            x.Append("Failed while parsing command arguments at position ");
-            x.Append(result.Position.Value);
-            x.Append(", faulty character: ");
-            x.Append(result.Character.Value);
-
-            x.AppendLine();
-            x.AppendLine();
-
-            x.AppendLine(result.Input);
-
-            for (var i = 0; i < result.Position.Value; i++)
-                x.Append(" ");
-
-            x.Append("^^");
+            x.Append("Failed while parsing command arguments!");
         });
     }
 }

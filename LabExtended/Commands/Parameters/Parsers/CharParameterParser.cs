@@ -19,9 +19,18 @@ public class CharParameterParser : CommandParameterParser
     {
         if (token is StringToken stringToken)
             return new(true, stringToken.Value[0], null, parameter);
-        
-        if (token.TryProcessProperty(context, out var result))
-            return new(true, result.ToString()[0], null, parameter);
+
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<object>(context, null, out var result))
+        {
+            if (result is char c)
+                return new(true, c, null, parameter);
+            
+            if (result is string str)
+                return new(true, str[0], null, parameter);
+
+            return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+        }
 
         return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
     }

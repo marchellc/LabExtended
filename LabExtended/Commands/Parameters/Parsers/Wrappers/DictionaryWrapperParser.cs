@@ -71,17 +71,17 @@ public class DictionaryWrapperParser : CommandParameterParser
     public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex, CommandContext context,
         CommandParameter parameter)
     {
-        if (token.TryProcessProperty(context, out var property))
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<object>(context, null, out var result))
         {
-            if (property.GetType() == parameter.Type.Type)
-                return new(true, property, null, parameter);
-
-            return new(false, null,
-                $"Property \"{property.GetType().FullName}\" could not be converted to \"{parameter.Type.Type.FullName}\"",
-                parameter);
+            if (result.GetType() != parameter.Type.Type)
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+            
+            return new(true, result, null, parameter);
         }
-
-        var dictionaryToken = token as DictionaryToken;
+        
+        if (token is not DictionaryToken dictionaryToken)
+            return new(false, null, $"Unsupported token type: {token.GetType().FullName}", parameter);
 
         if (IsStringDictionary)
             return new(true, dictionaryToken.Values, null, parameter);

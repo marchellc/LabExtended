@@ -277,19 +277,14 @@ public static class CommandManager
 
             context.Type = ev.CommandType;
 
-            if (line?.Length > 0)
+            if (line?.Length > 0 && !CommandTokenParserUtils.TryParse(line, tokens, overload.ParameterCount))
             {
-                var tokenParsingResult = CommandTokenParser.ParseTokens(line, tokens, overload.ParameterCount);
+                context.Response = new(false, false, context.FormatTokenParserFailure());
 
-                if (!tokenParsingResult.IsSuccess)
-                {
-                    context.Response = new(false, false, context.FormatTokenParserFailure(tokenParsingResult));
-
-                    OnExecuted(context);
-                    return;
-                }
+                OnExecuted(context);
+                return;
             }
-            
+
             var parserResults = ListPool<CommandParameterParserResult>.Shared.Rent();
             var parserResult = CommandParameterParserUtils.ParseParameters(context, parserResults);
 

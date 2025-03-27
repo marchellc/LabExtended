@@ -1,4 +1,5 @@
-﻿using NorthwoodLib.Pools;
+﻿using System.Text;
+using NorthwoodLib.Pools;
 
 using System.Text.RegularExpressions;
 
@@ -424,5 +425,14 @@ namespace LabExtended.Extensions
 
         public static string SpaceByUpperCase(this string str)
             => PascalCaseRegex.Replace(str, "$1 ");
+
+        public static void RemoveTrailingWhiteSpaces(this StringBuilder builder)
+        {
+            if (builder is null)
+                throw new ArgumentNullException(nameof(builder));
+            
+            while (builder.Length > 0 && char.IsWhiteSpace(builder[builder.Length - 1]))
+                builder.Remove(builder.Length - 1, 1);
+        }
     }
 }

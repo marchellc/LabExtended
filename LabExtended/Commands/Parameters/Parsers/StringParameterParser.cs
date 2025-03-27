@@ -20,7 +20,7 @@ public class StringParameterParser : CommandParameterParser
         if (token is StringToken stringToken)
             return new(true, stringToken.Value, null, parameter);
         
-        if (token.TryProcessProperty(context, out var result))
+        if (token is PropertyToken propertyToken && propertyToken.TryGet<object>(context, null, out var result))
             return new(true, result.ToString(), null, parameter);
 
         return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);

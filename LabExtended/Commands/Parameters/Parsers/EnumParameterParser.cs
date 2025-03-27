@@ -58,17 +58,17 @@ public class EnumParameterParser : CommandParameterParser
 
     /// <inheritdoc cref="CommandParameterParser.Parse"/>
     public override CommandParameterParserResult Parse(List<ICommandToken> tokens, ICommandToken token, int tokenIndex,
-        CommandContext context,
-        CommandParameter parameter)
+        CommandContext context, CommandParameter parameter)
     {
-        if (token.TryProcessProperty(context, out var property))
+        if (token is PropertyToken propertyToken
+            && propertyToken.TryGet<object>(context, null, out var result))
         {
-            if (property is not Enum || property.GetType() != Type)
-                return new(false, null, $"Target property is not enum \"{Type.Name}\".", parameter);
+            if (result.GetType() != Type)
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
 
-            return new(true, property, null, parameter);
+            return new(true, result, null, parameter);
         }
-
+        
         var stringToken = (StringToken)token;
 
         try

@@ -16,11 +16,9 @@ public class TestCommand : CommandBase, IAllCommand
     /// </summary>
     [CommandOverload]
     public void TestOverload(
-        [CommandParameter("Word", "Testing word")] string word,
-        [CommandParameter("Second Word", "The second testing word")] string secondWord,
-        [CommandParameter("Third Word", "The third testing word")] string thirdWord)
+        [CommandParameter("Word", "Testing word")] string word)
     {
-        Ok($"Test passed: {word} + {secondWord} + {thirdWord}");
+        Ok($"Test passed: {word}");
     }
 
     [CommandOverload("list", "Tests list behaviour")]
@@ -33,18 +31,6 @@ public class TestCommand : CommandBase, IAllCommand
     public void DictionaryOverload(
         [CommandParameter("Dictionary", "The dictionary of words")] Dictionary<string, string> words)
     {
-        Ok($"Words ({words.Count}): {string.Join(" + ", words)}");
-    }
-
-    /// <inheritdoc cref="CommandBase.OnInitializeOverload"/>
-    public override void OnInitializeOverload(string? overloadName, Dictionary<string, CommandParameterBuilder> parameters)
-    {
-        base.OnInitializeOverload(overloadName, parameters);
-
-        if (overloadName is null)
-        {
-            parameters["word"]
-                .WithRestriction(new StringLengthRangeRestriction(1, 3));
-        }
+        Ok($"Words ({words.Count}): {string.Join(" + ", words.Select(p => $"{p.Key}: {p.Value}"))}");
     }
 }

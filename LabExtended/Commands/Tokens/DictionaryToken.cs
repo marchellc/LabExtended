@@ -1,4 +1,6 @@
-﻿using LabExtended.Commands.Interfaces;
+﻿using System.Text;
+
+using LabExtended.Commands.Interfaces;
 
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
@@ -33,15 +35,20 @@ public class DictionaryToken : PoolObject, ICommandToken
     public static DictionaryToken Instance { get; } = new();
     
     /// <summary>
-    /// Gets or sets the current key.
+    /// Whether or not the value is being parsed.
     /// </summary>
-    public string? CurKey { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the current value.
-    /// </summary>
-    public string? CurValue { get; set; }
+    public bool IsValue { get; set; }
 
+    /// <summary>
+    /// Gets the builder of the dictionary key.
+    /// </summary>
+    public StringBuilder KeyBuilder { get; } = new();
+
+    /// <summary>
+    /// Gets the builder of the dictionary value.
+    /// </summary>
+    public StringBuilder ValueBuilder { get; } = new();
+    
     /// <summary>
     /// Gets the dictionary that contains parsed values.
     /// </summary>
@@ -60,9 +67,10 @@ public class DictionaryToken : PoolObject, ICommandToken
     {
         base.OnReturned();
 
-        CurKey = null;
-        CurValue = null;
+        IsValue = false;
         
         Values.Clear();
+        KeyBuilder.Clear();
+        ValueBuilder.Clear();
     }
 }
