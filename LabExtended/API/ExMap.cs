@@ -581,7 +581,7 @@ namespace LabExtended.API
             RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
             RagdollManager.OnRagdollRemoved += OnRagdollRemoved;
 
-            MirrorEvents.OnDestroy += OnIdentityDestroyed;
+            MirrorEvents.Destroying += OnIdentityDestroyed;
 
             InternalEvents.OnRoundWaiting += OnRoundWaiting;
         }

@@ -8,6 +8,8 @@ using Mirror;
 using System.Reflection.Emit;
 
 using UnityEngine;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -47,7 +49,7 @@ public static class MirrorMethods
     /// <summary>
     /// Gets the <see cref="NetworkServer.SendSpawnMessage"/> delegate.
     /// </summary>
-    public static Action<NetworkIdentity, NetworkConnection>? SendSpawnMessage { get; private set; }
+    public static Action<NetworkIdentity, NetworkConnection> SendSpawnMessage { get; private set; }
 
     /// <summary>
     /// Attempts to retrieve a writer delegate from <see cref="Writers"/>.
@@ -638,7 +640,7 @@ public static class MirrorMethods
     /// <param name="dataWriter">Optional data writer delegate</param>
     /// <returns>The created <see cref="RpcMessage"/> instance</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static RpcMessage GetRpcMessage(this NetworkBehaviour behaviour, ushort rpcHash,
+    public static RpcMessage GetRpcMessage(this NetworkBehaviour behaviour, int rpcHash,
         Action<NetworkWriter>? dataWriter = null)
     {
         if (behaviour is null)
@@ -647,7 +649,7 @@ public static class MirrorMethods
         var message = new RpcMessage();
         
         message.netId = behaviour.netId;
-        message.functionHash = rpcHash;
+        message.functionHash = (ushort)rpcHash;
         message.componentIndex = behaviour.ComponentIndex;
 
         if (dataWriter != null)
@@ -659,7 +661,7 @@ public static class MirrorMethods
     /// <summary>
     /// Creates a new <see cref="RpcMessage"/> for the specified behaviour.
     /// <remarks>It's recommended to cache the hash of the target RPC and
-    /// call <see cref="GetRpcMessage(Mirror.NetworkBehaviour,ushort,System.Action{Mirror.NetworkWriter}?)"/> directly
+    /// call <see cref="GetRpcMessage(Mirror.NetworkBehaviour,int,System.Action{Mirror.NetworkWriter}?)"/> directly
     /// as this method looks the hash up each time it is called.</remarks>
     /// </summary>
     /// <param name="behaviour">The target behaviour</param>

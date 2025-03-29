@@ -1,26 +1,28 @@
-﻿using LabApi.Features.Wrappers;
-using LabExtended.API.Containers;
-
-using CentralAuth;
-using CommandSystem;
-using Footprinting;
-using GameCore;
-using InventorySystem.Disarming;
-
-using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
-
-using LabExtended.API.Enums;
+﻿using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.RemoteAdmin;
+using LabExtended.API.Containers;
+
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomRoles;
+using LabExtended.API.CustomVoice;
+
+using LabExtended.API.Settings.Menus;
+using LabExtended.API.Settings.Entries;
+
+using LabExtended.API.Hints.Elements.Personal;
 
 using LabExtended.Core.Networking;
+using LabExtended.Core.Pooling.Pools;
+using LabExtended.Core.Networking.Synchronization.Position;
 
+using LabExtended.Commands.Attributes;
+
+using LabExtended.Events;
+using LabExtended.Utilities;
 using LabExtended.Extensions;
 
-using LabExtended.Utilities;
-
-using LiteNetLib;
+using LabApi.Features.Wrappers;
 
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
@@ -29,28 +31,35 @@ using PlayerRoles;
 using PlayerRoles.Spectating;
 using PlayerRoles.FirstPersonControl;
 
+using InventorySystem.Disarming;
+
+using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
+
+using RemoteAdmin;
 using RemoteAdmin.Communication;
+
+using LiteNetLib;
 
 using UnityEngine;
 
 using VoiceChat;
 
 using Hints;
-using LabExtended.API.CustomItems;
-using LabExtended.API.CustomRoles;
-using LabExtended.API.CustomVoice;
-using LabExtended.API.Hints.Elements.Personal;
-using LabExtended.API.Settings.Entries;
-using LabExtended.API.Settings.Menus;
 
-using LabExtended.Commands;
-using LabExtended.Commands.Attributes;
-using LabExtended.Core.Networking.Synchronization.Position;
-using LabExtended.Core.Pooling.Pools;
-using LabExtended.Events;
+using CentralAuth;
+
+using CommandSystem;
+
+using Footprinting;
+
+using GameCore;
+
 using NorthwoodLib.Pools;
-using RemoteAdmin;
+
 using UserSettings.ServerSpecific;
+
+#pragma warning disable CS8604 // Possible null reference argument.
 
 namespace LabExtended.API;
 
@@ -784,7 +793,7 @@ public class ExPlayer : Player, IDisposable
 
             ReferenceHub.transform.localScale = value;
 
-            Players.ForEach(target => Identity.SendSpawnMessage(target.Connection));
+            Players.ForEach(t => MirrorMethods.SendSpawnMessage(Identity, t.Connection));
         }
     }
 
