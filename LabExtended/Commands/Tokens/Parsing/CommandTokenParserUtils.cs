@@ -53,7 +53,8 @@ public static class CommandTokenParserUtils
         if (parameterCount < 0)
             throw new ArgumentOutOfRangeException(nameof(parameterCount));
         
-        ApiLog.Debug("Command Token Parser", $"Parsing input: &3{input}&r (&6{parameterCount}&r parameters)");
+        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+            ApiLog.Debug("Command Token Parser", $"Parsing input: &3{input}&r (&6{parameterCount}&r parameters)");
         
         try
         {
@@ -74,18 +75,23 @@ public static class CommandTokenParserUtils
                     context.NextChar = input[i + 1];
                 else
                     context.NextChar = null;
-                
-                context.PrintToConsole();
-                
-                ApiLog.Debug("Command Token Parser", $"Processing active parser (&3{context.CurrentParser?.GetType().Name ?? "null"}&r)");
-                
+
+                if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                {
+                    context.PrintToConsole();
+                    
+                    ApiLog.Debug("Command Token Parser",
+                        $"Processing active parser (&3{context.CurrentParser?.GetType().Name ?? "null"}&r)");
+                }
+
                 // Process the currently active parser.
                 if (context.CurrentParser != null)
                 {
                     // We likely hit an ending token of a parser, so just skip to the next one.
                     if (context.CurrentParser.ShouldTerminate(context))
                     {
-                        ApiLog.Debug("Command Token Parser", $"ShouldTerminate() returned true");
+                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                            ApiLog.Debug("Command Token Parser", $"ShouldTerminate() returned true");
                         
                         context.TerminateToken();
                         continue;
@@ -93,24 +99,29 @@ public static class CommandTokenParserUtils
                     
                     if (!context.CurrentParser.ProcessContext(context))
                     {
-                        ApiLog.Debug("Command Token Parser", $"ProcessContext() returned false");
+                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                            ApiLog.Debug("Command Token Parser", $"ProcessContext() returned false");
+                        
                         continue;
                     }
                 }
                 
-                ApiLog.Debug("Command Token Parser", $"Processing other parsers");
+                if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                    ApiLog.Debug("Command Token Parser", $"Processing other parsers");
                 
                 // Process other inactive parsers
                 for (var x = 0; x < Parsers.Count; x++)
                 {
                     var parser = Parsers[x];
                     
-                    ApiLog.Debug("Command Token Parser", $"Processing parser &3{parser.GetType().Name}&r");
+                    if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                        ApiLog.Debug("Command Token Parser", $"Processing parser &3{parser.GetType().Name}&r");
 
                     // Handle the start of new parsers
                     if (parser.ShouldStart(context))
                     {
-                        ApiLog.Debug("Command Token Parser", $"ShouldStart() returned true");
+                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                            ApiLog.Debug("Command Token Parser", $"ShouldStart() returned true");
                         
                         context.TerminateToken();
                         
@@ -122,22 +133,28 @@ public static class CommandTokenParserUtils
 
                     if (!parser.ProcessContext(context))
                     {
-                        ApiLog.Debug("Command Token Parser", $"2 - ProcessContext() returned false");
+                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                            ApiLog.Debug("Command Token Parser", $"2 - ProcessContext() returned false");
                         break;
                     }
                     
-                    ApiLog.Debug("Command Token Parser", $"2 - ProcessContext() returned true");
+                    if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                        ApiLog.Debug("Command Token Parser", $"2 - ProcessContext() returned true");
                 }
             }
 
             context.TerminateToken();
-            context.PrintToConsole();
-            
-            ApiLog.Debug("Command Token Parser", $"Parsed &6{tokens.Count}&r tokens.");
-            
-            for (var i = 0; i < tokens.Count; i++)
-                ApiLog.Debug("Command Token Parser", $"Token [&3{i}&r]: &6{tokens[i].GetType().Name}&r");
-            
+
+            if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+            {
+                context.PrintToConsole();
+                
+                ApiLog.Debug("Command Token Parser", $"Parsed &6{tokens.Count}&r tokens.");
+
+                for (var i = 0; i < tokens.Count; i++)
+                    ApiLog.Debug("Command Token Parser", $"Token [&3{i}&r]: &6{tokens[i].GetType().Name}&r");
+            }
+
             if (context.Builder != null)
                 StringBuilderPool.Shared.Return(context.Builder);
             

@@ -32,7 +32,7 @@ public static class CommandListSynchronization
             data.Hidden = command.IsHidden;
             data.Description = command.Description;
 
-            data.Usage = ov.Parameters.CompileParameters();
+            data.Usage = ov?.Parameters?.CompileParameters() ?? Array.Empty<string>();
             
             if (aliasOf != null)
                 data.AliasOf = aliasOf;
@@ -42,8 +42,7 @@ public static class CommandListSynchronization
         
         CommandManager.Commands.ForEach(cmd =>
         {
-            if (cmd.DefaultOverload != null)
-                commands.Add(ToData(cmd, cmd.DefaultOverload, cmd.Name));
+            commands.Add(ToData(cmd, cmd.DefaultOverload, cmd.Name));
 
             foreach (var overload in cmd.Overloads)
                 commands.Add(ToData(cmd, overload.Value, $"{cmd.Name} {overload.Key}"));

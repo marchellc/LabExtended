@@ -2,7 +2,6 @@
 
 using LabApi.Features.Enums;
 
-using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
 

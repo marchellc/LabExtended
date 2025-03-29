@@ -2,10 +2,12 @@
 
 using LabExtended.API;
 using LabExtended.Commands.Interfaces;
+using LabExtended.Core.Pooling.Pools;
+using NorthwoodLib.Pools;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
-namespace LabExtended.Commands.Contexts;
+namespace LabExtended.Commands;
 
 /// <summary>
 /// Represents the context of a command execution.

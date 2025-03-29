@@ -6,7 +6,7 @@ namespace LabExtended.Commands.Attributes;
 /// <summary>
 /// A custom attribute used to describe command parameters.
 /// </summary>
-[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
 public class CommandParameterAttribute : Attribute
 {
     /// <summary>

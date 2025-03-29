@@ -49,85 +49,119 @@ public static class CommandFormatter
     /// <param name="commandData">The command instance.</param>
     /// <returns>The string.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static string GetString(this CommandData commandData)
+    public static string GetString(this CommandData commandData, bool allDetails = true)
     {
         if (commandData is null)
             throw new ArgumentNullException(nameof(commandData));
         
         return StringBuilderPool.Shared.BuildString(x =>
         {
-            x.AppendLine($"[COMMAND \"{commandData.Name}\"]");
-            x.AppendLine($"- Description: {commandData.Description}");
-            x.AppendLine($"- Type: {commandData.Type.FullName}");
-
-            if (commandData.Permission != null)
-                x.AppendLine($"- Permission: {commandData.Permission}");
-
-            if (commandData.Aliases.Count > 0)
-                x.AppendLine($"- Aliases: {string.Join(", ", commandData.Aliases)}");
-
-            x.AppendLine($"- Supports Remote Admin: {commandData.SupportsRemoteAdmin}");
-            x.AppendLine($"- Supports Server Console: {commandData.SupportsServer}");
-            x.AppendLine($"- Supports Player Console: {commandData.SupportsPlayer}");
-
-            x.AppendLine($"- Can Be Continued: {commandData.IsContinuable}");
-
-            if (commandData.TimeOut.HasValue)
-                x.AppendLine($"- Time Out: {commandData.TimeOut.Value}s");
-
-            void AppendOverload(string overloadHeader, CommandOverload overload)
+            if (allDetails)
             {
-                x.AppendLine();
-                x.AppendLine($"-> {overloadHeader}");
+                x.AppendLine($"[COMMAND \"{commandData.Name}\"]");
+                x.AppendLine($"- Description: {commandData.Description}");
+                x.AppendLine($"- Type: {commandData.Type.FullName}");
 
-                if (string.IsNullOrWhiteSpace(overload.Name) || (commandData.DefaultOverload != null && overload == commandData.DefaultOverload))
-                    x.Append($" -< Usage: \"{commandData.Name}");
-                else
-                    x.Append($" -< Usage: \"{commandData.Name} {overload.Name}");
+                if (commandData.Permission != null)
+                    x.AppendLine($"- Permission: {commandData.Permission}");
 
-                if (overload.Parameters.Count > 0)
+                if (commandData.Aliases.Count > 0)
+                    x.AppendLine($"- Aliases: {string.Join(", ", commandData.Aliases)}");
+
+                x.AppendLine($"- Supports Remote Admin: {commandData.SupportsRemoteAdmin}");
+                x.AppendLine($"- Supports Server Console: {commandData.SupportsServer}");
+                x.AppendLine($"- Supports Player Console: {commandData.SupportsPlayer}");
+
+                x.AppendLine($"- Can Be Continued: {commandData.IsContinuable}");
+
+                if (commandData.TimeOut.HasValue)
+                    x.AppendLine($"- Time Out: {commandData.TimeOut.Value}s");
+
+                void AppendOverload(string overloadHeader, CommandOverload overload)
                 {
-                    foreach (var parameter in overload.Parameters)
+                    x.AppendLine();
+                    x.AppendLine($"-> {overloadHeader}");
+
+                    if (string.IsNullOrWhiteSpace(overload.Name) ||
+                        (commandData.DefaultOverload != null && overload == commandData.DefaultOverload))
+                        x.Append($" -< Usage: \"{commandData.Name}");
+                    else
+                        x.Append($" -< Usage: \"{commandData.Name} {overload.Name}");
+
+                    if (overload.Parameters.Count > 0)
                     {
-                        if (parameter.HasDefault)
+                        foreach (var parameter in overload.Parameters)
                         {
-                            x.Append($" ({parameter.Name})");
+                            if (parameter.HasDefault)
+                            {
+                                x.Append($" ({parameter.Name})");
+                            }
+                            else
+                            {
+                                x.Append($" [{parameter.Name}]");
+                            }
                         }
-                        else
+                    }
+
+                    x.AppendLine("\"");
+                    
+                    if (overload.ParameterCount > 0)
+                    {
+                        x.AppendLine($" -< Parameters ({overload.ParameterCount}):");
+
+                        for (var y = 0; y < overload.Parameters.Count; y++)
                         {
-                            x.Append($" [{parameter.Name}]");
+                            var parameter = overload.Parameters[y];
+
+                            x.Append($"  -< [{y}] {parameter.Name} ({parameter.Description})");
+
+                            if (parameter.HasDefault)
+                                x.Append($" (default: {parameter.DefaultValue?.ToString() ?? "null"})");
+
+                            foreach (var restriction in parameter.Restrictions)
+                                x.Append($"\n   --> Restriction: {restriction}");
+
+                            x.AppendLine();
                         }
                     }
                 }
 
-                x.AppendLine("\"");
+                if (commandData.DefaultOverload != null)
+                    AppendOverload("Default", commandData.DefaultOverload);
 
-                if (overload.ParameterCount > 0)
+                foreach (var overload in commandData.Overloads)
+                    AppendOverload($"\"{overload.Key}\"", overload.Value);
+            }
+            else
+            {
+                foreach (var overload in commandData.Overloads)
                 {
-                    x.AppendLine($" -< Parameters ({overload.ParameterCount}):");
-
-                    for (var y = 0; y < overload.Parameters.Count; y++)
+                    if (string.IsNullOrWhiteSpace(overload.Key) ||
+                        (commandData.DefaultOverload != null && overload.Value == commandData.DefaultOverload))
+                        x.Append($"\"{commandData.Name}");
+                    else
+                        x.Append($"\"{commandData.Name} {overload.Value.Name}");
+                    
+                    if (overload.Value.Parameters.Count > 0)
                     {
-                        var parameter = overload.Parameters[y];
-
-                        x.Append($"  -< [{y}] {parameter.Name} ({parameter.Description})");
-
-                        if (parameter.HasDefault)
-                            x.Append($" (default: {parameter.DefaultValue?.ToString() ?? "null"})");
-                        
-                        foreach (var restriction in parameter.Restrictions)
-                            x.Append($"\n   --> Restriction: {restriction}");
-                        
-                        x.AppendLine();
+                        foreach (var parameter in overload.Value.Parameters)
+                        {
+                            if (parameter.HasDefault)
+                            {
+                                x.Append($" ({parameter.Name})");
+                            }
+                            else
+                            {
+                                x.Append($" [{parameter.Name}]");
+                            }
+                        }
                     }
+
+                    x.AppendLine($"\" ({(commandData.DefaultOverload != null && commandData.DefaultOverload == overload.Value
+                        ? commandData.Description
+                        : overload.Value.Description)})");
                 }
             }
-
-            if (commandData.DefaultOverload != null)
-                AppendOverload("Default Overload", commandData.DefaultOverload);
-            
-            foreach (var overload in commandData.Overloads)
-                AppendOverload($"Overload \"{overload.Key}\"", overload.Value);
         });
     }
 }

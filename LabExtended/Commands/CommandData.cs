@@ -30,11 +30,6 @@ public class CommandData
     /// Gets the command's default overload (if any).
     /// </summary>
     public CommandOverload? DefaultOverload { get; internal set; }
-    
-    /// <summary>
-    /// Gets the command's parent.
-    /// </summary>
-    public CommandData? Parent { get; internal set; }
 
     /// <summary>
     /// Gets the command's path.
@@ -124,7 +119,7 @@ public class CommandData
         Description = description;
 
         SupportsRemoteAdmin = type.InheritsType<IRemoteAdminCommand>();
-        SupportsServer = type.InheritsType<IServerCommand>();
+        SupportsServer = type.InheritsType<IServerConsoleCommand>();
         SupportsPlayer = type.InheritsType<IPlayerCommand>();
 
         IsContinuable = type.InheritsType<ContinuableCommandBase>();

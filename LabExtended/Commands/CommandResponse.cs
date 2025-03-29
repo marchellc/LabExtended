@@ -1,4 +1,4 @@
-﻿namespace LabExtended.Commands.Contexts;
+﻿namespace LabExtended.Commands;
 
 /// <summary>
 /// Represents a response to a command.

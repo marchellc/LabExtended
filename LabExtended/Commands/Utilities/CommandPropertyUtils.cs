@@ -1,14 +1,12 @@
 ﻿using LabExtended.API;
 
 using LabExtended.Commands.Attributes;
-using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Tokens;
 
 using LabExtended.Core;
 using LabExtended.Utilities;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
-using NorthwoodLib.Pools;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -122,8 +120,12 @@ public static class CommandPropertyUtils
         if (propertyToken.Name?.Length < 1)
             return false;
 
-        if (propertyToken.TryGetPlayer(context, out var player))
+        var tokenValue = propertyToken.Name;
+        
+        if (TryGetPlayer(ref tokenValue, context, out var player))
         {
+            propertyToken.Name = tokenValue;
+            
             if (propertyToken.Name.TrySplit('.', true, 2, out var parts))
             {
                 if (!Properties.TryGetValue(parts[0], out var propertyGetter))
@@ -153,6 +155,8 @@ public static class CommandPropertyUtils
         }
         else
         {
+            propertyToken.Name = tokenValue;
+            
             if (propertyToken.Name.TrySplit('.', true, 2, out var parts))
             {        
                 if (!Properties.TryGetValue(parts[0], out var propertyGetter))
@@ -186,52 +190,52 @@ public static class CommandPropertyUtils
     /// <summary>
     /// Attempts to retrieve a player instance from a property token.
     /// </summary>
-    /// <param name="propertyToken">The target property token.</param>
+    /// <param name="propertyTokenValue">The target property token value.</param>
     /// <param name="context">The command's context.</param>
     /// <param name="player">The resulting player.</param>
     /// <returns>true if the player was found</returns>
-    public static bool TryGetPlayer(this PropertyToken propertyToken, CommandContext context, out ExPlayer? player)
+    public static bool TryGetPlayer(ref string propertyTokenValue, CommandContext context, out ExPlayer? player)
     {
-        if (propertyToken is null)
-            throw new ArgumentNullException(nameof(propertyToken));
+        if (propertyTokenValue is null)
+            throw new ArgumentNullException(nameof(propertyTokenValue));
         
         if (context is null)
             throw new ArgumentNullException(nameof(context));
         
         player = null;
 
-        if (propertyToken.Name.StartsWith(SenderPlayerPrefix))
+        if (propertyTokenValue.StartsWith(SenderPlayerPrefix))
         {
-            propertyToken.Name = propertyToken.Name.Substring(SenderPlayerPrefix.Length, 
-                propertyToken.Name.Length - SenderPlayerPrefix.Length);
-            propertyToken.Name = string.Concat("player.", propertyToken.Name);
+            propertyTokenValue = propertyTokenValue.Substring(SenderPlayerPrefix.Length, 
+                propertyTokenValue.Length - SenderPlayerPrefix.Length);
+            propertyTokenValue = string.Concat("player.", propertyTokenValue);
 
             player = context.Sender;
             return true;
         }
 
-        if (propertyToken.Name.StartsWith(GetPlayerPrefix))
+        if (propertyTokenValue.StartsWith(GetPlayerPrefix))
         {
-            var openIndex = propertyToken.Name.IndexOf('(');
-            var closeIndex = propertyToken.Name.IndexOf(')');
+            var openIndex = propertyTokenValue.IndexOf('(');
+            var closeIndex = propertyTokenValue.IndexOf(')');
 
             if (openIndex != -1 && closeIndex != -1)
             {
-                var inBrackets = propertyToken.Name.Substring(openIndex + 1, closeIndex - openIndex - 1);
+                var inBrackets = propertyTokenValue.Substring(openIndex + 1, closeIndex - openIndex - 1);
                 
                 if (!ExPlayer.TryGet(inBrackets, out player))
                     return false;
 
-                propertyToken.Name = propertyToken.Name.Substring(closeIndex, 
-                    propertyToken.Name.Length - closeIndex);
+                propertyTokenValue = propertyTokenValue.Substring(closeIndex, 
+                    propertyTokenValue.Length - closeIndex);
 
-                if (propertyToken.Name.StartsWith(")"))
-                    propertyToken.Name = propertyToken.Name.Substring(1);
+                if (propertyTokenValue.StartsWith(")"))
+                    propertyTokenValue = propertyTokenValue.Substring(1);
 
-                if (propertyToken.Name.StartsWith("."))
-                    propertyToken.Name = propertyToken.Name.Substring(1);
+                if (propertyTokenValue.StartsWith("."))
+                    propertyTokenValue = propertyTokenValue.Substring(1);
 
-                propertyToken.Name = string.Concat("player.", propertyToken.Name);
+                propertyTokenValue = string.Concat("player.", propertyTokenValue);
                 return true;
             }
         }
@@ -291,14 +295,5 @@ public static class CommandPropertyUtils
                 }
             }
         }
-        
-        ApiLog.Debug("Command Property Utilities", $"Registered &6{Properties.Count}&r (&3{count}&r) properties.");
-        ApiLog.Debug("Command Property Utilities", StringBuilderPool.Shared.BuildString(x =>
-        {
-            x.AppendLine();
-            
-            foreach (var property in Properties)
-                x.AppendLine($"&1{property.Key}&r - &6{property.Value.Method.GetMemberName()}&r");
-        }));
     }
 }

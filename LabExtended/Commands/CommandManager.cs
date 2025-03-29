@@ -2,15 +2,15 @@
 
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
+
 using LabApi.Features.Enums;
 using LabApi.Features.Permissions;
+
 using LabExtended.Commands.Utilities;
-using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
 using LabExtended.Commands.Tokens.Parsing;
-
 
 using LabExtended.API;
 using LabExtended.Core;
@@ -254,7 +254,7 @@ public static class CommandManager
             {
                 if (command.DefaultOverload is null)
                 {
-                    ev.Sender.Respond(CommandResponseFormatter.FormatUnknownOverloadFailure(command, args[0]));
+                    ev.Sender.Respond(CommandResponseFormatter.FormatUnknownOverloadFailure(command));
 
                     ListPool<string>.Shared.Return(args);
                     return;
@@ -284,7 +284,7 @@ public static class CommandManager
                 OnExecuted(context);
                 return;
             }
-
+            
             var parserResults = ListPool<CommandParameterParserResult>.Shared.Rent();
             var parserResult = CommandParameterParserUtils.ParseParameters(context, parserResults);
 
@@ -292,10 +292,16 @@ public static class CommandManager
             {
                 if (!context.Response.HasValue)
                 {
-                    if (parserResult.Error is "MISSING_ARGS")
-                        context.Response = new(false, false, context.FormatMissingArgumentsFailure());
-                    else if (parserResult.Error is "INVALID_ARGS")
-                        context.Response = new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                    switch (parserResult.Error)
+                    {
+                        case "MISSING_ARGS":
+                            context.Response = new(false, false, context.FormatMissingArgumentsFailure());
+                            break;
+                        
+                        case "INVALID_ARGS":
+                            context.Response = new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                            break;
+                    }
                 }
                 
                 OnExecuted(context);

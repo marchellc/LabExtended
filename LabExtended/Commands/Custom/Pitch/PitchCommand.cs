@@ -3,13 +3,13 @@
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 
-namespace LabExtended.Commands.Custom.Debug.SetPitch;
+namespace LabExtended.Commands.Custom.Pitch;
 
 /// <summary>
 /// Sets a player's voice pitch.
 /// </summary>
 [Command("pitch", "Controls voice pitch.")]
-public class SetPitchCommand : CommandBase, IServerSideCommand
+public class PitchCommand : CommandBase, IServerSideCommand
 {
     [CommandOverload("set", "Sets voice pitch of a specific player.")]
     public void SetOverload(

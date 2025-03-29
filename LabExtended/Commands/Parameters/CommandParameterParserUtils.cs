@@ -9,7 +9,6 @@ namespace LabExtended.Commands.Parameters;
 
 using API;
 using Core;
-using Contexts;
 using Utilities;
 using Extensions;
 
@@ -57,6 +56,7 @@ public static class CommandParameterParserUtils
         [typeof(Vector2)] = new Vector2ParameterParser(),
         
         [typeof(ExPlayer)] = new PlayerParameterParser(),
+        [typeof(List<ExPlayer>)] = new PlayerListParameterParser()
     };
 
     /// <summary>
@@ -186,13 +186,17 @@ public static class CommandParameterParserUtils
         
         if (context.Tokens.Count < 1)
             return new(true, null, null, null);
-        
-        ApiLog.Debug("Command Parameter Parser", $"Parsing overload &1{context.Overload.Name}&r with &6{context.Overload.Parameters.Count}&r parameters " +
-                                                    $"(from method &6{context.Overload.Target.GetMemberName()}&r)" +
-                                                    $" with &6{context.Tokens.Count}&r token(s)");
 
-        for (var i = 0; i < context.Tokens.Count; i++)
-            ApiLog.Debug("Command Parameter Parser", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
+        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+        {
+            ApiLog.Debug("Command Parameter Parser",
+                $"Parsing overload &1{context.Overload.Name}&r with &6{context.Overload.Parameters.Count}&r parameters " +
+                $"(from method &6{context.Overload.Target.GetMemberName()}&r)" +
+                $" with &6{context.Tokens.Count}&r token(s)");
+
+            for (var i = 0; i < context.Tokens.Count; i++)
+                ApiLog.Debug("Command Parameter Parser", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
+        }
 
         for (var i = 0; i < context.Overload.ParameterCount; i++)
         {
@@ -280,12 +284,21 @@ public static class CommandParameterParserUtils
                             
                             Parsers.Add(type, new EnumParameterParser(type));
                         }
-                        catch { }
+                        catch
+                        {
+                            // ignored
+                        }
                     }
                 }
-                catch { }
+                catch
+                {
+                    // ignored
+                }
             }
         }
-        catch { }
+        catch
+        {
+            // ignored
+        }
     }
 }

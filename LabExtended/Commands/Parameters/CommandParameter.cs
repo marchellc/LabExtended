@@ -70,17 +70,38 @@ public class CommandParameter
         DefaultValue = parameterInfo.DefaultValue;
         Description = "None";
 
-        var parameterAttribute = parameterInfo.GetCustomAttribute<CommandParameterAttribute>();
+        var parameterAttribute = parameterInfo.GetCustomAttribute<CommandParameterAttribute>(true);
 
-        if (parameterAttribute != null)
+        if (parameterAttribute == null) 
+            return;
+        
+        Restrictions.AddRange(parameterAttribute.Restrictions);
+            
+        if (!string.IsNullOrWhiteSpace(parameterAttribute.Name))
+            Name = parameterAttribute.Name;
+            
+        if (!string.IsNullOrWhiteSpace(parameterAttribute.Description))
+            Description = parameterAttribute.Description;
+    }
+
+    /// <summary>
+    /// Whether or not this parameter has the specified restriction.
+    /// </summary>
+    /// <param name="restriction">The restriction instance.</param>
+    /// <typeparam name="T">The restriction type.</typeparam>
+    /// <returns>true if the restriction was found</returns>
+    public bool HasRestriction<T>(out T restriction) where T : ICommandParameterRestriction
+    {
+        for (var i = 0; i < Restrictions.Count; i++)
         {
-            Restrictions.AddRange(parameterAttribute.Restrictions);
-            
-            if (!string.IsNullOrWhiteSpace(parameterAttribute.Name))
-                Name = parameterAttribute.Name;
-            
-            if (!string.IsNullOrWhiteSpace(parameterAttribute.Description))
-                Description = parameterAttribute.Description;
+            if (Restrictions[i] is T value)
+            {
+                restriction = value;
+                return true;
+            }
         }
+        
+        restriction = default;
+        return false;
     }
 }

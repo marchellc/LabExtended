@@ -1,7 +1,6 @@
-﻿using LabExtended.Commands.Contexts;
-using LabExtended.Commands.Interfaces;
+﻿using LabExtended.Commands.Interfaces;
 
-namespace LabExtended.Commands.Parameters.Arguments;
+namespace LabExtended.Commands.Parameters.Restrictions;
 
 /// <summary>
 /// Specifies the minimum and / or maximum length of a string.
@@ -32,10 +31,11 @@ public class StringLengthRangeRestriction : ICommandParameterRestriction
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>
     public bool IsValid(object argument, CommandContext context, CommandParameter parameter, out string? error)
     {
-        error = null;
-        
         if (argument is not string str)
-            return true;
+        {
+            error = "Supplied argument is not a string";
+            return false;
+        }
 
         if (MinimumLength.HasValue && str.Length < MinimumLength.Value)
         {
@@ -48,11 +48,12 @@ public class StringLengthRangeRestriction : ICommandParameterRestriction
             error = $"Must be less than {MaximumLength.Value} characters long.";
             return false;
         }
-        
+
+        error = null;
         return true;
     }
 
     /// <inheritdoc cref="StringLengthRangeRestriction"/>
     public override string ToString()
-        => $"String Length Range (Minimum Length: {MinimumLength ?? -1} | Maximum Length: {MaximumLength ?? -1})";
+        => $"String Length Range (Minimum Length: {MinimumLength?.ToString() ?? "Undefined"} | Maximum Length: {MaximumLength?.ToString() ?? "Undefined"})";
 }

@@ -1,13 +1,11 @@
 ﻿using NorthwoodLib.Pools;
 
 using LabApi.Features.Enums;
+
 using LabExtended.Commands.Parameters;
 
 namespace LabExtended.Commands.Utilities;
 
-using Tokens.Parsing;
-
-using Contexts;
 using Extensions;
 
 /// <summary>
@@ -87,11 +85,12 @@ internal static class CommandResponseFormatter
         });
     }
 
-    internal static string FormatUnknownOverloadFailure(CommandData commandData, string overloadName)
+    internal static string FormatUnknownOverloadFailure(CommandData commandData)
     {
         return StringBuilderPool.Shared.BuildString(x =>
         {
-            x.AppendLine($"Unknown command overload: {overloadName} (use \"help {commandData.Name}\" to view a list of valid overloads)");
+            x.AppendLine("Unknown overload, try using one of these:");
+            x.AppendLine(commandData.GetString(false));
         });
     }
 

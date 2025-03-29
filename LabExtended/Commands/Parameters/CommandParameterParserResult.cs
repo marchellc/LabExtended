@@ -23,7 +23,7 @@ public struct CommandParameterParserResult
     /// <summary>
     /// The targeted parameter.
     /// </summary>
-    public CommandParameter? Parameter { get; }
+    public CommandParameter Parameter { get; }
 
     /// <summary>
     /// Creates a new <see cref="CommandParameterParserResult"/> instance.

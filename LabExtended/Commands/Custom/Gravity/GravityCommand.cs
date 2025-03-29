@@ -6,13 +6,13 @@ using LabExtended.Commands.Interfaces;
 
 using UnityEngine;
 
-namespace LabExtended.Commands.Custom.Debug.SetGravity;
+namespace LabExtended.Commands.Custom.Gravity;
 
 /// <summary>
 /// Sets a player's gravity.
 /// </summary>
 [Command("gravity", "Controls gravity.")]
-public class SetGravityCommand : CommandBase, IServerSideCommand
+public class GravityCommand : CommandBase, IServerSideCommand
 {
     [CommandOverload("set", "Sets gravity of a specific player.")]
     public void SetOverload(

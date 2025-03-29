@@ -223,33 +223,40 @@ public class CommandTokenParserContext
     /// Terminates the current token.
     /// </summary>
     /// <param name="overrideParser">Whether or not to skip parser checking.</param>
+    /// <param name="addToken">Whether or not the token should be added to the list of tokens.</param>
     /// <returns>true if the token was terminated</returns>
-    public bool TerminateToken(bool overrideParser = false)
+    public bool TerminateToken(bool overrideParser = false, bool addToken = true)
     {
         if (CurrentToken is null)
             return false;
 
-        ApiLog.Debug("Command Token Parser", $"Terminating token: {CurrentToken.GetType().Name}");
+        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+            ApiLog.Debug("Command Token Parser", $"Terminating token: {CurrentToken.GetType().Name}");
 
         if (!overrideParser && CurrentParser != null && !CurrentParser.OnTerminating(this))
         {
-            ApiLog.Debug("Command Token Parser", "Termination cancelled by parser");
+            if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+                ApiLog.Debug("Command Token Parser", "Termination cancelled by parser");
             return false;
         }
         
         CurrentParser?.OnTerminated(this);
 
-        Builder.Clear();
-        
-        Tokens.Add(CurrentToken);
+        Builder?.Clear();
 
-        PreviousToken = CurrentToken;
-        PreviousParser = CurrentParser;
-        
+        if (addToken)
+        {
+            Tokens.Add(CurrentToken);
+
+            PreviousToken = CurrentToken;
+            PreviousParser = CurrentParser;
+        }
+
         CurrentToken = null;
         CurrentParser = null;
 
-        ApiLog.Debug("Command Token Parser", $"Token terminated ({Tokens.Count})");
+        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
+            ApiLog.Debug("Command Token Parser", $"Token terminated ({Tokens.Count})");
         return true;
     }
 

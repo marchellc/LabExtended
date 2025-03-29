@@ -1,4 +1,5 @@
 ﻿using LabExtended.Commands.Interfaces;
+using Utils.NonAllocLINQ;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -53,7 +54,7 @@ public class LastStringTokenParser : CommandTokenParser
 
         if (!context.CurrentTokenIs<StringToken>(out var stringToken))
             return;
-        
+
         // Remove all trailing whitespaces.
         while (char.IsWhiteSpace(context.Builder[context.Builder.Length - 1]))
             context.Builder.Remove(context.Builder.Length - 1, 1);

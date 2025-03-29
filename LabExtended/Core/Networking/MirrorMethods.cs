@@ -32,7 +32,7 @@ public static class MirrorMethods
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, ushort> RpcHashes { get; } = new();
+    public static Dictionary<string, int> RpcHashes { get; } = new();
 
     /// <summary>
     /// Gets dirty bits of all network properties
@@ -73,7 +73,7 @@ public static class MirrorMethods
     /// <param name="rpcHash">The found hash of the remote RPC</param>
     /// <returns>true if the RPC was found</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryGetRpcHash(string fullName, out ushort rpcHash)
+    public static bool TryGetRpcHash(string fullName, out int rpcHash)
     {
         if (string.IsNullOrWhiteSpace(fullName))
             throw new ArgumentNullException(nameof(fullName));
@@ -89,7 +89,7 @@ public static class MirrorMethods
     /// <param name="rpcHash">The found hash of the remote RPC.</param>
     /// <returns>true if the RPC was found</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryGetRpcHash(string typeName, string methodName, out ushort rpcHash)
+    public static bool TryGetRpcHash(string typeName, string methodName, out int rpcHash)
     {
         if (string.IsNullOrWhiteSpace(typeName))
             throw new ArgumentNullException(nameof(typeName));
@@ -108,7 +108,7 @@ public static class MirrorMethods
     /// <param name="rpcHash">The found hash of the remote RPC.</param>
     /// <returns>true if the RPC was found</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryGetRpcHash(this Type type, string methodName, out ushort rpcHash)
+    public static bool TryGetRpcHash(this Type type, string methodName, out int rpcHash)
     {
         if (type is null)
             throw new ArgumentNullException(nameof(type));
@@ -1054,6 +1054,7 @@ public static class MirrorMethods
                     var hash = codes[hashIndex] | (codes[hashIndex + 1] << 8) | (codes[hashIndex + 2] << 16) | (codes[hashIndex + 3] << 24);
 
                     RpcNames.Add(name, full);
+                    RpcHashes.Add(name, hash);
                 }
             }
 

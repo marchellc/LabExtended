@@ -3,4 +3,4 @@
 /// <summary>
 /// Allows a command to be executed in all consoles (Remote Admin, server & player).
 /// </summary>
-public interface IAllCommand : IPlayerCommand, IRemoteAdminCommand, IServerCommand { }
+public interface IAllCommand : IPlayerCommand, IRemoteAdminCommand, IServerConsoleCommand { }

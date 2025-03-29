@@ -1,8 +1,7 @@
 ﻿using LabExtended.Commands.Tokens;
-using LabExtended.Commands.Contexts;
 using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Interfaces;
-using LabExtended.Core;
+using LabExtended.Commands.Parameters.Restrictions;
 
 namespace LabExtended.Commands.Parameters.Parsers;
 
@@ -33,8 +32,13 @@ public class PlayerParameterParser : CommandParameterParser
             sourceString = stringToken.Value;
         else
             return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+
+        var precision = 0.85;
         
-        if (ExPlayer.TryGet(sourceString, 0.85, out player))
+        if (parameter.HasRestriction<PlayerPrecisionRestriction>(out var precisionRestriction))
+            precision = precisionRestriction.Precision;
+        
+        if (ExPlayer.TryGet(sourceString, precision, out player))
             return new(true, player, null, parameter);
         
         return new(false, null, $"Could not find player \"{sourceString}\"", parameter);

@@ -1,5 +1,4 @@
-﻿using LabExtended.Commands.Contexts;
-using LabExtended.Commands.Parameters;
+﻿using LabExtended.Commands.Parameters;
 
 namespace LabExtended.Commands.Interfaces;
 

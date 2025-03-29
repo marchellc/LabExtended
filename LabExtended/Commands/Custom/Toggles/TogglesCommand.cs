@@ -6,13 +6,13 @@ using LabExtended.Commands.Interfaces;
 
 using LabExtended.Extensions;
 
-namespace LabExtended.Commands.Custom.Debug.Switch;
+namespace LabExtended.Commands.Custom.Toggles;
 
 /// <summary>
 /// Used to get / set player switches.
 /// </summary>
-[Command("debug toggles", "Gets / sets the value of player toggles.")]
-public class SwitchCommand : CommandBase, IServerSideCommand
+[Command("toggles", "Gets / sets the value of player toggles.")]
+public class TogglesCommand : CommandBase, IServerSideCommand
 {
     /// <summary>
     /// Sets a player's switch.
