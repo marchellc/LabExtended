@@ -6,7 +6,7 @@ using LabExtended.Commands.Interfaces;
 
 using LabExtended.Extensions;
 
-namespace LabExtended.Commands.Custom.Debug;
+namespace LabExtended.Commands.Custom.Debug.Switch;
 
 /// <summary>
 /// Used to get / set player switches.

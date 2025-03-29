@@ -1,731 +1,1124 @@
 ﻿using LabExtended.API;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 using Mirror;
 
 using System.Reflection.Emit;
 
 using UnityEngine;
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
-namespace LabExtended.Core.Networking
+namespace LabExtended.Core.Networking;
+
+/// <summary>
+/// Helper methods targeting the Mirror library.
+/// </summary>
+public static class MirrorMethods
 {
-    public static class MirrorMethods
+    /// <summary>
+    /// Gets full names of all RPCs.
+    /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
+    /// (MyType.MyProperty)</remarks>
+    /// </summary>
+    public static Dictionary<string, string> RpcNames { get; } = new();
+    
+    /// <summary>
+    /// Gets hashes of all RPCs.
+    /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
+    /// (MyType.MyProperty)</remarks>
+    /// </summary>
+    public static Dictionary<string, ushort> RpcHashes { get; } = new();
+
+    /// <summary>
+    /// Gets dirty bits of all network properties
+    /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
+    /// (MyType.MyProperty)</remarks>
+    /// </summary>
+    public static Dictionary<string, ulong> DirtyBits { get; } = new();
+
+    /// <summary>
+    /// Gets Mirror-generated network writer extensions.
+    /// </summary>
+    public static Dictionary<Type, Func<object, object[], object>> Writers { get; } = new();
+
+    /// <summary>
+    /// Gets the <see cref="NetworkServer.SendSpawnMessage"/> delegate.
+    /// </summary>
+    public static Action<NetworkIdentity, NetworkConnection>? SendSpawnMessage { get; private set; }
+
+    /// <summary>
+    /// Attempts to retrieve a writer delegate from <see cref="Writers"/>.
+    /// </summary>
+    /// <param name="type">The target type</param>
+    /// <param name="writer">The found delegate</param>
+    /// <returns>true if the delegate was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetWriter(this Type type, out Func<object, object[], object> writer)
     {
-        public static volatile HashSet<Tuple<Type, Func<object, object[], object>>> Writers;
-        public static volatile HashSet<Tuple<string, string>> RpcFullNames;
-        public static volatile HashSet<Tuple<string, ulong>> DirtyBits;
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+        
+        return Writers.TryGetValue(type, out writer);
+    }
 
-        public static volatile Action<NetworkIdentity, NetworkConnection> SendSpawnMessageDelegate;
+    /// <summary>
+    /// Attempts to retrieve the hash of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="fullName">The name of the RPC (DeclaringType.MethodName - case sensitive)</param>
+    /// <param name="rpcHash">The found hash of the remote RPC</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcHash(string fullName, out ushort rpcHash)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentNullException(nameof(fullName));
+        
+        return RpcHashes.TryGetValue(fullName, out rpcHash);
+    }
 
-        static MirrorMethods()
+    /// <summary>
+    /// Attempts to retrieve the hash of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="typeName">Name of the declaring type (case sensitive)</param>
+    /// <param name="methodName">Name of the method (case sensitive)</param>
+    /// <param name="rpcHash">The found hash of the remote RPC.</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcHash(string typeName, string methodName, out ushort rpcHash)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+            throw new ArgumentNullException(nameof(typeName));
+        
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new ArgumentNullException(nameof(methodName));
+        
+        return RpcHashes.TryGetValue(string.Concat(typeName, ".", methodName), out rpcHash);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the hash of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="type">The declaring type</param>
+    /// <param name="methodName">Name of the method (case sensitive)</param>
+    /// <param name="rpcHash">The found hash of the remote RPC.</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcHash(this Type type, string methodName, out ushort rpcHash)
+    {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+        
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new ArgumentNullException(nameof(methodName));
+        
+        return RpcHashes.TryGetValue(string.Concat(type.Name, ".", methodName), out rpcHash);
+    }
+    
+    /// <summary>
+    /// Attempts to retrieve the full name of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="fullName">The name of the RPC (DeclaringType.MethodName - case sensitive)</param>
+    /// <param name="rpcName">The found name of the remote RPC</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcName(string fullName, out string rpcName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentNullException(nameof(fullName));
+        
+        return RpcNames.TryGetValue(fullName, out rpcName);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the full name of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="typeName">Name of the declaring type (case sensitive)</param>
+    /// <param name="methodName">Name of the method (case sensitive)</param>
+    /// <param name="rpcName">The found name of the remote RPC.</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcName(string typeName, string methodName, out string rpcName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+            throw new ArgumentNullException(nameof(typeName));
+        
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new ArgumentNullException(nameof(methodName));
+        
+        return RpcNames.TryGetValue(string.Concat(typeName, ".", methodName), out rpcName);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the full name of a RPC from <see cref="RpcNames"/>.
+    /// </summary>
+    /// <param name="type">The declaring type</param>
+    /// <param name="methodName">Name of the method (case sensitive)</param>
+    /// <param name="rpcName">The found name of the remote RPC.</param>
+    /// <returns>true if the RPC was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetRpcName(this Type type, string methodName, out string rpcName)
+    {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+        
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new ArgumentNullException(nameof(methodName));
+        
+        return RpcNames.TryGetValue(string.Concat(type.Name, ".", methodName), out rpcName);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve a dirty bit of a network property.
+    /// </summary>
+    /// <param name="propertyName">Name of the network property (formatted as DeclaringTypeName.PropertyName - case sensitive)</param>
+    /// <param name="dirtyBit">The found dirty bit.</param>
+    /// <returns>true if the dirty bit was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetDirtyBit(string propertyName, out ulong dirtyBit)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+
+        return DirtyBits.TryGetValue(propertyName, out dirtyBit);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve a dirty bit of a network property.
+    /// </summary>
+    /// <param name="declaringTypeName">The name of the declaring type (case sensitive)</param>
+    /// <param name="propertyName">The name of the network property (case sensitive)</param>
+    /// <param name="dirtyBit">The found dirty bit</param>
+    /// <returns>true if the dirty bit was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetDirtyBit(string declaringTypeName, string propertyName, out ulong dirtyBit)
+    {
+        if (string.IsNullOrWhiteSpace(declaringTypeName))
+            throw new ArgumentNullException(nameof(declaringTypeName));
+        
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+
+        return DirtyBits.TryGetValue(string.Concat(declaringTypeName, ".", propertyName), out dirtyBit);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve a dirty bit of a network property.
+    /// </summary>
+    /// <param name="behaviourType">The declaring network behaviour type</param>
+    /// <param name="propertyName">The name of the network property (case sensitive)</param>
+    /// <param name="dirtyBit">The found dirty bit</param>
+    /// <returns>true if the dirty bit was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool TryGetDirtyBit(this Type behaviourType, string propertyName, out ulong dirtyBit)
+    {
+        if (behaviourType is null)
+            throw new ArgumentNullException(nameof(behaviourType));
+        
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+
+        return DirtyBits.TryGetValue(string.Concat(behaviourType.Name, propertyName), out dirtyBit);
+    }
+
+    /// <summary>
+    /// Sets a network property as dirty.
+    /// </summary>
+    /// <param name="behaviour">The target network behaviour</param>
+    /// <param name="dirtyBit">The property dirty bit</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SetDirtyBit(this NetworkBehaviour behaviour, ulong dirtyBit)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        behaviour.syncVarDirtyBits |= dirtyBit;
+    }
+
+    /// <summary>
+    /// Sets a network property as dirty.
+    /// </summary>
+    /// <param name="behaviour">The target network behaviour</param>
+    /// <param name="propertyName">The property to set as dirty (case sensitive)</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SetDirtyBit(this NetworkBehaviour behaviour, string propertyName)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+
+        if (!DirtyBits.TryGetValue(string.Concat(behaviour.GetType().Name, ".", propertyName), out var dirtyBit))
+            throw new ArgumentException(
+                $"Property {propertyName} (in behaviour {behaviour.GetType().Name}) does not have a" +
+                $"registered dirty bit", nameof(propertyName));
+
+        behaviour.syncVarDirtyBits |= dirtyBit;
+    }
+    
+    /// <summary>
+    /// Removes a dirty bit from a network behaviour.
+    /// </summary>
+    /// <param name="behaviour">The target network behaviour</param>
+    /// <param name="dirtyBit">The property dirty bit</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void RemoveDirtyBit(this NetworkBehaviour behaviour, ulong dirtyBit)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        behaviour.syncVarDirtyBits &= ~dirtyBit;
+    }
+
+    /// <summary>
+    /// Removes a dirty bit from a network behaviour
+    /// </summary>
+    /// <param name="behaviour">The target network behaviour</param>
+    /// <param name="propertyName">The property to remove the dirty bit of (case sensitive)</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void RemoveDirtyBit(this NetworkBehaviour behaviour, string propertyName)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+
+        if (!DirtyBits.TryGetValue(string.Concat(behaviour.GetType().Name, ".", propertyName), out var dirtyBit))
+            throw new ArgumentException(
+                $"Property {propertyName} (in behaviour {behaviour.GetType().Name}) does not have a" +
+                $"registered dirty bit", nameof(propertyName));
+
+        behaviour.syncVarDirtyBits &= ~dirtyBit;
+    }
+
+    /// <summary>
+    /// Sends a custom <see cref="SpawnMessage"/>.
+    /// </summary>
+    /// <param name="identity">The targeted network identity</param>
+    /// <param name="predicate">Receiver filter</param>
+    /// <param name="customPos">Custom identity position</param>
+    /// <param name="customScale">Custom identity scale</param>
+    /// <param name="customRot">Custom identity rotation</param>
+    /// <param name="payload">Custom identity spawn payload</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SendCustomSpawnMessage(this NetworkIdentity identity, Func<ExPlayer, bool>? predicate = null,
+        Vector3? customPos = null, Vector3? customScale = null, Quaternion? customRot = null,
+        ArraySegment<byte>? payload = null)
+    {
+        if (identity is null)
+            throw new ArgumentNullException(nameof(identity));
+        
+        if (predicate != null)
+            WriteToWhere(predicate, x => x.Write(identity.GetSpawnMessage(customPos, customScale, customRot, payload)));
+        else
+            WriteToMany(ExPlayer.Players, x => x.Write(identity.GetSpawnMessage(customPos, customScale, customRot, payload)));
+    }
+
+    /// <summary>
+    /// Gets a <see cref="SpawnMessage"/> for a specific identity.
+    /// </summary>
+    /// <param name="identity">The target network identity</param>
+    /// <param name="customPos">Custom identity position</param>
+    /// <param name="customScale">Custom identity scale</param>
+    /// <param name="customRot">Custom identity rotation</param>
+    /// <param name="payload">Custom spawn payload</param>
+    /// <returns>The created <see cref="SpawnMessage"/> instance</returns>
+    public static SpawnMessage GetSpawnMessage(this NetworkIdentity identity, Vector3? customPos = null,
+        Vector3? customScale = null, Quaternion? customRot = null, ArraySegment<byte>? payload = null)
+    {
+        var msg = new SpawnMessage
         {
-            try
-            {
-                Writers = new();
-                DirtyBits = new();
-                RpcFullNames = new();
+            assetId = identity.assetId,
 
-                SendSpawnMessageDelegate =
-                    typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
-                            .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
-                        Action<NetworkIdentity, NetworkConnection>;
+            isLocalPlayer = identity.isLocalPlayer,
+            isOwner = identity.isOwned,
 
-                var assembly = typeof(ServerConsole).Assembly;
-                var types = assembly.GetTypes();
+            netId = identity.netId,
 
-                for (int i = 0; i < types.Length; i++)
-                {
-                    var type = types[i];
+            sceneId = identity.sceneId,
 
-                    var methods = type.GetAllMethods();
-                    var properties = type.GetAllProperties();
+            position = customPos ?? identity.transform.position,
+            rotation = customRot ?? identity.transform.rotation,
 
-                    var isSerializer = type.Name.EndsWith("Serializer");
+            scale = customScale ?? identity.transform.localScale
+        };
 
-                    for (int x = 0; x < methods.Length; x++)
-                    {
-                        var method = methods[x];
+        if (payload.HasValue)
+            msg.payload = payload.Value;
 
-                        if (isSerializer && method.ReturnType == typeof(void) && method.Name.StartsWith("Write"))
-                        {
-                            var parameters = method.GetAllParameters();
+        return msg;
+    }
 
-                            if (parameters.Length != 2)
-                                continue;
+    /// <summary>
+    /// Finds the index of a network behaviour's type.
+    /// </summary>
+    /// <param name="identity">The target identity</param>
+    /// <param name="behaviourType">The behaviour type to find</param>
+    /// <returns>the index the type was found at or -1 if not found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="Exception"></exception>
+    public static int FindBehaviourIndex(this NetworkIdentity identity, Type behaviourType)
+    {
+        if (identity is null)
+            throw new ArgumentNullException(nameof(identity));
 
-                            var serializedType = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-
-                            if (serializedType is null)
-                                continue;
-
-                            var invoker = FastReflection.ForMethod(method);
-
-                            Writers.Add(new Tuple<Type, Func<object, object[], object>>(serializedType, invoker));
-                        }
-                        else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
-                        {
-                            var name = $"{method.ReflectedType.Name}.{method.Name}";
-
-                            if (RpcFullNames.Any(x => x.Item1 == name))
-                                continue;
-
-                            var body = method.GetMethodBody();
-
-                            if (body is null)
-                                continue;
-
-                            var codes = body.GetILAsByteArray();
-
-                            if (codes.Length < 1)
-                                continue;
-
-                            var full = method.Module.ResolveString(BitConverter.ToInt32(codes, codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
-
-                            RpcFullNames.Add(new Tuple<string, string>(name, full));
-                        }
-                    }
-
-                    for (int y = 0; y < properties.Length; y++)
-                    {
-                        var prop = properties[y];
-
-                        if (!prop.Name.StartsWith("Network"))
-                            continue;
-
-                        var name = $"{prop.ReflectedType.Name}.{prop.Name}";
-
-                        if (DirtyBits.Any(x => x.Item1 == name))
-                            continue;
-
-                        var setter = prop.GetSetMethod(true);
-
-                        if (setter is null)
-                            continue;
-
-                        var body = setter.GetMethodBody();
-
-                        if (body is null)
-                            continue;
-
-                        var il = body.GetILAsByteArray();
-
-                        if (il.Length < 1)
-                            continue;
-
-                        var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
-
-                        DirtyBits.Add(new Tuple<string, ulong>(name, bit));
-                    }
-                }
-
-                var writerExtensions = typeof(NetworkWriterExtensions).GetAllMethods();
-
-                for (int i = 0; i < writerExtensions.Length; i++)
-                {
-                    var method = writerExtensions[i];
-
-                    if (method.IsGenericMethod)
-                        continue;
-
-                    if (method.HasAttribute<ObsoleteAttribute>())
-                        continue;
-
-                    var parameters = method.GetAllParameters();
-
-                    if (parameters.Length != 2)
-                        continue;
-
-                    var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-
-                    if (type is null)
-                        continue;
-
-                    var invoker = FastReflection.ForMethod(method);
-
-                    Writers.Add(new Tuple<Type, Func<object, object[], object>>(type, invoker));
-                }
-
-                var generatedType = assembly.GetType("Mirror.GeneratedNetworkCode");
-                var generatedMethods = generatedType.GetAllMethods();
-
-                for (int i = 0; i < generatedMethods.Length; i++)
-                {
-                    var method = generatedMethods[i];
-
-                    if (method.IsGenericMethod)
-                        continue;
-
-                    if (method.ReturnType != typeof(void))
-                        continue;
-
-                    var parameters = method.GetAllParameters();
-
-                    if (parameters.Length != 2)
-                        continue;
-
-                    var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-
-                    if (type is null)
-                        continue;
-
-                    var invoker = FastReflection.ForMethod(method);
-
-                    Writers.Add(new Tuple<Type, Func<object, object[], object>>(type, invoker));
-                }
-            }
-            catch (Exception ex)
-            {
-                ApiLog.Error("Mirror Methods", $"An exception occured while loading MirroMethods:\n{ex.ToColoredString()}");
-            }
-        }
-
-        public static Func<object, object[], object> GetWriterDelegate(Type type)
-        {
-            if (type is null)
-                throw new ArgumentNullException(nameof(type));
-
-            if (!Writers.TryGetFirst(x => x.Item1 == type, out var writer))
-                throw new Exception($"No writers for type {type.FullName}");
-
-            return writer.Item2;
-        }
-
-        public static string GetRpcName(string methodName)
-        {
-            if (string.IsNullOrWhiteSpace(methodName))
-                throw new ArgumentNullException(methodName);
-
-            if (!methodName.Contains("."))
-                throw new ArgumentException($"Must contain the declaring type name, ex. MyType.RpcMethod", nameof(methodName));
-
-            if (!RpcFullNames.TryGetFirst(x => x.Item1 == methodName, out var fullName))
-                throw new Exception($"Unknown RPC: {methodName}");
-
-            return fullName.Item2;
-        }
-
-        public static ulong GetSyncVarBit(string propertyName)
-        {
-            if (string.IsNullOrWhiteSpace(propertyName))
-                throw new ArgumentNullException(propertyName);
-
-            if (!propertyName.Contains("."))
-                throw new ArgumentException($"Must contain the declaring type name, ex. MyType.NetworkProperty", nameof(propertyName));
-
-            if (!DirtyBits.TryGetFirst(x => x.Item1 == propertyName, out var bit))
-                throw new Exception($"Unknown network property: {propertyName}");
-
-            return bit.Item2;
-        }
-
-        public static void SetDirtyBit(this NetworkBehaviour behaviour, ulong bit)
-            => behaviour?.SetSyncVarDirtyBit(bit);
-
-        public static void SendSpawnMessage(this NetworkIdentity? identity, NetworkConnection connection)
-            => SendSpawnMessageDelegate(identity, connection);
-
-        public static void SendSpawnMessage(this NetworkIdentity identity, Func<ExPlayer, bool> predicate = null, Vector3? customPos = null, Vector3? customScale = null, Quaternion? customRot = null, ArraySegment<byte>? payload = null)
-        {
-            if (identity is null)
-                throw new ArgumentNullException(nameof(identity));
-
-            var msg = identity.GetSpawnMessage(customPos, customScale, customRot, payload);
-            var writer = NetworkWriterPool.Get();
-
-            writer.Write(msg);
-
-            var msgData = ReturnWriterAndData(writer);
-
-            for (int i = 0; i < ExPlayer.Players.Count; i++)
-            {
-                var player = ExPlayer.Players[i];
-
-                if (predicate != null && !predicate.InvokeSafe(player))
-                    continue;
-
-                player.Send(msgData);
-            }
-        }
-
-        public static SpawnMessage GetSpawnMessage(this NetworkIdentity identity, Vector3? customPos = null, Vector3? customScale = null, Quaternion? customRot = null, ArraySegment<byte>? payload = null)
-        {
-            var msg = new SpawnMessage
-            {
-                assetId = identity.assetId,
-
-                isLocalPlayer = identity.isLocalPlayer,
-                isOwner = identity.isOwned,
-
-                netId = identity.netId,
-
-                sceneId = identity.sceneId,
-
-                position = customPos.HasValue ? customPos.Value : identity.transform.position,
-                rotation = customRot.HasValue ? customRot.Value : identity.transform.rotation,
-
-                scale = customScale.HasValue ? customScale.Value : identity.transform.localScale
-            };
-
-            if (payload.HasValue)
-                msg.payload = payload.Value;
-
-            return msg;
-        }
-
-        public static int FindBehaviourIndex(this NetworkIdentity identity, Type behaviourType)
-        {
-            if (identity is null)
-                throw new ArgumentNullException(nameof(identity));
-
-            if (identity.NetworkBehaviours is null)
-                throw new Exception($"This NetworkIdentity has not been initialized yet.");
-
-            if (identity.NetworkBehaviours.Length < 1)
-                return -1;
-
-            for (int i = 0; i < identity.NetworkBehaviours.Length; i++)
-            {
-                if (identity.NetworkBehaviours[i].GetType() != behaviourType)
-                    continue;
-
-                return i;
-            }
-
+        if (identity.NetworkBehaviours?.Length < 1)
             return -1;
+
+        for (var i = 0; i < identity.NetworkBehaviours.Length; i++)
+        {
+            if (identity.NetworkBehaviours[i].GetType() != behaviourType)
+                continue;
+
+            return i;
         }
 
-        public static void EditIdentity(this NetworkIdentity identity, Action<NetworkIdentity> edit, Predicate<ExPlayer> predicate = null)
+        return -1;
+    }
+
+    /// <summary>
+    /// Edits the properties of a network identity.
+    /// </summary>
+    /// <param name="identity">The identity to edit</param>
+    /// <param name="edit">The method used to edit the identity</param>
+    /// <param name="predicate">The receiver filter</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="Exception"></exception>
+    public static void EditIdentity(this NetworkIdentity identity, Action<NetworkIdentity> edit, Predicate<ExPlayer>? predicate = null)
+    {
+        if (identity is null)
+            throw new ArgumentNullException(nameof(identity));
+
+        if (edit is null)
+            throw new ArgumentNullException(nameof(edit));
+
+        if (identity.netId == 0)
+            throw new Exception("Attempted to edit a NetworkIdentity that is either despawned or is a scene object.");
+
+        edit.InvokeSafe(identity, true);
+
+        var destroyMsg = new ObjectDestroyMessage() { netId = identity.netId };
+        var spawnMsg = identity.GetSpawnMessage();
+
+        ExPlayer.Players.ForEach(p =>
         {
-            if (identity is null)
-                throw new ArgumentNullException(nameof(identity));
-
-            if (edit is null)
-                throw new ArgumentNullException(nameof(edit));
-
-            if (identity.netId == 0)
-                throw new Exception($"Attempted to edit a NetworkIdentity that is either despawned or is a scene object.");
-
-            edit.InvokeSafe(identity, true);
-
-            var destroyMsg = new ObjectDestroyMessage() { netId = identity.netId };
-            var spawnMsg = identity.GetSpawnMessage();
-
-            foreach (var player in ExPlayer.Players)
-            {
-                if (predicate != null && !predicate(player))
-                    continue;
-
-                player.Connection.Send(destroyMsg);
-                player.Connection.Send(spawnMsg);
-            }
-        }
-
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, Action<NetworkWriter> customWriter, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
-        {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
-
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
+            if (predicate != null && !predicate(p))
                 return;
 
-            if (customWriter != null)
-            {
-                var writer = NetworkWriterPool.Get();
+            p.Connection.Send(destroyMsg);
+            p.Connection.Send(spawnMsg);
+        });
+    }
 
-                customWriter.InvokeSafe(writer, true);
+    #region Spawn For
+    /// <summary>
+    /// Spawns the target behaviour for selected connection.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="target">The selected connection.</param>
+    /// <param name="ownerConnection">Optional identity owner connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SpawnFor(this NetworkBehaviour behaviour, NetworkConnection target,
+        NetworkConnection? ownerConnection = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
 
-                var data = ReturnWriterAndData(writer);
+        if (!target.isReady)
+            throw new ArgumentException("Target connection cannot receive data", nameof(target));
+        
+        if (target is not NetworkConnectionToClient connectionToClient)
+            return;
+        
+        InitIdentityServerSide(behaviour.netIdentity, ownerConnection);
+        
+        behaviour.netIdentity.AddObserver(connectionToClient);
+    }
+    
+    /// <summary>
+    /// Spawns the target behaviour for selected player.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="target">The selected player.</param>
+    /// <param name="ownerConnection">Optional identity owner connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SpawnFor(this NetworkBehaviour behaviour, ExPlayer target,
+        NetworkConnection? ownerConnection = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+        
+        if (target.Connection is not NetworkConnectionToClient connectionToClient)
+            return;
+        
+        InitIdentityServerSide(behaviour.netIdentity, ownerConnection);
+        
+        behaviour.netIdentity.AddObserver(connectionToClient);
+    }
 
-                SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
-            }
-            else
-            {
-                SendRpc(behaviour, rpcName, rpcHash, (ArraySegment<byte>?)null, channelId, includeOwner, checkObservers, customObservers);
-            }
-        }
+    /// <summary>
+    /// Spawns the target behaviour for selected connections.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="connections">The selected connections.</param>
+    /// <param name="ownerConnection">Optional identity owner connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SpawnFor(this NetworkBehaviour behaviour, IEnumerable<NetworkConnection> connections, NetworkConnection? ownerConnection = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (connections is null)
+            throw new ArgumentNullException(nameof(connections));
+        
+        InitIdentityServerSide(behaviour.netIdentity, ownerConnection);
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, Action<NetworkWriter> customWriter, int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
+        foreach (var connection in connections)
         {
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
+            if (connection is not NetworkConnectionToClient connectionToClient)
+                continue;
+            
+            behaviour.netIdentity.AddObserver(connectionToClient);
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(rpcName))
-                throw new ArgumentNullException(nameof(rpcName));
+    /// <summary>
+    /// Spawns the target behaviour for selected players.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="players">The selected players.</param>
+    /// <param name="ownerConnection">Optional identity owner connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SpawnFor(this NetworkBehaviour behaviour, IEnumerable<ExPlayer> players, NetworkConnection? ownerConnection = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (players is null)
+            throw new ArgumentNullException(nameof(players));
+        
+        InitIdentityServerSide(behaviour.netIdentity, ownerConnection);
 
-            if (checkObservers && behaviour.netIdentity.observers.Count < 1)
+        foreach (var player in players)
+        {
+            if (player.Connection is not NetworkConnectionToClient connectionToClient)
+                continue;
+            
+            behaviour.netIdentity.AddObserver(connectionToClient);
+        }
+    }
+    
+    /// <summary>
+    /// Spawns the target behaviour for selected players.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="predicate">Player filter.</param>
+    /// <param name="ownerConnection">Optional identity owner connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SpawnFor(this NetworkBehaviour behaviour, Func<ExPlayer, bool> predicate, NetworkConnection? ownerConnection = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (predicate is null)
+            throw new ArgumentNullException(nameof(predicate));
+        
+        InitIdentityServerSide(behaviour.netIdentity, ownerConnection);
+
+        ExPlayer.Players.ForEach(p =>
+        {
+            if (!predicate(p))
                 return;
-
-            if (customWriter != null)
-            {
-                var writer = NetworkWriterPool.Get();
-
-                customWriter.InvokeSafe(writer, true);
-
-                var data = ReturnWriterAndData(writer);
-
-                SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
-            }
-            else
-            {
-                SendRpc(behaviour, rpcName, rpcHash, (ArraySegment<byte>?)null, channelId, includeOwner, checkObservers, customObservers);
-            }
-        }
-
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, 
-            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
-        {
-            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
-            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-
-            if (writer != null)
-            {
-                var data = writer.ToArraySegment();
                 
-                SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
-            }
-            else
-            {
-                SendRpc(behaviour, rpcName, rpcHash, (ArraySegment<byte>?)null, channelId, includeOwner, checkObservers, customObservers);
-            }
-        }
-
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, 
-            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
-        {
-            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
-            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
-
-            if (writer != null)
-            {
-                var data = writer.ToArraySegment();
-                
-                SendRpc(behaviour, rpcName, rpcHash, data, channelId, includeOwner, checkObservers, customObservers);
-            }
-            else
-            {
-                SendRpc(behaviour, rpcName, rpcHash, (ArraySegment<byte>?)null, channelId, includeOwner, checkObservers, customObservers);
-            }
-        }
-
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data,
-            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<ExPlayer> customObservers = null)
-        {
-            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
-            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            if (p.Connection is not NetworkConnectionToClient connectionToClient)
+                return;
             
-            ApiLog.Debug("Mirror API", $"SendRpc &6{behaviour.name}&r &3{rpcName}&r (&6{rpcHash}&r)");
+            behaviour.netIdentity.AddObserver(connectionToClient);
+        });
+    }
+    #endregion
 
-            var msg = new RpcMessage()
+    #region Destroy For
+    /// <summary>
+    /// Destroys the behaviour for the selected connection.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="target">The target connection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void DestroyFor(this NetworkBehaviour behaviour, NetworkConnection target)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+        
+        target.Send(new ObjectDestroyMessage { netId = behaviour.netId });
+    }
+
+    /// <summary>
+    /// Destroys the behaviour for the selected connections.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="connections">The target connections.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void DestroyFor(this NetworkBehaviour behaviour, IEnumerable<NetworkConnection> connections)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (connections is null)
+            throw new ArgumentNullException(nameof(connections));
+
+        var msg = new ObjectDestroyMessage { netId = behaviour.netId };
+
+        connections.ForEach(c => c.Send(msg));
+    }
+    
+    /// <summary>
+    /// Destroys the behaviour for the selected players.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="players">The target players.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void DestroyFor(this NetworkBehaviour behaviour, IEnumerable<ExPlayer> players)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (players is null)
+            throw new ArgumentNullException(nameof(players));
+
+        var msg = new ObjectDestroyMessage { netId = behaviour.netId };
+
+        players.ForEach(c => c.Send(msg));
+    }
+    
+    /// <summary>
+    /// Destroys the behaviour for the selected players.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour.</param>
+    /// <param name="predicate">Player filter</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void DestroyFor(this NetworkBehaviour behaviour, Func<ExPlayer, bool> predicate)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (predicate is null)
+            throw new ArgumentNullException(nameof(predicate));
+
+        var msg = new ObjectDestroyMessage { netId = behaviour.netId };
+
+        ExPlayer.Players.ForEach(p =>
+        {
+            if (!predicate(p))
+                return;
+            
+            p.Send(msg);
+        });
+    }
+    #endregion
+    
+    /// <summary>
+    /// Creates a new <see cref="RpcMessage"/> for the specified behaviour.
+    /// </summary>
+    /// <param name="behaviour">The target behaviour</param>
+    /// <param name="rpcHash">Hash of the RPC method</param>
+    /// <param name="dataWriter">Optional data writer delegate</param>
+    /// <returns>The created <see cref="RpcMessage"/> instance</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static RpcMessage GetRpcMessage(this NetworkBehaviour behaviour, ushort rpcHash,
+        Action<NetworkWriter>? dataWriter = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        var message = new RpcMessage();
+        
+        message.netId = behaviour.netId;
+        message.functionHash = rpcHash;
+        message.componentIndex = behaviour.ComponentIndex;
+
+        if (dataWriter != null)
+            message.payload = Write(dataWriter);
+
+        return message;
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="RpcMessage"/> for the specified behaviour.
+    /// <remarks>It's recommended to cache the hash of the target RPC and
+    /// call <see cref="GetRpcMessage(Mirror.NetworkBehaviour,ushort,System.Action{Mirror.NetworkWriter}?)"/> directly
+    /// as this method looks the hash up each time it is called.</remarks>
+    /// </summary>
+    /// <param name="behaviour">The target behaviour</param>
+    /// <param name="methodName"></param>
+    /// <param name="dataWriter">Optional data writer delegate</param>
+    /// <returns>The created <see cref="RpcMessage"/> instance</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static RpcMessage GetRpcMessage(this NetworkBehaviour behaviour, string methodName, Action<NetworkWriter>? dataWriter = null)
+    {
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new ArgumentNullException(nameof(methodName));
+
+        if (!TryGetRpcHash(behaviour.GetType(), methodName, out var hash))
+            throw new Exception($"Could not find hash of RPC {methodName} (in type {behaviour.GetType().Name})");
+        
+        return GetRpcMessage(behaviour, hash, dataWriter);
+    }
+
+    /// <summary>
+    /// Executes the target delegate on a writer and returns it's data.
+    /// </summary>
+    /// <param name="writer">The writer delegate.</param>
+    /// <returns>The written data.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static ArraySegment<byte> Write(Action<NetworkWriter> writer)
+    {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        using var pooled = NetworkWriterPool.Get();
+        
+        writer(pooled);
+        return pooled.ToArraySegment();
+    }
+
+    /// <summary>
+    /// Writes custom sync var data to the writer.
+    /// </summary>
+    /// <param name="writer">The target writer</param>
+    /// <param name="behaviour">The target behaviour instance</param>
+    /// <param name="propertyName">The target property name (case sensitive)</param>
+    /// <param name="customValue">The custom value</param>
+    /// <param name="valueWriter">The custom value writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteCustomSyncVar(this NetworkWriter writer, NetworkBehaviour behaviour, string propertyName,
+        object customValue, Action<NetworkWriter, object>? valueWriter = null)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+        
+        if (!TryGetDirtyBit(behaviour.GetType(), propertyName, out var bit))
+            throw new ArgumentException($"Unknown network property: {behaviour.GetType().Name}.{propertyName}");
+        
+        WriteCustomSyncVar(writer, behaviour, bit, customValue, valueWriter);
+    }
+    
+    /// <summary>
+    /// Writes custom sync var data to the writer.
+    /// </summary>
+    /// <param name="writer">The target writer</param>
+    /// <param name="behaviour">The target behaviour instance</param>
+    /// <param name="propertyName">The target property name (case sensitive)</param>
+    /// <param name="customValue">The custom value</param>
+    /// <param name="valueWriter">The custom value writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteCustomSyncVar<T>(this NetworkWriter writer, NetworkBehaviour behaviour, string propertyName,
+        T customValue, Action<NetworkWriter, T>? valueWriter = null)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            throw new ArgumentNullException(nameof(propertyName));
+        
+        if (!TryGetDirtyBit(behaviour.GetType(), propertyName, out var bit))
+            throw new ArgumentException($"Unknown network property: {behaviour.GetType().Name}.{propertyName}");
+        
+        WriteCustomSyncVar(writer, behaviour, bit, customValue, valueWriter);
+    }
+
+    /// <summary>
+    /// Writes custom sync var data to the writer.
+    /// </summary>
+    /// <param name="writer">The target writer</param>
+    /// <param name="behaviour">The target behaviour instance</param>
+    /// <param name="dirtyBit">The property dirty bit</param>
+    /// <param name="customValue">The custom value</param>
+    /// <param name="valueWriter">The custom value writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteCustomSyncVar(this NetworkWriter writer, NetworkBehaviour behaviour, ulong dirtyBit, 
+        object customValue, Action<NetworkWriter, object>? valueWriter = null)
+    {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (customValue is null)
+            throw new ArgumentNullException(nameof(customValue));
+
+        if (valueWriter is null )
+        {
+            if (!Writers.TryGetValue(customValue.GetType(), out var definedValueWriter))
+                throw new Exception($"Type {customValue.GetType().FullName} does not have a defined writer");
+
+            valueWriter = (x, y) => definedValueWriter(null, [x, y]);
+        }
+        
+        WriteCustomSyncVar(writer, behaviour.netId, dirtyBit, behaviour.ComponentIndex, customValue, valueWriter);
+    }
+    
+    /// <summary>
+    /// Writes custom sync var data to the writer.
+    /// </summary>
+    /// <param name="writer">The target writer</param>
+    /// <param name="behaviour">The target behaviour instance</param>
+    /// <param name="dirtyBit">The property dirty bit</param>
+    /// <param name="customValue">The custom value</param>
+    /// <param name="valueWriter">The custom value writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteCustomSyncVar<T>(this NetworkWriter writer, NetworkBehaviour behaviour, ulong dirtyBit, 
+        T customValue, Action<NetworkWriter, T>? valueWriter = null)
+    {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        
+        if (behaviour is null)
+            throw new ArgumentNullException(nameof(behaviour));
+        
+        if (customValue is null)
+            throw new ArgumentNullException(nameof(customValue));
+
+        if (valueWriter is null)
+        {
+            if (!Writers.TryGetValue(customValue.GetType(), out var definedValueWriter))
+                throw new Exception($"Type {customValue.GetType().FullName} does not have a defined writer");
+
+            valueWriter = (x, y) => definedValueWriter(null, [x, y]);
+        }
+        
+        WriteCustomSyncVar(writer, behaviour.netId, dirtyBit, behaviour.ComponentIndex, customValue, 
+            (x, _) => valueWriter(x, customValue));
+    }
+
+    /// <summary>
+    /// Writes a custom sync var into the writer.
+    /// </summary>
+    /// <param name="writer">The target writer</param>
+    /// <param name="netId">The target identity ID</param>
+    /// <param name="dirtyBit">The target property dirty bit</param>
+    /// <param name="behaviourIndex">The target behaviour index</param>
+    /// <param name="customValue">The custom value</param>
+    /// <param name="customValueWriter">The writer for the custom value</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteCustomSyncVar(this NetworkWriter writer, uint netId, ulong dirtyBit,
+        int behaviourIndex, object customValue, Action<NetworkWriter, object> customValueWriter)
+    {
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        
+        if (customValue is null)
+            throw new ArgumentNullException(nameof(customValue));
+        
+        if (customValueWriter is null)
+            throw new ArgumentNullException(nameof(customValueWriter));
+        
+        using var segmentWriter = NetworkWriterPool.Get();
+
+        if (segmentWriter.Position != 0)
+            segmentWriter.Reset();
+
+        var num = 0UL | 1UL << (behaviourIndex & 31);
+
+        Compression.CompressVarUInt(segmentWriter, num);
+
+        var pos1 = segmentWriter.Position;
+
+        segmentWriter.WriteByte(0);
+
+        var pos2 = segmentWriter.Position;
+
+        segmentWriter.WriteULong(dirtyBit);
+
+        customValueWriter(writer, customValue);
+
+        var pos3 = segmentWriter.Position;
+
+        segmentWriter.Position = pos1;
+
+        var b = (byte)((pos3 - pos2) & 255);
+
+        segmentWriter.WriteByte(b);
+        segmentWriter.Position = pos3;
+
+        writer.WriteMessageId<EntityStateMessage>();
+        writer.WriteUInt(netId);
+        writer.WriteArraySegmentAndSize(segmentWriter.ToArraySegment());
+    }
+
+    /// <summary>
+    /// Executes the target delegate on a writer and sends it's data to the connection.
+    /// </summary>
+    /// <param name="connection">Connection to send the data to</param>
+    /// <param name="writer">The writer delegate</param>
+    public static void WriteTo(this NetworkConnection connection, Action<NetworkWriter> writer)
+    {
+        if (connection is null)
+            throw new ArgumentNullException(nameof(connection));
+        
+        if (!connection.isReady)
+            throw new ArgumentException($"The target connection cannot receive data", nameof(connection));
+        
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        
+        connection.Send(Write(writer));
+    }
+
+    /// <summary>
+    /// Executes the target delegate on a writer and sends it's data to the connections.
+    /// </summary>
+    /// <param name="connections">Connections to send the data to</param>
+    /// <param name="writer">The writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteToMany(this IEnumerable<NetworkConnection> connections, Action<NetworkWriter> writer)
+    {
+        if (connections is null)
+            throw new ArgumentNullException(nameof(connections));
+        
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        ArraySegment<byte>? data = null;
+
+        foreach (var connection in connections)
+            connection.Send(data ??= Write(writer));
+    }
+
+    /// <summary>
+    /// Executes the target delegate on a writer and sends it's data to the players.
+    /// </summary>
+    /// <param name="players">Players to send the data to</param>
+    /// <param name="writer">The writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteToMany(this IEnumerable<ExPlayer> players, Action<NetworkWriter> writer)
+    {
+        if (players is null)
+            throw new ArgumentNullException(nameof(players));
+        
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+
+        ArraySegment<byte>? data = null;
+
+        foreach (var player in players)
+            player.Send(data ??= Write(writer));
+    }
+
+    /// <summary>
+    /// Executes the target delegate on a writer and sends it's data to the selected players
+    /// </summary>
+    /// <param name="predicate">Data receiver filter</param>
+    /// <param name="writer">The writer delegate</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void WriteToWhere(Func<ExPlayer, bool> predicate, Action<NetworkWriter> writer)
+    {
+        if (predicate is null)
+            throw new ArgumentNullException(nameof(predicate));
+        
+        if (writer is null)
+            throw new ArgumentNullException(nameof(writer));
+        
+        ArraySegment<byte>? data = null;
+
+        ExPlayer.Players.ForEach(p =>
+        {
+            if (!predicate(p))
+                return;
+            
+            p.Send(data ??= Write(writer));
+        });
+    }
+
+    /// <summary>
+    /// Writes ID of the message type.
+    /// </summary>
+    /// <param name="writer">The writer to write the ID to.</param>
+    /// <typeparam name="T">The type of message to write the ID of</typeparam>
+    public static void WriteMessageId<T>(this NetworkWriter writer) where T : struct, NetworkMessage
+        => writer.WriteUShort(NetworkMessageId<T>.Id);
+
+    /// <summary>
+    /// Writes a message to the writer.
+    /// </summary>
+    /// <param name="writer">The writer delegate</param>
+    /// <typeparam name="T">The type of message to write</typeparam>
+    public static ArraySegment<byte> WriteMessage<T>(Action<NetworkWriter> writer) where T : struct, NetworkMessage
+    {
+        using var pooled = NetworkWriterPool.Get();
+        
+        pooled.WriteUShort(NetworkMessageId<T>.Id);
+        
+        writer(pooled);
+        return pooled.ToArraySegment();
+    }
+
+    private static void InitIdentityServerSide(NetworkIdentity identity, NetworkConnection? ownerConnection)
+    {
+        if (identity is null)
+            throw new ArgumentNullException(nameof(identity));
+        
+        if (NetworkServer.spawned.ContainsKey(identity.netId))
+            throw new Exception($"Identity {identity.netId} is already spawned");
+
+        identity.connectionToClient = (NetworkConnectionToClient)ownerConnection;
+        
+        if (ownerConnection is LocalConnectionToClient)
+            identity.isOwned = true;
+        
+        if (identity is { isServer: false, netId: 0 })
+        {
+            identity.isLocalPlayer = NetworkClient.localPlayer == identity;
+            identity.isClient = NetworkClient.active;
+            identity.isServer = true;
+            
+            identity.netId = NetworkIdentity.GetNextNetworkId();
+            
+            NetworkServer.spawned[identity.netId] = identity;
+            
+            identity.OnStartServer();
+        }
+    }
+
+    [LoaderInitialize(1)]
+    private static void OnInit()
+    {
+        SendSpawnMessage =
+            typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
+                    .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
+                Action<NetworkIdentity, NetworkConnection>;
+
+        var assembly = typeof(ServerConsole).Assembly;
+        var types = assembly.GetTypes();
+
+        for (var i = 0; i < types.Length; i++)
+        {
+            var type = types[i];
+
+            var methods = type.GetAllMethods();
+            var properties = type.GetAllProperties();
+
+            var isSerializer = type.Name.EndsWith("Serializer");
+
+            for (var x = 0; x < methods.Length; x++)
             {
-                netId = behaviour.netId,
-                componentIndex = behaviour.ComponentIndex,
+                var method = methods[x];
 
-                functionHash = (ushort)rpcHash
-            };
-
-            if (data.HasValue)
-                msg.payload = data.Value;
-
-            if (customObservers != null)
-            {
-                ApiLog.Debug("Mirror API", $"Sending to customObservers");
-                
-                foreach (var ply in customObservers)
+                if (isSerializer && method.ReturnType == typeof(void) && method.Name.StartsWith("Write"))
                 {
-                    ApiLog.Debug("Mirror API", $"Checking out observer &1{ply.Nickname}&r (&6{ply.UserId}&r)");
+                    var parameters = method.GetAllParameters();
+                    if (parameters.Length != 2) continue;
 
-                    if (checkObservers && !behaviour.netIdentity.observers.ContainsValue(ply.ClientConnection))
-                    {
-                        ApiLog.Debug("Mirror API", $"checkObservers is true and target is not included in observers");
+                    var serializedType = parameters.FirstOrDefault(y => y.ParameterType != typeof(NetworkWriter))
+                        ?.ParameterType;
+
+                    if (serializedType is null) continue;
+                    if (Writers.ContainsKey(serializedType)) continue;
+
+                    var invoker = FastReflection.ForMethod(method);
+
+                    Writers.Add(serializedType, invoker);
+                }
+                else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
+                {
+                    var name = $"{method.ReflectedType.Name}.{method.Name}";
+
+                    if (RpcNames.ContainsKey(name))
                         continue;
-                    }
 
-                    if (!includeOwner && ply.Connection == behaviour.netIdentity.connectionToClient)
-                    {
-                        ApiLog.Debug("Mirror API", $"includeOwner is false and target connection is owner");
-                        continue;
-                    }
+                    var body = method.GetMethodBody();
+                    if (body is null) continue;
 
-                    if (!ply.Connection.isReady)
-                    {
-                        ApiLog.Debug("Mirror API", $"target connection is not ready");    
-                        continue;
-                    }
+                    var codes = body.GetILAsByteArray();
+                    if (codes?.Length < 1) continue;
 
-                    ply.Connection.Send(msg, channelId);
-                    
-                    ApiLog.Debug("Mirror API", $"Sent RPC payload");    
+                    var full = method.Module.ResolveString(BitConverter.ToInt32(codes,
+                        codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
+                    var hashIndex = codes.IndexOf((byte)OpCodes.Ldc_I4.Value) + 1;
+                    var hash = codes[hashIndex] | (codes[hashIndex + 1] << 8) | (codes[hashIndex + 2] << 16) | (codes[hashIndex + 3] << 24);
+
+                    RpcNames.Add(name, full);
                 }
             }
-            else
+
+            for (var y = 0; y < properties.Length; y++)
             {
-                ApiLog.Debug("Mirror API", $"Sending to default observers ({behaviour.netIdentity.observers.Count})");    
-                
-                foreach (var conn in behaviour.netIdentity.observers.Values)
-                {
-                    ApiLog.Debug("Mirror API", $"Checking out connection id={conn.connectionId} ({conn})");    
-                    
-                    if (!includeOwner && conn == behaviour.netIdentity.connectionToClient)
-                    {
-                        ApiLog.Debug("Mirror API", $"includeOwner is false and target connection is owner");
-                        continue;
-                    }
+                var prop = properties[y];
+                if (!prop.Name.StartsWith("Network")) continue;
 
-                    if (!conn.isReady)
-                    {
-                        ApiLog.Debug("Mirror API", $"Target connection is not ready");    
-                        continue;
-                    }
+                var name = $"{prop.ReflectedType.Name}.{prop.Name}";
+                if (DirtyBits.ContainsKey(name)) continue;
 
-                    conn.Send(msg, channelId);
-                    
-                    ApiLog.Debug("Mirror API", $"Sent RPC payload to connection");    
-                }
+                var setter = prop.GetSetMethod(true);
+                if (setter is null) continue;
+
+                var body = setter.GetMethodBody();
+                if (body is null) continue;
+
+                var il = body.GetILAsByteArray();
+                if (il?.Length < 1) continue;
+
+                var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
+
+                DirtyBits.Add(name, bit);
             }
         }
 
-        public static void SendRpc(this NetworkBehaviour behaviour, string rpcName, int rpcHash, ArraySegment<byte>? data, 
-            int channelId = 0, bool includeOwner = true, bool checkObservers = true, IEnumerable<NetworkConnectionToClient> customObservers = null)
+        var writerExtensions = typeof(NetworkWriterExtensions).GetAllMethods();
+
+        for (var i = 0; i < writerExtensions.Length; i++)
         {
-            if (behaviour is null) throw new ArgumentNullException(nameof(behaviour));
-            if (string.IsNullOrWhiteSpace(rpcName)) throw new ArgumentNullException(nameof(rpcName));
+            var method = writerExtensions[i];
 
-            var msg = new RpcMessage()
-            {
-                netId = behaviour.netId,
-                componentIndex = behaviour.ComponentIndex,
+            if (method.IsGenericMethod) continue;
+            if (method.HasAttribute<ObsoleteAttribute>()) continue;
 
-                functionHash = (ushort)rpcHash
-            };
+            var parameters = method.GetAllParameters();
+            if (parameters.Length != 2) continue;
 
-            if (data.HasValue)
-                msg.payload = data.Value;
+            var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
+            if (type is null) continue;
 
-            foreach (var conn in (customObservers ?? behaviour.netIdentity.observers.Values))
-            {
-                if (customObservers != null && checkObservers && !behaviour.netIdentity.observers.ContainsValue(conn)) continue;
-                if (!includeOwner && conn == behaviour.netIdentity.connectionToClient) continue;
-                if (!conn.isReady) continue;
+            var invoker = FastReflection.ForMethod(method);
 
-                conn.Send(msg, channelId);
-            }
+            Writers.Add(type, invoker);
         }
 
-        public static void SendCustomSyncVar(this NetworkConnectionToClient connection, NetworkBehaviour behaviour, string propertyName, object customValue)
+        var generatedType = assembly.GetType("Mirror.GeneratedNetworkCode");
+        var generatedMethods = generatedType.GetAllMethods();
+
+        for (var i = 0; i < generatedMethods.Length; i++)
         {
-            if (connection is null)
-                throw new ArgumentNullException(nameof(connection));
+            var method = generatedMethods[i];
 
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
+            if (method.IsGenericMethod) continue;
+            if (method.ReturnType != typeof(void)) continue;
 
-            if (customValue is null)
-                throw new ArgumentNullException(nameof(customValue));
+            var parameters = method.GetAllParameters();
+            if (parameters.Length != 2) continue;
 
-            var type = customValue.GetType();
+            var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
 
-            if (!Writers.TryGetFirst(x => x.Item1 == type, out var syncWriter))
-                throw new Exception($"No writers for type {type.FullName} were found");
+            if (type is null) continue;
+            if (Writers.ContainsKey(type)) continue;
 
-            var bitMask = GetSyncVarBit(propertyName);
+            var invoker = FastReflection.ForMethod(method);
 
-            var varWriter = NetworkWriterPool.Get();
-            var segmentWriter = NetworkWriterPool.Get();
-
-            WriteCustomSyncVars(varWriter, behaviour, bitMask, x => syncWriter.Item2(null, new object[] { x, customValue }), segmentWriter);
-            
-            NetworkWriterPool.Return(segmentWriter);
-
-            var data = ReturnWriterAndData(varWriter);
-
-            connection.Send(data);
-        }
-
-        public static void SendCustomSyncVar<T>(this NetworkConnectionToClient connection, NetworkBehaviour behaviour, string propertyName, T customValue)
-        {
-            if (connection is null)
-                throw new ArgumentNullException(nameof(connection));
-
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            var bitMask = GetSyncVarBit(propertyName);
-
-            var varWriter = NetworkWriterPool.Get();
-            var segmentWriter = NetworkWriterPool.Get();
-
-            WriteCustomSyncVars(varWriter, behaviour, bitMask, x => x.Write(customValue), segmentWriter);
-            NetworkWriterPool.Return(segmentWriter);
-
-            var data = ReturnWriterAndData(varWriter);
-
-            connection.Send(data);
-        }
-
-        public static void SendCustomSyncVars(this NetworkConnectionToClient connection, NetworkBehaviour behaviour, ulong bitMask, Action<NetworkWriter> writeSyncVars)
-        {
-            if (connection is null)
-                throw new ArgumentNullException(nameof(connection));
-
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            var varWriter = NetworkWriterPool.Get();
-            var segmentWriter = NetworkWriterPool.Get();
-
-            WriteCustomSyncVars(varWriter, behaviour, bitMask, writeSyncVars, segmentWriter);
-            
-            NetworkWriterPool.Return(segmentWriter);
-
-            var data = ReturnWriterAndData(varWriter);
-
-            connection.Send(data);
-        }
-
-        public static void WriteCustomSyncVars(this NetworkWriter writer, NetworkBehaviour behaviour, ulong bitMask, Action<NetworkWriter> writeSyncVars, NetworkWriterPooled segmentWriter = null)
-        {
-            if (writer is null)
-                throw new ArgumentNullException(nameof(writer));
-
-            if (behaviour is null)
-                throw new ArgumentNullException(nameof(behaviour));
-
-            var wasNull = segmentWriter is null;
-
-            if (segmentWriter is null)
-                segmentWriter = NetworkWriterPool.Get();
-
-            if (segmentWriter.Position != 0)
-                segmentWriter.Reset();
-
-            var identity = behaviour.netIdentity;
-            var num = 0UL | 1UL << (identity.NetworkBehaviours.IndexOf(behaviour) & 31);
-
-            Compression.CompressVarUInt(segmentWriter, num);
-
-            var pos1 = segmentWriter.Position;
-
-            segmentWriter.WriteByte(0);
-
-            var pos2 = segmentWriter.Position;
-
-            segmentWriter.WriteULong(bitMask);
-            writeSyncVars.InvokeSafe(writer, true);
-
-            var pos3 = segmentWriter.Position;
-
-            segmentWriter.Position = pos1;
-
-            var b = (byte)((pos3 - pos2) & 255);
-
-            segmentWriter.WriteByte(b);
-            segmentWriter.Position = pos3;
-
-            writer.WriteMessageId<EntityStateMessage>();
-            writer.WriteUInt(identity.netId);
-            writer.WriteArraySegmentAndSize(segmentWriter.ToArraySegment());
-
-            if (wasNull)
-                NetworkWriterPool.Return(segmentWriter);
-        }
-
-        public static void WriteToConnection(this NetworkConnection connection, Action<NetworkWriter> customWriter, int channelId = 0)
-        {
-            if (connection is null)
-                throw new ArgumentNullException(nameof(connection));
-
-            if (customWriter is null)
-                throw new ArgumentNullException(nameof(customWriter));
-
-            if (!connection.isReady)
-                throw new Exception($"Cannot write to a connection that is not ready");
-
-            var data = WriteToSegment(customWriter);
-
-            if (data.Count < 2) // Network Message ID size
-                throw new Exception($"Attempted to send invalid data");
-
-            connection.Send(data, channelId);
-        }
-
-        public static ArraySegment<byte> WriteMessageToData<T>(Action<NetworkWriter> customWriter, int channelId = 0) where T : struct, NetworkMessage
-        {
-            if (customWriter is null)
-                throw new ArgumentNullException(nameof(customWriter));
-
-            var writer = NetworkWriterPool.Get();
-
-            writer.WriteUShort(NetworkMessageId<T>.Id);
-            customWriter.InvokeSafe(writer, true);
-
-            return ReturnWriterAndData(writer);
-        }
-
-        public static void WriteMessageToConnection<T>(this NetworkConnection connection, Action<NetworkWriter> customWriter, int channelId = 0) where T : struct, NetworkMessage
-        {
-            if (connection is null)
-                throw new ArgumentNullException(nameof(connection));
-
-            if (customWriter is null)
-                throw new ArgumentNullException(nameof(customWriter));
-
-            if (!connection.isReady)
-                throw new Exception($"Cannot write to a connection that is not ready");
-
-            var writer = NetworkWriterPool.Get();
-
-            writer.WriteUShort(NetworkMessageId<T>.Id);
-            customWriter.InvokeSafe(writer, true);
-
-            var data = ReturnWriterAndData(writer);
-
-            connection.Send(data, channelId);
-        }
-
-        public static void WriteMessageId<T>(this NetworkWriter writer) where T : struct, NetworkMessage
-        {
-            if (writer is null)
-                throw new ArgumentNullException(nameof(writer));
-
-            writer.WriteUShort(NetworkMessageId<T>.Id);
-        }
-
-        public static void WriteMessage<T>(this NetworkWriter writer, Action<NetworkWriter> customWriter) where T : struct, NetworkMessage
-        {
-            if (writer is null)
-                throw new ArgumentNullException(nameof(writer));
-
-            if (customWriter is null)
-                throw new ArgumentNullException(nameof(customWriter));
-
-            writer.WriteUShort(NetworkMessageId<T>.Id);
-            customWriter.InvokeSafe(writer, true);
-        }
-
-        public static ArraySegment<byte> WriteToSegment(Action<NetworkWriter> customWriter)
-        {
-            if (customWriter is null)
-                throw new ArgumentNullException(nameof(customWriter));
-
-            var writer = NetworkWriterPool.Get();
-
-            customWriter.InvokeSafe(writer, true);
-            return ReturnWriterAndData(writer);
-        }
-
-        public static ArraySegment<byte> ReturnWriterAndData(NetworkWriterPooled writer)
-        {
-            if (writer is null)
-                throw new ArgumentNullException(nameof(writer));
-
-            var data = writer.ToArraySegment();
-
-            NetworkWriterPool.Return(writer);
-            return data;
+            Writers.Add(type, invoker);
         }
     }
 }

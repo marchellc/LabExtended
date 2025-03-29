@@ -417,7 +417,7 @@ public class VoiceController : IDisposable
         if (receiver.Role.VoiceModule is null)
             return VoiceChatChannel.None;
 
-        if (receiver == Player)
+        if (receiver == Player && messageChannel != VoiceChatChannel.Mimicry)
             return receiver.Toggles is { CanHearSelf: true, CanBeHeard: true } 
                 ? VoiceChatChannel.RoundSummary 
                 : VoiceChatChannel.None;
