@@ -71,6 +71,11 @@ public static class CommandParameterParserUtils
         if (type is null)
             throw new ArgumentNullException(nameof(type));
 
+        var nullableType = Nullable.GetUnderlyingType(type);
+        
+        if (nullableType != null)
+            type = nullableType;
+        
         if (Parsers.TryGetValue(type, out parser))
             return true;
 
