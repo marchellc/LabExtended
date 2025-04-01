@@ -43,7 +43,7 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Client)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(ctx.Command.Name);
                 x.Append("] ");
             }
@@ -58,7 +58,7 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Client)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(ctx.Command.Name);
                 x.Append("] ");
             }
@@ -74,7 +74,7 @@ internal static class CommandResponseFormatter
         {
             if (type is CommandType.Console)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(commandName);
                 x.Append("] ");
             }
@@ -100,7 +100,7 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Client)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(ctx.Command.Name);
                 x.Append("] ");
             }
@@ -130,7 +130,7 @@ internal static class CommandResponseFormatter
                 else
                 {
                     x.Append(" (");
-                    x.Append(parameter.Type.Type.Name);
+                    x.Append((parameter.Type.NullableType ?? parameter.Type.Type).Name);
                     x.Append(")");
                 }
             }
@@ -180,7 +180,7 @@ internal static class CommandResponseFormatter
                     else
                     {
                         x.Append(" (");
-                        x.Append(result.Parameter?.Type?.Type?.Name ?? "null");
+                        x.Append((result.Parameter.Type.NullableType ?? result.Parameter.Type.Type)?.Name ?? "null");
                         x.Append(")");
                     }
                 }
@@ -194,12 +194,12 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Client)
             {
-                x.Append($"[");
+                x.Append("[");
                 x.Append(ctx.Command.Name);
                 x.Append("] ");
             }
 
-            x.Append("Failed while parsing command arguments!");
+            x.Append("Failed while parsing command line tokens!");
         });
     }
 }

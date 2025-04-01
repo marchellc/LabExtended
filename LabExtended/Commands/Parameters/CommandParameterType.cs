@@ -31,13 +31,14 @@ public class CommandParameterType
 
             IsString = value == typeof(string);
             IsArray = value.IsArray;
+            IsNullable = (NullableType = Nullable.GetUnderlyingType(value)) != null;
 
             if (IsArray)
             {
                 KeyType = value.GetElementType();
                 Constructor = _ => Array.CreateInstance(KeyType, 0);
             }
-            else if (value.IsConstructedGenericType)
+            else if (value.IsConstructedGenericType && !IsNullable)
             {
                 var genericDef = value.GetGenericTypeDefinition();
                 var genericArgs = value.GetGenericArguments();
@@ -98,6 +99,11 @@ public class CommandParameterType
     /// Gets the parameter's value type (only for dictionaries).
     /// </summary>
     public Type? ValueType { get; private set; }
+    
+    /// <summary>
+    /// Gets the parameter's underlying nullable type.
+    /// </summary>
+    public Type? NullableType { get; private set; }
 
     /// <summary>
     /// Gets the parameter's info.
@@ -108,6 +114,11 @@ public class CommandParameterType
     /// Gets the parser for this type.
     /// </summary>
     public CommandParameterParser Parser { get; private set; }
+    
+    /// <summary>
+    /// Whether or not the type is nullable.
+    /// </summary>
+    public bool IsNullable { get; private set; }
     
     /// <summary>
     /// Whether or not the parameter is a string.
