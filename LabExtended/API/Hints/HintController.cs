@@ -89,7 +89,13 @@ namespace LabExtended.API.Hints
         
         public static void ForceSendHints() => SendNextFrame = true;
         public static void ForceSendHints(this ExPlayer player) => SendNextFrame = true;
-        
+
+        /// <summary>
+        /// Sends a new hint.
+        /// </summary>
+        /// <param name="content">Text of the hint.</param>
+        /// <param name="duration">Duration of the hint (in seconds).</param>
+        /// <param name="isPriority">Whether to show the hint immediately.</param>
         public static void ShowHint(this ExPlayer player, string content, ushort duration, bool isPriority = false)
         {
             if (!player)
