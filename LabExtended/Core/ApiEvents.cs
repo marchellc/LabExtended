@@ -2,8 +2,9 @@
 
 using HarmonyLib;
 
-using LabExtended.Attributes;
+using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Attributes;
 
 namespace LabExtended.Core;
 
@@ -52,7 +53,7 @@ public static class ApiEvents
     {
         foreach (var type in ApiLoader.Assembly.GetTypes())
         {
-            if (type.Namespace != EventsNamespace)
+            if (type.Namespace != EventsNamespace || type == typeof(InternalEvents))
                 continue;
             
             if (!type.IsStatic())

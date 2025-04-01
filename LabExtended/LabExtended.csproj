@@ -9,17 +9,25 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <AssemblyName>0LabExtended</AssemblyName>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <Title>LabExtended</Title>
+        <Authors>marchellc</Authors>
+        <Description>An extension for the LabAPI modding framework. </Description>
+        <Copyright>2025</Copyright>
+        <PackageProjectUrl>https://github.com/marchellc/LabExtended</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/marchellc/LabExtended</RepositoryUrl>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
       <DebugSymbols>true</DebugSymbols>
       <DebugType>embedded</DebugType>
+      <DocumentationFile>bin\Release\LabExtended.xml</DocumentationFile>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Lib.Harmony" Version="2.3.3" />
-      <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+      <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.2.25163.9" />
+      <PackageReference Include="System.Drawing.Primitives" Version="4.3.0" />
       <PackageReference Include="System.Net.Http" Version="4.3.4" />
     </ItemGroup>
 

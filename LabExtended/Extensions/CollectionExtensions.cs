@@ -156,6 +156,30 @@ public static class CollectionExtensions
         return list;
     }
 
+    public static void AddRangeWhere<T>(this ICollection<T> collection, IEnumerable<T> source, Func<T, bool> predicate)
+    {
+        if (source is List<T> sourceList)
+        {
+            sourceList.ForEach(s =>
+            {
+                if (!predicate(s))
+                    return;
+                
+                collection.Add(s);
+            });
+        }
+        else
+        {
+            foreach (var item in source)
+            {
+                if (!predicate(item))
+                    continue;
+                
+                collection.Add(item);
+            }
+        }
+    }
+
     public static List<T> ToPooledList<T>(this IEnumerable<T> objects)
         => ListPool<T>.Shared.Rent(objects);
 

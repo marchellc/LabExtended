@@ -1,26 +1,28 @@
-﻿using LabApi.Features.Wrappers;
-using LabExtended.API.Containers;
-
-using CentralAuth;
-using CommandSystem;
-using Footprinting;
-using GameCore;
-using InventorySystem.Disarming;
-
-using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
-
-using LabExtended.API.Enums;
+﻿using LabExtended.API.Enums;
 using LabExtended.API.Hints;
 using LabExtended.API.RemoteAdmin;
+using LabExtended.API.Containers;
+
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomRoles;
+using LabExtended.API.CustomVoice;
+
+using LabExtended.API.Settings.Menus;
+using LabExtended.API.Settings.Entries;
+
+using LabExtended.API.Hints.Elements.Personal;
 
 using LabExtended.Core.Networking;
+using LabExtended.Core.Pooling.Pools;
+using LabExtended.Core.Networking.Synchronization.Position;
 
+using LabExtended.Commands.Attributes;
+
+using LabExtended.Events;
+using LabExtended.Utilities;
 using LabExtended.Extensions;
 
-using LabExtended.Utilities;
-
-using LiteNetLib;
+using LabApi.Features.Wrappers;
 
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
@@ -29,33 +31,42 @@ using PlayerRoles;
 using PlayerRoles.Spectating;
 using PlayerRoles.FirstPersonControl;
 
+using InventorySystem.Disarming;
+
+using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
+
+using RemoteAdmin;
 using RemoteAdmin.Communication;
+
+using LiteNetLib;
 
 using UnityEngine;
 
 using VoiceChat;
 
 using Hints;
-using LabExtended.API.CustomItems;
-using LabExtended.API.CustomRoles;
-using LabExtended.API.CustomVoice;
-using LabExtended.API.Hints.Elements.Personal;
-using LabExtended.API.Settings.Entries;
-using LabExtended.API.Settings.Menus;
 
-using LabExtended.Commands;
-using LabExtended.Core.Networking.Synchronization.Position;
-using LabExtended.Core.Pooling.Pools;
-using LabExtended.Events;
+using CentralAuth;
+
+using CommandSystem;
+
+using Footprinting;
+
+using GameCore;
+
 using NorthwoodLib.Pools;
-using RemoteAdmin;
+
 using UserSettings.ServerSpecific;
+
+#pragma warning disable CS8604 // Possible null reference argument.
 
 namespace LabExtended.API;
 
 /// <summary>
 /// Player management class.
 /// </summary>
+[CommandPropertyAlias("player")]
 public class ExPlayer : Player, IDisposable
 {
     internal static Dictionary<string, string> preauthData = new(byte.MaxValue);
@@ -64,31 +75,37 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets a list of all players on the server.
     /// </summary>
+    [CommandPropertyAlias("list")]
     public static List<ExPlayer> Players { get; } = new(ExServer.MaxSlots * 2);
 
     /// <summary>
     /// Gets a list of all NPC players on the server.
     /// </summary>
+    [CommandPropertyAlias("npcList")]
     public static List<ExPlayer> NpcPlayers { get; } = new(byte.MaxValue);
-
+    
     /// <summary>
     /// Gets a list of all player instances on the server (regular players, NPCs, LocalHub, HostHub).
     /// </summary>
+    [CommandPropertyAlias("allList")]
     public static List<ExPlayer> AllPlayers { get; } = new(ExServer.MaxSlots * 2);
 
     /// <summary>
     /// Gets a count of all players on the server.
     /// </summary>
+    [CommandPropertyAlias("count")]
     public new static int Count => Players.Count;
 
     /// <summary>
     /// Gets a count of all NPCs on the server.
     /// </summary>
+    [CommandPropertyAlias("npcCount")]
     public static int NpcCount => NpcPlayers.Count;
 
     /// <summary>
     /// Gets a count of all players on the server (including real players, NPCs and the server player).
     /// </summary>
+    [CommandPropertyAlias("allCount")]
     public static int AllCount => AllPlayers.Count;
 
     /// <summary>
@@ -99,6 +116,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the host player.
     /// </summary>
+    [CommandPropertyAlias("host")]
     public new static ExPlayer? Host
     {
         get
@@ -240,14 +258,16 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets an <see cref="ExPlayer"/> instance by a user ID, player ID, network ID, IP or name.
     /// </summary>
-    /// <param name="nameOrId">The network ID to find.</param>
+    /// <param name="nameOrId">The network ID, user ID, player ID to find.</param>
     /// <param name="minNameScore">Name match precision.</param>
     /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
     public static ExPlayer? Get(string nameOrId, double minNameScore = 0.85)
     {
-        string lowerNameOrId = nameOrId.ToLower();
-        ExPlayer? bestMatch = null;
-        double bestMatchValue = double.MinValue;
+        var lowerNameOrId = nameOrId.ToLowerInvariant();
+        
+        var bestMatch = default(ExPlayer);
+        var bestMatchValue = double.MinValue;
+        
         for (var index = 0; index < AllPlayers.Count; index++)
         {
             var player = AllPlayers[index];
@@ -255,16 +275,17 @@ public class ExPlayer : Player, IDisposable
             if (player is null)
                 continue;
 
-            if (player.IsServer)
-                continue;
-
-            if (player.UserId.ToLower() == lowerNameOrId || player.ClearUserId.ToLower() == lowerNameOrId ||
-                player.PlayerId.ToString() == nameOrId || player.NetworkId.ToString() == nameOrId)
+            if (string.Equals(player.UserId, nameOrId, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(player.ClearUserId, nameOrId, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(player.IpAddress, nameOrId, StringComparison.InvariantCultureIgnoreCase)
+                || string.Equals(player.PlayerId.ToString(), nameOrId) ||
+                string.Equals(player.NetworkId.ToString(), nameOrId))
                 return player;
 
-            string lowerNickname = player.Nickname.ToLower();
-            double similarity = lowerNickname.GetSimilarity(lowerNameOrId);
-            if (similarity == 1.0)
+            var lowerNickname = player.Nickname.ToLowerInvariant();
+            var similarity = lowerNickname.GetSimilarity(lowerNameOrId);
+            
+            if (similarity is 1.0)
                 return player;
 
             if ((lowerNickname.Contains(lowerNameOrId) || similarity >= minNameScore) &&
@@ -619,36 +640,43 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's ghost bit used in <see cref="PersonalGhostFlags"/> and <see cref="GhostedFlags"/>.
     /// </summary>
+    [CommandPropertyAlias("ghostBit")]
     public int GhostBit => 1 << PlayerId;
 
     /// <summary>
     /// Gets or sets personal ghost flags.
     /// </summary>
+    [CommandPropertyAlias("ghostFlags")]
     public int PersonalGhostFlags { get; set; } = 0;
 
     /// <summary>
     /// Gets the player's network latency. <i>(-1 for NPCs)</i>
     /// </summary>
+    [CommandPropertyAlias("ping")]
     public int Ping => Peer?.Ping ?? -1;
 
     /// <summary>
     /// Gets the player's network trip time. <i>(-1 for NPCs)</i>
     /// </summary>
+    [CommandPropertyAlias("tripTime")]
     public int TripTime => Peer?._avgRtt ?? -1;
 
     /// <summary>
     /// Gets the player's network connection ID.
     /// </summary>
+    [CommandPropertyAlias("connectionId")]
     public int ConnectionId => (ClientConnection ?? Connection)?.connectionId ?? -1;
 
     /// <summary>
     /// Gets the player's network identity.
     /// </summary>
+    [CommandPropertyAlias("networkIdentity")]
     public NetworkIdentity? Identity => ReferenceHub?.connectionToClient?.identity;
 
     /// <summary>
     /// Gets the player's client connection.
     /// </summary>
+    [CommandPropertyAlias("networkConnection")]
     public NetworkConnectionToClient? ClientConnection => ReferenceHub?.connectionToClient;
 
     /// <summary>
@@ -672,11 +700,13 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the currently spectated player.
     /// </summary>
+    [CommandPropertyAlias("spectatedPlayer")]
     public ExPlayer SpectatedPlayer => Players.FirstOrDefault(p => p.IsSpectatedBy(this));
 
     /// <summary>
     /// Gets or sets the player that this player was disarmed by.
     /// </summary>
+    [CommandPropertyAlias("disarmer")]
     public ExPlayer? Disarmer
     {
         get => Get(DisarmedPlayers.Entries.FirstOrDefault(e => e.DisarmedPlayer == NetworkId).Disarmer);
@@ -686,6 +716,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets a list of players that are currently spectating this player.
     /// </summary>
+    [CommandPropertyAlias("spectatingPlayers")]
     public IEnumerator<ExPlayer> SpectatingPlayers
     {
         get
@@ -705,6 +736,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the SCP-079 camera this player is currently using.
     /// </summary>
+    [CommandPropertyAlias("camera")]
     public new Camera? Camera
     {
         get
@@ -721,21 +753,25 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's <see cref="UnityEngine.Transform"/>.
     /// </summary>
+    [CommandPropertyAlias("transform")]
     public Transform Transform => ReferenceHub.transform;
 
     /// <summary>
     /// Gets the player's camera's <see cref="UnityEngine.Transform"/>.
     /// </summary>
+    [CommandPropertyAlias("cameraTransform")]
     public Transform CameraTransform => ReferenceHub.PlayerCameraReference;
 
     /// <summary>
     /// Gets the player's <see cref="Footprinting.Footprint"/>.
     /// </summary>
+    [CommandPropertyAlias("footprint")]
     public Footprint Footprint => new(ReferenceHub);
 
     /// <summary>
     /// Gets the time of the player joining.
     /// </summary>
+    [CommandPropertyAlias("joinTime")]
     public DateTime JoinTime => PersistentStorage.JoinTime;
 
     /// <summary>
@@ -746,6 +782,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets the player's model scale.
     /// </summary>
+    [CommandPropertyAlias("scale")]
     public Vector3 Scale
     {
         get => ReferenceHub.transform.localScale;
@@ -756,18 +793,20 @@ public class ExPlayer : Player, IDisposable
 
             ReferenceHub.transform.localScale = value;
 
-            Players.ForEach(target => Identity.SendSpawnMessage(target.Connection));
+            Players.ForEach(t => MirrorMethods.SendSpawnMessage(Identity, t.Connection));
         }
     }
 
     /// <summary>
     /// Gets or sets icons that will be forced in the player list for this player.
     /// </summary>
+    [CommandPropertyAlias("forcedRaIcons")]
     public RemoteAdminIconType RemoteAdminForcedIcons { get; set; } = RemoteAdminIconType.None;
 
     /// <summary>
     /// Gets the player's active Remote Admin panel icons.
     /// </summary>
+    [CommandPropertyAlias("activeRaIcons")]
     public RemoteAdminIconType RemoteAdminActiveIcons
     {
         get
@@ -790,16 +829,19 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's connection state <i>(always <see cref="ConnectionState.Disconnected"/> for NPC players)</i>.
     /// </summary>
+    [CommandPropertyAlias("networkState")]
     public ConnectionState ConnectionState => Peer?.ConnectionState ?? ConnectionState.Disconnected;
 
     /// <summary>
     /// Gets the player's instance mode.
     /// </summary>
+    [CommandPropertyAlias("instanceMode")]
     public ClientInstanceMode InstanceMode => ReferenceHub?.Mode ?? ClientInstanceMode.Unverified;
 
     /// <summary>
     /// Gets or sets the player's enabled info area flags.
     /// </summary>
+    [CommandPropertyAlias("infoArea")]
     public PlayerInfoArea InfoArea
     {
         get => ReferenceHub.nicknameSync.Network_playerInfoToShow;
@@ -809,6 +851,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets the player's Remote Admin permissions.
     /// </summary>
+    [CommandPropertyAlias("permissions")]
     public PlayerPermissions Permissions
     {
         get => (PlayerPermissions)ReferenceHub.serverRoles.Permissions;
@@ -822,6 +865,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets the player's enabled voice mute flags.
     /// </summary>
+    [CommandPropertyAlias("voiceMutes")]
     public VcMuteFlags VoiceMuteFlags
     {
         get => VoiceChatMutes.GetFlags(ReferenceHub);
@@ -831,6 +875,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets this player's current voice pitch.
     /// </summary>
+    [CommandPropertyAlias("voicePitch")]
     public float VoicePitch
     {
         get => Voice?.Thread?.InstancePitch ?? 1f;
@@ -840,21 +885,25 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's screen's aspect ratio.
     /// </summary>
+    [CommandPropertyAlias("screenAspectRatio")]
     public float ScreenAspectRatio => ReferenceHub.aspectRatioSync.AspectRatio;
 
     /// <summary>
     /// Gets the player's X axis screen edge.
     /// </summary>
+    [CommandPropertyAlias("screenEdgeX")]
     public float ScreenEdgeX => ReferenceHub.aspectRatioSync.XScreenEdge;
 
     /// <summary>
     /// Gets the player's screen's X and Y axis.
     /// </summary>
+    [CommandPropertyAlias("screenEdgeXplusY")]
     public float ScreenXPlusY => ReferenceHub.aspectRatioSync.XplusY;
 
     /// <summary>
     /// Gets or sets the player's info area view range.
     /// </summary>
+    [CommandPropertyAlias("infoViewRange")]
     public float InfoViewRange
     {
         get => ReferenceHub.nicknameSync.NetworkViewRange;
@@ -864,6 +913,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets the player's kick power.
     /// </summary>
+    [CommandPropertyAlias("kickPower")]
     public byte KickPower
     {
         get => ReferenceHub.serverRoles.Group?.KickPower ?? 0;
@@ -873,36 +923,43 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Whether the player is a NPC.
     /// </summary>
+    [CommandPropertyAlias("isNpc")]
     public new bool IsNpc => InstanceMode is ClientInstanceMode.Dummy;
 
     /// <summary>
     /// Whether the player is connected.
     /// </summary>
+    [CommandPropertyAlias("isOnline")]
     public new bool IsOnline => Peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
 
     /// <summary>
     /// Whether the player is disconnected.
     /// </summary>
+    [CommandPropertyAlias("isOffline")]
     public new bool IsOffline => Peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
 
     /// <summary>
     /// Whether the player is the server player.
     /// </summary>
+    [CommandPropertyAlias("isServer")]
     public new bool IsServer => InstanceMode is ClientInstanceMode.DedicatedServer || InstanceMode is ClientInstanceMode.Host || ReferenceHub.isLocalPlayer;
 
     /// <summary>
     /// Whether the player has fully connected.
     /// </summary>
+    [CommandPropertyAlias("isVerified")]
     public bool IsVerified => InstanceMode is ClientInstanceMode.ReadyClient;
 
     /// <summary>
     /// Whether the player is still connecting.
     /// </summary>
+    [CommandPropertyAlias("isUnverified")]
     public bool IsUnverified => InstanceMode is ClientInstanceMode.Unverified;
 
     /// <summary>
     /// Whether the player is currently disarmed.
     /// </summary>
+    [CommandPropertyAlias("isDisarmed")]
     public new bool IsDisarmed
     {
         get => ReferenceHub.inventory.IsDisarmed();
@@ -914,6 +971,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Whether the player is invisible to all players.
     /// </summary>
+    [CommandPropertyAlias("isInvisible")]
     public bool IsInvisible
     {
         get => (GhostedFlags & (1 << PlayerId)) != 0;
@@ -929,6 +987,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Whether the player is in the Overwatch mode.
     /// </summary>
+    [CommandPropertyAlias("isInOverwatch")]
     public bool IsInOverwatch
     {
         get => ReferenceHub.serverRoles.IsInOverwatch;
@@ -938,6 +997,7 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Whether the player has NoClip permissions.
     /// </summary>
+    [CommandPropertyAlias("isNoClipPermitted")]
     public bool IsNoClipPermitted
     {
         get => FpcNoclip.IsPermitted(ReferenceHub);
@@ -953,36 +1013,43 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Whether the player has a custom name applied.
     /// </summary>
+    [CommandPropertyAlias("hasCustomName")]
     public bool HasCustomName => ReferenceHub.nicknameSync.HasCustomName;
 
     /// <summary>
     /// Whether the player has access to the Remote Admin panel.
     /// </summary>
+    [CommandPropertyAlias("hasRaAccess")]
     public bool HasRemoteAdminAccess => ReferenceHub.serverRoles.RemoteAdmin;
 
     /// <summary>
     /// Whether the player has the Remote Admin panel open.
     /// </summary>
+    [CommandPropertyAlias("hasRaOpened")]
     public bool HasRemoteAdminOpened => RemoteAdmin.IsRemoteAdminOpen;
 
     /// <summary>
-    /// Whether the player has access to Admin Chat.
+    /// Whether the player has access to Staff Chat.
     /// </summary>
-    public bool HasAdminChatAccess => ReferenceHub.serverRoles.AdminChatPerms;
+    [CommandPropertyAlias("hasStaffChatAccess")]
+    public bool HasStaffChatAccess => ReferenceHub.serverRoles.AdminChatPerms;
 
     /// <summary>
     /// Gets the player's ISO 3166-1 alpha-2 country code (empty string for NPCs).
     /// </summary>
+    [CommandPropertyAlias("countryCode")]
     public string CountryCode { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets the player's user ID without it's identificator (<i>@steam, @discord etc.</i>)
     /// </summary>
+    [CommandPropertyAlias("clearUserId")]
     public string ClearUserId => UserIdHelper.GetClearId(UserId);
 
     /// <summary>
     /// Gets the player's user ID type (<i>steam, discord, northwood etc.</i>)
     /// </summary>
+    [CommandPropertyAlias("userIdType")]
     public string UserIdType => UserIdHelper.GetIdType(UserId);
 
     /// <summary>
@@ -1081,11 +1148,12 @@ public class ExPlayer : Player, IDisposable
     public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
     {
         if (content is null)
-            return;
+            throw new ArgumentNullException(nameof(content));
 
         if (IsServer)
         {
-            ServerConsole.AddLog(content.ToString(), ConsoleColor.Green);
+            ServerConsole.AddLog(content.ToString(), success ? ConsoleColor.Green
+                                                                : ConsoleColor.Red);
             return;
         }
 
@@ -1234,8 +1302,6 @@ public class ExPlayer : Player, IDisposable
 
             ply.PersonalGhostFlags &= ~GhostBit;
         });
-
-        CustomCommand._continuedContexts.Remove(NetworkId);
 
         if (Hints != null)
             ObjectPool<HintCache>.Shared.Return(Hints);

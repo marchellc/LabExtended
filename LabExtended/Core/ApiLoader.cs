@@ -1,8 +1,4 @@
-﻿using LabExtended.Attributes;
-using LabExtended.Extensions;
-using LabExtended.Core.Configs;
-
-using Serialization;
+﻿using Serialization;
 
 using System.Reflection;
 
@@ -14,6 +10,11 @@ using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 
 using LabExtended.Events;
+using LabExtended.Commands;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
+
+using LabExtended.Core.Configs;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
@@ -112,7 +113,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the loader's required LabAPI version.
         /// </summary>
-        public override Version RequiredApiVersion => null;
+        public override Version? RequiredApiVersion { get; } = null;
 
         /// <summary>
         /// Gets the loader's priority.
@@ -254,6 +255,8 @@ namespace LabExtended.Core
             ExServerEvents.Quitting += QuitHandler;
 
             Assembly.RegisterUpdates();
+            Assembly.RegisterCommands();
+            
             Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);

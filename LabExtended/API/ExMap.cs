@@ -10,7 +10,7 @@ using LabApi.Events.Arguments.ServerEvents;
 
 using LabExtended.API.Prefabs;
 using LabExtended.Attributes;
-
+using LabExtended.Commands.Attributes;
 using LabExtended.Core;
 using LabExtended.Core.Networking;
 
@@ -42,26 +42,31 @@ namespace LabExtended.API
     /// <summary>
     /// Map management functions.
     /// </summary>
+    [CommandPropertyAlias("map")]
     public static class ExMap
     {
         /// <summary>
         /// List of spawned pickups.
         /// </summary>
+        [CommandPropertyAlias("pickups")]
         public static List<ItemPickupBase> Pickups { get; } = new();
         
         /// <summary>
         /// List of spawned ragdolls.
         /// </summary>
+        [CommandPropertyAlias("ragdolls")]
         public static List<BasicRagdoll> Ragdolls { get; } = new();
         
         /// <summary>
         /// List of spawned lockers.
         /// </summary>
+        [CommandPropertyAlias("lockers")]
         public static List<Locker> Lockers { get; } = new();
 
         /// <summary>
         /// List of locker chambers.
         /// </summary>
+        [CommandPropertyAlias("chambers")]
         public static List<LockerChamber> Chambers { get; } = new();
 
         /// <summary>
@@ -87,11 +92,13 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the default color of a room's light.
         /// </summary>
+        [CommandPropertyAlias("defaultLightColor")]
         public static Color DefaultLightColor { get; } = Color.clear;
 
         /// <summary>
         /// Gets or sets the map's seed.
         /// </summary>
+        [CommandPropertyAlias("seed")]
         public static int Seed
         {
             get => SeedSynchronizer.Seed;
@@ -574,7 +581,7 @@ namespace LabExtended.API
             RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
             RagdollManager.OnRagdollRemoved += OnRagdollRemoved;
 
-            MirrorEvents.OnDestroy += OnIdentityDestroyed;
+            MirrorEvents.Destroying += OnIdentityDestroyed;
 
             InternalEvents.OnRoundWaiting += OnRoundWaiting;
         }

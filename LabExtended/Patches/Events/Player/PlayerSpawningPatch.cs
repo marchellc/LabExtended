@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Events.Player
                 
                 var curRole = __instance.CurrentRole;
                 
-                if ((player.Toggles.CanChangeRoles)
+                if (player.Toggles.CanChangeRoles
                     || (!__instance._anySet || (changingArgs.NewRole is RoleTypeId.None 
                                                 && changingArgs.ChangeReason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)

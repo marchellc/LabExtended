@@ -58,7 +58,7 @@ namespace LabExtended.Patches.Functions.Networking
                 }
 
                 NetworkServer.RebuildObservers(identity, true);
-                MirrorEvents.InternalInvokeSpawn(identity);
+                MirrorEvents.OnSpawning(identity);
             }
             catch (Exception ex)
             {

@@ -51,7 +51,7 @@ namespace LabExtended.Patches.Functions.Networking
                 NetworkClient.spawned.Remove(identity.netId);
             }
 
-            MirrorEvents.InternalInvokeDestroy(identity);
+            MirrorEvents.OnDestroying(identity);
 
             identity.OnStopServer();
 
