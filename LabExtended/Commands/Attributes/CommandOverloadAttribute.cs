@@ -21,7 +21,13 @@ public class CommandOverloadAttribute : Attribute
     /// <summary>
     /// Creates a new <see cref="CommandOverloadAttribute"/> instance.
     /// </summary>
-    public CommandOverloadAttribute() => isDefaultOverload = true;
+    public CommandOverloadAttribute(string? description = null)
+    {
+        isDefaultOverload = true;
+        
+        if (description != null)
+            Description = description;
+    }
 
     /// <summary>
     /// Creates a new <see cref="CommandOverloadAttribute"/> instance.
