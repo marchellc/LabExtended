@@ -18,7 +18,7 @@ public class CommandParameterType
     /// </summary>
     public Type? Type
     {
-        get;
+        get => field;
         private set
         {
             if (value is null)
