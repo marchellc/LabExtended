@@ -369,6 +369,11 @@ public static class PrefabList
     public static PrefabDefinition Speaker { get; } = new("SpeakerToy");
 
     /// <summary>
+    /// Gets the prefab of the capybara toy.
+    /// </summary>
+    public static PrefabDefinition Capybara { get; } = new("CapybaraToy");
+
+    /// <summary>
     /// Gets the prefab of SCP-106's sinkhole.
     /// </summary>
     public static PrefabDefinition Sinkhole { get; } = new("Sinkhole");
