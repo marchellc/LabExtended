@@ -1,5 +1,8 @@
 ﻿using HarmonyLib;
 
+using LabApi.Events.Arguments.ServerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.API.Enums;
 
@@ -41,12 +44,35 @@ namespace LabExtended.Patches.Events.Player
             if (q.Length >= 2000)
                 q = q.SubstringPostfix(2000, "...");
 
-            var sendingArgs = new PlayerSendingStaffChatMessageEventArgs(player, q);
+            var sendingStaffChatMessageEventArgs = new PlayerSendingStaffChatMessageEventArgs(player, q);
 
-            if (!ExPlayerEvents.OnSendingStaffChatMessage(sendingArgs) && !player.IsNorthwoodStaff)
+            if (!ExPlayerEvents.OnSendingStaffChatMessage(sendingStaffChatMessageEventArgs) && !player.IsNorthwoodStaff)
+            {
+                if (sender is PlayerCommandSender playerCommandSender)
+                {
+                    playerCommandSender.ReferenceHub.gameConsoleTransmission.SendToClient("A server plugin cancelled the message.", "red");
+                    playerCommandSender.RaReply("A server plugin cancelled the message.", success: false, logToConsole: true, "");
+                }
+
                 return false;
+            }
 
-            q = sendingArgs.Message;
+            var sendingAdminChatMessageEventArgs = new SendingAdminChatEventArgs(sender, sendingStaffChatMessageEventArgs.Message);
+            
+            ServerEvents.OnSendingAdminChat(sendingAdminChatMessageEventArgs);
+
+            if (!sendingAdminChatMessageEventArgs.IsAllowed)
+            {
+                if (sender is PlayerCommandSender playerCommandSender)
+                {
+                    playerCommandSender.ReferenceHub.gameConsoleTransmission.SendToClient("A server plugin cancelled the message.", "red");
+                    playerCommandSender.RaReply("A server plugin cancelled the message.", success: false, logToConsole: true, "");
+                }
+
+                return false;
+            }
+
+            q = sendingAdminChatMessageEventArgs.Message;
 
             var str = $"{player.NetworkId}!{q}";
 
@@ -61,6 +87,7 @@ namespace LabExtended.Patches.Events.Player
                 ply.ReferenceHub.encryptedChannelManager.TrySendMessageToClient(str, EncryptedChannelManager.EncryptedChannel.AdminChat);
             }
 
+            ServerEvents.OnSentAdminChat(new(sender, q));
             return false;
         }
     }

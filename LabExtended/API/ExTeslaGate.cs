@@ -1,5 +1,6 @@
 ﻿using Hazards;
-
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 using LabExtended.API.Interfaces;
 using LabExtended.API.Wrappers;
 
@@ -342,24 +343,45 @@ namespace LabExtended.API
             var shouldIdle = false;
             var shouldTrigger = false;
 
-            foreach (var player in ExPlayer.Players)
+            for (var index = 0; index < ExPlayer.Players.Count; index++)
             {
+                var player = ExPlayer.Players[index];
+                
                 if (!player.Toggles.CanTriggerTesla) continue;
                 if (!player.Role.IsAlive) continue;
-                
-                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team)) 
+
+                if (IgnoredRoles.Contains(player.Role.Type) || IgnoredTeams.Contains(player.Role.Team))
                     continue;
 
                 if (!shouldIdle)
-                    shouldIdle = Base.IsInIdleRange(player.ReferenceHub);
+                {
+                    var idlingEventArgs = new PlayerIdlingTeslaEventArgs(player.ReferenceHub, Base);
+                    
+                    PlayerEvents.OnIdlingTesla(idlingEventArgs);
+                    
+                    if (idlingEventArgs.IsAllowed)
+                        shouldIdle = Base.IsInIdleRange(player.ReferenceHub);
+                    
+                    if (shouldIdle)
+                        PlayerEvents.OnIdledTesla(new(player.ReferenceHub, Base));
+                }
 
-                if (shouldTrigger || !Base.PlayerInRange(player.ReferenceHub) || Base.InProgress) 
+                if (shouldTrigger || !Base.PlayerInRange(player.ReferenceHub) || Base.InProgress)
                     continue;
-                
+
                 if (!ExPlayerEvents.OnTriggeringTeslaGate(new(player, this)))
                     continue;
 
+                var triggeringTeslaEventArgs = new PlayerTriggeringTeslaEventArgs(player.ReferenceHub, Base);
+                
+                PlayerEvents.OnTriggeringTesla(triggeringTeslaEventArgs);
+                
+                if (!triggeringTeslaEventArgs.IsAllowed)
+                    continue;
+
                 shouldTrigger = true;
+                
+                PlayerEvents.OnTriggeredTesla(new(player.ReferenceHub, Base));
             }
 
             if (shouldTrigger)

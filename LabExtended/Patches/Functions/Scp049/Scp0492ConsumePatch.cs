@@ -1,5 +1,8 @@
 ﻿using HarmonyLib;
 
+using LabApi.Events.Arguments.Scp0492Events;
+using LabApi.Events.Handlers;
+
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Events;
@@ -8,6 +11,8 @@ using LabExtended.Events.Scp0492;
 using PlayerRoles;
 using PlayerRoles.Ragdolls;
 using PlayerRoles.PlayableScps.Scp049.Zombies;
+
+using UnityEngine;
 
 namespace LabExtended.Patches.Functions.Scp049
 {
@@ -20,53 +25,54 @@ namespace LabExtended.Patches.Functions.Scp049
             if (!ExPlayer.TryGet(__instance.Owner, out var scp))
                 return true;
 
+            var owner = ExPlayer.Get(ragdoll.Info.OwnerHub);
+            var error = ZombieConsumeAbility.ConsumeError.None;
+
             if (!scp.Toggles.CanConsumeRagdollsAsZombie)
             {
-                __result = 2;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.TargetNotValid;
             }
-
-            if (ZombieConsumeAbility.ConsumedRagdolls.Contains(ragdoll))
+            else if (owner is { Toggles.CanBeConsumedByZombies: false })
             {
-                __result = 2;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.TargetNotValid;
             }
-
-            if (!ragdoll.Info.RoleType.IsHuman() || !__instance.IsCloseEnough(__instance.CastRole.FpcModule.Position, __instance._ragdollTransform.position))
+            else if (ZombieConsumeAbility.ConsumedRagdolls.Contains(ragdoll))
             {
-                __result = 3;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.AlreadyConsumed;
             }
-
-            if (scp.Stats.Health.NormalizedValue == 1f)
+            else if (!ragdoll.Info.RoleType.IsHuman() || !__instance.ServerValidateAny())
             {
-                __result = 8;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.TargetNotValid;
             }
-
-            if (ZombieConsumeAbility.AllAbilities.Any(x => x.IsInProgress && x.CurRagdoll == ragdoll))
+            else if (Mathf.Approximately(scp.Stats.Health.NormalizedValue, 1f))
             {
-                __result = 9;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.FullHealth;
             }
-
-            var target = ExPlayer.Get(ragdoll.Info.OwnerHub);
-
-            if (target != null && !target.Toggles.CanBeConsumedByZombies)
+            else if (ZombieConsumeAbility.AllAbilities.Any(a => a.IsInProgress 
+                                                                && a.CurRagdoll == ragdoll))
             {
-                __result = 2;
-                return false;
+                error = ZombieConsumeAbility.ConsumeError.BeingConsumed;
             }
 
-            var consumingArgs = new Scp0492ConsumingRagdollEventArgs(scp, target, ragdoll);
+            var consumingEventArgs = new Scp0492ConsumingRagdollEventArgs(scp, owner, ragdoll, error);
 
-            if (!ExScp0492Events.OnConsumingRagdoll(consumingArgs))
+            if (!ExScp0492Events.OnConsumingRagdoll(consumingEventArgs))
             {
-                __result = (byte)(consumingArgs.Code == 0 ? 2 : consumingArgs.Code);
+                __result = (byte)consumingEventArgs.Error;
                 return false;
             }
 
-            __result = consumingArgs.Code;
+            var labConsumingEventArgs = new Scp0492StartingConsumingCorpseEventArgs(scp.ReferenceHub, ragdoll, consumingEventArgs.Error);
+            
+            Scp0492Events.OnStartingConsumingCorpse(labConsumingEventArgs);
+
+            if (!labConsumingEventArgs.IsAllowed)
+            {
+                __result = (byte)labConsumingEventArgs.Error;
+                return false;
+            }
+
+            __result = (byte)labConsumingEventArgs.Error;
             return false;
         }
     }

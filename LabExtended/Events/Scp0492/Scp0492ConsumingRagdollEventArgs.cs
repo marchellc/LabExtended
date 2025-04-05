@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-
+using PlayerRoles.PlayableScps.Scp049.Zombies;
 using PlayerRoles.Ragdolls;
 
 namespace LabExtended.Events.Scp0492
@@ -25,9 +25,9 @@ namespace LabExtended.Events.Scp0492
         public BasicRagdoll Ragdoll { get; }
 
         /// <summary>
-        /// Response code used in case this event is disallowed.
+        /// Error that prevents the player from consuming.
         /// </summary>
-        public byte Code { get; set; } = 0;
+        public ZombieConsumeAbility.ConsumeError Error { get; set; }
 
         /// <summary>
         /// Creates a new <see cref="Scp0492ConsumingRagdollEventArgs"/>.
@@ -35,7 +35,8 @@ namespace LabExtended.Events.Scp0492
         /// <param name="scp">SCP-049-2 player.</param>
         /// <param name="target">Ragdoll owner.</param>
         /// <param name="ragdoll">Target ragdoll.</param>
-        public Scp0492ConsumingRagdollEventArgs(ExPlayer scp, ExPlayer? target, BasicRagdoll ragdoll)
-            => (Scp, Target, Ragdoll) = (scp, target, ragdoll);
+        /// <param name="error">The consume error.</param>
+        public Scp0492ConsumingRagdollEventArgs(ExPlayer scp, ExPlayer? target, BasicRagdoll ragdoll, ZombieConsumeAbility.ConsumeError error)
+            => (Scp, Target, Ragdoll, Error) = (scp, target, ragdoll, error);
     }
 }
