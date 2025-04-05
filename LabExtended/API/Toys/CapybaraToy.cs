@@ -2,6 +2,7 @@
 
 using LabExtended.API.Interfaces;
 using LabExtended.API.Prefabs;
+using Mirror;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 
@@ -21,6 +22,8 @@ public class CapybaraToy : AdminToy, IWrapper<AdminToys.CapybaraToy>
 
         if (Base is null)
             throw new Exception("Could not spawn CapybaraToy");
+        
+        NetworkServer.Spawn(Base.gameObject);
     }
 
     internal CapybaraToy(AdminToys.CapybaraToy baseValue) : base(baseValue)
