@@ -4,26 +4,40 @@ using Mirror;
 
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
 namespace LabExtended.API.Toys.Primitives;
 
+/// <summary>
+/// A primitive toy used to display static images.
+/// </summary>
 public class PrimitiveImageToy : IDisposable
 {
-    private GameObject parent;
-    private PrimitiveToy[][] pixels;
-
-    private bool isStatic = true;
+    private GameObject? parent;
+    private PrimitiveToy[][]? pixels;
     
-    private Color? color;
-    
+    /// <summary>
+    /// Gets the height of the image (in pixels).
+    /// </summary>
     public int Height { get; }
+    
+    /// <summary>
+    /// Gets the width of the image (in pixels).
+    /// </summary>
     public int Width { get; }
 
+    /// <summary>
+    /// Gets or sets the parent transform of the image.
+    /// </summary>
     public Transform Parent
     {
         get => parent.transform.parent;
         set => parent.transform.parent = value;
     }
 
+    /// <summary>
+    /// Gets or sets the position of the image.
+    /// </summary>
     public Vector3 Position
     {
         get => parent.transform.parent?.position ?? parent.transform.position;
@@ -39,6 +53,9 @@ public class PrimitiveImageToy : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets or sets the rotation of the image.
+    /// </summary>
     public Quaternion Rotation
     {
         get => parent.transform.parent?.rotation ?? parent.transform.rotation;
@@ -54,19 +71,22 @@ public class PrimitiveImageToy : IDisposable
         }
     }
 
+    /// <summary>
+    /// Whether the image is static or not (position updates are disabled if true).
+    /// </summary>
     public bool IsStatic
     {
-        get => isStatic;
+        get;
         set
         {
-            if (value == isStatic)
+            if (value == field)
                 return;
 
-            isStatic = value;
+            field = value;
             
-            for (int x = 0; x < Width; x++)
+            for (var x = 0; x < Width; x++)
             {
-                for (int y = 0; y < Height; y++)
+                for (var y = 0; y < Height; y++)
                 {
                     pixels[x][y].IsStatic = value;
                 }    
@@ -83,6 +103,11 @@ public class PrimitiveImageToy : IDisposable
         this.Width = width;
     }
 
+    /// <summary>
+    /// Sets the current frame.
+    /// </summary>
+    /// <param name="frame">The frame pixels.</param>
+    /// <exception cref="ArgumentNullException"></exception>
     public void SetFrame(Color?[,] frame)
     {
         if (frame is null)
@@ -90,11 +115,11 @@ public class PrimitiveImageToy : IDisposable
 
         try
         {
-            for (int row = 0; row < Width; row++)
+            for (var row = 0; row < Width; row++)
             {
                 try
                 {
-                    for (int col = 0; col < Height; col++)
+                    for (var col = 0; col < Height; col++)
                     {
                         try
                         {
@@ -123,6 +148,9 @@ public class PrimitiveImageToy : IDisposable
         }
     }
     
+    /// <summary>
+    /// Sets the image to white.
+    /// </summary>
     public void Clear()
     {
         for (int x = 0; x < Width; x++)
@@ -134,13 +162,14 @@ public class PrimitiveImageToy : IDisposable
         }
     }
 
+    /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
         if (pixels != null)
         {
-            for (int x = 0; x < Width; x++)
+            for (var x = 0; x < Width; x++)
             {
-                for (int y = 0; y < Height; y++)
+                for (var y = 0; y < Height; y++)
                 {
                     NetworkServer.Destroy(pixels[x][y].GameObject);
                 }    
@@ -152,10 +181,19 @@ public class PrimitiveImageToy : IDisposable
         if (parent != null)
         { 
             UnityEngine.Object.Destroy(parent);
+            
             parent = null;
         }
     }
 
+    /// <summary>
+    /// Creates a new image with a specific resolution.
+    /// </summary>
+    /// <param name="height">The height of the image (in pixels).</param>
+    /// <param name="width">The width of the image (in pixels).</param>
+    /// <param name="scale">The scale of a singular pixel.</param>
+    /// <returns>The spawned image toy instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public static PrimitiveImageToy Create(int height = 45, int width = 45, float scale = 1f)
     {
         if (height <= 0)
@@ -172,7 +210,7 @@ public class PrimitiveImageToy : IDisposable
         var size = scale * 0.05f;
         var centerDelta = scale * 0.05f * width / 2f;
         
-        for (int i = height; i > 0; i--)
+        for (var i = height; i > 0; i--)
         {
             var yAxis = i * 0.05f * scale;
             var list = new List<PrimitiveToy>();
