@@ -60,7 +60,7 @@ namespace LabExtended.Patches.Events.Scp079
                     if (basicDoor.RequiredPermissions.RequiredPermissions != KeycardPermissions.None)
                         continue;
 
-                    if (!RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomIdUtils.PositionToCoords(basicDoor.transform.position), out var room))
+                    if (!RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(basicDoor.transform.position), out var room))
                         continue;
 
                     if (room.Zone != FacilityZone.HeavyContainment || __instance._containmentGates.Contains(basicDoor))
@@ -80,7 +80,7 @@ namespace LabExtended.Patches.Events.Scp079
                     if (light is null)
                         continue;
 
-                    if (!RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomIdUtils.PositionToCoords(light.transform.position), out var room))
+                    if (!RoomIdentifier.RoomsByCoordinates.TryGetValue(RoomUtils.PositionToCoords(light.transform.position), out var room))
                         continue;
 
                     if (room.Zone != FacilityZone.HeavyContainment)

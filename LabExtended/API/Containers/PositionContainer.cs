@@ -41,7 +41,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player's current room.
         /// </summary>
-        public RoomIdentifier Room => RoomIdUtils.RoomAtPosition(Position);
+        public RoomIdentifier Room => RoomUtils.RoomAtPosition(Position);
 
         /// <summary>
         /// Gets the elevator this player is currently in.

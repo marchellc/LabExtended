@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace LabExtended.Patches.Functions.Scp079Rewards
 {
-    public static class Scp079YHumanBlockingPatch
+    public static class Scp079HumanBlockingPatch
     {
         [HarmonyPatch(typeof(HumanBlockingRewards), nameof(HumanBlockingRewards.CheckRoom))]
         public static bool Prefix(RoomIdentifier room, Vector3 doorPos, ref bool __result)
@@ -30,7 +30,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
                 if (!player.Role.Is<IFpcRole>(out var fpcRole))
                     continue;
 
-                var plyRoom = RoomIdUtils.RoomAtPosition(fpcRole.FpcModule.Position);
+                var plyRoom = RoomUtils.RoomAtPosition(fpcRole.FpcModule.Position);
 
                 if (plyRoom is null || plyRoom != room)
                     continue;

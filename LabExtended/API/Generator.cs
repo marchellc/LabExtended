@@ -225,17 +225,27 @@ namespace LabExtended.API
         public void Engage()
             => IsEngaged = true;
 
-        private static void OnGeneratorSpawned(Scp079Generator generator)
-            => Lookup.Add(generator, new(generator));
+        private static void OnStructureSpawned(SpawnableStructure structure)
+        {
+            if (structure is not Scp079Generator generator)
+                return;
+            
+            Lookup.Add(generator, new(generator));
+        }
 
-        private static void OnGeneratorDestroyed(Scp079Generator generator)
-            => Lookup.Remove(generator);
+        private static void OnStructureDestroyed(SpawnableStructure structure)
+        {
+            if (structure is not Scp079Generator generator)
+                return;
+
+            Lookup.Remove(generator);
+        }
 
         [LoaderInitialize(1)]
         private static void OnInit()
         {
-            Scp079Generator.OnAdded += OnGeneratorSpawned;
-            Scp079Generator.OnRemoved += OnGeneratorDestroyed;
+            SpawnableStructure.OnAdded += OnStructureSpawned;
+            SpawnableStructure.OnRemoved += OnStructureDestroyed;
 
             InternalEvents.OnRoundWaiting += Lookup.Clear;
         }

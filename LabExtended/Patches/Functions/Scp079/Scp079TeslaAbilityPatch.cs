@@ -28,7 +28,7 @@ public static class Scp079TeslaAbilityPatch
             return false;
 
         if (!ExTeslaGate.Lookup.TryGetFirst(
-                x => RoomIdUtils.IsTheSameRoom(x.Value.Position, camera.Position), out var gate))
+                x => RoomUtils.IsTheSameRoom(x.Value.Position, camera.Position), out var gate))
             return false;
 
         if (gate.Value.IsDisabled)
