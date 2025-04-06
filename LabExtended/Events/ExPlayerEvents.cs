@@ -96,7 +96,13 @@ public static class ExPlayerEvents
     public static event Action<PlayerSelectingItemEventArgs>? SelectingItem; 
     
     /// <inheritdoc cref="PlayerSelectedItemEventArgs"/>
-    public static event Action<PlayerSelectedItemEventArgs>? SelectedItem; 
+    public static event Action<PlayerSelectedItemEventArgs>? SelectedItem;
+
+    /// <inheritdoc cref="PlayerShootingFirearmEventArgs"/>
+    public static event Action<PlayerShootingFirearmEventArgs>? ShootingFirearm;
+
+    /// <inheritdoc cref="PlayerShotFirearmEventArgs"/>
+    public static event Action<PlayerShotFirearmEventArgs>? ShotFirearm; 
     #endregion
 
     #region Handlers - Join & Leave
@@ -287,5 +293,21 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnSelectedItem(PlayerSelectedItemEventArgs args)
         => SelectedItem.InvokeEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="ShootingFirearm"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnShootingFirearm(PlayerShootingFirearmEventArgs args)
+        => ShootingFirearm.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="ShotFirearm"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnShotFirearm(PlayerShotFirearmEventArgs args)
+        => ShotFirearm.InvokeEvent(args);
+
     #endregion
 }
