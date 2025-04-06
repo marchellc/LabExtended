@@ -4,9 +4,6 @@ using LabApi.Events.Arguments.Scp0492Events;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.Attributes;
-using LabExtended.Events;
-using LabExtended.Events.Scp0492;
 
 using PlayerRoles;
 using PlayerRoles.Ragdolls;
@@ -18,7 +15,6 @@ namespace LabExtended.Patches.Functions.Scp049
 {
     public static class Scp0492ConsumePatch
     {
-        [EventPatch(typeof(Scp0492ConsumingRagdollEventArgs), true)]
         [HarmonyPatch(typeof(ZombieConsumeAbility), nameof(ZombieConsumeAbility.ServerValidateBegin))]
         public static bool Prefix(ZombieConsumeAbility __instance, BasicRagdoll ragdoll, ref byte __result)
         {
@@ -54,25 +50,11 @@ namespace LabExtended.Patches.Functions.Scp049
                 error = ZombieConsumeAbility.ConsumeError.BeingConsumed;
             }
 
-            var consumingEventArgs = new Scp0492ConsumingRagdollEventArgs(scp, owner, ragdoll, error);
-
-            if (!ExScp0492Events.OnConsumingRagdoll(consumingEventArgs))
-            {
-                __result = (byte)consumingEventArgs.Error;
-                return false;
-            }
-
-            var labConsumingEventArgs = new Scp0492StartingConsumingCorpseEventArgs(scp.ReferenceHub, ragdoll, consumingEventArgs.Error);
+            var consumingEventArgs = new Scp0492StartingConsumingCorpseEventArgs(scp.ReferenceHub, ragdoll, error);
             
-            Scp0492Events.OnStartingConsumingCorpse(labConsumingEventArgs);
+            Scp0492Events.OnStartingConsumingCorpse(consumingEventArgs);
 
-            if (!labConsumingEventArgs.IsAllowed)
-            {
-                __result = (byte)labConsumingEventArgs.Error;
-                return false;
-            }
-
-            __result = (byte)labConsumingEventArgs.Error;
+            __result = (byte)consumingEventArgs.Error;
             return false;
         }
     }

@@ -35,7 +35,6 @@ namespace LabExtended.Patches.Events
                 AlphaWarheadController.Singleton?.CancelDetonation(__instance._hub);
                
                 ServerLogs.AddLog(ServerLogs.Modules.Warhead, __instance._hub.LoggedNameFromRefHub() + " cancelled the Alpha Warhead detonation.", ServerLogs.ServerLogType.GameEvent);
-                return false;
             }
             else
             {

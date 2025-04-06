@@ -23,8 +23,7 @@ namespace LabExtended.Patches.Functions.Players
             if (!ExPlayer.TryGet(__instance.connectionToClient, out var player))
                 return true;
 
-            HintController.PauseHints(player);
-
+            player.PauseHints();
             player.Connection.Send(new HintMessage(hint));
 
             Timing.CallDelayed(hint.DurationScalar + 0.1f, () => HintController.ResumeHints(player));

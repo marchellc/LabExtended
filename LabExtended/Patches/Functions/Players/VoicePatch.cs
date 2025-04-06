@@ -1,7 +1,8 @@
 ﻿using Achievements.Handlers;
+
 using LabExtended.API;
+
 using LabExtended.Core;
-using LabExtended.Events;
 using LabExtended.Utilities;
 
 using Mirror;
@@ -12,6 +13,7 @@ using VoiceChat;
 using VoiceChat.Networking;
 
 using HarmonyLib;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 

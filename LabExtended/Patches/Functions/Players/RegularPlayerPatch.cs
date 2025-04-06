@@ -16,7 +16,9 @@ public static class RegularPlayerPatch
     public static bool JoinPrefix(ReferenceHub referenceHub)
     {
         if (referenceHub != null && !referenceHub.isLocalPlayer)
-            _ = new ExPlayer(referenceHub, referenceHub.connectionToClient.GetType() != typeof(NetworkConnectionToClient) ? GetNewNpcToggles() : GetNewPlayerToggles());
+            _ = new ExPlayer(referenceHub, referenceHub.connectionToClient.GetType() != typeof(NetworkConnectionToClient) 
+                ? GetNewNpcToggles() 
+                : GetNewPlayerToggles());
 
         return false;
     }

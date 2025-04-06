@@ -38,7 +38,6 @@ namespace LabExtended.Patches.Events.Player
                 __result = CandyKindID.None;
                 return false;
             }
-            
 
             __instance.Candies.RemoveAt(index);
             __instance.ServerRefreshBag();

@@ -2,6 +2,8 @@
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Pickups;
 using LabExtended.API.CustomItems;
+using LabExtended.Events.Firearms;
+using LabExtended.Events.Player;
 using LabExtended.Utilities;
 using LabExtended.Utilities.Firearms;
 using UnityEngine;
@@ -78,6 +80,24 @@ public class CustomFirearmInstance : CustomItemInstance
     /// Gets called once a shot processing finishes.
     /// </summary>
     public virtual void OnProcessedShot(ExPlayer? target, Vector3? targetPosition) { }
+    
+    /// <summary>
+    /// Gets called when a custom firearm is shot.
+    /// </summary>
+    /// <param name="eventArgs">The <see cref="PlayerShootingFirearmEventArgs"/> event arguments.</param>
+    public virtual void OnShooting(PlayerShootingFirearmEventArgs eventArgs) { }
+    
+    /// <summary>
+    /// Gets called after a custom firearm is shot.
+    /// </summary>
+    /// <param name="eventArgs">The <see cref="PlayerShotFirearmEventArgs"/> event arguments.</param>
+    public virtual void OnShot(PlayerShotFirearmEventArgs eventArgs) { }
+    
+    /// <summary>
+    /// Gets called when a custom firearm is shot and trajectory is being calculated.
+    /// </summary>
+    /// <param name="eventArgs">The <see cref="FirearmRayCastEventArgs"/> event arguments.</param>
+    public virtual void OnRayCast(FirearmRayCastEventArgs eventArgs) { }
     
     /// <summary>
     /// Gets called before the weapon is dry-fired.

@@ -8,10 +8,7 @@ using LabExtended.API.Enums;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
-using LabExtended.Attributes;
-
 using LabExtended.Events;
-using LabExtended.Events.Player;
 
 using RemoteAdmin;
 
@@ -19,7 +16,6 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerSendingStaffChatMessagePatch
     {
-        [EventPatch(typeof(PlayerSendingStaffChatMessageEventArgs))]
         [HarmonyPatch(typeof(CommandProcessor), nameof(CommandProcessor.ProcessAdminChat))]
         public static bool Prefix(string q, CommandSender sender)
         {
@@ -44,20 +40,7 @@ namespace LabExtended.Patches.Events.Player
             if (q.Length >= 2000)
                 q = q.SubstringPostfix(2000, "...");
 
-            var sendingStaffChatMessageEventArgs = new PlayerSendingStaffChatMessageEventArgs(player, q);
-
-            if (!ExPlayerEvents.OnSendingStaffChatMessage(sendingStaffChatMessageEventArgs) && !player.IsNorthwoodStaff)
-            {
-                if (sender is PlayerCommandSender playerCommandSender)
-                {
-                    playerCommandSender.ReferenceHub.gameConsoleTransmission.SendToClient("A server plugin cancelled the message.", "red");
-                    playerCommandSender.RaReply("A server plugin cancelled the message.", success: false, logToConsole: true, "");
-                }
-
-                return false;
-            }
-
-            var sendingAdminChatMessageEventArgs = new SendingAdminChatEventArgs(sender, sendingStaffChatMessageEventArgs.Message);
+            var sendingAdminChatMessageEventArgs = new SendingAdminChatEventArgs(sender, q);
             
             ServerEvents.OnSendingAdminChat(sendingAdminChatMessageEventArgs);
 

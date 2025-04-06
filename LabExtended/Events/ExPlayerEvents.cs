@@ -41,9 +41,6 @@ public static class ExPlayerEvents
     /// <inheritdoc cref="PlayerReceivingRemoteAdminRequest"/>
     public static event Action<PlayerReceivingRemoteAdminRequest>? ReceivingRemoteAdminRequest; 
     
-    /// <inheritdoc cref="PlayerSendingStaffChatMessageEventArgs"/>
-    public static event Action<PlayerSendingStaffChatMessageEventArgs>? SendingStaffChatMessage; 
-    
     /// <inheritdoc cref="PlayerTogglingLobbyLockEventArgs"/>
     public static event Action<PlayerTogglingLobbyLockEventArgs>? TogglingLobbyLock; 
     
@@ -157,14 +154,6 @@ public static class ExPlayerEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnReceivingRemoteAdminRequest(PlayerReceivingRemoteAdminRequest args)
         => ReceivingRemoteAdminRequest.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="SendingStaffChatMessage"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnSendingStaffChatMessage(PlayerSendingStaffChatMessageEventArgs args)
-        => SendingStaffChatMessage.InvokeBooleanEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="TogglingLobbyLock"/> event.
