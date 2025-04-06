@@ -14,7 +14,7 @@ public partial class ListCommand
 {
     [CommandOverload("objects", "Lists all spawned network objects.")]
     public void ListObjects(
-        [CommandParameter("Type", "Name of the object's type.")] string? objectType = null)
+        [CommandParameter("Type", "Name of the object's type (use \"*\" to show all objects).")] string objectType)
     {
         Ok(x =>
         {
@@ -24,7 +24,7 @@ public partial class ListCommand
                 return;
             }
 
-            if (objectType != null)
+            if (objectType != null && !string.Equals(objectType, "*", StringComparison.InvariantCultureIgnoreCase))
             {
                 var targetList = ListPool<NetworkBehaviour>.Shared.Rent();
 
@@ -37,10 +37,7 @@ public partial class ListCommand
 
                     if (string.Equals(objectType, type.FullName, StringComparison.InvariantCultureIgnoreCase)
                         || string.Equals(objectType, type.Name, StringComparison.InvariantCultureIgnoreCase))
-                    {
                         targetList.Add(networkBehaviour);
-                        break;
-                    }
                 }
 
                 if (targetList.Count < 1)

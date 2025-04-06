@@ -10,6 +10,8 @@ using NorthwoodLib.Pools;
 
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
 namespace LabExtended.API.CustomItems;
 
 /// <summary>
@@ -82,7 +84,6 @@ public static class CustomItemManager
         InventoryItems.Remove(item.Item);
         
         item.OnDropping(ref isThrow);
-        item.Item = null;
         
         if (item.CustomData.PickupType is ItemType.None)
             return;
@@ -90,7 +91,7 @@ public static class CustomItemManager
         var pickup = ExMap.SpawnItem(item.CustomData.PickupType, item.Player.Position,
             item.CustomData.PickupScale ?? Vector3.one, item.Player.Rotation, item.ItemSerial);
 
-        item.Pickup = pickup;
+        item.SetPickup(pickup);
         item.OnDropped(false);
         
         PickupItems.Add(pickup, item);
@@ -113,7 +114,7 @@ public static class CustomItemManager
 
         if (item.Item is null)
             throw new Exception("Custom Item is not in inventory.");
-
+        
         item.OnPickingUp(newOwner);
         
         if (item.Item != null)
@@ -138,13 +139,13 @@ public static class CustomItemManager
         }
         else if (item.Pickup != null)
         {
-            item.Item = newOwner.Inventory.AddItem(item.CustomData.InventoryType, ItemAddReason.PickedUp, item.ItemSerial);
+            item.SetItem(newOwner.Inventory.AddItem(item.CustomData.InventoryType, ItemAddReason.PickedUp, item.ItemSerial));
             
             newOwner.customItems.Add(item.Item, item);
 
             PickupItems.Remove(item.Pickup);
             InventoryItems.Add(item.Item, item);
-            
+
             item.Pickup = null;
             item.OnPickedUp();
         }
@@ -196,9 +197,11 @@ public static class CustomItemManager
         
         var customItem = Activator.CreateInstance(customItemData.Type) as CustomItemInstance;
 
+        customItem.CustomData = customItemData;
+
         target.customItems.Add(originalItem, customItem);
         
-        customItem.Item = originalItem;
+        customItem.SetItem(originalItem);
         customItem.ItemSerial = originalItem.ItemSerial;
         
         customItem.Player = target;
@@ -253,9 +256,11 @@ public static class CustomItemManager
         var item = Activator.CreateInstance(customItemData.Type) as CustomItemInstance;
         var pickup = ExMap.SpawnItem(customItemData.PickupType, position,
             customItemData.PickupScale ?? Vector3.one, rotation, null, true);
-
+        
         item.Player = owner;
-        item.Pickup = pickup;
+        item.CustomData = customItemData;
+        
+        item.SetPickup(pickup);
         
         item.ItemSerial = pickup.Info.Serial;
         item.OnEnabled();
@@ -343,11 +348,9 @@ public static class CustomItemManager
         if (itemType is null)
             throw new ArgumentNullException(nameof(itemType));
 
-        if (!RegisteredItems.ContainsKey(itemType))
+        if (!RegisteredItems.Remove(itemType))
             return;
 
-        RegisteredItems.Remove(itemType);
-        
         var pickupsToDestroy = ListPool<ItemPickupBase>.Shared.Rent();
         var itemsToDestroy = ListPool<ItemBase>.Shared.Rent();
         

@@ -154,7 +154,7 @@ namespace LabExtended.API
         public static Dictionary<Scp079Camera, Camera> Lookup { get; } = new();
 
         /// <summary>
-        /// Tries to find a wrapper by it's base object.
+        /// Tries to find a wrapper by its base object.
         /// </summary>
         /// <param name="camera">The base object.</param>
         /// <param name="wrapper">The found wrapper instance.</param>

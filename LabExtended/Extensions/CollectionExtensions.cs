@@ -362,6 +362,45 @@ public static class CollectionExtensions
         return false;
     }
 
+    public static bool TryGetValue<TValue>(this IDictionary dictionary, object key, out TValue? value)
+    {
+        if (dictionary is null)
+            throw new ArgumentNullException(nameof(dictionary));
+
+        if (key is null)
+            throw new ArgumentNullException(nameof(key));
+
+        if (!dictionary.Contains(key))
+        {
+            value = default;
+            return false;
+        }
+
+        if (dictionary[key] is not TValue result)
+        {
+            value = default;
+            return false;
+        }
+
+        value = result;
+        return true;
+    }
+
+    public static TValue? GetValue<TValue>(this IDictionary dictionary, object key, TValue? defaultValue = default)
+    {
+        if (dictionary is null)
+            throw new ArgumentNullException(nameof(dictionary));
+
+        if (key is null)
+            throw new ArgumentNullException(nameof(key));
+
+        if (!dictionary.Contains(key)
+            || dictionary[key] is not TValue result)
+            return defaultValue;
+
+        return result;
+    }
+
     public static Dictionary<TKey, TElement> ToDictionary<TKey, TElement>(
         this IEnumerable<KeyValuePair<TKey, TElement>> pairs)
     {

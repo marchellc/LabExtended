@@ -123,4 +123,21 @@ public class CustomItemInstance
     /// Called once this item gets thrown.
     /// </summary>
     public virtual void OnThrown() { }
+    
+    internal virtual void OnItemSet() { }
+    internal virtual void OnPickupSet() { }
+
+    internal virtual void SetItem(ItemBase item)
+    {
+        Pickup = null;
+        Item = item;
+        OnItemSet();
+    }
+
+    internal virtual void SetPickup(ItemPickupBase pickup)
+    {
+        Pickup = pickup;
+        Item = null;
+        OnPickupSet();
+    }
 }
