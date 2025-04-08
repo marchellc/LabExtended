@@ -87,7 +87,7 @@ public static class ProcessingShotPatches
         return false;
     }
 
-    [HarmonyPatch(typeof(DisruptorActionModule), nameof(DisruptorActionModule.ServerProcessCmd))]
+    [HarmonyPatch(typeof(DisruptorActionModule), nameof(DisruptorActionModule.ServerProcessStartCmd))]
     public static bool DisruptorPrefix(DisruptorActionModule __instance, bool ads)
     {
         if (__instance.IsReloading || __instance.CurFiringState != DisruptorActionModule.FiringState.None

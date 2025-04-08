@@ -77,7 +77,7 @@ public static class PlayerShootingFirearmPatches
     }
 
     [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerProcessTargetHit))]
-    public static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, IDestructible destructible,
+    public static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, IDestructible dest,
         RaycastHit hitInfo, ref float __result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
@@ -86,7 +86,7 @@ public static class PlayerShootingFirearmPatches
         __result = __instance.DamageAtDistance(hitInfo.distance);
 
         var shootingEventArgs =
-            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, destructible, __result, hitInfo);
+            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, dest, __result, hitInfo);
 
         if (!ExPlayerEvents.OnShootingFirearm(shootingEventArgs))
         {
@@ -99,24 +99,24 @@ public static class PlayerShootingFirearmPatches
         var handler = new FirearmDamageHandler(__instance.Firearm, shootingEventArgs.TargetDamage,
             __instance.EffectivePenetration, __instance.UseHitboxMultipliers);
 
-        if (!destructible.Damage(shootingEventArgs.TargetDamage, handler, hitInfo.point))
+        if (!dest.Damage(shootingEventArgs.TargetDamage, handler, hitInfo.point))
         {
             __result = 0f;
             return false;
         }
         
-        if (destructible is HitboxIdentity hitboxIdentity)
+        if (dest is HitboxIdentity hitboxIdentity)
             __instance.SendDamageIndicator(hitboxIdentity.TargetHub, shootingEventArgs.TargetDamage);
 
-        __instance.ServerLastDamagedTargets.Add(destructible);
+        __instance.ServerLastDamagedTargets.Add(dest);
         
-        ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, destructible, handler.DealtHealthDamage, hitInfo,
+        ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, dest, handler.DealtHealthDamage, hitInfo,
             shootingEventArgs.TargetPlayer));
         return false;
     }
 
     [HarmonyPatch(typeof(DisruptorHitregModule), nameof(DisruptorHitregModule.ServerProcessTargetHit))]
-    public static bool DisruptorProcessTargetHitPrefix(DisruptorHitregModule __instance, IDestructible destructible,
+    public static bool DisruptorProcessTargetHitPrefix(DisruptorHitregModule __instance, IDestructible dest,
         RaycastHit hitInfo, ref float __result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
@@ -126,7 +126,7 @@ public static class PlayerShootingFirearmPatches
                    * Mathf.Pow(1f / __instance._singleShotDivisionPerTarget, __instance._serverPenetrations);
 
         var shootingEventArgs =
-            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, destructible, __result, hitInfo);
+            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, dest, __result, hitInfo);
 
         if (!ExPlayerEvents.OnShootingFirearm(shootingEventArgs))
         {
@@ -139,16 +139,16 @@ public static class PlayerShootingFirearmPatches
         var handler =
             new DisruptorDamageHandler(__instance.DisruptorShotData, __instance._lastShotRay.direction, __result);
 
-        if (!destructible.Damage(__result, handler, hitInfo.point))
+        if (!dest.Damage(__result, handler, hitInfo.point))
         {
             __result = 0f;
             return false;
         }
         
-        if (destructible is HitboxIdentity hitboxIdentity)
+        if (dest is HitboxIdentity hitboxIdentity)
             __instance.SendDamageIndicator(hitboxIdentity.TargetHub, __result);
 
-        __instance.ServerLastDamagedTargets.Add(destructible);
+        __instance.ServerLastDamagedTargets.Add(dest);
         return false;
     }
 }
