@@ -18,6 +18,6 @@ public class Vector3ParameterParser : AxisWrapperParser<Vector3>
         error = null;
         
         result = new(values['x'], values['y'], values['z']);
-        return false;
+        return true;
     }
 }

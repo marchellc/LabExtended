@@ -70,7 +70,7 @@ public partial class ListCommand
             }
 
             foreach (var list in groupedObjects)
-                x.AppendLine($"[{list.Key.Name}] {list.Value.Count} object(s) [{string.Join(", ", list.Value)}]");
+                x.AppendLine($"[{list.Key.Name}] {list.Value.Count} object(s) [{string.Join(", ", list.Value).SubstringPostfix(24, " ...")}]");
         });
     }
 }

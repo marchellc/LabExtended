@@ -5,6 +5,9 @@ using NorthwoodLib.Pools;
 
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
 namespace LabExtended.Commands.Parameters;
 
 using API;
@@ -203,25 +206,27 @@ public static class CommandParameterParserUtils
                 ApiLog.Debug("Command Parameter Parser", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
         }
 
-        for (var i = 0; i < context.Overload.ParameterCount; i++)
+        var index = 0;
+
+        context.Overload.Parameters.ForEach(parameter =>
         {
-            var parameter = context.Overload.Parameters[i];
-            
             try
             {
-                if (i < context.Tokens.Count)
+                if (index < context.Tokens.Count)
                 {
-                    var parameterToken = context.Tokens[i];
+                    var parameterToken = context.Tokens[index];
 
                     if (!parameter.Type.Parser.AcceptsToken(parameterToken))
                     {
                         parserResults.Add(new(false, null,
                             $"Token {parameterToken.GetType().Name} is not acceptable.", parameter));
-                        continue;
+
+                        index++;
+                        return;
                     }
 
                     var parameterResult =
-                        parameter.Type.Parser.Parse(context.Tokens, parameterToken, i, context, parameter);
+                        parameter.Type.Parser.Parse(context.Tokens, parameterToken, index, context, parameter);
 
                     if (parameterResult.Success)
                     {
@@ -239,7 +244,9 @@ public static class CommandParameterParserUtils
                         if (argumentError != null)
                         {
                             parserResults.Add(new(false, null, argumentError, parameter));
-                            continue;
+
+                            index++;
+                            return;
                         }
                     }
 
@@ -250,20 +257,25 @@ public static class CommandParameterParserUtils
                     if (!parameter.HasDefault)
                     {
                         parserResults.Add(new(false, null, "MISSING_ARGS", parameter));
-                        continue;
+
+                        index++;
+                        return;
                     }
-                    
+
                     parserResults.Add(new(true, parameter.DefaultValue, null, parameter));
                 }
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Command Parameter Parser", $"Caught an exception while parsing parameter &1{parameter.Name}&r " +
-                                                         $"in command &1{context.Command.Name}&r!\n{ex.ToColoredString()}");
-                
+                ApiLog.Error("Command Parameter Parser",
+                    $"Caught an exception while parsing parameter &1{parameter.Name}&r " +
+                    $"in command &1{context.Command.Name}&r!\n{ex.ToColoredString()}");
+
                 parserResults.Add(new(false, null, ex.Message, parameter));
             }
-        }
+
+            index++;
+        });
 
         return new(true, null, null, null);
     }

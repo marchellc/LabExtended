@@ -18,6 +18,6 @@ public class QuaternionParameterParser : AxisWrapperParser<Quaternion>
         error = null;
         
         result = new(values['x'], values['y'], values['z'], values['w']);
-        return false;
+        return true;
     }
 }

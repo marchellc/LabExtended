@@ -23,7 +23,7 @@ public static class CommandListSynchronization
         if (CommandManager.Commands.Count < 1)
             return;
         
-        QueryProcessor.CommandData ToData(CommandData command, CommandOverload ov, string name, string? aliasOf = null)
+        QueryProcessor.CommandData ToData(CommandData command, CommandOverload? ov, string name, string? aliasOf = null)
         {
             var data = new QueryProcessor.CommandData();
 
@@ -53,8 +53,7 @@ public static class CommandListSynchronization
 
                 foreach (var alias in cmd.Aliases)
                 {
-                    if (cmd.DefaultOverload != null)
-                        commands.Add(ToData(cmd, cmd.DefaultOverload, alias, cmd.Name));
+                    commands.Add(ToData(cmd, cmd.DefaultOverload, alias, cmd.Name));
 
                     aliasSwapBuffer[aliasSwapBuffer.Count - 1] = alias;
 

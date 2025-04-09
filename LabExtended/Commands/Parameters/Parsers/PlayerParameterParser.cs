@@ -23,11 +23,18 @@ public class PlayerParameterParser : CommandParameterParser
         CommandParameter parameter)
     {
         var sourceString = string.Empty;
-        
-        if (token is PropertyToken propertyToken
-            && propertyToken.TryGet<ExPlayer>(context, null, out var player))
-            return new(true, player, null, parameter);
-        
+
+        if (token is PropertyToken propertyToken)
+        {
+            var tokenValue = propertyToken.Name;
+
+            if (CommandPropertyUtils.TryGetPlayer(ref tokenValue, context, out var tokenPlayer))
+                return new(true, tokenPlayer, null, parameter);
+            
+            if (propertyToken.TryGet(context, null, out tokenPlayer))
+                return new(true, tokenPlayer, null, parameter);
+        }
+
         if (token is StringToken stringToken)
             sourceString = stringToken.Value;
         else
@@ -38,7 +45,7 @@ public class PlayerParameterParser : CommandParameterParser
         if (parameter.HasRestriction<PlayerPrecisionRestriction>(out var precisionRestriction))
             precision = precisionRestriction.Precision;
         
-        if (ExPlayer.TryGet(sourceString, precision, out player))
+        if (ExPlayer.TryGet(sourceString, precision, out var player))
             return new(true, player, null, parameter);
         
         return new(false, null, $"Could not find player \"{sourceString}\"", parameter);
