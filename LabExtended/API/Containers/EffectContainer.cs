@@ -13,7 +13,9 @@ using LabExtended.Core.Pooling.Pools;
 using NorthwoodLib.Pools;
 
 using System.Reflection;
+
 using LabApi.Events.Arguments.PlayerEvents;
+
 using UnityEngine;
 
 namespace LabExtended.API.Containers
