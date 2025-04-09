@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-
+using LabExtended.Core;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
@@ -33,6 +33,16 @@ public class CommandOverload
     /// Gets the compiled method delegate.
     /// </summary>
     public Func<object, object[], object> Method { get; internal set; }
+
+    /// <summary>
+    /// Gets the empty buffer.
+    /// </summary>
+    public object[] EmptyBuffer { get; } = Array.Empty<object>();
+    
+    /// <summary>
+    /// Whether or not this overload has any arguments.
+    /// </summary>
+    public bool IsEmpty { get; }
     
     /// <summary>
     /// Whether or not this overload is a coroutine.
@@ -84,10 +94,11 @@ public class CommandOverload
         ParameterCount = parameters.Length;
         RequiredParameters = parameters.Count(x => !x.HasDefaultValue);
 
+        IsEmpty = parameters?.Length == 0;
         IsCoroutine = target.ReturnType == typeof(IEnumerator<float>);
         
         Method = FastReflection.ForMethod(Target);
-
+        
         foreach (var parameter in parameters)
         {
             var builder = new CommandParameterBuilder(parameter);
@@ -96,6 +107,7 @@ public class CommandOverload
             Parameters.Add(builder.Result);
         }
 
-        Buffer = new(new object[ParameterCount], () => new object[ParameterCount]);
+        if (!IsEmpty)
+            Buffer = new(new object[ParameterCount], () => new object[ParameterCount]);
     }
 }

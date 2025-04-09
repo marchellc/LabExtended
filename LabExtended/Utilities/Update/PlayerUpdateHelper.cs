@@ -150,6 +150,8 @@ public static class PlayerUpdateHelper
             reference.DelayTime = timeDelay.Value;
         
         reference.TargetUpdate = onUpdate;
+
+        reference.WhitelistedStates = whitelistedStates;
         reference.BlacklistedStates = blacklistedStates;
         
         reference.OnUpdate = () =>

@@ -21,6 +21,7 @@ using LabExtended.Utilities.Unity;
 using MEC;
 
 using NorthwoodLib.Pools;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8601 // Possible null reference assignment.
@@ -196,7 +197,9 @@ public static class CommandManager
     /// <returns>true if the command was successfully invoked</returns>
     public static bool TryInvokeCommand(CommandBase command, List<CommandParameterParserResult> results)
     {
-        var buffer = CopyBuffer(command.Context, results);
+        var buffer = command.Context.Overload.IsEmpty 
+            ? command.Context.Overload.EmptyBuffer 
+            :  CopyBuffer(command.Context, results);
         
         try
         {
@@ -205,14 +208,17 @@ public static class CommandManager
             if (result is IEnumerator<float> coroutine)
                 RunCoroutineCommand(command.Context, coroutine);
             
-            command.Overload.Buffer.Return(buffer);
+            if (!command.Overload.IsEmpty)
+                command.Overload.Buffer.Return(buffer);
+            
             return true;
         }
         catch (Exception ex)
         {
-            command.Overload.Buffer.Return(buffer);
-            command.Context.Response = new(false, false, command.Context.FormatExceptionResponse(ex));
+            if (!command.Overload.IsEmpty)
+                command.Overload.Buffer.Return(buffer);
             
+            command.Context.Response = new(false, false, command.Context.FormatExceptionResponse(ex));
             return false;
         }
     }
@@ -304,17 +310,23 @@ public static class CommandManager
                     }
                 }
                 
-                OnExecuted(context);
-                return;
-            }
-
-            if (parserResults.Count(r => r.Success) != overload.ParameterCount)
-            {
-                context.Response ??= new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
                 
                 OnExecuted(context);
                 return;
             }
+
+            if (parserResults.Count(r => r.Success) < overload.RequiredParameters)
+            {
+                context.Response ??= new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                
+                ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
+                
+                OnExecuted(context);
+                return;
+            }
+            
+            ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
             
             var instance = command.GetInstance();
 
@@ -339,8 +351,6 @@ public static class CommandManager
             TryInvokeCommand(instance, parserResults);
             
             OnExecuted(context);
-            
-            ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
         }
         catch (Exception ex)
         {
@@ -459,7 +469,7 @@ public static class CommandManager
     {
         var buffer = ctx.Overload.Buffer.Rent();
 
-        if (ctx.Overload.ParameterCount != 0)
+        if (ctx.Overload.ParameterCount > 0)
         {
             for (var i = 0; i < ctx.Overload.ParameterCount; i++)
             {
@@ -522,7 +532,5 @@ public static class CommandManager
 
     [LoaderInitialize(1)]
     private static void OnInit()
-    {
-        ServerEvents.CommandExecuting += OnCommand;
-    }
+        => ServerEvents.CommandExecuting += OnCommand;
 }

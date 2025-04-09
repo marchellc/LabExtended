@@ -84,6 +84,18 @@ public class CommandParameter
             Description = parameterAttribute.Description;
     }
 
+    internal CommandParameter()
+    {
+        Type = new();
+
+        Name = "NULL";
+        Description = "NULL";
+
+        HasDefault = false;
+
+        DefaultValue = null;
+    }
+
     /// <summary>
     /// Whether or not this parameter has the specified restriction.
     /// </summary>

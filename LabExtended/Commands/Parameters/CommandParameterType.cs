@@ -13,21 +13,23 @@ namespace LabExtended.Commands.Parameters;
 /// </summary>
 public class CommandParameterType
 {
+    private Type type;
+    
     /// <summary>
     /// Gets the type of this parameter.
     /// </summary>
     public Type? Type
     {
-        get => field;
+        get => type;
         private set
         {
             if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (field is not null && field == value)
+            if (type is not null && type == value)
                 return;
 
-            field = value;
+            type = value;
 
             IsString = value == typeof(string);
             IsArray = value.IsArray;
@@ -158,5 +160,11 @@ public class CommandParameterType
     {
         Parameter = info ?? throw new ArgumentNullException(nameof(info));
         Type = info.ParameterType;
+    }
+
+    internal CommandParameterType()
+    {
+        Parameter = null;
+        type = typeof(object);
     }
 }
