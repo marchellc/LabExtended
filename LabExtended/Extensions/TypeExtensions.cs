@@ -163,6 +163,41 @@ namespace LabExtended.Extensions
             return instanceType == type || instanceType.InheritsType(type);
         }
 
+        public static void ForEachLoadedType(Action<Type> action)
+        {
+            if (action is null)
+                throw new ArgumentNullException(nameof(action));
+
+            try
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    try
+                    {
+                        foreach (var type in assembly.GetTypes())
+                        {
+                            try
+                            {
+                                action(type);
+                            }
+                            catch
+                            {
+                                // ignored
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
         public static void InvokeStaticMethod(this Type type, Func<MethodInfo, bool> predicate, params object[] args)
         {
             var method = type.FindMethod(predicate);

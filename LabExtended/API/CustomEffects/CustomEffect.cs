@@ -1,4 +1,10 @@
-﻿using PlayerRoles;
+﻿using LabExtended.API.CustomEffects.SubEffects;
+
+using LabExtended.Core;
+using LabExtended.Attributes;
+using LabExtended.Extensions;
+
+using PlayerRoles;
 
 namespace LabExtended.API.CustomEffects;
 
@@ -8,9 +14,53 @@ namespace LabExtended.API.CustomEffects;
 public class CustomEffect
 {
     /// <summary>
+    /// A list of known custom effects by type.
+    /// </summary>
+    public static HashSet<Type> Effects { get; } = new(10);
+
+    /// <summary>
+    /// Tries to find an effect by it's type name.
+    /// </summary>
+    /// <param name="name">The name of the effect's class.</param>
+    /// <param name="onlyFullName">Whether or not to accept only full type names (eg. with namespaces)</param>
+    /// <param name="ignoreCase">Whether or not to ignore uppercase / lowercase letters.</param>
+    /// <param name="effectType">The found effect's type.</param>
+    /// <returns>true if the effect was found</returns>
+    public static bool TryGetEffect(string name, bool onlyFullName, bool ignoreCase, out Type? effectType)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            effectType = null;
+            return false;
+        }
+
+        foreach (var type in Effects)
+        {
+            if (string.Equals(type.FullName, name, ignoreCase
+                    ? StringComparison.InvariantCultureIgnoreCase
+                    : StringComparison.InvariantCulture))
+            {
+                effectType = type;
+                return true;
+            }
+
+            if (!onlyFullName && string.Equals(type.Name, name, ignoreCase
+                    ? StringComparison.InvariantCultureIgnoreCase
+                    : StringComparison.InvariantCulture))
+            {
+                effectType = type;
+                return true;
+            }
+        }
+
+        effectType = null;
+        return false;
+    }
+    
+    /// <summary>
     /// Gets the player that this effect belongs to.
     /// </summary>
-    public ExPlayer Player { get; internal set; }
+    public ExPlayer? Player { get; internal set; }
     
     /// <summary>
     /// Whether or not this effect is active.
@@ -76,4 +126,20 @@ public class CustomEffect
     internal virtual void OnRemoveEffects() => RemoveEffects();
     
     internal virtual bool OnRoleChanged(RoleTypeId newRole) => RoleChanged(newRole);
+
+    [LoaderInitialize(20)]
+    private static void OnInit()
+    {
+        TypeExtensions.ForEachLoadedType(type =>
+        {
+            if (!type.InheritsType<CustomEffect>()
+                || type == typeof(UpdatingCustomEffect)
+                || type == typeof(DurationCustomEffect))
+                return;
+
+            Effects.Add(type);
+        });
+        
+        ApiLog.Debug("Custom Effects", $"Found &1{Effects.Count}&r custom effect(s).");
+    }
 }

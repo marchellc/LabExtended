@@ -326,13 +326,13 @@ public static class CommandManager
                 return;
             }
             
-            ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
-            
             var instance = command.GetInstance();
 
             if (instance is null)
             {
                 context.Response = new(false, false, "Failed to retrieve command instance!");
+                
+                ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
                 
                 OnExecuted(context);
                 return;
@@ -349,6 +349,8 @@ public static class CommandManager
             }
 
             TryInvokeCommand(instance, parserResults);
+            
+            ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
             
             OnExecuted(context);
         }
@@ -469,17 +471,12 @@ public static class CommandManager
     {
         var buffer = ctx.Overload.Buffer.Rent();
 
-        if (ctx.Overload.ParameterCount > 0)
-        {
-            for (var i = 0; i < ctx.Overload.ParameterCount; i++)
-            {
-                buffer[i] = results[i].Value;
-            }
-        }
+        for (var i = 0; i < ctx.Overload.ParameterCount; i++)
+            buffer[i] = results[i].Value;
 
         return buffer;
     }
-    
+
     internal static bool TryGetCommand(List<string> args, CommandType? commandType, out CommandData? foundCommand)
     {
         foundCommand = null;
