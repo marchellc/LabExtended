@@ -18,6 +18,11 @@ public class CustomItemData
     public string? Description { get; internal set; }
     
     /// <summary>
+    /// Gets the item's custom weight.
+    /// </summary>
+    public float? Weight { get; internal set; }
+    
+    /// <summary>
     /// Gets the item's pickup type.
     /// </summary>
     public ItemType PickupType { get; internal set; } = ItemType.None;

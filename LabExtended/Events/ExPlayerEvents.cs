@@ -99,7 +99,13 @@ public static class ExPlayerEvents
     public static event Action<PlayerShootingFirearmEventArgs>? ShootingFirearm;
 
     /// <inheritdoc cref="PlayerShotFirearmEventArgs"/>
-    public static event Action<PlayerShotFirearmEventArgs>? ShotFirearm; 
+    public static event Action<PlayerShotFirearmEventArgs>? ShotFirearm;
+
+    /// <inheritdoc cref="PlayerChangingFirearmAttachmentsEventArgs"/>
+    public static event Action<PlayerChangingFirearmAttachmentsEventArgs>? ChangingAttachments;
+
+    /// <inheritdoc cref="PlayerChangedFirearmAttachmentsEventArgs"/>
+    public static event Action<PlayerChangedFirearmAttachmentsEventArgs>? ChangedAttachments; 
     #endregion
 
     #region Handlers - Join & Leave
@@ -297,6 +303,21 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnShotFirearm(PlayerShotFirearmEventArgs args)
         => ShotFirearm.InvokeEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="ChangingAttachments"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnChangingAttachments(PlayerChangingFirearmAttachmentsEventArgs args)
+        => ChangingAttachments.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="ChangedAttachments"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnChangedAttachments(PlayerChangedFirearmAttachmentsEventArgs args)
+        => ChangedAttachments.InvokeEvent(args);
 
     #endregion
 }

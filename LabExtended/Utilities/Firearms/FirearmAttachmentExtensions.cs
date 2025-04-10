@@ -2,6 +2,11 @@
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
 
+using LabExtended.Extensions;
+
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
 namespace LabExtended.Utilities.Firearms;
 
 /// <summary>
@@ -9,6 +14,141 @@ namespace LabExtended.Utilities.Firearms;
 /// </summary>
 public static class FirearmAttachmentExtensions
 {
+    /// <summary>
+    /// Gets the compiled event delegate used to invoke <see cref="AttachmentsUtils.OnAttachmentsApplied"/>
+    /// </summary>
+    public static FastEvent<Action<Firearm>> OnAttachmentsApplied { get; } =
+        FastEvents.DefineEvent<Action<Firearm>>(typeof(AttachmentsUtils),
+            nameof(AttachmentsUtils.OnAttachmentsApplied));
+
+    /// <summary>
+    /// Gets enabled attachments from a code.
+    /// </summary>
+    /// <param name="firearmType">The type of the firearm.</param>
+    /// <param name="attachmentsCode">The attachment code.</param>
+    /// <param name="attachments">Target list of enabled attachments.</param>
+    /// <returns>true if the attachment list was successfully retrieved (false if the item is not a firearm)</returns>
+    public static bool GetAttachments(ItemType firearmType, uint attachmentsCode, IList<AttachmentName> attachments)
+    {
+        if (attachments is null)
+            throw new ArgumentNullException(nameof(attachments));
+        
+        if (!firearmType.TryGetItemPrefab<Firearm>(out var firearm))
+            return false;
+
+        var code = 0U;
+        
+        for (var i = 0; i < firearm.Attachments.Length; i++)
+        {
+            if ((attachmentsCode & code) == code)
+                attachments.Add(firearm.Attachments[i].Name);
+
+            code *= 2U;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Applies the attachments change to the target firearm.
+    /// </summary>
+    /// <param name="firearm">The target firearm.</param>
+    /// <param name="newCode">The new received code.</param>
+    /// <param name="toBeEnabled">The attachments to enable.</param>
+    /// <param name="toBeDisabled">The attachments to disable.</param>
+    /// <param name="invokeEvent">Whether or not to invoke the <see cref="AttachmentsUtils.OnAttachmentsApplied"/> event.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void ApplyAttachmentsDiff(this Firearm firearm, uint newCode, IList<AttachmentName> toBeEnabled,
+        IList<AttachmentName> toBeDisabled, bool invokeEvent = false)
+    {
+        if (firearm is null)
+            throw new ArgumentNullException(nameof(firearm));
+
+        if (toBeEnabled is null)
+            throw new ArgumentNullException(nameof(toBeEnabled));
+
+        if (toBeDisabled is null)
+            throw new ArgumentNullException(nameof(toBeDisabled));
+
+        var anyChanged = false;
+
+        for (var i = 0; i < firearm.Attachments.Length; i++)
+        {
+            var attachment = firearm.Attachments[i];
+
+            if (toBeDisabled.Contains(attachment.Name) && attachment.IsEnabled)
+            {
+                attachment.IsEnabled = false;
+                anyChanged = true;
+            }
+            else if (toBeEnabled.Contains(attachment.Name) && !attachment.IsEnabled)
+            {
+                attachment.IsEnabled = true;
+                anyChanged = true;
+            }
+        }
+
+        if (anyChanged)
+        {
+            for (var i = 0; i < firearm.AllSubcomponents.Length; i++)
+            {
+                if (firearm.AllSubcomponents[i] is FirearmSubcomponentBase subcomponent)
+                {
+                    subcomponent.OnAttachmentsApplied();
+                }
+            }
+
+            if (invokeEvent)
+                OnAttachmentsApplied.InvokeEvent(null, firearm);
+            
+            AttachmentCodeSync.ServerSetCode(firearm.ItemSerial, firearm.GetCurrentAttachmentsCode());
+            AttachmentsServerHandler.ServerApplyPreference(firearm.Owner, firearm.ItemTypeId, newCode);
+        }
+    }
+    
+    /// <summary>
+    /// Gets a list of active, to-enable and to-disable attachment names.
+    /// </summary>
+    /// <param name="firearm">The target firearm.</param>
+    /// <param name="newCode">The new validated attachments code.</param>
+    /// <param name="current">The list of currently enabled attachments.</param>
+    /// <param name="toBeEnabled">The list of attachments to be enabled.</param>
+    /// <param name="toBeDisabled">The list of attachments to be disabled.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void GetAttachmentsDiff(this Firearm firearm, uint newCode,
+        IList<AttachmentName> current, IList<AttachmentName> toBeEnabled, IList<AttachmentName> toBeDisabled)
+    {
+        if (firearm is null)
+            throw new ArgumentNullException(nameof(firearm));
+
+        if (current is null)
+            throw new ArgumentNullException(nameof(current));
+
+        if (toBeEnabled is null)
+            throw new ArgumentNullException(nameof(toBeEnabled));
+
+        if (toBeDisabled is null)
+            throw new ArgumentNullException(nameof(toBeDisabled));
+
+        var code = 0U;
+
+        for (var i = 0; i < firearm.Attachments.Length; i++)
+        {
+            var attachment = firearm.Attachments[i];
+            var enabled = (newCode & code) == code;
+
+            if (attachment.IsEnabled)
+                current.Add(attachment.Name);
+            
+            if (!enabled && attachment.IsEnabled)
+                toBeDisabled.Add(attachment.Name);
+            else if (enabled && !attachment.IsEnabled)
+                toBeEnabled.Add(attachment.Name);
+
+            code *= 2U;
+        }
+    }
+    
     /// <summary>
     /// Whether or not the firearm has a specific attachment active.
     /// </summary>

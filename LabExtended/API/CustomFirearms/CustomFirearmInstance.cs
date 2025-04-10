@@ -30,45 +30,11 @@ public class CustomFirearmInstance : CustomItemInstance
     /// Gets the Custom Firearm configuration.
     /// </summary>
     public new CustomFirearmData? CustomData => base.CustomData as CustomFirearmData;
-
-    /// <summary>
-    /// Gets the firearm's action module.
-    /// </summary>
-    public IActionModule? ActionModule { get; private set; }
     
     /// <summary>
-    /// Gets the firearm's ADS preventer module.
+    /// Gets the firearm's unloaded custom ammo.
     /// </summary>
-    public IAdsPreventerModule? AdsPreventerModule { get; private set; }
-    
-    /// <summary>
-    /// Gets the firearm's ADS module.
-    /// </summary>
-    public LinearAdsModule? AdsModule { get; private set; }
-
-    /// <summary>
-    /// Gets the firearm's inaccuracy while aiming.
-    /// </summary>
-    public float AimInaccuracy => AdsModule?.Inaccuracy ?? 0f;
-
-    /// <summary>
-    /// Whether or not the user is currently aiming.
-    /// </summary>
-    public bool IsAiming => AdsModule?._userInput ?? false;
-
-    /// <summary>
-    /// Whether or not the user is allowed to aim.
-    /// </summary>
-    public bool IsAimingAllowed => !IsAiming && (AdsPreventerModule?.AdsAllowed ?? true);
-    
-    /// <summary>
-    /// Whether or not the firearm is cocked.
-    /// </summary>
-    public bool IsCocked
-    {
-        get => ActionModule?.IsCocked() ?? false;
-        set => ActionModule?.SetCocked(value);
-    }
+    public int UnloadedAmmo { get; internal set; }
 
     /// <summary>
     /// Gets called once a shot processing starts. 
@@ -98,6 +64,21 @@ public class CustomFirearmInstance : CustomItemInstance
     /// </summary>
     /// <param name="eventArgs">The <see cref="FirearmRayCastEventArgs"/> event arguments.</param>
     public virtual void OnRayCast(FirearmRayCastEventArgs eventArgs) { }
+
+    /// <summary>
+    /// Gets called before a player is damaged.
+    /// </summary>
+    /// <param name="target">The player to damage.</param>
+    /// <param name="damage">The damage to be dealt.</param>
+    /// <returns>true if the player should be damaged</returns>
+    public virtual bool OnHurting(ExPlayer target, ref float damage) => true;
+    
+    /// <summary>
+    /// Gets called after a player is damaged.
+    /// </summary>
+    /// <param name="target">The player that was damaged.</param>
+    /// <param name="damage">The damage the player received.</param>
+    public virtual void OnHurt(ExPlayer target, float damage) { }
     
     /// <summary>
     /// Gets called before the weapon is dry-fired.
@@ -110,20 +91,34 @@ public class CustomFirearmInstance : CustomItemInstance
     /// </summary>
     public virtual void OnDryFired() { }
 
+    /// <summary>
+    /// Gets called before the firearm is reloaded.
+    /// </summary>
+    /// <returns>true if the firearm should be allowed to reload</returns>
+    public virtual bool OnReloading() => true;
+    
+    /// <summary>
+    /// Gets called after the firearm is reloaded.
+    /// </summary>
+    public virtual void OnReloaded() { }
+
+    /// <summary>
+    /// Gets called before the firearm's ammo is unloaded.
+    /// </summary>
+    /// <returns>true if the firearm's ammo should be unloaded</returns>
+    public virtual bool OnUnloading() => true;
+    
+    /// <summary>
+    /// Gets called after the firearm's ammo is unloaded.
+    /// </summary>
+    public virtual void OnUnloaded() { }
+
     internal override void OnItemSet()
     {
         base.OnItemSet();
         
         Item = base.Item as Firearm;
         Pickup = null;
-
-        if (Item != null)
-        {
-            ActionModule = Item.GetModule<IActionModule>();
-            
-            AdsModule = Item.GetModule<LinearAdsModule>();
-            AdsPreventerModule = Item.GetModule<IAdsPreventerModule>();
-        }
     }
 
     internal override void OnPickupSet()
@@ -131,11 +126,6 @@ public class CustomFirearmInstance : CustomItemInstance
         base.OnPickupSet();
         
         Pickup = base.Pickup as FirearmPickup;
-        
         Item = null;
-
-        AdsModule = null;
-        ActionModule = null;
-        AdsPreventerModule = null;
     }
 }
