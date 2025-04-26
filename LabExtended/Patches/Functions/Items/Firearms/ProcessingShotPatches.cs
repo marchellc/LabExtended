@@ -28,11 +28,30 @@ public static class ProcessingShotPatches
     {
         __instance._serverQueuedRequests.Update();
 
-        if (__instance.Firearm.AnyModuleBusy(__instance)
-            || !__instance._serverQueuedRequests.TryDequeue(out var dequeued)
-            || !__instance.Cocked
-            || !__instance.BoltLocked)
+        if (!__instance._serverQueuedRequests.TryDequeue(out var dequeued))
             return false;
+
+        if (!__instance.Cocked)
+        {
+            __instance.ServerSendRejection(AutomaticActionModule.RejectionReason.NotCocked);
+            return false;
+        }
+
+        if (__instance.BoltLocked)
+        {
+            __instance.ServerSendRejection(AutomaticActionModule.RejectionReason.BoltLocked);
+            return false;
+        }
+
+        for (var i = 0; i < __instance.Firearm.Modules.Length; i++)
+        {
+            if (__instance.Firearm.Modules[i] is not IBusyIndicatorModule { IsBusy: true } busyIndicatorModule
+                || busyIndicatorModule == __instance)
+                continue;
+            
+            __instance.ServerSendRejection(AutomaticActionModule.RejectionReason.ModuleBusy, (busyIndicatorModule as ModuleBase).SyncId);
+            return false;
+        }
 
         ExPlayer? targetPlayer = dequeued.BacktrackData.HasPrimaryTarget
             ? ExPlayer.Get(dequeued.BacktrackData.PrimaryTargetHub)
@@ -150,7 +169,8 @@ public static class ProcessingShotPatches
         
         shotData.ProcessShot(__instance.Firearm, hub => __instance._hitregModule.Fire(hub, shotEvent));
         
-        __instance.SendRpc(x => x.WriteSubheader(DoubleActionModule.MessageType.RpcFire));
+        __instance.SendRpc(t => t != __instance.Firearm.Owner && !t.isLocalPlayer, 
+            x => x.WriteSubheader(DoubleActionModule.MessageType.RpcFire));
 
         var clipOverride = __instance.Firearm.AttachmentsValue(AttachmentParam.ShotClipIdOverride);
         
