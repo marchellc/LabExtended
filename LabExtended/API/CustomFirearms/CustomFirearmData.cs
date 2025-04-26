@@ -28,4 +28,9 @@ public class CustomFirearmData : CustomItemData
     /// Whether or not this firearm can damage teammates.
     /// </summary>
     public bool AllowsTeamDamage { get; internal set; }
+    
+    /// <summary>
+    /// Whether or not this firearm allows attachments to be changed via workstations.
+    /// </summary>
+    public bool AllowsAttachmentsChange { get; internal set; }
 }

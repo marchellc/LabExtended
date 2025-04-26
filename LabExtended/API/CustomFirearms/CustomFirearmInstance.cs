@@ -35,6 +35,11 @@ public class CustomFirearmInstance : CustomItemInstance
     /// Gets the firearm's unloaded custom ammo.
     /// </summary>
     public int UnloadedAmmo { get; internal set; }
+    
+    /// <summary>
+    /// Gets the firearm's loaded custom ammo.
+    /// </summary>
+    public int LoadedAmmo { get; internal set; }
 
     /// <summary>
     /// Gets called once a shot processing starts. 
@@ -112,6 +117,18 @@ public class CustomFirearmInstance : CustomItemInstance
     /// Gets called after the firearm's ammo is unloaded.
     /// </summary>
     public virtual void OnUnloaded() { }
+    
+    /// <summary>
+    /// Gets called before the firearm's attachments are changed.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnChangingAttachments(PlayerChangingFirearmAttachmentsEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called after the firearm's attachments are changed.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnChangedAttachments(PlayerChangedFirearmAttachmentsEventArgs args) { }
 
     internal override void OnItemSet()
     {
