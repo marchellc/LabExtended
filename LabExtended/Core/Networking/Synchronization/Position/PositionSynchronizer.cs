@@ -116,7 +116,7 @@ public static class PositionSynchronizer
                     var position = isInvisible ? FpcMotor.InvisiblePosition : other.Transform.position;
                     var posBit = false;
 
-                    if (player.Position.FakedList.GlobalValue != Vector3.zero)
+                    if (player.Position.FakedList.HasGlobalValue)
                     {
                         position = player.Position.FakedList.GlobalValue;
                         posBit = true;
