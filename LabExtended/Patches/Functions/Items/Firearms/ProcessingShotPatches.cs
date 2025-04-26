@@ -99,18 +99,24 @@ public static class ProcessingShotPatches
         PlayerEvents.OnShootingWeapon(shootingEventArgs);
 
         if (!shootingEventArgs.IsAllowed)
+        {
+            __instance.SendRpc(x => x.WriteSubheader(DisruptorActionModule.MessageType.RpcStopFiring));
             return false;
+        }
 
         var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
 
         if (customFirearm is not null && !customFirearm.OnProcessingShot(null, null))
+        {
+            __instance.SendRpc(x => x.WriteSubheader(DisruptorActionModule.MessageType.RpcStopFiring));
             return false;
-        
+        }
+
         __instance.SendRpc(x =>
         {
             x.WriteSubheader(DisruptorActionModule.MessageType.RpcStartFiring);
-            x.WriteBool(__instance._magModule.AmmoStored == 1);
             x.WriteBool(ads);
+            x.WriteBool(__instance._magModule.AmmoStored == 1);
         });
         
         __instance._magModule.ServerModifyAmmo(-1);
