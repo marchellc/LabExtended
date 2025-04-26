@@ -1,10 +1,9 @@
 ﻿using HarmonyLib;
-
+using LabApi.Events.Arguments.Scp939Events;
+using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Events;
-using LabExtended.Events.Scp939;
-
 using Mirror;
 
 using PlayerRoles.FirstPersonControl;
@@ -16,6 +15,7 @@ using RelativePositioning;
 using UnityEngine;
 
 using Utils.Networking;
+using Scp939LungingEventArgs = LabExtended.Events.Scp939.Scp939LungingEventArgs;
 
 namespace LabExtended.Patches.Functions.Scp939
 {
@@ -83,8 +83,20 @@ namespace LabExtended.Patches.Functions.Scp939
 
             var damageDealt = false;
 
-            if (!Physics.Linecast(pos, curPos, PlayerRolesUtils.BlockerMask))
-                damageDealt = hub.playerStats.DealDamage(new Scp939DamageHandler(__instance.CastRole, lungingArgs.LungeTargetDamage, Scp939DamageType.LungeTarget));
+            if (!Physics.Linecast(pos, curPos, PlayerRolesUtils.AttackMask))
+            {
+                var attackingArgs = new Scp939AttackingEventArgs(__instance.Owner, target.ReferenceHub, lungingArgs.LungeTargetDamage);
+                
+                Scp939Events.OnAttacking(attackingArgs);
+
+                if (!attackingArgs.IsAllowed)
+                    return false;
+                
+                damageDealt = hub.playerStats.DealDamage(new Scp939DamageHandler(__instance.CastRole,
+                    attackingArgs.Damage, Scp939DamageType.LungeTarget));
+                
+                Scp939Events.OnAttacked(new(__instance.Owner, target.ReferenceHub, attackingArgs.Damage));
+            }
 
             var num = damageDealt ? 1f : 0f;
 
@@ -103,12 +115,22 @@ namespace LabExtended.Patches.Functions.Scp939
 
                     if ((otherRole.FpcModule.Position - cachedPos).sqrMagnitude <= __instance._secondaryRangeSqr)
                     {
-                        if (Physics.Linecast(otherPos, pos, PlayerRolesUtils.BlockerMask))
+                        if (Physics.Linecast(otherPos, pos, PlayerRolesUtils.AttackMask))
                             return false;
 
+                        var attackingArgs = new Scp939AttackingEventArgs(__instance.Owner, other.ReferenceHub,
+                            lungingArgs.LungeSecondaryDamage);
+                        
+                        Scp939Events.OnAttacking(attackingArgs);
+                        
+                        if (!attackingArgs.IsAllowed)
+                            continue;
+
                         if (other.ReferenceHub.playerStats.DealDamage(new Scp939DamageHandler(__instance.CastRole, 
-                                lungingArgs.LungeSecondaryDamage, Scp939DamageType.LungeSecondary)))
+                                attackingArgs.Damage, Scp939DamageType.LungeSecondary)))
                         {
+                            Scp939Events.OnAttacked(new(__instance.Owner, target.ReferenceHub, attackingArgs.Damage));
+                            
                             damageDealt = true;
                             num = Mathf.Max(num, 0.6f);
                         }

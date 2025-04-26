@@ -352,7 +352,7 @@ public class VoiceController : IDisposable
             if (!send || msg.Channel is VoiceChatChannel.None)
                 continue;
 
-            var receivingArgs = new PlayerReceivingVoiceMessageEventArgs(player.ReferenceHub, msg);
+            var receivingArgs = new PlayerReceivingVoiceMessageEventArgs(player.ReferenceHub, ref msg);
             
             PlayerEvents.OnReceivingVoiceMessage(receivingArgs);
 

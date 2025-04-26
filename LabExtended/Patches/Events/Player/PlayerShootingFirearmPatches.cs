@@ -1,13 +1,15 @@
 ﻿using HarmonyLib;
 
 using InventorySystem.Items.Firearms.Modules;
-
+using InventorySystem.Items.Firearms.Modules.Misc;
 using LabExtended.API;
-
+using LabExtended.API.CustomFirearms;
+using LabExtended.API.CustomItems;
 using LabExtended.Events;
 using LabExtended.Events.Firearms;
 using LabExtended.Events.Player;
-
+using LabExtended.Extensions;
+using PlayerRoles;
 using PlayerStatsSystem;
 
 using UnityEngine;
@@ -19,136 +21,98 @@ namespace LabExtended.Patches.Events.Player;
 /// </summary>
 public static class PlayerShootingFirearmPatches
 {
-    [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerPerformHitscan))]
-    public static bool HitscanPrefix(HitscanHitregModuleBase __instance, Ray targetRay, out float targetDamage,
-        ref bool __result)
+    [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerAppendPrescan))]
+    public static bool HitscanPrefix(HitscanHitregModuleBase __instance, Ray targetRay, HitscanResult toAppend)
     {
-        targetDamage = 0f;
-
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
 
-        __instance.ServerLastDamagedTargets.Clear();
+        var distance = __instance.DamageFalloffDistance + __instance.FullDamageDistance;
 
-        var maxDistance = __instance.DamageFalloffDistance + __instance.FullDamageDistance;
-        var wasHit = Physics.Raycast(targetRay, out var raycastHit, maxDistance, HitscanHitregModuleBase.HitregMask);
+        if (!Physics.Raycast(targetRay, out var hit, distance, HitscanHitregModuleBase.HitregMask))
+            return false;
 
-        var rayCastEventArgs = new FirearmRayCastEventArgs(player, __instance.Firearm, targetRay, maxDistance,
-            wasHit ? raycastHit : null);
+        var custom = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var args = new FirearmRayCastEventArgs(player, __instance.Firearm, targetRay, distance, hit);
 
-        if (!ExFirearmEvents.OnRayCast(rayCastEventArgs)
-            || (wasHit && !rayCastEventArgs.Hit.HasValue)
-            || !wasHit)
-            return __result = false;
+        custom?.OnRayCast(args);
+        
+        if (!ExFirearmEvents.OnRayCast(args)  || !args.Hit.HasValue)
+            return false;
 
-        if (rayCastEventArgs.Hit.HasValue)
-            raycastHit = rayCastEventArgs.Hit.Value;
+        hit = args.Hit.Value;
+        
+        if (hit.collider is null)
+            return false;
 
-        if (raycastHit.collider != null)
+        if (!hit.collider.TryGetComponent<IDestructible>(out var destructible))
         {
-            if (raycastHit.collider.TryGetComponent<IDestructible>(out var destructible))
-            {
-                if (!__instance.ValidateTarget(destructible))
-                    return __result = false;
-
-                targetDamage = __instance.ServerProcessTargetHit(destructible, raycastHit);
-            }
-            else
-            {
-                var shootingEventArgs =
-                    new PlayerShootingFirearmEventArgs(player, __instance.Firearm, null, targetDamage, raycastHit);
-
-                if (!ExPlayerEvents.OnShootingFirearm(shootingEventArgs))
-                    return __result = false;
-                
-                targetDamage = __instance.ServerProcessObstacleHit(raycastHit);
-                
-                ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, null, targetDamage, raycastHit,
-                    shootingEventArgs.TargetPlayer));
-            }
-
-            if (__instance.Firearm.TryGetModule<ImpactEffectsModule>(out var impactEffectsModule))
-                impactEffectsModule.ServerProcessHit(raycastHit, targetRay.origin, targetDamage > 0f);
-
-            __result = true;
+            toAppend.Obstacles.Add(new(targetRay, hit));
         }
-
+        else
+        {
+            if (!__instance.ValidateTarget(destructible, toAppend))
+                return false;
+            
+            toAppend.Destructibles.Add(new(destructible, hit, targetRay));
+        }
+        
         return false;
     }
 
-    [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerProcessTargetHit))]
-    public static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, IDestructible dest,
-        RaycastHit hitInfo, ref float __result)
+    [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerApplyDestructibleDamage))]
+    public static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, DestructibleHitPair target, HitscanResult result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
+
+        var damage = __instance.DamageAtDistance(target.Hit.distance);
+        var args = new PlayerShootingFirearmEventArgs(player, __instance.Firearm, target.Destructible, target.Ray,
+            target.Hit, damage, result);
+
+        if (!ExPlayerEvents.OnShootingFirearm(args))
+            return false;
         
-        __result = __instance.DamageAtDistance(hitInfo.distance);
+        var handler = __instance.GetHandler(args.TargetDamage);
 
-        var shootingEventArgs =
-            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, dest, __result, hitInfo);
-
-        if (!ExPlayerEvents.OnShootingFirearm(shootingEventArgs))
+        if (target.Destructible is HitboxIdentity hitboxIdentity
+            && hitboxIdentity.TargetHub.IsAlive())
         {
-            __result = shootingEventArgs.TargetDamage;
+            result.RegisterDamage(hitboxIdentity, damage, handler);
+
+            ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, target.Destructible, target.Ray, target.Hit,
+                args.TargetDamage, result, args.TargetPlayer));
             return false;
         }
 
-        __result = shootingEventArgs.TargetDamage;
-
-        var handler = new FirearmDamageHandler(__instance.Firearm, shootingEventArgs.TargetDamage,
-            __instance.EffectivePenetration, __instance.UseHitboxMultipliers);
-
-        if (!dest.Damage(shootingEventArgs.TargetDamage, handler, hitInfo.point))
-        {
-            __result = 0f;
+        if (!target.Destructible.Damage(args.TargetDamage, handler, target.Hit.point))
             return false;
-        }
         
-        if (dest is HitboxIdentity hitboxIdentity)
-            __instance.SendDamageIndicator(hitboxIdentity.TargetHub, shootingEventArgs.TargetDamage);
-
-        __instance.ServerLastDamagedTargets.Add(dest);
+        result.RegisterDamage(target.Destructible, damage, handler);
         
-        ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, dest, handler.DealtHealthDamage, hitInfo,
-            shootingEventArgs.TargetPlayer));
+        ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, target.Destructible, target.Ray, target.Hit,
+            args.TargetDamage, result, args.TargetPlayer));
+        
+        __instance.ServerPlayImpactEffects(target.Raycast, damage > 0f);
         return false;
     }
 
-    [HarmonyPatch(typeof(DisruptorHitregModule), nameof(DisruptorHitregModule.ServerProcessTargetHit))]
-    public static bool DisruptorProcessTargetHitPrefix(DisruptorHitregModule __instance, IDestructible dest,
-        RaycastHit hitInfo, ref float __result)
+    [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerApplyObstacleDamage))]
+    public static bool HitscanProcessObstacleHitPrefix(DisruptorHitregModule __instance, HitRayPair hitInfo, HitscanResult result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
         
-        __result = __instance.DamageAtDistance(hitInfo.distance) 
-                   * Mathf.Pow(1f / __instance._singleShotDivisionPerTarget, __instance._serverPenetrations);
+        var args = new PlayerShootingFirearmEventArgs(player, __instance.Firearm, null, hitInfo.Ray, hitInfo.Hit, 
+            0f, result);
 
-        var shootingEventArgs =
-            new PlayerShootingFirearmEventArgs(player, __instance.Firearm, dest, __result, hitInfo);
-
-        if (!ExPlayerEvents.OnShootingFirearm(shootingEventArgs))
-        {
-            __result = 0f;
+        if (!ExPlayerEvents.OnShootingFirearm(args))
             return false;
-        }
-
-        __result = shootingEventArgs.TargetDamage;
-
-        var handler =
-            new DisruptorDamageHandler(__instance.DisruptorShotData, __instance._lastShotRay.direction, __result);
-
-        if (!dest.Damage(__result, handler, hitInfo.point))
-        {
-            __result = 0f;
-            return false;
-        }
         
-        if (dest is HitboxIdentity hitboxIdentity)
-            __instance.SendDamageIndicator(hitboxIdentity.TargetHub, __result);
+        __instance.ServerPlayImpactEffects(hitInfo, false);
 
-        __instance.ServerLastDamagedTargets.Add(dest);
+        ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, null, hitInfo.Ray, hitInfo.Hit, 0f, result,
+            args.TargetPlayer));
         return false;
     }
 }

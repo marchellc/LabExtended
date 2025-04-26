@@ -26,7 +26,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
                 return false;
 
             var playerPos = fpcRole.FpcModule.Position;
-            var playerRoom = RoomUtils.RoomAtPositionRaycasts(playerPos);
+            var playerRoom = playerPos.TryGetRoom(out var room) ? room : null;
 
             if (playerRoom is null)
                 return false;

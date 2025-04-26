@@ -33,7 +33,7 @@ namespace LabExtended.Patches.Functions.Scp173
                 return __result = false;
 
             var position = __instance.CastRole.FpcModule.Position;
-            var roomIdentifier = RoomUtils.RoomAtPosition(position);
+            var roomIdentifier = position.TryGetRoom(out var room) ? room : null;
             var vision = VisionInformation.GetVisionInformation(target, target.PlayerCameraReference, position, __instance._modelWidth, roomIdentifier != null && roomIdentifier.Zone == FacilityZone.Surface ? __instance._maxViewDistance * 2f : __instance._maxViewDistance, checkFog: false, checkLineOfSight: false);
 
             if (!vision.IsLooking)

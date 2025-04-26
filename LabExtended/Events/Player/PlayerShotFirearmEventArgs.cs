@@ -1,4 +1,5 @@
 ﻿using InventorySystem.Items.Firearms;
+using InventorySystem.Items.Firearms.Modules.Misc;
 
 using LabExtended.API;
 
@@ -7,7 +8,7 @@ using UnityEngine;
 namespace LabExtended.Events.Player;
 
 /// <summary>
-/// Gets called after a firearm is shot.
+/// Gets called after a firearm calculates target hits.
 /// </summary>
 public class PlayerShotFirearmEventArgs : EventArgs
 {
@@ -29,15 +30,25 @@ public class PlayerShotFirearmEventArgs : EventArgs
     /// <summary>
     /// Gets the raycast which was used.
     /// </summary>
-    public RaycastHit RaycastHit { get; }
+    public HitscanResult Hitscan { get; }
+    
+    /// <summary>
+    /// Gets the ray which was used to cast.
+    /// </summary>
+    public Ray OriginRay { get; }
+    
+    /// <summary>
+    /// Gets the raycast hit.
+    /// </summary>
+    public RaycastHit Hit { get; }
     
     /// <summary>
     /// Gets the target which is getting damaged (can be null).
     /// </summary>
     public IDestructible? Target { get; }
-    
+
     /// <summary>
-    /// Gets or sets the damage which has been dealt.
+    /// Gets or sets the damage which is going to be dealt.
     /// </summary>
     public float TargetDamage { get; }
 
@@ -47,14 +58,20 @@ public class PlayerShotFirearmEventArgs : EventArgs
     /// <param name="player">The player shooting the firearm.</param>
     /// <param name="firearm">The firearm which is being shot.</param>
     /// <param name="target">The target which is getting hit.</param>
+    /// <param name="ray">The ray used to cast.</param>
+    /// <param name="hit">The cast raycast hit.</param>
     /// <param name="damage">The damage to deal to the target.</param>
-    /// <param name="raycastHit">The raycast which was used.</param>
-    /// <param name="targetPlayer">The player which was hit.</param>
-    public PlayerShotFirearmEventArgs(ExPlayer player, Firearm firearm, IDestructible target, float damage, RaycastHit raycastHit, ExPlayer? targetPlayer)
+    /// <param name="hitscan">The raycast which was used.</param>
+    /// <param name="targetPlayer">The player who got hit.</param>
+    public PlayerShotFirearmEventArgs(ExPlayer player, Firearm firearm, IDestructible? target, Ray ray, RaycastHit hit, float damage, 
+        HitscanResult hitscan, ExPlayer targetPlayer)
     {
         Player = player;
         Firearm = firearm;
-        RaycastHit = raycastHit;
+        Hitscan = hitscan;
+        
+        OriginRay = ray;
+        Hit = hit;
         
         Target = target;
         TargetDamage = damage;

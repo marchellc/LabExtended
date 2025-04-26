@@ -1,4 +1,5 @@
-﻿using LabExtended.Utilities;
+﻿using LabApi.Features.Wrappers;
+using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
 
 using MapGeneration;
@@ -41,7 +42,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player's current room.
         /// </summary>
-        public RoomIdentifier Room => RoomUtils.RoomAtPosition(Position);
+        public RoomIdentifier Room => Player.ReferenceHub.CurrentRoomPlayerCache._lastDetected;
 
         /// <summary>
         /// Gets the elevator this player is currently in.
@@ -91,7 +92,7 @@ namespace LabExtended.API.Containers
                 var closestDoor = default(Door);
                 var closestDistance = 0f;
                 
-                foreach (var pair in Door.Lookup)
+                foreach (var pair in Door.Dictionary)
                 {
                     if (closestDoor is null)
                     {

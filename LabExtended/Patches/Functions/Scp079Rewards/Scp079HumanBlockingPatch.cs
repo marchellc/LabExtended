@@ -30,7 +30,7 @@ namespace LabExtended.Patches.Functions.Scp079Rewards
                 if (!player.Role.Is<IFpcRole>(out var fpcRole))
                     continue;
 
-                var plyRoom = RoomUtils.RoomAtPosition(fpcRole.FpcModule.Position);
+                var plyRoom = fpcRole.FpcModule.Position.TryGetRoom(out var pRoom) ? pRoom : null;
 
                 if (plyRoom is null || plyRoom != room)
                     continue;

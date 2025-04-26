@@ -12,6 +12,7 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using NetworkManagerUtils;
+using NetworkManagerUtils.Dummies;
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.

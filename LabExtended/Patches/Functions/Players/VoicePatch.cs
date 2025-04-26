@@ -37,7 +37,7 @@ namespace LabExtended.Patches.Functions.Players
             if (!ExPlayer.TryGet(msg.Speaker, out var speaker))
                 return false;
 
-            var sendingArgs = new PlayerSendingVoiceMessageEventArgs(msg);
+            var sendingArgs = new PlayerSendingVoiceMessageEventArgs(ref msg);
             
             PlayerEvents.OnSendingVoiceMessage(sendingArgs);
 

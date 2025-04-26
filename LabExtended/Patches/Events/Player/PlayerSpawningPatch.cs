@@ -27,7 +27,7 @@ namespace LabExtended.Patches.Events.Player
                 if (player is null)
                     return true;
 
-                var changingArgs = new PlayerChangingRoleEventArgs(player.ReferenceHub, __instance.CurrentRole, newRole, reason);
+                var changingArgs = new PlayerChangingRoleEventArgs(player.ReferenceHub, __instance.CurrentRole, newRole, reason, spawnFlags);
 
                 PlayerEvents.OnChangingRole(changingArgs);
 
@@ -41,23 +41,24 @@ namespace LabExtended.Patches.Events.Player
                                                 && changingArgs.ChangeReason is RoleChangeReason.Destroyed))
                     || __instance.isLocalPlayer)
                 {
-                    bool clearPositionValues = !player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath &&
+                    var clearPositionValues = !player.Position.FakedList.KeepOnRoleChange || (!player.Position.FakedList.KeepOnDeath &&
                         changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died);
+                    var clearRoleValues = !player.Role.FakedList.KeepOnRoleChange || (!player.Role.FakedList.KeepOnDeath &&
+                        changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died);
+                    
                     player.Position.FakedList.ClearValues(clearPositionValues, !player.Position.FakedList.KeepGlobalOnRoleChange);
-
-                    bool clearRoleValues = !player.Role.FakedList.KeepOnRoleChange || (!player.Role.FakedList.KeepOnDeath &&
-                        changingArgs.NewRole is RoleTypeId.Spectator && changingArgs.ChangeReason is RoleChangeReason.Died);
                     player.Role.FakedList.ClearValues(clearRoleValues, !player.Role.FakedList.KeepGlobalOnRoleChange);
                     
                     newRole = changingArgs.NewRole;
                     reason = changingArgs.ChangeReason;
-
+                    spawnFlags = changingArgs.SpawnFlags;
+                    
                     OnServerRoleSet.InvokeEvent(null, player.ReferenceHub, newRole, reason);
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                     __instance._sendNextFrame = true;
 
-                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, curRole, newRole, reason));
+                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, newRole, __instance.CurrentRole, reason, spawnFlags));
                 }
 
                 return false;

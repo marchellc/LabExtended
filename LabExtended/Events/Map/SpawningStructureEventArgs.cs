@@ -1,4 +1,4 @@
-﻿using LabExtended.API;
+﻿using LabApi.Features.Wrappers;
 
 using MapGeneration.Distributors;
 

@@ -19,7 +19,7 @@ using PlayerRoles.PlayableScps.Scp3114;
 using PlayerRoles.PlayableScps.Scp049.Zombies;
 
 using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers;
-
+using PlayerRoles.FirstPersonControl.Thirdperson.Subcontrollers.Wearables;
 using UnityEngine;
 
 namespace LabExtended.API.Containers
@@ -58,7 +58,7 @@ namespace LabExtended.API.Containers
 
         public WearableElements WearableElements
         {
-            get => WearableSync.GetWearables(Manager._hub);
+            get => WearableSync.GetFlags(Manager._hub);
             set => WearableSync.OverrideWearables(Manager._hub, value);
         }
 

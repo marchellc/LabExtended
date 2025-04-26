@@ -2,7 +2,8 @@
 
 using Interactables.Interobjects.DoorUtils;
 
-using LabExtended.API;
+using LabApi.Features.Wrappers;
+
 using LabExtended.Attributes;
 
 using LabExtended.Events;

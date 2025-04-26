@@ -60,11 +60,11 @@ public static class RoundEndPatch
     {
       yield return Timing.WaitForSeconds(2.5f);
 
-      if ((summary._roundEnded || !ExRound.IsRoundLocked &&
+      if ((summary.IsRoundEnded || !ExRound.IsRoundLocked &&
             (!summary.KeepRoundOnOne || ReferenceHub.AllHubs.Count<ReferenceHub>(x =>
               x.authManager.InstanceMode != ClientInstanceMode.DedicatedServer) >= 2) &&
             RoundSummary.RoundInProgress())
-          && (summary._roundEnded || Time.unscaledTime - time >= 15.0f))
+          && (summary.IsRoundEnded || Time.unscaledTime - time >= 15.0f))
       {
         var newList = new RoundSummary.SumInfo_ClassList();
 
@@ -101,6 +101,10 @@ public static class RoundEndPatch
 
             case Team.ClassD:
               ++newList.class_ds;
+              continue;
+
+            case Team.Flamingos:
+              ++newList.flamingos;
               continue;
 
             default:
@@ -141,11 +145,11 @@ public static class RoundEndPatch
           ++num8;
 
         if (num8 <= 0f)
-          summary._roundEnded = true;
+          summary.IsRoundEnded = true;
 
         if (summary.ExtraTargets > 0)
         {
-          if (summary._roundEnded)
+          if (summary.IsRoundEnded)
           {
             var num10 = num1 > 0 ? 1 : 0;
 
@@ -168,6 +172,8 @@ public static class RoundEndPatch
               leadingTeam = RoundSummary.EscapedClassD >= RoundSummary.EscapedScientists
                 ? RoundSummary.LeadingTeam.ChaosInsurgency
                 : RoundSummary.LeadingTeam.Draw;
+            else if (newList.flamingos > 0)
+              leadingTeam = RoundSummary.LeadingTeam.Flamingos;
 
             var endingArgs = new RoundEndingEventArgs(leadingTeam);
 

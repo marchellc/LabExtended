@@ -592,7 +592,7 @@ namespace LabExtended.API.Containers
                 if (!effect.Value.IsActive)
                     continue;
                 
-                if (!effect.Value.OnRoleChanged(args.NewRole))
+                if (!effect.Value.OnRoleChanged(args.NewRole.RoleTypeId))
                     effect.Value.Disable();
             }
         }

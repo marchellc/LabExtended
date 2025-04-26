@@ -17,9 +17,6 @@ public static class ExMapEvents
     public static event Action<DistributingPickupEventArgs>? DistributingPickup; 
     
     /// <inheritdoc cref="DistributingPickupsEventArgs"/>
-    public static event Action<DistributingPickupsEventArgs>? DistributingPickups; 
-    
-    /// <inheritdoc cref="DistributingPickupsEventArgs"/>
     public static event Action<LockerFillingChamberEventArgs>? LockerFillingChamber; 
     
     /// <inheritdoc cref="PocketDimensionDestroyingItemEventArgs"/>
@@ -56,13 +53,6 @@ public static class ExMapEvents
     /// <param name="args">The event arguments.</param>
     public static bool OnDistributingPickup(DistributingPickupEventArgs args)
         => DistributingPickup.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Executes the <see cref="DistributingPickups"/> event.
-    /// </summary>
-    /// <param name="args">The event arguments.</param>
-    public static bool OnDistributingPickups(DistributingPickupsEventArgs args)
-        => DistributingPickups.InvokeBooleanEvent(args);
     
     /// <summary>
     /// Executes the <see cref="LockerFillingChamber"/> event.

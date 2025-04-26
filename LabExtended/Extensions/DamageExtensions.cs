@@ -136,16 +136,16 @@ namespace LabExtended.Extensions
 
             if (damageHandlerBase is Scp939DamageHandler scp939DamageHandler)
             {
-                if (scp939DamageHandler._damageType is Scp939DamageType.Claw)
+                if (scp939DamageHandler.Scp939DamageType is Scp939DamageType.Claw)
                     return DamageType.Scp939Claw;
 
-                if (scp939DamageHandler._damageType is Scp939DamageType.LungeSecondary || scp939DamageHandler._damageType is Scp939DamageType.LungeTarget)
+                if (scp939DamageHandler.Scp939DamageType is Scp939DamageType.LungeSecondary or Scp939DamageType.LungeTarget)
                     return DamageType.Scp939Lunge;
 
-                if (scp939DamageHandler._damageType is Scp939DamageType.None)
+                if (scp939DamageHandler.Scp939DamageType is Scp939DamageType.None)
                     return DamageType.Scp939;
 
-                ApiLog.Warn("Damage API", $"Unknown SCP-939 damage handler: {scp939DamageHandler._damageType}");
+                ApiLog.Warn("Damage API", $"Unknown SCP-939 damage handler: {scp939DamageHandler.Scp939DamageType}");
                 return DamageType.Scp939;
             }
 

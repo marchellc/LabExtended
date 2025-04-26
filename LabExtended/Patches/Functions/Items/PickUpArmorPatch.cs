@@ -37,7 +37,7 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            var pickingUpArgs = new PlayerPickingUpArmorEventArgs(player.ReferenceHub, __instance.TargetPickup);
+            var pickingUpArgs = new PlayerPickingUpArmorEventArgs(player.ReferenceHub, __instance.TargetPickup as BodyArmorPickup);
 
             PlayerEvents.OnPickingUpArmor(pickingUpArgs);
             
@@ -59,10 +59,8 @@ namespace LabExtended.Patches.Functions.Items
                     __instance.TargetPickup.UnlockPickup();
                     return false;
                 }
-                    
-                __instance._currentArmor.DontRemoveExcessOnDrop = true;
                 
-                var pickup = __instance.Hub.inventory.ServerDropItem(__instance._currentArmorSerial);
+                var pickup = __instance.Hub.inventory.ServerDropItem(__instance._currentArmor.ItemSerial);
 
                 if (armorItemInstance != null)
                 {
@@ -114,12 +112,12 @@ namespace LabExtended.Patches.Functions.Items
                     player.customItems.Add(item, customItemInstance);
                 }
                 
-                if (item is BodyArmor bodyArmor)
-                    BodyArmorUtils.RemoveEverythingExceedingLimits(__instance.Hub.inventory, bodyArmor);
+                BodyArmorUtils.SetPlayerDirty(__instance.Hub);
                 
                 __instance.TargetPickup.DestroySelf();
 
-                PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(player.ReferenceHub, item));
+                if (item is BodyArmor bodyArmor)
+                    PlayerEvents.OnPickedUpArmor(new PlayerPickedUpArmorEventArgs(player.ReferenceHub, bodyArmor));
             }
             else
             {

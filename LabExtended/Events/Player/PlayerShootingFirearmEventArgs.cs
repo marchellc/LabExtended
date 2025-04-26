@@ -1,5 +1,5 @@
 ﻿using InventorySystem.Items.Firearms;
-
+using InventorySystem.Items.Firearms.Modules.Misc;
 using LabExtended.API;
 
 using UnityEngine;
@@ -29,7 +29,17 @@ public class PlayerShootingFirearmEventArgs : BooleanEventArgs
     /// <summary>
     /// Gets the raycast which was used.
     /// </summary>
-    public RaycastHit RaycastHit { get; }
+    public HitscanResult Hitscan { get; }
+    
+    /// <summary>
+    /// Gets the ray which was used to cast.
+    /// </summary>
+    public Ray OriginRay { get; }
+    
+    /// <summary>
+    /// Gets the raycast hit.
+    /// </summary>
+    public RaycastHit Hit { get; }
     
     /// <summary>
     /// Gets the target which is getting damaged (can be null).
@@ -47,13 +57,18 @@ public class PlayerShootingFirearmEventArgs : BooleanEventArgs
     /// <param name="player">The player shooting the firearm.</param>
     /// <param name="firearm">The firearm which is being shot.</param>
     /// <param name="target">The target which is getting hit.</param>
+    /// <param name="ray">The ray used to cast.</param>
+    /// <param name="hit">The cast raycast hit.</param>
     /// <param name="damage">The damage to deal to the target.</param>
-    /// <param name="raycastHit">The raycast which was used.</param>
-    public PlayerShootingFirearmEventArgs(ExPlayer player, Firearm firearm, IDestructible target, float damage, RaycastHit raycastHit)
+    /// <param name="hitscan">The raycast which was used.</param>
+    public PlayerShootingFirearmEventArgs(ExPlayer player, Firearm firearm, IDestructible? target, Ray ray, RaycastHit hit, float damage, HitscanResult hitscan)
     {
         Player = player;
         Firearm = firearm;
-        RaycastHit = raycastHit;
+        Hitscan = hitscan;
+        
+        OriginRay = ray;
+        Hit = hit;
         
         Target = target;
         TargetDamage = damage;
