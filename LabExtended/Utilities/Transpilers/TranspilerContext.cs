@@ -117,12 +117,17 @@ public class TranspilerContext
 
             if (instruction.opcode != expectedOpCode)
                 continue;
-            
+
+            if (instruction.operand is LocalBuilder local && local.LocalIndex == Convert.ToInt32(expectedOperand)) {
+                goto skipOperandCheck;
+            }
+
             if ((expectedOperand is null && instruction.operand != null)
                 || (expectedOperand != null && instruction.operand is null)
                 || (expectedOperand != null && !instruction.OperandIs(expectedOperand)))
                 continue;
 
+            skipOperandCheck:
             if (prevMatch.HasValue)
             {
                 var prevIndex = i;
