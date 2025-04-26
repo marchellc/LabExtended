@@ -16,6 +16,8 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
+using LabExtended.Utilities;
+using LabExtended.Utilities.Keycards;
 
 namespace LabExtended.API.Containers
 {
@@ -100,11 +102,12 @@ namespace LabExtended.API.Containers
         public IReadOnlyCollection<ItemPickupBase> DroppedItems => _droppedItems;
 
         /// <summary>
-        /// Gets permissions of the currently held keycard. <i>(<see cref="KeycardPermissions.None"/> if the player isn't holding a keycard)</i>.
+        /// Gets permissions of the currently held keycard. <i>(<see cref="DoorPermissionFlags.None"/> if the player isn't holding a keycard)</i>.
         /// </summary>
-        public KeycardPermissions HeldKeycardPermissions => CurrentItem != null && CurrentItem is KeycardItem keycardItem 
-            ? keycardItem.Permissions 
-            : KeycardPermissions.None;
+        public DoorPermissionFlags HeldKeycardPermissions =>
+            CurrentItem is KeycardItem keycardItem && keycardItem.TryGetDetail<PredefinedPermsDetail>(out var perms)
+                    ? perms.Levels.Permissions
+                    : DoorPermissionFlags.None;
 
         /// <summary>
         /// Whether or not to synchronize items with the player on the next frame.
@@ -178,21 +181,18 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets all keycard permissions of this player (including inventory items).
         /// </summary>
-        public KeycardPermissions AllKeycardPermissions
+        public DoorPermissionFlags AllKeycardPermissions
         {
             get
             {
-                var perms = KeycardPermissions.None;
+                var perms = DoorPermissionFlags.None;
 
                 foreach (var keycard in Keycards)
                 {
-                    var cardPerms = keycard.Permissions.GetFlags();
+                    if (!keycard.TryGetDetail<PredefinedPermsDetail>(out var cardPerms))
+                        continue;
 
-                    foreach (var cardPerm in cardPerms)
-                    {
-                        if (!perms.HasFlagFast(cardPerm))
-                            perms |= cardPerm;
-                    }
+                    perms |= cardPerms.Levels.Permissions;
                 }
 
                 return perms;
@@ -296,8 +296,16 @@ namespace LabExtended.API.Containers
         public bool HasItems(ItemType type, int count)
             => Items.Count(it => it.ItemTypeId == type) >= count;
 
-        public bool HasKeycardPermission(KeycardPermissions keycardPermissions)
-            => Keycards.Any(card => card.Permissions.HasFlagFast(keycardPermissions));
+        public bool HasKeycardPermission(DoorPermissionFlags keycardPermissions, bool anyPermission = false)
+            => Keycards.Any(card =>
+            {
+                if (!card.TryGetDetail<PredefinedPermsDetail>(out var cardPerms))
+                    return false;
+
+                return anyPermission
+                    ? cardPerms.Levels.Permissions.HasFlagAny(keycardPermissions)
+                    : cardPerms.Levels.Permissions.HasFlagAll(keycardPermissions);
+            });
 
         public int CountItems(ItemType type)
             => Items.Count(it => it.ItemTypeId == type);

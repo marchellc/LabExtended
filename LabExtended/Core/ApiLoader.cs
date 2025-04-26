@@ -194,7 +194,9 @@ namespace LabExtended.Core
                     if (!loadedAssemblies.Contains(assembly))
                     {
                         loadedAssemblies.Add(assembly);
+                        
                         assembly.RegisterUpdates();
+                        assembly.RegisterCommands();
                     }
                     
                     var loadMethod = type.FindMethod("ExtendedLoad");
