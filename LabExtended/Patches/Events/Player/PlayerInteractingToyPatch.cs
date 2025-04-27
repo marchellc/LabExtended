@@ -19,9 +19,9 @@ public static class PlayerInteractingToyPatch
             nameof(InvisibleInteractableToy.OnInteracted));
     
     [HarmonyPatch(typeof(InvisibleInteractableToy), nameof(InvisibleInteractableToy.ServerInteract))]
-    public static bool Prefix(InvisibleInteractableToy __instance, ReferenceHub hub)
+    public static bool Prefix(InvisibleInteractableToy __instance, ReferenceHub ply)
     {
-        if (!ExPlayer.TryGet(hub, out var player))
+        if (!ExPlayer.TryGet(ply, out var player))
             return false;
 
         if (!AdminToy.TryGet<InteractableToy>(__instance, out var toy))
@@ -31,9 +31,9 @@ public static class PlayerInteractingToyPatch
             || !toy.CanInteract)
             return false;
 
-        OnInteracted.InvokeEvent(__instance, hub);
+        OnInteracted.InvokeEvent(__instance, ply);
         
-        PlayerEvents.OnInteractedToy(new(hub, __instance));
+        PlayerEvents.OnInteractedToy(new(ply, __instance));
         ExPlayerEvents.OnInteractedToy(new(player, toy));
         
         return false;
