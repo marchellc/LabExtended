@@ -1,9 +1,17 @@
-﻿namespace LabExtended.API.Interfaces
-{
-    public interface IMessage
-    {
-        string Content { get; set; }
+﻿namespace LabExtended.API.Interfaces;
 
-        ushort Duration { get; set; }
-    }
+/// <summary>
+/// Represents common properties for displayable messages.
+/// </summary>
+public interface IMessage
+{
+    /// <summary>
+    /// Gets or sets the content of the message.
+    /// </summary>
+    string? Content { get; set; }
+
+    /// <summary>
+    /// Gets or sets the duration of the message (in seconds).
+    /// </summary>
+    ushort Duration { get; set; }
 }
