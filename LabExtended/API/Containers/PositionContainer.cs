@@ -42,7 +42,9 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player's current room.
         /// </summary>
-        public RoomIdentifier Room => Player.ReferenceHub.CurrentRoomPlayerCache._lastDetected;
+        public RoomIdentifier? Room => Player.ReferenceHub.CurrentRoomPlayerCache._lastValid
+            ? Player.ReferenceHub.CurrentRoomPlayerCache._lastDetected
+            : null;
 
         /// <summary>
         /// Gets the elevator this player is currently in.
@@ -228,11 +230,7 @@ namespace LabExtended.API.Containers
             get
             {
                 WaypointBase.GetRelativePosition(Position, out var waypointId, out _);
-
-                if (!WaypointBase.TryGetWaypoint(waypointId, out var waypoint))
-                    return null;
-
-                return waypoint;
+                return !WaypointBase.TryGetWaypoint(waypointId, out var waypoint) ? null : waypoint;
             }
         }
 
@@ -334,7 +332,7 @@ namespace LabExtended.API.Containers
         /// Resets gravity to it's default for all players.
         /// <param name="predicate">The predicate to filter players by.</param>
         /// </summary>
-        public static void ResetGravity(Func<ExPlayer, bool> predicate = null)
+        public static void ResetGravity(Func<ExPlayer, bool>? predicate = null)
             => SetGravity(DefaultGravity, predicate);
         
         /// <summary>
@@ -342,7 +340,7 @@ namespace LabExtended.API.Containers
         /// </summary>
         /// <param name="gravity">The gravity to set.</param>
         /// <param name="predicate">The predicate to filter players by.</param>
-        public static void SetGravity(Vector3 gravity, Func<ExPlayer, bool> predicate = null)
+        public static void SetGravity(Vector3 gravity, Func<ExPlayer, bool>? predicate = null)
         {
             ExPlayer.Players.ForEach(ply =>
             {
