@@ -21,6 +21,11 @@ using RoundRestarting;
 
 using UnityEngine;
 
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
+#pragma warning disable CS8629 // Nullable value type may be null.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+
 namespace LabExtended.API
 {
     /// <summary>
@@ -171,6 +176,9 @@ namespace LabExtended.API
                 _roundLockTracking = value;
 
                 RoundSummary.RoundLock = _roundLockTracking.HasValue;
+                
+                if (_roundLockTracking.HasValue)
+                    CancelRoundEnd();
 
                 ApiLog.Debug("Round API",
                     _roundLockTracking.HasValue
@@ -401,6 +409,12 @@ namespace LabExtended.API
             => Restart(true, ServerStatic.NextRoundAction.DoNothing);
 
         /// <summary>
+        /// Hides the round ending screen.
+        /// </summary>
+        public static void CancelRoundEnd()
+            => RoundSummary.singleton?.CancelRoundEnding();
+
+        /// <summary>
         /// Hides the background while in "Waiting for players"
         /// </summary>
         public static void HideRoundStartBackground()
@@ -420,9 +434,9 @@ namespace LabExtended.API
         /// Generates round-start player role list.
         /// </summary>
         /// <returns>A dictionary of players and their roles.</returns>
-        public static Dictionary<ExPlayer?, RoleTypeId> ChooseRoles()
+        public static Dictionary<ExPlayer, RoleTypeId> ChooseRoles()
         {
-            var roles = new Dictionary<ExPlayer?, RoleTypeId>();
+            var roles = new Dictionary<ExPlayer, RoleTypeId>();
 
             try
             {
@@ -455,7 +469,7 @@ namespace LabExtended.API
                 RoleAssigner._spawned = true;
                 RoleAssigner.LateJoinTimer.Restart();
 
-                var players = new List<ExPlayer?>(ExPlayer.AllPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
+                var players = new List<ExPlayer>(ExPlayer.AllPlayers.Where(x => !x.IsServer && x.IsOnline && x.Role.Is(RoleTypeId.None)));
                 var scps = 0;
 
                 for (int i = 0; i < players.Count; i++)
