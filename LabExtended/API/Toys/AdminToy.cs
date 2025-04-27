@@ -4,7 +4,11 @@ using Footprinting;
 
 using LabExtended.API.Wrappers;
 using LabExtended.Attributes;
+
 using LabExtended.Events;
+using LabExtended.Extensions;
+
+using Mirror;
 
 using UnityEngine;
 
@@ -238,6 +242,41 @@ namespace LabExtended.API.Toys
         }
 
         /// <summary>
+        /// Gets or sets the toy's custom network parent.
+        /// </summary>
+        public NetworkIdentity? Parent
+        {
+            get
+            {
+                if (Base._clientParentId != 0 &&
+                    NetworkServer.spawned.TryGetValue(Base._clientParentId, out var identity))
+                    return identity;
+
+                return null;
+            }
+            set
+            {
+                if (value is null)
+                {
+                    Base.transform.parent = null;
+                    
+                    Base._previousParent = Base.transform.parent;
+                    Base._clientParentId = 0;
+                    
+                    Base.RpcChangeParent(0);
+                }
+                else
+                {
+                    Base._previousParent = Base.transform.parent;
+                    Base.transform.parent = value.transform;
+                    Base._clientParentId = value.netId;
+                    
+                    Base.RpcChangeParent(value.netId);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets the toy's position, rotation and scale (<b>won't do anything if <see cref="IsStatic"/> is true</b>).
         /// </summary>
         /// <param name="position">The position to set.</param>
@@ -251,6 +290,90 @@ namespace LabExtended.API.Toys
             if (scale.HasValue && scale.Value != Scale)
                 Scale = scale.Value;
         }
+
+        /// <summary>
+        /// Sets the toy's parent to a specific game object.
+        /// <remarks>The targeted game object MUST have a NetworkIdentity component.</remarks>
+        /// </summary>
+        /// <param name="gameObject">The target game object.</param>
+        /// <returns>true if the parent was changed</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool SetParent(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            if (!gameObject.TryFindComponent<NetworkIdentity>(out var identity))
+                return false;
+
+            if (Base._clientParentId == identity.netId)
+                return false;
+
+            Parent = identity;
+            return true;
+        }
+        
+        /// <summary>
+        /// Sets the toy's parent to a specific behaviour.
+        /// <remarks>The targeted behaviour MUST have a NetworkIdentity component.</remarks>
+        /// </summary>
+        /// <param name="behaviour">The target behaviour.</param>
+        /// <returns>true if the parent was changed</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool SetParent(MonoBehaviour behaviour)
+        {
+            if (behaviour == null)
+                throw new ArgumentNullException(nameof(behaviour));
+
+            if (!behaviour.gameObject.TryFindComponent<NetworkIdentity>(out var identity))
+                return false;
+
+            if (Base._clientParentId == identity.netId)
+                return false;
+
+            Parent = identity;
+            return true;
+        }
+        
+        /// <summary>
+        /// Sets the toy's parent to a specific transform.
+        /// <remarks>The targeted transform MUST have a NetworkIdentity component.</remarks>
+        /// </summary>
+        /// <param name="transform">The target transform.</param>
+        /// <returns>true if the parent was changed</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool SetParent(Transform transform)
+        {
+            if (transform == null)
+                throw new ArgumentNullException(nameof(transform));
+
+            if (!transform.gameObject.TryFindComponent<NetworkIdentity>(out var identity))
+                return false;
+
+            if (Base._clientParentId == identity.netId)
+                return false;
+
+            Parent = identity;
+            return true;
+        }
+        
+        /// <summary>
+        /// Sets the toy's parent to a specific network behaviour.
+        /// </summary>
+        /// <param name="behaviour">The target behaviour.</param>
+        /// <returns>true if the parent was changed</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public bool SetParent(NetworkBehaviour behaviour)
+        {
+            if (behaviour == null)
+                throw new ArgumentNullException(nameof(behaviour));
+
+            if (Base._clientParentId == behaviour.netId)
+                return false;
+
+            Parent = behaviour.netIdentity;
+            return true;
+        }
         
         internal static AdminToy Create(AdminToyBase adminToy)
         {
@@ -262,7 +385,9 @@ namespace LabExtended.API.Toys
                 LightSourceToy lightSource => new LightToy(lightSource),
                 ShootingTarget shootingTarget => new TargetToy(shootingTarget),
                 PrimitiveObjectToy primitiveObject => new PrimitiveToy(primitiveObject),
+                InvisibleInteractableToy interactableToy => new InteractableToy(interactableToy),
                 
+                AdminToys.CapybaraToy capybaraToy => new CapybaraToy(capybaraToy),
                 AdminToys.SpeakerToy speakerToy => new SpeakerToy(speakerToy),
 
                 _ => new AdminToy(adminToy)
@@ -271,10 +396,27 @@ namespace LabExtended.API.Toys
             return wrapperToy;
         }
 
+        private static void OnCreated(AdminToyBase toy)
+            => Lookup.Add(toy, Create(toy));
+
+        private static void OnDestroyed(AdminToyBase toy)
+        {
+            if (!Lookup.TryGetValue(toy, out var wrapper))
+                return;
+            
+            if (wrapper is IDisposable disposable)
+                disposable.Dispose();
+            
+            Lookup.Remove(toy);
+        }
+
         [LoaderInitialize(1)]
         private static void OnInit()
         {
             InternalEvents.OnRoundRestart += Lookup.Clear;
+
+            AdminToyBase.OnAdded += OnCreated;
+            AdminToyBase.OnRemoved += OnDestroyed;
         }
     }
 }

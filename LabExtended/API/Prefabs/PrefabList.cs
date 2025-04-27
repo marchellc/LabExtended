@@ -372,6 +372,11 @@ public static class PrefabList
     /// Gets the prefab of the capybara toy.
     /// </summary>
     public static PrefabDefinition Capybara { get; } = new("CapybaraToy");
+    
+    /// <summary>
+    /// Gets the prefab of the interactable toy.
+    /// </summary>
+    public static PrefabDefinition Interactable { get; } = new("InteractableToy");
 
     /// <summary>
     /// Gets the prefab of SCP-106's sinkhole.

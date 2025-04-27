@@ -39,7 +39,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the player that this storage belongs to.
         /// </summary>
-        public ExPlayer Player { get; internal set; }
+        public ExPlayer? Player { get; internal set; }
         
         /// <summary>
         /// Gets the time when the player left. (only for a permanent storage)
@@ -61,7 +61,12 @@ namespace LabExtended.API
             set => _storage[key] = value;
         }
 
-        public PlayerStorage(bool isPersistent, ExPlayer player)
+        /// <summary>
+        /// Creates a new <see cref="PlayerStorage"/> instance.
+        /// </summary>
+        /// <param name="isPersistent">Whether or not this storage is going to be persistent.</param>
+        /// <param name="player">The player that this storage targets.</param>
+        public PlayerStorage(bool isPersistent, ExPlayer? player = null)
         {
             Player = player;
             IsPersistent = isPersistent;
