@@ -377,6 +377,11 @@ public static class PrefabList
     /// Gets the prefab of the interactable toy.
     /// </summary>
     public static PrefabDefinition Interactable { get; } = new("InteractableToy");
+    
+    /// <summary>
+    /// Gets the prefab of the SCP-079 camera toy.
+    /// </summary>
+    public static PrefabDefinition Camera { get; } = new("Scp079CameraToy");
 
     /// <summary>
     /// Gets the prefab of SCP-106's sinkhole.

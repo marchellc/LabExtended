@@ -382,6 +382,7 @@ namespace LabExtended.API.Toys
 
             var wrapperToy = adminToy switch
             {
+                Scp079CameraToy cameraToy => new CameraToy(cameraToy),
                 LightSourceToy lightSource => new LightToy(lightSource),
                 ShootingTarget shootingTarget => new TargetToy(shootingTarget),
                 PrimitiveObjectToy primitiveObject => new PrimitiveToy(primitiveObject),
