@@ -99,6 +99,7 @@ namespace LabExtended.API.Containers
         public SeveredHands SeveredHands { get; private set; }
         public SoundtrackMute SoundtrackMute { get; private set; }
         public SpawnProtected SpawnProtected { get; private set; }
+        public Scp1344Detected Scp1344Detected { get; private set; }
 
         public Traumatized Traumatized { get; private set; }
 
