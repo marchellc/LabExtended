@@ -496,7 +496,7 @@ public static class CommandManager
             
             if (commandType is CommandType.RemoteAdmin && !command.SupportsRemoteAdmin)
                 continue;
-            
+
             if (args.Count < command.Path.Count)
                 continue;
 
