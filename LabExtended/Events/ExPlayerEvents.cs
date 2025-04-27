@@ -89,6 +89,12 @@ public static class ExPlayerEvents
     
     /// <inheritdoc cref="PlayerInteractingToyAbortedEventArgs"/>
     public static event Action<PlayerInteractingToyAbortedEventArgs>? InteractingToyAborted; 
+    
+    /// <inheritdoc cref="PlayerChangedRoomEventArgs"/>
+    public static event Action<PlayerChangedRoomEventArgs>? ChangedRoom;
+    
+    /// <inheritdoc cref="PlayerChangedZoneEventArgs"/>
+    public static event Action<PlayerChangedZoneEventArgs>? ChangedZone; 
     #endregion
     
     #region Items
@@ -291,6 +297,20 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnInteractingToyAborted(PlayerInteractingToyAbortedEventArgs args)
         => InteractingToyAborted.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="ChangedRoom"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnChangedRoom(PlayerChangedRoomEventArgs args)
+        => ChangedRoom.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="ChangedZone"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnChangedZone(PlayerChangedZoneEventArgs args)
+        => ChangedZone.InvokeEvent(args);
     #endregion
     
     #region Handlers - Items
