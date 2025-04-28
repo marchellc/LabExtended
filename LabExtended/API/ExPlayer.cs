@@ -1140,12 +1140,14 @@ public class ExPlayer : Player, IDisposable
 
     /// <summary>
     /// Sends a message to the player's text console part of the Remote Admin panel.
+    /// <remarks>The message will be printed into the server console if the target player is the host.</remarks>
     /// </summary>
     /// <param name="content">The text of the message.</param>
     /// <param name="success">Whether or not to show the message as a warning.</param>
     /// <param name="show">Whether or not to show the message.</param>
     /// <param name="tag">The tag that will be shown in command name.</param>
-    public void SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
+    /// <returns>true if the message was logged (false if the player does not have Remote Admin access)</returns>
+    public bool SendRemoteAdminMessage(object content, bool success = true, bool show = true, string tag = "")
     {
         if (content is null)
             throw new ArgumentNullException(nameof(content));
@@ -1154,13 +1156,19 @@ public class ExPlayer : Player, IDisposable
         {
             ServerConsole.AddLog(content.ToString(), success ? ConsoleColor.Green
                                                                 : ConsoleColor.Red);
-            return;
+            return true;
         }
 
         if (!HasRemoteAdminAccess)
-            return;
+            return false;
 
-        ReferenceHub.queryProcessor.SendToClient(content.ToString(), success, show, tag);
+        var str = content.ToString();
+
+        if (tag?.Length > 0)
+            str = string.Concat(tag, "#", str);
+
+        ReferenceHub.queryProcessor.SendToClient(str, success, show, string.Empty);
+        return true;
     }
 
     /// <summary>

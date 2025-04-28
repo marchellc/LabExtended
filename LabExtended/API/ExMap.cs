@@ -187,7 +187,7 @@ namespace LabExtended.API
         /// <param name="position">The position to spawn the grenade at.</param>
         /// <param name="type">The type of grenade.</param>
         /// <param name="attacker">The attacker.</param>
-        public static void Explode(Vector3 position, ExplosionType type = ExplosionType.Grenade, ExPlayer attacker = null)
+        public static void Explode(Vector3 position, ExplosionType type = ExplosionType.Grenade, ExPlayer? attacker = null)
             => ExplosionUtils.ServerExplode(position, (attacker ?? ExPlayer.Host).Footprint, type);
 
         /// <summary>
@@ -284,7 +284,7 @@ namespace LabExtended.API
             ragdoll.transform.localScale = scale;
 
             if (ragdoll.TryGetComponent<Rigidbody>(out var rigidbody))
-                rigidbody.velocity = velocity;
+                rigidbody.linearVelocity = velocity;
 
             if (spawn)
                 NetworkServer.Spawn(ragdoll.gameObject);
@@ -489,7 +489,7 @@ namespace LabExtended.API
 
                     rigidbody.centerOfMass = Vector3.zero;
                     rigidbody.angularVelocity = settings.StartTorque;
-                    rigidbody.velocity = velocity + vector2 * force;
+                    rigidbody.linearVelocity = velocity + vector2 * force;
                 }
                 else
                 {
@@ -518,7 +518,7 @@ namespace LabExtended.API
                 Lockers.Clear();
                 Chambers.Clear();
 
-                foreach (var locker in UnityEngine.Object.FindObjectsOfType<Locker>())
+                foreach (var locker in UnityEngine.Object.FindObjectsByType<Locker>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
                 {
                     Lockers.Add(locker);
                     Chambers.AddRange(locker.Chambers);
@@ -538,17 +538,16 @@ namespace LabExtended.API
                 if (identity is null)
                     return;
                 
-                Ragdolls.RemoveAll(x => x.netId == identity.netId);
-                Pickups.RemoveAll(x => x.netId == identity.netId);
-                Lockers.RemoveAll(x => x.netId == identity.netId);
-
-                ExPlayer.AllPlayers.ForEach(player => 
+                Lockers.ForEach(l =>
                 {
-                    if (player?.Inventory?._droppedItems is null) 
+                    if (l.netId != identity.netId)
                         return;
                     
-                    player.Inventory._droppedItems.RemoveWhere(x => x.netId == identity.netId);
+                    for (var i = 0; i < l.Chambers.Length; i++)
+                        Chambers.Remove(l.Chambers[i]);
                 });
+                
+                Lockers.RemoveAll(x => x.netId == identity.netId);
 
                 if (identity.TryGetComponent<IInteractable>(out var interactable))
                     InteractableCollider.AllInstances.Remove(interactable);
@@ -575,11 +574,26 @@ namespace LabExtended.API
             Ragdolls.Remove(ragdoll);
         }
 
+        private static void OnPickupDestroyed(ItemPickupBase pickup)
+        {
+            Pickups.Remove(pickup);
+            
+            ExPlayer.AllPlayers.ForEach(p => p.Inventory._droppedItems.Remove(pickup));
+        }
+
+        private static void OnPickupCreated(ItemPickupBase pickup)
+        {
+            Pickups.Add(pickup);
+        }
+
         [LoaderInitialize(1)]
         private static void OnInit()
         {
             RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
             RagdollManager.OnRagdollRemoved += OnRagdollRemoved;
+
+            ItemPickupBase.OnBeforePickupDestroyed += OnPickupDestroyed;
+            ItemPickupBase.OnPickupAdded += OnPickupCreated;
 
             MirrorEvents.Destroying += OnIdentityDestroyed;
 
