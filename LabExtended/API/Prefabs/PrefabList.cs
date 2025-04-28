@@ -102,12 +102,12 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of a Chaos Insurgency keycard.
     /// </summary>
-    public static PrefabDefinition ChaosKeycard { get; } = new("ChaosKeycardPickup");
+    public static PrefabDefinition ChaosKeycard { get; } = new("KeycardPickup_Chaos");
 
     /// <summary>
     /// Gets the prefab of a regular keycard.
     /// </summary>
-    public static PrefabDefinition RegularKeycard { get; } = new("RegularKeycardPickup");
+    public static PrefabDefinition Keycard { get; } = new("KeycardPickup");
 
     /// <summary>
     /// Gets the prefab of a coin.
@@ -376,12 +376,27 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of the interactable toy.
     /// </summary>
-    public static PrefabDefinition Interactable { get; } = new("InteractableToy");
+    public static PrefabDefinition Interactable { get; } = new("InvisibleInteractableToy");
     
     /// <summary>
-    /// Gets the prefab of the SCP-079 camera toy.
+    /// Gets the prefab of the SCP-079 camera toy (Entrance Zone w/ arm version).
     /// </summary>
-    public static PrefabDefinition Camera { get; } = new("Scp079CameraToy");
+    public static PrefabDefinition EzArmCamera { get; } = new("EzArmCameraToy");
+
+    /// <summary>
+    /// Gets the prefab of the SCP-079 camera toy (Entrance Zone version).
+    /// </summary>
+    public static PrefabDefinition EzCamera { get; } = new("EzCameraToy");
+    
+    /// <summary>
+    /// Gets the prefab of the SCP-079 camera toy (Heavy Containment Zone version).
+    /// </summary>
+    public static PrefabDefinition HczCamera { get; } = new("HczCameraToy");
+    
+    /// <summary>
+    /// Gets the prefab of the SCP-079 camera toy (Light Containment Zone version).
+    /// </summary>
+    public static PrefabDefinition LczCamera { get; } = new("LczCameraToy");
 
     /// <summary>
     /// Gets the prefab of SCP-106's sinkhole.
@@ -443,6 +458,11 @@ public static class PrefabList
     /// </summary>
     public static PrefabDefinition ElevatorChamber { get; } = new("ElevatorChamber");
 
+    /// <summary>
+    /// Gets the prefab of an elevator chamber's cargo.
+    /// </summary>
+    public static PrefabDefinition ElevatorChamberCargo { get; } = new("ElevatorChamberCargo");
+    
     /// <summary>
     /// Gets the prefab of the Alpha Warhead elevator.
     /// </summary>

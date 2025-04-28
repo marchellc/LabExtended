@@ -22,7 +22,7 @@ public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
     /// Spawns a new SCP-079 camera toy.
     /// </summary>
     /// <exception cref="Exception"></exception>
-    public CameraToy() : base(PrefabList.Camera.CreateInstance().GetComponent<AdminToyBase>())
+    public CameraToy() : base(PrefabList.EzCamera.CreateInstance().GetComponent<AdminToyBase>())
     {
         Base = base.Base as Scp079CameraToy;
         
