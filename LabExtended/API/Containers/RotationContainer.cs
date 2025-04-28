@@ -11,7 +11,7 @@ namespace LabExtended.API.Containers
     /// <summary>
     /// A class used to manage player rotation.
     /// </summary>
-    public class RotationContainer 
+    public class RotationContainer
     {
         /// <summary>
         /// Creates a new <see cref="RotationContainer"/> instance.
@@ -34,18 +34,18 @@ namespace LabExtended.API.Containers
             {
                 var closestPlayer = default(ExPlayer);
                 var closestDistance = 0f;
-                
+
                 foreach (var player in ExPlayer.AllPlayers)
                 {
                     if (player is null)
                         continue;
-                    
+
                     if (!player.Role.IsAlive)
                         continue;
-                    
+
                     if (player == Player)
                         continue;
-                    
+
                     if (!IsLookingAt(player))
                         continue;
 
@@ -53,12 +53,12 @@ namespace LabExtended.API.Containers
                     {
                         closestPlayer = player;
                         closestDistance = Vector3.Distance(player.Position, Player.Position);
-                        
+
                         continue;
                     }
 
                     var distance = Vector3.Distance(player.Position, Player.Position);
-                    
+
                     if (closestDistance > distance)
                     {
                         closestPlayer = player;
@@ -69,13 +69,13 @@ namespace LabExtended.API.Containers
                 return closestPlayer;
             }
         }
-        
+
         /// <summary>
         /// Gets the player that this player is directly looking at.
         /// </summary>
         public ExPlayer? DirectlyLookingAtPlayer
         {
-            get 
+            get
             {
                 PhysicsUtils.IsDirectlyLookingAtPlayer(Player, out var target);
                 return target;
@@ -147,8 +147,11 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
         /// <returns><see langword="true"/> if the player is in line of sight.</returns>
-        public bool IsInLineOfSight(ExPlayer player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
-            => player != null && player.Role.IsAlive && ((countSpectating && player.IsSpectatedBy(Player)) || IsInLineOfSight(player.CameraTransform.position, radius, distance));
+        public bool IsInLineOfSight(ExPlayer player, float radius = 0.12f, float distance = 60f,
+            bool countSpectating = true)
+            => player != null && player.Role.IsAlive && ((countSpectating && player.IsSpectatedBy(Player)) ||
+                                                         IsInLineOfSight(player.CameraTransform.position, radius,
+                                                             distance));
 
         /// <summary>
         /// Whether or not a specific <see cref="Transform"/> is in line of sight.
@@ -198,7 +201,9 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <returns><see langword="true"/> if the position is in line of sight.</returns>
         public bool IsInLineOfSight(Vector3 position, float radius = 0.12f, float distance = 60f)
-            => VisionInformation.GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance).IsInLineOfSight;
+            => VisionInformation
+                .GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance)
+                .IsInLineOfSight;
 
         /// <summary>
         /// Whether or not a specific player is being looked at by this player.
@@ -208,8 +213,10 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <param name="countSpectating">Whether or not to count spectating the target player.</param>
         /// <returns><see langword="true"/> if the player is being looked at.</returns>
-        public bool IsLookingAt(ExPlayer? player, float radius = 0.12f, float distance = 60f, bool countSpectating = true)
-            => player != null && player.Role.IsAlive && ((player.IsSpectatedBy(Player) && countSpectating) || IsLookingAt(player.Rotation.CameraPosition, radius, distance));
+        public bool IsLookingAt(ExPlayer? player, float radius = 0.12f, float distance = 60f,
+            bool countSpectating = true)
+            => player != null && player.Role.IsAlive && ((player.IsSpectatedBy(Player) && countSpectating) ||
+                                                         IsLookingAt(player.Rotation.CameraPosition, radius, distance));
 
         /// <summary>
         /// Whether or not a specific <see cref="Transform"/> is being looked at by this player.
@@ -259,7 +266,9 @@ namespace LabExtended.API.Containers
         /// <param name="distance">The maximum distance.</param>
         /// <returns><see langword="true"/> if the position is being looked at.</returns>
         public bool IsLookingAt(Vector3 position, float radius = 0.12f, float distance = 60f)
-            => VisionInformation.GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance).IsLooking;
+            => VisionInformation
+                .GetVisionInformation(Player.ReferenceHub, Player.CameraTransform, position, radius, distance)
+                .IsLooking;
 
         /// <summary>
         /// Sets the player's rotation.
@@ -295,7 +304,17 @@ namespace LabExtended.API.Containers
         /// <param name="compressedHorizontal">The horizontal axis to set.</param>
         /// <param name="compressedVertical">The vertical axis to set.</param>
         public void Set(ushort compressedHorizontal, ushort compressedVertical)
-            => Player.Connection.Send(new FpcRotationOverrideMessage(new Vector2(compressedVertical, compressedHorizontal)));
+        {
+            if (Player is { IsDummy: true, Role.MouseLook: not null })
+            {
+                Player.Role.MouseLook.CurrentHorizontal = compressedHorizontal;
+                Player.Role.MouseLook.CurrentVertical = compressedVertical;
+            }
+            else
+            {
+                Player.Connection.Send(new FpcRotationOverrideMessage(new Vector2(compressedVertical, compressedHorizontal)));
+            }
+        }
 
         /// <summary>
         /// Converts the specified <see cref="RotationContainer"/> to a <see cref="Quaternion"/>.

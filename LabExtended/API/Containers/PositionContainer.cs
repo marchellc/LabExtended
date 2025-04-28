@@ -286,7 +286,15 @@ namespace LabExtended.API.Containers
         /// </summary>
         /// <param name="position">The position to set.</param>
         public void Set(Vector3 position)
-            => Player.ReferenceHub.TryOverridePosition(position);
+        {
+            if (Player is { IsDummy: true, Role.Motor: not null })
+            {
+                Player.Role.Motor.ReceivedPosition = new(position);
+                return;
+            }
+            
+            Player.ReferenceHub.TryOverridePosition(position);
+        }
 
         /// <summary>
         /// Gets a list of players in a specified range.
