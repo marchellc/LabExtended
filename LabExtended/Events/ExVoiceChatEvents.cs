@@ -1,4 +1,6 @@
 ﻿using LabExtended.API;
+using LabExtended.API.CustomVoice;
+
 using LabExtended.Extensions;
 
 using VoiceChat.Networking;
@@ -24,9 +26,10 @@ public static class ExVoiceChatEvents
     /// <summary>
     /// Used to handle the <see cref="ExVoiceChatEvents.StoppedSpeaking"/> event.
     /// <remarks>speakingDuration is in seconds.</remarks>
+    /// <remarks>Packets are not captured unless the player's packet capture is enabled (via <see cref="VoiceController.IsCapturing"/>)</remarks>
     /// </summary>
     public delegate void StoppedSpeakingEventHandler(ExPlayer speaker, float speakingDuration,
-        Dictionary<DateTime, VoiceMessage>? sentPackets);
+        Dictionary<long, VoiceMessage>? sentPackets);
     
     /// <summary>
     /// Gets called once a <see cref="VoiceMessage"/> is received from a player.
@@ -45,6 +48,7 @@ public static class ExVoiceChatEvents
     
     /// <summary>
     /// Gets called when a player stops speaking.
+    /// <remarks>Packets are not captured unless the player's packet capture is enabled (via <see cref="VoiceController.IsCapturing"/>)</remarks>
     /// </summary>
     public static event StoppedSpeakingEventHandler? StoppedSpeaking;
 
@@ -57,11 +61,12 @@ public static class ExVoiceChatEvents
     
     /// <summary>
     /// Executes the <see cref="StoppedSpeaking"/> event.
+    /// <remarks>Packets are not captured unless the player's packet capture is enabled (via <see cref="VoiceController.IsCapturing"/>)</remarks>
     /// </summary>
     /// <param name="player">The player who stopped speaking.</param>
     /// <param name="time">How long the player was speaking (in seconds).</param>
     /// <param name="packets">The packets that were received.</param>
-    public static void OnStoppedSpeaking(ExPlayer player, float time, Dictionary<DateTime, VoiceMessage>? packets)
+    public static void OnStoppedSpeaking(ExPlayer player, float time, Dictionary<long, VoiceMessage>? packets)
         => StoppedSpeaking?.Invoke(player, time, packets);
     
     /// <summary>

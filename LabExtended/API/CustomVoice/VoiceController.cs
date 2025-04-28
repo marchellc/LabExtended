@@ -32,11 +32,11 @@ public class VoiceController : IDisposable
     /// </summary>
     public static event Action<VoiceController>? OnJoined; 
     
-    private Dictionary<DateTime, VoiceMessage> _sessionPackets;
-    private Dictionary<Type, VoiceProfile> _profiles;
-
-    private bool _wasSpeaking;
-    private float _speakingTime;
+    private Dictionary<long, VoiceMessage> sessionPackets;
+    private Dictionary<Type, VoiceProfile> profiles;
+    
+    private bool wasSpeaking;
+    private float speakingTime;
     
     /// <summary>
     /// Gets the player that owns this controller.
@@ -59,14 +59,20 @@ public class VoiceController : IDisposable
     public bool IsSpeaking => IsOnline && Player.IsSpeaking;
     
     /// <summary>
+    /// Whether or not voice packet capture is enabled. Captured packets can be accessed via <see cref="SessionPackets"/>
+    /// in the <see cref="ExVoiceChatEvents.StoppedSpeaking"/> event.
+    /// </summary>
+    public bool IsCapturing { get; set; }
+    
+    /// <summary>
     /// Gets all packets sent in a time window.
     /// </summary>
-    public IReadOnlyDictionary<DateTime, VoiceMessage> SessionPackets => _sessionPackets;
+    public IReadOnlyDictionary<long, VoiceMessage> SessionPackets => sessionPackets;
     
     /// <summary>
     /// Gets all registered profiles.
     /// </summary>
-    public IReadOnlyDictionary<Type, VoiceProfile> Profiles => _profiles;
+    public IReadOnlyDictionary<Type, VoiceProfile> Profiles => profiles;
 
     internal VoiceController(ExPlayer player)
     {
@@ -74,8 +80,8 @@ public class VoiceController : IDisposable
         
         Thread = new VoiceThread(this);
         
-        _sessionPackets = DictionaryPool<DateTime, VoiceMessage>.Shared.Rent();
-        _profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
+        sessionPackets = DictionaryPool<long, VoiceMessage>.Shared.Rent();
+        profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
         PlayerLoopHelper.AfterLoop += UpdateSpeaking;
         InternalEvents.OnSpawning += HandleSpawn;
@@ -211,7 +217,7 @@ public class VoiceController : IDisposable
             profile.IsActive = true;
         }
 
-        _profiles.Add(profileType, profile);
+        profiles.Add(profileType, profile);
         return profile;
     }
     
@@ -241,7 +247,7 @@ public class VoiceController : IDisposable
             profile.Disable();
         
         profile.Stop();
-        return _profiles.Remove(profileType);
+        return profiles.Remove(profileType);
     }
 
     /// <summary>
@@ -249,7 +255,7 @@ public class VoiceController : IDisposable
     /// </summary>
     public void RemoveProfiles()
     {
-        foreach (var profile in _profiles)
+        foreach (var profile in profiles)
         {
             if (profile.Value.IsActive)
                 profile.Value.Disable();
@@ -257,7 +263,7 @@ public class VoiceController : IDisposable
             profile.Value.Stop();
         }
         
-        _profiles.Clear();
+        profiles.Clear();
     }
     
     /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -269,15 +275,16 @@ public class VoiceController : IDisposable
         Thread?.Dispose();
         Thread = null;
         
-        if (_sessionPackets != null)
+        if (sessionPackets != null)
         {
-            DictionaryPool<DateTime, VoiceMessage>.Shared.Return(_sessionPackets);
-            _sessionPackets = null;
+            DictionaryPool<long, VoiceMessage>.Shared.Return(sessionPackets);
+            
+            sessionPackets = null;
         }
 
-        if (_profiles != null)
+        if (profiles != null)
         {        
-            foreach (var profile in _profiles)
+            foreach (var profile in profiles)
             {
                 if (profile.Value.IsActive)
                     profile.Value.Disable();
@@ -285,9 +292,9 @@ public class VoiceController : IDisposable
                 profile.Value.Stop();
             }
             
-            DictionaryPool<Type, VoiceProfile>.Shared.Return(_profiles);
+            DictionaryPool<Type, VoiceProfile>.Shared.Return(profiles);
             
-            _profiles = null;
+            profiles = null;
         }
     }
 
@@ -296,13 +303,14 @@ public class VoiceController : IDisposable
         if (!IsOnline) return;
         if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId) return;
 
-        _sessionPackets.Add(DateTime.Now, msg);
+        if (IsCapturing)
+            sessionPackets.Add(DateTime.Now.Ticks, msg);
 
         var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
         
         ExVoiceChatEvents.OnSendingVoiceMessage(Player, ref msg);
 
-        foreach (var profile in _profiles)
+        foreach (var profile in profiles)
         {
             if (!profile.Value.IsActive)
                 continue;
@@ -316,7 +324,7 @@ public class VoiceController : IDisposable
                 break;
         }
 
-        for (int i = 0; i < ExPlayer.Players.Count; i++)
+        for (var i = 0; i < ExPlayer.Players.Count; i++)
         {
             var player = ExPlayer.Players[i];
             var send = true;
@@ -326,7 +334,7 @@ public class VoiceController : IDisposable
             
             msg.Channel = GetChannel(player, origChannel);
 
-            foreach (var profile in _profiles)
+            foreach (var profile in profiles)
             {
                 if (!profile.Value.IsActive)
                     continue;
@@ -371,7 +379,7 @@ public class VoiceController : IDisposable
         if (player != Player)
             return;
         
-        foreach (var profile in _profiles)
+        foreach (var profile in profiles)
         {
             if (!profile.Value.OnChangingRole(args.Role.RoleTypeId))
             {
@@ -394,22 +402,24 @@ public class VoiceController : IDisposable
 
     private void UpdateSpeaking()
     {
-        if (IsSpeaking == _wasSpeaking)
+        if (IsSpeaking == wasSpeaking)
             return;
         
-        if (_wasSpeaking)
+        if (wasSpeaking)
         {
-            ExVoiceChatEvents.OnStoppedSpeaking(Player, _speakingTime, _sessionPackets);
+            ExVoiceChatEvents.OnStoppedSpeaking(Player, speakingTime, sessionPackets);
         }
         else
         {
-            _sessionPackets.Clear();
-            _speakingTime = Time.realtimeSinceStartup;
+            if (sessionPackets.Count > 0)
+                sessionPackets.Clear();
+            
+            speakingTime = Time.realtimeSinceStartup;
 
             ExVoiceChatEvents.OnStartedSpeaking(Player);
         }
 
-        _wasSpeaking = !_wasSpeaking;
+        wasSpeaking = !wasSpeaking;
     }
     
     private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)

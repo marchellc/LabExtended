@@ -46,7 +46,7 @@ public static class EventExtensions
     }
 
     public static void InvokeEvent(this ExVoiceChatEvents.StoppedSpeakingEventHandler sendingVoiceMessageEventHandler, ExPlayer player,
-        float time, Dictionary<DateTime, VoiceMessage>? packets)
+        float time, Dictionary<long, VoiceMessage>? packets)
     {
         if (sendingVoiceMessageEventHandler is null)
             return;
