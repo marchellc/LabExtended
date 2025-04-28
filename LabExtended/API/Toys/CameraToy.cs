@@ -19,10 +19,18 @@ namespace LabExtended.API.Toys;
 public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
 {
     /// <summary>
-    /// Spawns a new SCP-079 camera toy.
+    /// Spawns a new SCP-079 camera toy (Heavy Containment Zone version).
     /// </summary>
     /// <exception cref="Exception"></exception>
-    public CameraToy() : base(PrefabList.EzCamera.CreateInstance().GetComponent<AdminToyBase>())
+    public CameraToy() : this(PrefabList.HczCamera) { }
+    
+    /// <summary>
+    /// Spawns a new SCP-079 camera toy with a selectable prefab type.
+    /// </summary>
+    /// <param name="cameraPrefab">The camera prefab to use.</param>
+    /// <exception cref="Exception"></exception>
+    public CameraToy(PrefabDefinition cameraPrefab) 
+        : base(cameraPrefab.CreateInstance().GetComponent<AdminToyBase>())
     {
         Base = base.Base as Scp079CameraToy;
         

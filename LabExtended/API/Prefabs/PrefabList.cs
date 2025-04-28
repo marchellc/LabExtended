@@ -387,7 +387,12 @@ public static class PrefabList
     /// Gets the prefab of the SCP-079 camera toy (Entrance Zone version).
     /// </summary>
     public static PrefabDefinition EzCamera { get; } = new("EzCameraToy");
-    
+
+    /// <summary>
+    /// Gets the prefab of the SCP-079 camery toy (Surface Zone version).
+    /// </summary>
+    public static PrefabDefinition SurfaceCamera { get; } = new("SzCameraToy");
+
     /// <summary>
     /// Gets the prefab of the SCP-079 camera toy (Heavy Containment Zone version).
     /// </summary>
