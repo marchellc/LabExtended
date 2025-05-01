@@ -1,5 +1,5 @@
 ﻿using LabExtended.Core;
-
+using LabExtended.Extensions;
 using Mirror;
 
 using UnityEngine;
@@ -93,6 +93,16 @@ public class PrimitiveImageToy : IDisposable
             }
         }
     }
+
+    /// <summary>
+    /// Gets called once the frame changes.
+    /// </summary>
+    public event Action? Changed;
+
+    /// <summary>
+    /// Gets called once the toy is destroyed.
+    /// </summary>
+    public event Action? Destroyed;
     
     private PrimitiveImageToy(GameObject parent, PrimitiveToy[][] pixels, int height, int width)
     {
@@ -141,6 +151,8 @@ public class PrimitiveImageToy : IDisposable
                     ApiLog.Error("Primitive Image Toy", ex);
                 }
             }
+            
+            Changed?.Invoke();
         }
         catch (Exception ex)
         {
@@ -153,9 +165,9 @@ public class PrimitiveImageToy : IDisposable
     /// </summary>
     public void Clear()
     {
-        for (int x = 0; x < Width; x++)
+        for (var x = 0; x < Width; x++)
         {
-            for (int y = 0; y < Height; y++)
+            for (var y = 0; y < Height; y++)
             {
                 pixels[x][y].Color = Color.white;
             }    
@@ -184,6 +196,9 @@ public class PrimitiveImageToy : IDisposable
             
             parent = null;
         }
+        
+        Destroyed?.InvokeSafe();
+        Destroyed = null;
     }
 
     /// <summary>

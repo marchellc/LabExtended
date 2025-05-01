@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-
+using LabExtended.Extensions;
 using LabExtended.Utilities.Update;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -90,6 +90,16 @@ public class PrimitiveDynamicImage : IDisposable
     /// Gets the remaining image duration.
     /// </summary>
     public TimeSpan Remaining => Frames != null && IsPlaying ? TimeSpan.FromSeconds((FrameCount - (FrameIndex + 1)) / FramesPerSecond) : TimeSpan.Zero;
+
+    /// <summary>
+    /// Gets called when a new frame is displayed.
+    /// </summary>
+    public event Action? Displayed;
+
+    /// <summary>
+    /// Gets called when all frames are played.
+    /// </summary>
+    public event Action? Finished;
 
     /// <summary>
     /// Creates a new <see cref="PrimitiveDynamicImage"/> instance.
@@ -184,11 +194,16 @@ public class PrimitiveDynamicImage : IDisposable
             return;
         
         prevFrameIndex = FrameIndex;
+        
         Toy.SetFrame(Frames[IsPaused ? FrameIndex : FrameIndex++]);
+        
+        Displayed?.InvokeSafe();
     }
 
     private void OnFinished()
     {
+        Finished?.InvokeSafe();
+        
         Reset();
 
         if (DestroyOnFinish)

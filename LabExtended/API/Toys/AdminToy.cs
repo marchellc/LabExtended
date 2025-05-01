@@ -170,7 +170,10 @@ namespace LabExtended.API.Toys
         public static T? Get<T>(Func<T, bool> predicate) where T : AdminToy
             => TryGet(predicate, out var wrapper) ? wrapper : null;
 
-        internal AdminToy(AdminToyBase baseValue) : base(baseValue) { }
+        internal AdminToy(AdminToyBase baseValue) : base(baseValue)
+        {
+            Lookup.Add(baseValue, this);
+        }
 
         /// <summary>
         /// Gets the toy's transform.
@@ -375,12 +378,12 @@ namespace LabExtended.API.Toys
             return true;
         }
         
-        internal static AdminToy Create(AdminToyBase adminToy)
+        internal static void Create(AdminToyBase adminToy)
         {
             if (adminToy is null)
                 throw new ArgumentNullException(nameof(adminToy));
 
-            var wrapperToy = adminToy switch
+            _ = adminToy switch
             {
                 Scp079CameraToy cameraToy => new CameraToy(cameraToy),
                 LightSourceToy lightSource => new LightToy(lightSource),
@@ -393,12 +396,15 @@ namespace LabExtended.API.Toys
 
                 _ => new AdminToy(adminToy)
             };
-            
-            return wrapperToy;
         }
 
         private static void OnCreated(AdminToyBase toy)
-            => Lookup.Add(toy, Create(toy));
+        {
+            if (Lookup.ContainsKey(toy))
+                return;
+
+            Create(toy);
+        }
 
         private static void OnDestroyed(AdminToyBase toy)
         {
