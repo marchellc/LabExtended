@@ -138,7 +138,9 @@ public static class ProcessingShotPatches
             x.WriteBool(__instance._magModule.AmmoStored == 1);
         });
         
-        __instance._magModule.ServerModifyAmmo(-1);
+        if (shootingEventArgs.Player is not ExPlayer player
+            || !player.Toggles.HasUnlimitedAmmo)
+            __instance._magModule.ServerModifyAmmo(-1);
         
         customFirearm?.OnProcessedShot(null, null);
         
@@ -176,7 +178,9 @@ public static class ProcessingShotPatches
         
         __instance._audioModule.PlayGunshot(__instance._fireClips[(int)clipOverride]);
 
-        chamber.ContextState = CylinderAmmoModule.ChamberState.Discharged;
+        if (shootingEventArgs.Player is not ExPlayer player
+            || !player.Toggles.HasUnlimitedAmmo)
+            chamber.ContextState = CylinderAmmoModule.ChamberState.Discharged;
         
         ShotEventManager.Trigger(shotEvent);
         
