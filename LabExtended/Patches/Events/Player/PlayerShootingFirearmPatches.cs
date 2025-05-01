@@ -76,7 +76,7 @@ public static class PlayerShootingFirearmPatches
         var handler = __instance.GetHandler(args.TargetDamage);
 
         if (target.Destructible is HitboxIdentity hitboxIdentity
-            && hitboxIdentity.TargetHub.IsAlive())
+            && !hitboxIdentity.TargetHub.IsAlive())
         {
             result.RegisterDamage(hitboxIdentity, damage, handler);
 
