@@ -4,6 +4,7 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Events.Player;
 using LabExtended.Utilities.Firearms;
@@ -37,16 +38,16 @@ public static class PlayerChangingFirearmAttachmentsPatch
         var current = ListPool<AttachmentName>.Shared.Rent();
         var toEnable = ListPool<AttachmentName>.Shared.Rent();
         var toDisable = ListPool<AttachmentName>.Shared.Rent();
-        
-        firearm.GetAttachmentsDiff(code, current, toEnable, toDisable);
 
+        firearm.GetAttachmentsDiff(code, current, toEnable, toDisable);
+        
         var changingAttachmentsArgs =
             new PlayerChangingFirearmAttachmentsEventArgs(player, firearm, code, current, toEnable, toDisable);
 
         if (!ExPlayerEvents.OnChangingAttachments(changingAttachmentsArgs))
             return false;
         
-        firearm.ApplyAttachmentsDiff(msg.AttachmentsCode, toEnable, toDisable, true);
+        firearm.ApplyAttachmentsDiff(toEnable, toDisable, true);
         
         ExPlayerEvents.OnChangedAttachments(new(player, firearm, code, current, toEnable, toDisable));
         

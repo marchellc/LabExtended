@@ -1,7 +1,7 @@
 ﻿using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
-
+using LabExtended.Core;
 using LabExtended.Extensions;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -53,12 +53,11 @@ public static class FirearmAttachmentExtensions
     /// Applies the attachments change to the target firearm.
     /// </summary>
     /// <param name="firearm">The target firearm.</param>
-    /// <param name="newCode">The new received code.</param>
     /// <param name="toBeEnabled">The attachments to enable.</param>
     /// <param name="toBeDisabled">The attachments to disable.</param>
     /// <param name="invokeEvent">Whether or not to invoke the <see cref="AttachmentsUtils.OnAttachmentsApplied"/> event.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public static void ApplyAttachmentsDiff(this Firearm firearm, uint newCode, IList<AttachmentName> toBeEnabled,
+    public static void ApplyAttachmentsDiff(this Firearm firearm, IList<AttachmentName> toBeEnabled,
         IList<AttachmentName> toBeDisabled, bool invokeEvent = false)
     {
         if (firearm is null)
@@ -100,9 +99,11 @@ public static class FirearmAttachmentExtensions
 
             if (invokeEvent)
                 OnAttachmentsApplied.InvokeEvent(null, firearm);
+
+            var firearmCode = firearm.GetCurrentAttachmentsCode();
             
-            AttachmentCodeSync.ServerSetCode(firearm.ItemSerial, firearm.GetCurrentAttachmentsCode());
-            AttachmentsServerHandler.ServerApplyPreference(firearm.Owner, firearm.ItemTypeId, newCode);
+            AttachmentCodeSync.ServerSetCode(firearm.ItemSerial, firearmCode);
+            AttachmentsServerHandler.ServerApplyPreference(firearm.Owner, firearm.ItemTypeId, firearmCode);
         }
     }
     
@@ -130,7 +131,7 @@ public static class FirearmAttachmentExtensions
         if (toBeDisabled is null)
             throw new ArgumentNullException(nameof(toBeDisabled));
 
-        var code = 0U;
+        var code = 1U;
 
         for (var i = 0; i < firearm.Attachments.Length; i++)
         {

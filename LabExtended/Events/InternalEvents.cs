@@ -43,6 +43,11 @@ namespace LabExtended.Events
             
             if (player.IsNpc) 
                 return;
+
+            if (string.IsNullOrWhiteSpace(player.CountryCode)
+                && !string.IsNullOrWhiteSpace(player.UserId)
+                && ExPlayer.preauthData.TryGetValue(player.UserId, out var region))
+                player.CountryCode = region;
             
             ApiLog.Info("LabExtended",
                 $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");

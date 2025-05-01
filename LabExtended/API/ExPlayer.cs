@@ -1038,7 +1038,7 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's ISO 3166-1 alpha-2 country code (empty string for NPCs).
     /// </summary>
     [CommandPropertyAlias("countryCode")]
-    public string CountryCode { get; set; } = string.Empty;
+    public string CountryCode { get; internal set; } = string.Empty;
 
     /// <summary>
     /// Gets the player's user ID without it's identificator (<i>@steam, @discord etc.</i>)

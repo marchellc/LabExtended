@@ -3,6 +3,8 @@
 using LabExtended.Core;
 using LabExtended.Core.Networking;
 
+using Mirror;
+
 using PlayerRoles.PlayableScps.Scp939;
 
 namespace LabExtended.Patches.Functions.Scp939
@@ -16,7 +18,15 @@ namespace LabExtended.Patches.Functions.Scp939
         {
             try
             {
-                MirrorMethods.WriteToWhere(p => p.Toggles.CanHearAmnesticCloudSpawn, w => w.Write(__instance.GetRpcMessage(FunctionHash)));
+                MirrorMethods.WriteToWhere(p => p.Toggles.CanHearAmnesticCloudSpawn,
+                    w =>
+                    {
+                        w.WriteMessageId<RpcMessage>();
+                        w.WriteUInt(__instance.netId);
+                        w.WriteByte(__instance.ComponentIndex);
+                        w.WriteUShort(unchecked((ushort)FunctionHash));
+                        w.WriteUInt(0);
+                    });
                 return false;
             }
             catch (Exception ex)

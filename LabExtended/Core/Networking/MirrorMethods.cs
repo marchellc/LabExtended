@@ -895,10 +895,10 @@ public static class MirrorMethods
         if (writer is null)
             throw new ArgumentNullException(nameof(writer));
 
-        ArraySegment<byte>? data = null;
+        var data = Write(writer);
 
         foreach (var connection in connections)
-            connection.Send(data ??= Write(writer));
+            connection.Send(data);
     }
 
     /// <summary>
@@ -915,10 +915,10 @@ public static class MirrorMethods
         if (writer is null)
             throw new ArgumentNullException(nameof(writer));
 
-        ArraySegment<byte>? data = null;
+        var data = Write(writer);
 
         foreach (var player in players)
-            player.Send(data ??= Write(writer));
+            player.Send(data);
     }
 
     /// <summary>
@@ -934,15 +934,15 @@ public static class MirrorMethods
         
         if (writer is null)
             throw new ArgumentNullException(nameof(writer));
-        
-        ArraySegment<byte>? data = null;
+
+        var data = Write(writer);
 
         ExPlayer.Players.ForEach(p =>
         {
             if (!predicate(p))
                 return;
             
-            p.Send(data ??= Write(writer));
+            p.Send(data);
         });
     }
 
