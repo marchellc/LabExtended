@@ -3,7 +3,7 @@
 using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
-
+using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Events;
@@ -42,10 +42,21 @@ namespace LabExtended.Patches.Events.Scp079
 
             foreach (var player in list)
             {
+                var recontainingPlayerArgs =
+                    new LabApi.Events.Arguments.Scp079Events.Scp079RecontainingEventArgs(player.ReferenceHub,
+                        recontainingArgs.Activator?.ReferenceHub);
+
+                Scp079Events.OnRecontaining(recontainingPlayerArgs);
+                
+                if (!recontainingPlayerArgs.IsAllowed)
+                    continue;
+                
                 if (recontainingArgs.Activator is not null)
                     player.ReferenceHub.playerStats.DealDamage(new RecontainmentDamageHandler(recontainingArgs.Activator.Footprint));
                 else
                     player.ReferenceHub.playerStats.DealDamage(new UniversalDamageHandler(-1f, DeathTranslations.Recontained));
+                
+                Scp079Events.OnRecontained(new(player.ReferenceHub, recontainingArgs.Activator?.ReferenceHub));
             }
 
             ListPool<ExPlayer>.Shared.Return(list);
