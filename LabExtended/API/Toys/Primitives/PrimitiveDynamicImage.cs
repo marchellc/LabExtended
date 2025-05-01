@@ -144,7 +144,10 @@ public class PrimitiveDynamicImage : IDisposable
     public void Reset()
     {
         if (Watch.IsRunning)
+        {
+            Watch.Stop();
             Watch.Reset();
+        }
         
         Frames?.Clear();
         Frames = null;

@@ -377,13 +377,13 @@ namespace LabExtended.API.Toys
             Parent = behaviour.netIdentity;
             return true;
         }
-        
-        internal static void Create(AdminToyBase adminToy)
-        {
-            if (adminToy is null)
-                throw new ArgumentNullException(nameof(adminToy));
 
-            _ = adminToy switch
+        private static void OnCreated(AdminToyBase toy)
+        {
+            if (Lookup.ContainsKey(toy))
+                return;
+
+            _ = toy switch
             {
                 Scp079CameraToy cameraToy => new CameraToy(cameraToy),
                 LightSourceToy lightSource => new LightToy(lightSource),
@@ -394,16 +394,8 @@ namespace LabExtended.API.Toys
                 AdminToys.CapybaraToy capybaraToy => new CapybaraToy(capybaraToy),
                 AdminToys.SpeakerToy speakerToy => new SpeakerToy(speakerToy),
 
-                _ => new AdminToy(adminToy)
+                _ => new AdminToy(toy)
             };
-        }
-
-        private static void OnCreated(AdminToyBase toy)
-        {
-            if (Lookup.ContainsKey(toy))
-                return;
-
-            Create(toy);
         }
 
         private static void OnDestroyed(AdminToyBase toy)

@@ -106,7 +106,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not this player should count in the next respawn wave.
         /// </summary>
-        public bool CanBeRespawned { get; set; } = true; // BROKEN
+        public bool CanBeRespawned { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player prevents the round from ending.
