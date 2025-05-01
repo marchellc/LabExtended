@@ -85,10 +85,15 @@ namespace LabExtended.API
                 Footprint = Player.Footprint;
 
                 if (isRound)
+                {
                     RoundSummary.RoundLock = true;
+                    RoundSummary.singleton?.CancelRoundEnding();
+                }
                 else
+                {
                     RoundStart.LobbyLock = true;
-                
+                }
+
                 if (!Player.IsHost)
                     ApiLog.Info("LabExtended", $"Player &3{Player.Nickname}&r (&6{Player.UserId}&r) has &2ENABLED&r " +
                                                    $"&1{(isRound ? "Round Lock" : "Lobby Lock")}&r");
@@ -119,7 +124,7 @@ namespace LabExtended.API
                     RoundStart.LobbyLock = false;
                 
                 if (disabledBy != null && !disabledBy.IsHost)
-                    ApiLog.Info("LabExtended", $"Player &3{disabledBy.Nickname}&r (&6{disabledBy.UserId}&r) has &1DISABLED&r " +
+                    ApiLog.Info("LabExtended", $"Player &3{disabledBy.Nickname}&r (&6{disabledBy.UserId}&r) has &3DISABLED&r " +
                                                    $"&1{(isRound ? "Round Lock" : "Lobby Lock")}&r");
                 
                 return true;
