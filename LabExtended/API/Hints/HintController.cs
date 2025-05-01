@@ -564,8 +564,10 @@ public static class HintController
 
             tickNum++;
 
-            foreach (var player in ExPlayer.Players)
+            for (var i = 0; i < ExPlayer.Count; i++)
             {
+                var player = ExPlayer.Players[i];
+                
                 if (!player || player.Hints is null) continue;
                 if (player.Hints.IsPaused) continue;
                 
