@@ -169,8 +169,8 @@ namespace LabExtended.API.Toys
         /// <exception cref="Exception"></exception>
         public static T? Get<T>(Func<T, bool> predicate) where T : AdminToy
             => TryGet(predicate, out var wrapper) ? wrapper : null;
-        
-        internal AdminToy(AdminToyBase baseValue) : base(baseValue) { Lookup.Add(baseValue, this); }
+
+        internal AdminToy(AdminToyBase baseValue) : base(baseValue) { }
 
         /// <summary>
         /// Gets the toy's transform.

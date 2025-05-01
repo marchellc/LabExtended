@@ -254,8 +254,6 @@ namespace LabExtended.Core
             if (!ApiVersion.CheckCompatibility()) 
                 return;
 
-            ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
-
             if (!string.IsNullOrWhiteSpace(BuildInfoCommand.ModDescription))
                 BuildInfoCommand.ModDescription += $"\nLabExtended v{ApiVersion.Version}";
             else
@@ -270,6 +268,8 @@ namespace LabExtended.Core
             Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+            
+            ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
         }
 
         private static void LogHandler(string logMessage)
