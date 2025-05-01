@@ -557,8 +557,8 @@ public static class HintController
             {
                 await Awaitable.NextFrameAsync();
 
-                if (ExPlayer.Count < 1) return;
-                if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) return;
+                if (ExPlayer.Count < 1) continue;
+                if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) continue;
 
                 float lowestRate = ApiLoader.ApiConfig.HintSection.UpdateInterval;
 
