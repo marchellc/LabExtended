@@ -25,7 +25,7 @@ namespace LabExtended.Patches.Functions.Items
             if (player is null)
                 return false;
 
-            if (__instance.TargetPickup is null || __instance.TargetPickup is not Scp244DeployablePickup scp244DeployablePickup)
+            if (__instance.TargetPickup == null || __instance.TargetPickup is not Scp244DeployablePickup scp244DeployablePickup)
             {
                 __instance.TargetPickup?.UnlockPickup();
                 return false;
@@ -93,9 +93,6 @@ namespace LabExtended.Patches.Functions.Items
                 scp244DeployablePickup.State = Scp244State.PickedUp;
 
                 __instance.CheckCategoryLimitHint();
-
-                scp244DeployablePickup.State = Scp244State.Destroyed;
-                scp244DeployablePickup.DestroySelf();
 
                 PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.ReferenceHub, item));
             }

@@ -551,207 +551,211 @@ public static class HintController
 
     internal static async Awaitable OnUpdate()
     {
-        try
+        while (true)
         {
-            await Awaitable.NextFrameAsync();
-            
-            if (ExPlayer.Count < 1) return;
-            if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) return;
-
-            float lowestRate = ApiLoader.ApiConfig.HintSection.UpdateInterval;
-
-            watch.Restart();
-
-            if (tickNum + 1 >= long.MaxValue) 
-                tickNum = 0;
-
-            tickNum++;
-
-            for (var i = 0; i < ExPlayer.Count; i++)
+            try
             {
-                var player = ExPlayer.Players[i];
-                
-                if (!player || player.Hints is null) continue;
-                if (player.Hints.IsPaused) continue;
-                
-                paramBuffer.Clear();
+                await Awaitable.NextFrameAsync();
 
-                builder.Clear();
-                builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
+                if (ExPlayer.Count < 1) return;
+                if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) return;
 
-                var anyAppended = false;
-                var anyOverride = false;
+                float lowestRate = ApiLoader.ApiConfig.HintSection.UpdateInterval;
 
-                var overrideParse = false;
+                watch.Restart();
 
-                player.Hints.RefreshRatio();
+                if (tickNum + 1 >= long.MaxValue)
+                    tickNum = 0;
 
-                if (player.Hints.CurrentMessage is null || player.Hints.UpdateTime())
-                    player.Hints.NextMessage();
+                tickNum++;
 
-                if (player.Hints.CurrentMessage != null)
+                for (var i = 0; i < ExPlayer.Count; i++)
                 {
-                    player.Hints.ParseTemp();
-                    
-                    paramBuffer.AddRange(player.Hints.CurrentMessage.Parameters);
+                    var player = ExPlayer.Players[i];
 
-                    if (player.Hints.TempData.Count > 0)
+                    if (!player || player.Hints is null) continue;
+                    if (player.Hints.IsPaused) continue;
+
+                    paramBuffer.Clear();
+
+                    builder.Clear();
+                    builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
+
+                    var anyAppended = false;
+                    var anyOverride = false;
+
+                    var overrideParse = false;
+
+                    player.Hints.RefreshRatio();
+
+                    if (player.Hints.CurrentMessage is null || player.Hints.UpdateTime())
+                        player.Hints.NextMessage();
+
+                    if (player.Hints.CurrentMessage != null)
                     {
-                        AppendMessages(player.Hints.TempData, TemporaryHintAlign, 0f, builder);
-                        anyAppended = true;
-                    }
-                }
+                        player.Hints.ParseTemp();
 
-                void ProcessElement(HintElement element)
-                {
-                    if (!element.IsActive) 
-                        return;
+                        paramBuffer.AddRange(player.Hints.CurrentMessage.Parameters);
 
-                    element.Builder.Clear();
-                    
-                    if (element.ClearParameters)
-                        element.Parameters.Clear();
-
-                    if (element._tickNum != tickNum)
-                    {
-                        element._tickNum = tickNum;
-                        element.OnUpdate();
-                    }
-
-                    if (!element.OnDraw(player) || element.Builder.Length < 1) 
-                        return;
-
-                    if ((builder.Length + element.Builder.Length) >= MaxHintTextLength)
-                    {
-                        ApiLog.Warn("Hint API",
-                            $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Nickname}&r (&6{player.UserId}&r) " +
-                            $"due to it exceeding maximum allowed limit (&1{builder.Length + element.Builder.Length}&r / &2{MaxHintTextLength}&r)");
-
-                        return;
-                    }
-
-                    var content = element.Builder.ToString();
-
-                    if (element.OverridesOthers)
-                    {
-                        anyOverride = true;
-
-                        builder.Clear();
-
-                        if (element.ShouldParse)
-                            builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
-                        else
-                            overrideParse = true;
-                    }
-
-                    if (!element.ShouldParse)
-                    {
-                        builder.Append(content);
-                        anyAppended = true;
-                    }
-                    else
-                    {
-                        if (!element.ShouldCache || element._prevCompiled is null || element._prevCompiled != content)
+                        if (player.Hints.TempData.Count > 0)
                         {
-                            element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
-                            element.Data.Clear();
-
-                            element._prevCompiled = content;
-
-                            content = content
-                                .Replace("\r\n", "\n")
-                                .Replace("\\n", "\n")
-                                .Replace("<br>", "\n")
-                                .TrimEnd();
-
-                            HintUtils.TrimStartNewLines(ref content, out var count);
-
-                            var offset = element.GetVerticalOffset(player);
-
-                            if (offset == 0f)
-                                offset = -count;
-
-                            HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap,
-                                element.GetPixelSpacing(player));
-                        }
-
-                        if (element.Data.Count > 0)
-                        {
-                            paramBuffer.AddRange(element.Parameters);
-                            
-                            AppendMessages(element.Data, element.GetAlignment(player), player.Hints.LeftOffset,
-                                builder);
+                            AppendMessages(player.Hints.TempData, TemporaryHintAlign, 0f, builder);
                             anyAppended = true;
                         }
                     }
 
-                    if (element is IHintRateModifier hintRateModifier)
+                    void ProcessElement(HintElement element)
                     {
-                        var requestedInterval = hintRateModifier.GetDesiredDelay(lowestRate);
+                        if (!element.IsActive)
+                            return;
 
-                        if (requestedInterval >= 0f && requestedInterval < lowestRate)
-                            lowestRate = requestedInterval;
+                        element.Builder.Clear();
+
+                        if (element.ClearParameters)
+                            element.Parameters.Clear();
+
+                        if (element._tickNum != tickNum)
+                        {
+                            element._tickNum = tickNum;
+                            element.OnUpdate();
+                        }
+
+                        if (!element.OnDraw(player) || element.Builder.Length < 1)
+                            return;
+
+                        if ((builder.Length + element.Builder.Length) >= MaxHintTextLength)
+                        {
+                            ApiLog.Warn("Hint API",
+                                $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Nickname}&r (&6{player.UserId}&r) " +
+                                $"due to it exceeding maximum allowed limit (&1{builder.Length + element.Builder.Length}&r / &2{MaxHintTextLength}&r)");
+
+                            return;
+                        }
+
+                        var content = element.Builder.ToString();
+
+                        if (element.OverridesOthers)
+                        {
+                            anyOverride = true;
+
+                            builder.Clear();
+
+                            if (element.ShouldParse)
+                                builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
+                            else
+                                overrideParse = true;
+                        }
+
+                        if (!element.ShouldParse)
+                        {
+                            builder.Append(content);
+                            anyAppended = true;
+                        }
+                        else
+                        {
+                            if (!element.ShouldCache || element._prevCompiled is null ||
+                                element._prevCompiled != content)
+                            {
+                                element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
+                                element.Data.Clear();
+
+                                element._prevCompiled = content;
+
+                                content = content
+                                    .Replace("\r\n", "\n")
+                                    .Replace("\\n", "\n")
+                                    .Replace("<br>", "\n")
+                                    .TrimEnd();
+
+                                HintUtils.TrimStartNewLines(ref content, out var count);
+
+                                var offset = element.GetVerticalOffset(player);
+
+                                if (offset == 0f)
+                                    offset = -count;
+
+                                HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap,
+                                    element.GetPixelSpacing(player));
+                            }
+
+                            if (element.Data.Count > 0)
+                            {
+                                paramBuffer.AddRange(element.Parameters);
+
+                                AppendMessages(element.Data, element.GetAlignment(player), player.Hints.LeftOffset,
+                                    builder);
+                                anyAppended = true;
+                            }
+                        }
+
+                        if (element is IHintRateModifier hintRateModifier)
+                        {
+                            var requestedInterval = hintRateModifier.GetDesiredDelay(lowestRate);
+
+                            if (requestedInterval >= 0f && requestedInterval < lowestRate)
+                                lowestRate = requestedInterval;
+                        }
                     }
-                }
 
-                foreach (var element in elements)
-                {
-                    if (anyOverride) break;
-                    ProcessElement(element);
-                }
-
-                foreach (var personalElement in player.HintElements)
-                {
-                    if (anyOverride) break;
-                    ProcessElement(personalElement);
-                }
-
-                if (!anyAppended)
-                {
-                    if (!player.Hints.WasClearedAfterEmpty)
+                    foreach (var element in elements)
                     {
-                        player.Connection.Send(emptyData);
-                        player.Hints.WasClearedAfterEmpty = true;
+                        if (anyOverride) break;
+                        ProcessElement(element);
                     }
 
-                    continue;
-                }
-
-                if (!overrideParse)
-                    builder.Append("<voffset=0><line-height=2100%>\n~");
-
-                var text = builder.ToString();
-
-                if (text.Length >= MaxHintTextLength)
-                {
-                    if (!player.Hints.WasClearedAfterEmpty)
+                    foreach (var personalElement in player.HintElements)
                     {
-                        player.Connection.Send(emptyData);
-                        player.Hints.WasClearedAfterEmpty = true;
+                        if (anyOverride) break;
+                        ProcessElement(personalElement);
                     }
 
-                    ApiLog.Warn("Hint API",
-                        $"The compiled hint is too big! (&1{text.Length}&r / &2{MaxHintTextLength}&r)");
-                    continue;
+                    if (!anyAppended)
+                    {
+                        if (!player.Hints.WasClearedAfterEmpty)
+                        {
+                            player.Connection.Send(emptyData);
+                            player.Hints.WasClearedAfterEmpty = true;
+                        }
+
+                        continue;
+                    }
+
+                    if (!overrideParse)
+                        builder.Append("<voffset=0><line-height=2100%>\n~");
+
+                    var text = builder.ToString();
+
+                    if (text.Length >= MaxHintTextLength)
+                    {
+                        if (!player.Hints.WasClearedAfterEmpty)
+                        {
+                            player.Connection.Send(emptyData);
+                            player.Hints.WasClearedAfterEmpty = true;
+                        }
+
+                        ApiLog.Warn("Hint API",
+                            $"The compiled hint is too big! (&1{text.Length}&r / &2{MaxHintTextLength}&r)");
+                        continue;
+                    }
+
+                    writer.Reset();
+                    writer.WriteHintData(ApiLoader.ApiConfig.HintSection.HintDuration, text, paramBuffer);
+
+                    paramBuffer.Clear();
+
+                    player.Connection.Send(writer.ToArraySegment());
+                    player.Hints.WasClearedAfterEmpty = false;
                 }
 
-                writer.Reset();
-                writer.WriteHintData(ApiLoader.ApiConfig.HintSection.HintDuration, text, paramBuffer);
-                
-                paramBuffer.Clear();
-
-                player.Connection.Send(writer.ToArraySegment());
-                player.Hints.WasClearedAfterEmpty = false;
+                updateInterval = lowestRate;
+            }
+            catch (Exception ex)
+            {
+                ApiLog.Error("Hint API", ex);
             }
 
-            updateInterval = lowestRate;
+            sendNextFrame = false;
         }
-        catch (Exception ex)
-        {
-            ApiLog.Error("Hint API", ex);
-        }
-
-        sendNextFrame = false;
     }
 
     private static void AppendMessages(IEnumerable<HintData> hints, HintAlign align, float leftOffset,
