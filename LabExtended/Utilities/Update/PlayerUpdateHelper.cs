@@ -34,11 +34,6 @@ public static class PlayerUpdateHelper
     private static bool isStatsPaused = true;
     
     private static Stopwatch timeWatch = new();
-    
-    /// <summary>
-    /// Represents the low-level player update loop.
-    /// </summary>
-    public struct CustomUpdateLoop { }
 
     /// <summary>
     /// Gets called once per every frame.
@@ -196,11 +191,24 @@ public static class PlayerUpdateHelper
         return reference;
     }
 
+    private static async Awaitable UpdateAsync()
+    {
+        while (true)
+        {
+            await Awaitable.NextFrameAsync();
+            
+            Update();
+        }
+    }
+    
     private static void Update()
     {
+        if (isStatsPaused && OnUpdate != null)
+            isStatsPaused = false;
+        
         if (!isStatsPaused)
             timeWatch.Restart();
-        
+
 #pragma warning disable CS8604 // Possible null reference argument.
         OnUpdate.InvokeSafe();
 #pragma warning restore CS8604 // Possible null reference argument.
@@ -278,11 +286,8 @@ public static class PlayerUpdateHelper
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        PlayerLoopHelper.ModifySystem(x =>
-            x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(Update, typeof(CustomUpdateLoop))
-                ? x
-                : null);
-        
         InternalEvents.OnRoundWaiting += OnWaiting;
+
+        UpdateAsync();
     }
 }

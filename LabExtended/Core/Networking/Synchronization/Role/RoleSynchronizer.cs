@@ -12,7 +12,7 @@ namespace LabExtended.Core.Networking.Synchronization.Role
     {
         public struct RoleSyncUpdateLoop { }
         
-        private static void OnUpdate()
+        internal static void OnUpdate()
         {
             if (ExPlayer.AllPlayers.Count < 1)
                 return;
@@ -56,6 +56,9 @@ namespace LabExtended.Core.Networking.Synchronization.Role
         [LoaderInitialize(2)]
         private static void Init()
         {
+            if (ApiLoader.ApiConfig.OtherSection.MirrorAsync)
+                return;
+            
             PlayerLoopHelper.ModifySystem(x =>
                 x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(RoleSyncUpdateLoop)) ? x : null);
         }

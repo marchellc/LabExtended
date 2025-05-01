@@ -21,6 +21,7 @@ using System.Diagnostics;
 using Hints;
 using Mirror;
 
+using UnityEngine;
 using UnityEngine.PlayerLoop;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
@@ -548,10 +549,12 @@ public static class HintController
         return target.HintElements.TryGetFirst(x => predicate(x), out hintElement);
     }
 
-    internal static void OnTick()
+    internal static async Awaitable OnUpdate()
     {
         try
         {
+            await Awaitable.NextFrameAsync();
+            
             if (ExPlayer.Count < 1) return;
             if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval) return;
 
@@ -794,9 +797,6 @@ public static class HintController
     }
 
     [LoaderInitialize(1)]
-    private static void Init()
-    {
-        PlayerLoopHelper.ModifySystem(x =>
-            x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnTick, typeof(HintUpdateLoop)) ? x : null);
-    }
+    private static void OnInit()
+        => OnUpdate();
 }

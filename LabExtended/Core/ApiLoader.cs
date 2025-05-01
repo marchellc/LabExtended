@@ -4,6 +4,8 @@ using System.Reflection;
 
 using CommandSystem.Commands.Shared;
 
+using GameCore;
+
 using LabApi.Loader;
 using LabApi.Loader.Features.Paths;
 using LabApi.Loader.Features.Plugins;
@@ -18,6 +20,10 @@ using LabExtended.Core.Configs;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
+
+using UnityEngine;
+
+using Version = System.Version;
 
 namespace LabExtended.Core
 {
@@ -232,19 +238,21 @@ namespace LabExtended.Core
         {
             ApiLog.Info("LabExtended", $"Loading version &1{ApiVersion.Version}&r ..");
 
-            DirectoryPath = Path.Combine(PathManager.Configs.FullName, "LabExtended");
+            DirectoryPath = Loader.GetConfigDirectory(false).FullName;
 
             BaseConfigPath = Path.Combine(DirectoryPath, "config.yml");
             ApiConfigPath = Path.Combine(DirectoryPath, "api_config.yml");
 
-            if (!Directory.Exists(DirectoryPath)) Directory.CreateDirectory(DirectoryPath);
+            if (!Directory.Exists(DirectoryPath)) 
+                Directory.CreateDirectory(DirectoryPath);
 
             LoadConfig();
             SaveConfig();
 
-            ApiLog.Info("LabExtended", $"Config files have been loaded.");
+            ApiLog.Info("LabExtended", "Config files have been loaded.");
 
-            if (!ApiVersion.CheckCompatibility()) return;
+            if (!ApiVersion.CheckCompatibility()) 
+                return;
 
             ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
 

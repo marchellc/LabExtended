@@ -48,7 +48,7 @@ public static class PositionSynchronizer
         : FpcServerPositionDistributor.SendRate;
 
     // Gets called each frame
-    private static void OnUpdate()
+    internal static void OnUpdate()
     {
         // Check send delay
         sendTime -= Time.deltaTime;
@@ -210,6 +210,9 @@ public static class PositionSynchronizer
 
         InternalEvents.OnRoundRestart += OnRoundRestart;
 
+        if (ApiLoader.ApiConfig.OtherSection.MirrorAsync)
+            return;
+        
         PlayerLoopHelper.ModifySystem(x =>
         {
             if (!x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(PositionUpdateLoop)))

@@ -416,20 +416,37 @@ namespace LabExtended.Utilities.Unity
             ModifySystem(x =>
             {
                 var config = ApiLoader.ApiConfig.LoopSection;
+
+                if (config.ModifyLoops)
+                {
+                    var count = 0;
+
+                    x.RemoveSystems(s =>
+                    {
+                        if (config.RemovedLoops.Contains(s.type.FullName) || config.RemovedLoops.Contains(s.type.Name))
+                        {
+                            ApiLog.Debug("Player Loop", $"Removing loop &1{s.type.FullName}&r");
+
+                            count++;
+                            return true;
+                        }
+
+                        return false;
+                    });
+
+                    ApiLog.Debug("Player Loop", $"Removed &1{count}&r loop(s)");
+                }
+
                 var allLoops = x.GetLoopNames();
 
                 if (config.AllLoops.Count != allLoops.Count || !config.AllLoops.SequenceEqual(allLoops))
                 {
                     config.AllLoops = allLoops;
                     
+                    ApiLog.Debug("Player Loop", $"Player Loop name list mismatch, saving new config ..");
                     ApiLoader.SaveConfig();
                 }
                 
-                if (!config.ModifyLoops)
-                    return null;
-                
-                x.RemoveSystems(s =>
-                    config.RemovedLoops.Contains(s.type.FullName) || config.RemovedLoops.Contains(s.type.Name));
                 return x;
             });
         }

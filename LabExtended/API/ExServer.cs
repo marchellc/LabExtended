@@ -4,7 +4,7 @@ using LabExtended.Core;
 using LabExtended.Attributes;
 using LabExtended.Commands.Attributes;
 using LabExtended.Events;
-
+using LabExtended.Utilities.Update;
 using MEC;
 
 using Mirror;
@@ -21,9 +21,6 @@ namespace LabExtended.API;
 [CommandPropertyAlias("server")]
 public static class ExServer
 {
-    private static volatile float deltaTime;
-    private static volatile float tps;
-
     private static volatile bool running = true;
 
     /// <summary>
@@ -89,13 +86,13 @@ public static class ExServer
     /// Gets the servers actual tick rate (rounded).
     /// </summary>
     [CommandPropertyAlias("tps")]
-    public static float Tps => tps;
+    public static float Tps => Mathf.Round(1f / Time.smoothDeltaTime);
 
     /// <summary>
     /// Gets the amount of time required for last frame.
     /// </summary>
     [CommandPropertyAlias("frameTime")]
-    public static float FrameTime => deltaTime;
+    public static float FrameTime => Time.deltaTime;
 
     /// <summary>
     /// Gets the amount of active players.
@@ -227,8 +224,14 @@ public static class ExServer
     /// </summary>
     public static int TargetFrameRate
     {
-        get => Application.targetFrameRate;
-        set => Application.targetFrameRate = value;
+        get => IsIdleModeActive ? Application.targetFrameRate : ServerStatic.ServerTickrate;
+        set
+        {
+            if (IsIdleModeActive)
+                Application.targetFrameRate = value;
+            else
+                ServerStatic.ServerTickrate = (short)value;
+        }
     }
 
     /// <summary>
@@ -286,19 +289,23 @@ public static class ExServer
     public static void MakePrivate()
         => ExecuteCommand("!private");
 
-    private static void UpdateTickRateAndTime()
-    {
-        deltaTime = Time.deltaTime;
-        tps = Mathf.Round(1f / Time.smoothDeltaTime);
-    }
-
     private static void OnQuitting()
         => running = false;
+
+    // For some odd reason the tick rate keeps getting reset to 60 once the Facility scene is loaded
+    // I suspect it's due to Headless but I ain't dealing with that
+    private static void UpdateTargetTickRate()
+    {
+        if (ServerStatic.ServerTickrate != Application.targetFrameRate && !IsIdleModeActive)
+        {
+            Application.targetFrameRate = ServerStatic.ServerTickrate;
+        }
+    }
 
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        StaticUnityMethods.OnFixedUpdate += UpdateTickRateAndTime;
         ExServerEvents.Quitting += OnQuitting;
+        PlayerUpdateHelper.OnUpdate += UpdateTargetTickRate;
     }
 }
