@@ -13,7 +13,7 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerTogglingRoundLockPatch
     {
-        [EventPatch(typeof(PlayerTogglingRoundLockEventArgs))]
+        [EventPatch(typeof(PlayerTogglingRoundLockEventArgs), true)]
         [HarmonyPatch(typeof(RoundLockCommand), nameof(RoundLockCommand.Execute))]
         public static bool Prefix(ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {
@@ -62,7 +62,10 @@ namespace LabExtended.Patches.Events.Player
                         return false;
                     }
 
-                    ExRound.IsRoundLocked = args.IsEnabled;
+                    if (args.IsEnabled)
+                        ExRound.RoundLock.Enable(player);
+                    else
+                        ExRound.RoundLock.Disable(player);
 
                     response = $"Round Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
                 }
@@ -79,7 +82,10 @@ namespace LabExtended.Patches.Events.Player
                     return false;
                 }
                 
-                ExRound.IsRoundLocked = args.IsEnabled;
+                if (args.IsEnabled)
+                    ExRound.RoundLock.Enable(player);
+                else
+                    ExRound.RoundLock.Disable(player);
 
                 response = $"Round Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
             }

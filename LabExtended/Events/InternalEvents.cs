@@ -68,13 +68,15 @@ namespace LabExtended.Events
         {
             if (ExRound.State is RoundState.InProgress || ExRound.State is RoundState.WaitingForPlayers)
             {
-                if (ApiLoader.BaseConfig.DisableRoundLockOnLeave && ExRound.RoundLock.HasValue && ExRound.RoundLock.Value.EnabledBy == player)
+                if (ApiLoader.BaseConfig.DisableRoundLockOnLeave && ExRound.IsRoundLocked 
+                                                                 && ExRound.RoundLock.Player != null && ExRound.RoundLock.Player == player)
                 {
                     ExRound.IsRoundLocked = false;
                     ApiLog.Warn("Round API", $"Round Lock disabled - the player who enabled it (&3{player.Nickname}&r &6{player.UserId}&r) left the server.");
                 }
 
-                if (ApiLoader.BaseConfig.DisableLobbyLockOnLeave && ExRound.LobbyLock.HasValue && ExRound.LobbyLock.Value.EnabledBy == player)
+                if (ApiLoader.BaseConfig.DisableLobbyLockOnLeave && ExRound.IsLobbyLocked
+                                                                 && ExRound.RoundLock.Player != null && ExRound.RoundLock.Player == player)
                 {
                     ExRound.IsLobbyLocked = false;
                     ApiLog.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Nickname}&r &6{player.UserId}&r) left the server.");

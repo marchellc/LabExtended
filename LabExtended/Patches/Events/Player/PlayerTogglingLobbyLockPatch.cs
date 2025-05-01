@@ -13,7 +13,7 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerTogglingLobbyLockPatch
     {
-        [EventPatch(typeof(PlayerTogglingLobbyLockEventArgs))]
+        [EventPatch(typeof(PlayerTogglingLobbyLockEventArgs), true)]
         [HarmonyPatch(typeof(LobbyLockCommand), nameof(LobbyLockCommand.Execute))]
         public static bool Prefix(ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {
@@ -64,9 +64,12 @@ namespace LabExtended.Patches.Events.Player
                         __result = false;
                         return false;
                     }
-                    
-                    ExRound.IsLobbyLocked = args.IsEnabled;
 
+                    if (args.IsEnabled)
+                        ExRound.LobbyLock.Enable(player);
+                    else
+                        ExRound.LobbyLock.Disable(player);
+                    
                     response = $"Lobby Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
                     
                     __result = true;
@@ -85,7 +88,10 @@ namespace LabExtended.Patches.Events.Player
                     return false;
                 }
                 
-                ExRound.IsLobbyLocked = args.IsEnabled;
+                if (args.IsEnabled)
+                    ExRound.LobbyLock.Enable(player);
+                else
+                    ExRound.LobbyLock.Disable(player);
 
                 response = $"Lobby Lock {(args.IsEnabled ? "enabled" : "disabled")}.";
                 

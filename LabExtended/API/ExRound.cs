@@ -2,13 +2,12 @@
 
 using GameCore;
 
-using LabExtended.API.Enums;
-using LabExtended.API.Internal;
-using LabExtended.Attributes;
-using LabExtended.Commands.Attributes;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Attributes;
+using LabExtended.API.Enums;
+using LabExtended.Commands.Attributes;
 
 using LightContainmentZoneDecontamination;
 
@@ -34,11 +33,100 @@ namespace LabExtended.API
     [CommandPropertyAlias("round")]
     public static class ExRound
     {
-        private static RoundLock? _roundLockTracking;
-        private static RoundLock? _lobbyLockTracking;
+        /// <summary>
+        /// Represents the status of a lock.
+        /// </summary>
+        public class LockStatus
+        {
+            private bool isRound;
+            
+            internal LockStatus(bool isRound)
+                => this.isRound = isRound;
+
+            /// <summary>
+            /// Whether or not this lock is active.
+            /// </summary>
+            public bool IsActive
+            {
+                get => field || (isRound ? RoundSummary.RoundLock : RoundStart.LobbyLock);
+                internal set => field = value;
+            }
+            
+            /// <summary>
+            /// Gets the time at which this lock was enabled.
+            /// </summary>
+            public DateTime Time { get; internal set; }
+            
+            /// <summary>
+            /// Gets the footprint of the player who enabled the lock.
+            /// </summary>
+            public Footprint? Footprint { get; internal set; }
+            
+            /// <summary>
+            /// Gets the player who enabled the lock.
+            /// </summary>
+            public ExPlayer? Player { get; internal set; }
+
+            /// <summary>
+            /// Enables the lock.
+            /// </summary>
+            /// <param name="enabledBy">The player who enabled the lock.</param>
+            /// <returns>true if the lock was enabled</returns>
+            public bool Enable(ExPlayer? enabledBy = null)
+            {
+                if (IsActive)
+                    return false;
+                
+                IsActive = true;
+                
+                Time = DateTime.Now;
+                Player = enabledBy ?? ExPlayer.Host;
+                
+                Footprint = Player.Footprint;
+
+                if (isRound)
+                    RoundSummary.RoundLock = true;
+                else
+                    RoundStart.LobbyLock = true;
+                
+                if (!Player.IsHost)
+                    ApiLog.Info("LabExtended", $"Player &3{Player.Nickname}&r (&6{Player.UserId}&r) has &2ENABLED&r " +
+                                                   $"&1{(isRound ? "Round Lock" : "Lobby Lock")}&r");
+                
+                return true;
+            }
+
+            /// <summary>
+            /// Disables the lock.
+            /// </summary>
+            /// <param name="disabledBy">The player who disabled the round lock.</param>
+            /// <returns>true if the lock was disabled</returns>
+            public bool Disable(ExPlayer? disabledBy = null)
+            {
+                if (!IsActive)
+                    return false;
+                
+                IsActive = false;
+                
+                Time = DateTime.Now;
+                
+                Player = null;
+                Footprint = null;
+
+                if (isRound)
+                    RoundSummary.RoundLock = false;
+                else
+                    RoundStart.LobbyLock = false;
+                
+                if (disabledBy != null && !disabledBy.IsHost)
+                    ApiLog.Info("LabExtended", $"Player &3{disabledBy.Nickname}&r (&6{disabledBy.UserId}&r) has &1DISABLED&r " +
+                                                   $"&1{(isRound ? "Round Lock" : "Lobby Lock")}&r");
+                
+                return true;
+            }
+        }
         
         private static Vector3? _roundStartPosition;
-
         private static GameObject? _roundStart;
         
         /// <summary>
@@ -95,129 +183,26 @@ namespace LabExtended.API
         public static GameObject? RoundStartBackground => _roundStart ??= GameObject.Find("StartRound");
 
         /// <summary>
+        /// Gets the lock controller for round lock.
+        /// </summary>
+        public static LockStatus RoundLock { get; } = new(true);
+
+        /// <summary>
+        /// Gets the lock controller for lobby lock.
+        /// </summary>
+        public static LockStatus LobbyLock { get; } = new(false);
+
+        /// <summary>
         /// Gets the date of this round's start.
         /// </summary>
         [CommandPropertyAlias("startTime")]
         public static DateTime StartedAt { get; internal set; }
-
-        /// <summary>
-        /// Gets the date of the round lock being enabled or <see cref="DateTime.MinValue"/> if the round lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("roundLockEnabledTime")]
-        public static DateTime RoundLockEnabledAt => _roundLockTracking?.EnabledAt ?? DateTime.MinValue;
-
-        /// <summary>
-        /// Gets the date of the lobby lock being enabled or <see cref="DateTime.MinValue"/> if the lobby lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("lobbyLockEnabledTime")]
-        public static DateTime LobbyLockEnabledAt => _lobbyLockTracking?.EnabledAt ?? DateTime.MinValue;
-
-        /// <summary>
-        /// Gets the amount of time that has passed since the round lock was enabled or <see cref="TimeSpan.Zero"/> if the round lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("roundLockDuration")]
-        public static TimeSpan TimePassedSinceRoundLock => _roundLockTracking.HasValue ? DateTime.Now - _roundLockTracking.Value.EnabledAt : TimeSpan.Zero;
-
-        /// <summary>
-        /// Gets the amount of time that has passed since the lobby lock was enabled or <see cref="TimeSpan.Zero"/> if the lobby lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("lobbyLockDuration")]
-        public static TimeSpan TimePassedSinceLobbyLock => _lobbyLockTracking.HasValue ? DateTime.Now - _lobbyLockTracking.Value.EnabledAt : TimeSpan.Zero;
-
+        
         /// <summary>
         /// Gets the amount of time that has passed since the round started or <see cref="TimeSpan.Zero"/> if the round isn't running.
         /// </summary>
         [CommandPropertyAlias("duration")]
         public static TimeSpan Duration => IsRunning ? DateTime.Now - StartedAt : TimeSpan.Zero;
-
-        /// <summary>
-        /// Gets the player who enabled the round lock or <see langword="null"/> if the round lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("roundLockEnabledPlayer")]
-        public static ExPlayer? RoundLockEnabledBy => _roundLockTracking?.EnabledBy ?? null;
-
-        /// <summary>
-        /// Gets the player who enabled the lobby lock or <see langword="null"/> if the lobby lock is disabled.
-        /// </summary>
-        [CommandPropertyAlias("lobbyLockEnabledPlayer")]
-        public static ExPlayer? LobbyLockEnabledBy => _lobbyLockTracking?.EnabledBy ?? null;
-
-        /// <summary>
-        /// Gets the <see cref="Footprint"/> of the player who enabled the round lock.
-        /// </summary>
-        public static Footprint RoundLockEnabledByFootprint => _roundLockTracking?.EnabledByFootprint ?? default;
-
-        /// <summary>
-        /// Gets the <see cref="Footprint"/> of the player who enabled the lobby lock.
-        /// </summary>
-        public static Footprint LobbyLockEnabledByFootprint => _lobbyLockTracking?.EnabledByFootprint ?? default;
-
-        /// <summary>
-        /// Gets or sets the round lock tracker.
-        /// </summary>
-        public static RoundLock? RoundLock
-        {
-            get => _roundLockTracking;
-            set
-            {
-                switch (value)
-                {
-                    case null when !_roundLockTracking.HasValue:
-                        return;
-                    
-                    case { EnabledBy: null }:
-                        value = new(ExPlayer.Host);
-                        break;
-                }
-
-                if (value.HasValue && _roundLockTracking.HasValue && _roundLockTracking.Value.EnabledBy == value.Value.EnabledBy)
-                    return;
-
-                _roundLockTracking = value;
-
-                RoundSummary.RoundLock = _roundLockTracking.HasValue;
-                
-                if (_roundLockTracking.HasValue)
-                    CancelRoundEnd();
-
-                ApiLog.Debug("Round API",
-                    _roundLockTracking.HasValue
-                        ? $"Round Lock enabled by &3{RoundLockEnabledBy?.Nickname ?? "null"}&r (&6{RoundLockEnabledBy?.UserId ?? "null"}&r)"
-                        : $"Round Lock disabled.");
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the lobby lock tracker.
-        /// </summary>
-        public static RoundLock? LobbyLock
-        {
-            get => _lobbyLockTracking;
-            set
-            {
-                switch (value)
-                {
-                    case null when !_lobbyLockTracking.HasValue:
-                        return;
-                    
-                    case { EnabledBy: null }:
-                        value = new(ExPlayer.Host);
-                        break;
-                }
-
-                if (value.HasValue && _lobbyLockTracking.HasValue && _lobbyLockTracking.Value.EnabledBy == value.Value.EnabledBy)
-                    return;
-
-                _lobbyLockTracking = value;
-
-                RoundStart.LobbyLock = _lobbyLockTracking.HasValue;
-
-                ApiLog.Debug("Round API",
-                    _lobbyLockTracking.HasValue
-                        ? $"Lobby Lock enabled by &3{LobbyLockEnabledBy?.Nickname ?? "null"}&r (&6{LobbyLockEnabledBy?.UserId ?? "null"}&r)"
-                        : $"Lobby Lock disabled.");
-            }
-        }
 
         /// <summary>
         /// Gets or sets the forced decontamination status.
@@ -263,8 +248,17 @@ namespace LabExtended.API
         [CommandPropertyAlias("isLocked")]
         public static bool IsRoundLocked
         {
-            get => _roundLockTracking.HasValue || RoundSummary.RoundLock;
-            set => RoundLock = value ? new(ExPlayer.Host) : null;
+            get => RoundLock.IsActive;
+            set
+            {
+                if (value == RoundLock.IsActive)
+                    return;
+
+                if (value)
+                    RoundLock.Enable();
+                else
+                    RoundLock.Disable();
+            }
         }
 
         /// <summary>
@@ -273,8 +267,17 @@ namespace LabExtended.API
         [CommandPropertyAlias("isLobbyLocked")]
         public static bool IsLobbyLocked
         {
-            get => _lobbyLockTracking.HasValue || RoundStart.LobbyLock;
-            set => LobbyLock = value ? new(ExPlayer.Host) : null;
+            get => LobbyLock.IsActive;
+            set
+            {
+                if (value == LobbyLock.IsActive)
+                    return;
+
+                if (value)
+                    LobbyLock.Enable();
+                else
+                    LobbyLock.Disable();
+            }
         }
 
         /// <summary>
