@@ -8,6 +8,7 @@ using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Utilities;
 
 using MEC;
@@ -73,10 +74,20 @@ public static class RoundEndPatch
         {
             yield return Timing.WaitForSeconds(2.5f);
 
-            if (!Singleton.IsRoundEnded && (ExRound.IsRoundLocked
-                || ReferenceHub.GetPlayerCount(ClientInstanceMode.ReadyClient) < 2) || !RoundSummary.RoundInProgress()
-                || Time.unscaledTime - time < 15f)
-                continue;
+            if (!Singleton.IsRoundEnded)
+            {
+                if (ExRound.IsRoundLocked)
+                    continue;
+
+                if (Singleton.KeepRoundOnOne && ReferenceHub.GetPlayerCount(ClientInstanceMode.ReadyClient) < 2)
+                    continue;
+
+                if (!RoundSummary.RoundInProgress())
+                    continue;
+
+                if (Time.unscaledTime - time < 15f)
+                    continue;
+            }
 
             var summary = new RoundSummary.SumInfo_ClassList();
 
