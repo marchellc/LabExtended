@@ -301,12 +301,12 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets or sets a value indicating whether or not any damage dealt to other players will result in instant death.
         /// </summary>
-        public bool HasInstantKill { get; set; } = false; // BROKEN
+        public bool HasInstantKill { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether or not this player consumes ammo while shooting.
         /// </summary>
-        public bool HasUnlimitedAmmo { get; set; } = false; // BROKEN
+        public bool HasUnlimitedAmmo { get; set; }
 
         /// <summary>
         /// Whether or not this player should receive position messages.
