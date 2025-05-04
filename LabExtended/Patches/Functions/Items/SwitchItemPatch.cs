@@ -74,6 +74,8 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
+                        
+                        player.Inventory.ResetSnake();
 
                         if (curCustomItem != null)
                         {
@@ -87,6 +89,8 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
+                        
+                        player.Inventory.ResetSnake();
 
                         if (curCustomItem != null)
                         {
@@ -112,6 +116,8 @@ namespace LabExtended.Patches.Functions.Items
                     
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
+                    
+                    player.Inventory.ResetSnake();
                     
                     if (curCustomItem != null)
                     {

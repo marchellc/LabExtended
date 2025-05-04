@@ -126,7 +126,22 @@ public static class ExPlayerEvents
     public static event Action<PlayerChangingFirearmAttachmentsEventArgs>? ChangingAttachments;
 
     /// <inheritdoc cref="PlayerChangedFirearmAttachmentsEventArgs"/>
-    public static event Action<PlayerChangedFirearmAttachmentsEventArgs>? ChangedAttachments; 
+    public static event Action<PlayerChangedFirearmAttachmentsEventArgs>? ChangedAttachments;
+
+    /// <inheritdoc cref="PlayerSnakeChangedDirectionEventArgs"/>
+    public static event Action<PlayerSnakeChangedDirectionEventArgs>? SnakeChangedDirection;
+
+    /// <inheritdoc cref="PlayerSnakeGameOverEventArgs"/>
+    public static event Action<PlayerSnakeGameOverEventArgs>? SnakeGameOver;
+
+    /// <inheritdoc cref="PlayerSnakeStartedEventArgs"/>
+    public static event Action<PlayerSnakeStartedEventArgs>? SnakeStarted;
+
+    /// <inheritdoc cref="PlayerSnakeResetEventArgs"/>
+    public static event Action<PlayerSnakeResetEventArgs>? SnakeReset;
+
+    /// <inheritdoc cref="PlayerSnakeEatenEventArgs"/>
+    public static event Action<PlayerSnakeEatenEventArgs>? SnakeEaten; 
     #endregion
 
     #region Handlers - Join & Leave
@@ -390,6 +405,40 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnChangedAttachments(PlayerChangedFirearmAttachmentsEventArgs args)
         => ChangedAttachments.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SnakeChangedDirection"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeChangedDirection(PlayerSnakeChangedDirectionEventArgs args)
+        => SnakeChangedDirection.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SnakeGameOver"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeGameOver(PlayerSnakeGameOverEventArgs args)
+        => SnakeGameOver.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SnakeStarted"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeStarted(PlayerSnakeStartedEventArgs args)
+        => SnakeStarted.InvokeEvent(args);
 
+    /// <summary>
+    /// Invokes the <see cref="SnakeReset"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeReset(PlayerSnakeResetEventArgs args)
+        => SnakeReset.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SnakeEaten"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeEaten(PlayerSnakeEatenEventArgs args)
+        => SnakeEaten.InvokeEvent(args);
     #endregion
 }
