@@ -599,7 +599,7 @@ public static class HintController
 
                         if (player.Hints.TempData.Count > 0)
                         {
-                            AppendMessages(player.Hints.TempData, TemporaryHintAlign, 0f, builder);
+                            HintUtils.AppendMessages(player.Hints.TempData, TemporaryHintAlign, builder, player.Hints.LeftOffset);
                             anyAppended = true;
                         }
                     }
@@ -682,8 +682,8 @@ public static class HintController
                             {
                                 paramBuffer.AddRange(element.Parameters);
 
-                                AppendMessages(element.Data, element.GetAlignment(player), player.Hints.LeftOffset,
-                                    builder);
+                                HintUtils.AppendMessages(element.Data, element.GetAlignment(player), builder,
+                                    player.Hints.LeftOffset);
                                 anyAppended = true;
                             }
                         }
@@ -755,48 +755,6 @@ public static class HintController
             }
 
             sendNextFrame = false;
-        }
-    }
-
-    private static void AppendMessages(IEnumerable<HintData> hints, HintAlign align, float leftOffset,
-        StringBuilder builder)
-    {
-        foreach (var message in hints)
-        {
-            if (message.Content is null || message.Content.Length < 1)
-                continue;
-
-            builder.Append("<voffset=");
-            builder.Append(message.VerticalOffset);
-            builder.Append("em>");
-
-            if (align is HintAlign.FullLeft)
-            {
-                builder.Append("<align=left><pos=-");
-                builder.Append(leftOffset);
-                builder.Append("%>");
-                builder.Append(message.Content);
-                builder.Append("</pos></align>");
-            }
-            else if (align is HintAlign.Left)
-            {
-                builder.Append("<align=left>");
-                builder.Append(message.Content);
-                builder.Append("</align>");
-            }
-            else if (align is HintAlign.Right)
-            {
-                builder.Append("<align=right>");
-                builder.Append(message.Content);
-                builder.Append("</align>");
-            }
-            else
-            {
-                builder.Append(message.Content);
-            }
-
-            builder.Append("</voffset>");
-            builder.AppendLine();
         }
     }
 
