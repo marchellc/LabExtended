@@ -425,8 +425,6 @@ namespace LabExtended.Utilities.Unity
                     {
                         if (config.RemovedLoops.Contains(s.type.FullName) || config.RemovedLoops.Contains(s.type.Name))
                         {
-                            ApiLog.Debug("Player Loop", $"Removing loop &1{s.type.FullName}&r");
-
                             count++;
                             return true;
                         }

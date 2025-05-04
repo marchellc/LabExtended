@@ -497,7 +497,7 @@ public class ExPlayer : Player, IDisposable
         Position = new(this);
         Rotation = new(this);
 
-        Inventory = new(referenceHub.inventory);
+        Inventory = new(referenceHub.inventory, this);
 
         Subroutines = new(Role);
 

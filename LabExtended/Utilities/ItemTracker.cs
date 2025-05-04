@@ -18,7 +18,7 @@ public class ItemTracker : IDisposable
     /// <summary>
     /// Gets the tracked item serial.
     /// </summary>
-    public ushort ItemSerial { get; }
+    public ushort ItemSerial { get; private set; }
     
     /// <summary>
     /// Gets the player that currently owns the item.
@@ -64,6 +64,13 @@ public class ItemTracker : IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
+        if (ItemSerial != 0)
+            Trackers.Remove(ItemSerial);
+
+        Item = null;
+        Owner = null;
+        Pickup = null;
         
+        ItemSerial = 0;
     }
 }

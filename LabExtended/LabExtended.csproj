@@ -56,6 +56,9 @@
       <Reference Include="Pooling">
         <HintPath>$(LABEX_REFERENCES)\Pooling.dll</HintPath>
       </Reference>
+      <Reference Include="Snake">
+        <HintPath>..\..\refs\Snake.dll</HintPath>
+      </Reference>
       <Reference Include="Unity.TextMeshPro">
         <HintPath>$(LABEX_REFERENCES)\Unity.TextMeshPro.dll</HintPath>
       </Reference>

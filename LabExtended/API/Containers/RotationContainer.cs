@@ -35,8 +35,10 @@ namespace LabExtended.API.Containers
                 var closestPlayer = default(ExPlayer);
                 var closestDistance = 0f;
 
-                foreach (var player in ExPlayer.AllPlayers)
+                for (var index = 0; index < ExPlayer.AllPlayers.Count; index++)
                 {
+                    var player = ExPlayer.AllPlayers[index];
+                    
                     if (player is null)
                         continue;
 
@@ -104,7 +106,7 @@ namespace LabExtended.API.Containers
         /// <summary>
         /// Gets the player's camera rotation, compressed.
         /// </summary>
-        public CompressedRotation Compressed => new CompressedRotation(Rotation);
+        public CompressedRotation Compressed => new(Rotation);
 
         /// <summary>
         /// Gets the player's camera rotation's euler angles.

@@ -48,12 +48,14 @@ public class GrabEffect : UpdatingCustomEffect
         base.ApplyEffects();
 
         if (!Physics.Raycast(Player.CameraTransform.position, Player.CameraTransform.forward, out var hit, 30f,
-                Physics.AllLayers))
+                Physics.AllLayers)
+            || !NetworkObjectManipulator.FromRaycast(hit, out var target))
+        {
+            Disable();
             return;
-
-        if (!NetworkObjectManipulator.FromRaycast(hit, out var target))
-            return;
-
+        }
+        
+        Target?.Dispose();
         Target = target;
     }
 
