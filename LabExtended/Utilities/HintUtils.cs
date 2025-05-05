@@ -10,6 +10,8 @@ using Hints;
 using Mirror;
 
 using Utils.Networking;
+using LabExtended.API.Enums;
+using System.Text;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -251,7 +253,76 @@ public static class HintUtils
     public static float AvgCharWidth(int pixelSize)
         => 0.06f * (pixelSize - 1f);
 
-    internal static void GetMessages(string content, ICollection<HintData> messages, float vOffset, bool autoLineWrap,
+
+    public static void AppendMessage(HintData hint, HintAlign align, StringBuilder builder, float leftOffset = -6.2f) {
+        AppendMessage(hint.Content, align, hint.VerticalOffset, builder, leftOffset);
+    }
+
+    public static void AppendMessage(string content, HintAlign align, float verticalOffset, StringBuilder builder,
+        float leftOffset = -6.2f) {
+        if (string.IsNullOrEmpty(content))
+            return;
+
+        builder.Append("<voffset=");
+        builder.Append(verticalOffset);
+        builder.Append("em>");
+
+        if (align is HintAlign.FullLeft) {
+            builder.Append("<align=left><pos=-");
+            builder.Append(leftOffset);
+            builder.Append("%>");
+            builder.Append(content);
+            builder.Append("</pos></align>");
+        } else if (align is HintAlign.Left) {
+            builder.Append("<align=left>");
+            builder.Append(content);
+            builder.Append("</align>");
+        } else if (align is HintAlign.Right) {
+            builder.Append("<align=right>");
+            builder.Append(content);
+            builder.Append("</align>");
+        } else {
+            builder.Append(content);
+        }
+
+        builder.Append("</voffset>");
+        builder.AppendLine();
+    }
+
+    public static void AppendMessages(IEnumerable<HintData> hints, HintAlign align, StringBuilder builder,
+        float leftOffset = -6.2f) {
+        foreach (var message in hints) {
+            if (message.Content is null || message.Content.Length < 1)
+                continue;
+
+            builder.Append("<voffset=");
+            builder.Append(message.VerticalOffset);
+            builder.Append("em>");
+
+            if (align is HintAlign.FullLeft) {
+                builder.Append("<align=left><pos=-");
+                builder.Append(leftOffset);
+                builder.Append("%>");
+                builder.Append(message.Content);
+                builder.Append("</pos></align>");
+            } else if (align is HintAlign.Left) {
+                builder.Append("<align=left>");
+                builder.Append(message.Content);
+                builder.Append("</align>");
+            } else if (align is HintAlign.Right) {
+                builder.Append("<align=right>");
+                builder.Append(message.Content);
+                builder.Append("</align>");
+            } else {
+                builder.Append(message.Content);
+            }
+
+            builder.Append("</voffset>");
+            builder.AppendLine();
+        }
+    }
+
+    public static void GetMessages(string content, ICollection<HintData> messages, float vOffset, bool autoLineWrap,
         int pixelLineSpacing)
     {
         var matches = NewLineRegex.Matches(content);

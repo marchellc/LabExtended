@@ -717,7 +717,7 @@ public class ExPlayer : Player, IDisposable
     /// Gets a list of players that are currently spectating this player.
     /// </summary>
     [CommandPropertyAlias("spectatingPlayers")]
-    public IEnumerator<ExPlayer> SpectatingPlayers
+    public IEnumerable<ExPlayer> SpectatingPlayers
     {
         get
         {
