@@ -8,6 +8,7 @@ using Mirror;
 using System.Reflection.Emit;
 
 using UnityEngine;
+#pragma warning disable CS8601 // Possible null reference assignment.
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
@@ -996,132 +997,163 @@ public static class MirrorMethods
         }
     }
 
+    // TODO: There's a weird bug that causes the Mono runtime to randomly crash at random points in this method.
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        SendSpawnMessage =
-            typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
-                    .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
-                Action<NetworkIdentity, NetworkConnection>;
-
-        var assembly = typeof(ServerConsole).Assembly;
-        var types = assembly.GetTypes();
-
-        for (var i = 0; i < types.Length; i++)
+        try
         {
-            var type = types[i];
+            SendSpawnMessage =
+                typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
+                        .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
+                    Action<NetworkIdentity, NetworkConnection>;
 
-            var methods = type.GetAllMethods();
-            var properties = type.GetAllProperties();
+            var assembly = typeof(ServerConsole).Assembly;
+            var types = assembly.GetTypes();
 
-            var isSerializer = type.Name.EndsWith("Serializer");
-
-            for (var x = 0; x < methods.Length; x++)
+            for (var i = 0; i < types.Length; i++)
             {
-                var method = methods[x];
-
-                if (isSerializer && method.ReturnType == typeof(void) && method.Name.StartsWith("Write"))
+                try
                 {
+                    var type = types[i];
+
+                    var methods = type.GetAllMethods();
+                    var properties = type.GetAllProperties();
+
+                    var isSerializer = type.Name.EndsWith("Serializer");
+
+                    for (var x = 0; x < methods.Length; x++)
+                    {
+                        var method = methods[x];
+
+                        if (isSerializer && method.ReturnType == typeof(void) && method.Name.StartsWith("Write"))
+                        {
+                            var parameters = method.GetAllParameters();
+                            if (parameters.Length != 2) continue;
+
+                            var serializedType = parameters
+                                .FirstOrDefault(y => y.ParameterType != typeof(NetworkWriter))
+                                ?.ParameterType;
+
+                            if (serializedType is null) continue;
+                            if (Writers.ContainsKey(serializedType)) continue;
+                            
+                            var invoker = FastReflection.ForMethod(method);
+
+                            Writers.Add(serializedType, invoker);
+                        }
+                        else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
+                        {
+                            var name = $"{method.ReflectedType.Name}.{method.Name}";
+
+                            if (RpcNames.ContainsKey(name))
+                                continue;
+
+                            var body = method.GetMethodBody();
+                            if (body is null) continue;
+
+                            var codes = body.GetILAsByteArray();
+                            if (codes?.Length < 1) continue;
+
+                            var full = method.Module.ResolveString(BitConverter.ToInt32(codes,
+                                codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
+                            var hashIndex = codes.IndexOf((byte)OpCodes.Ldc_I4.Value) + 1;
+                            var hash = codes[hashIndex] | (codes[hashIndex + 1] << 8) | (codes[hashIndex + 2] << 16) |
+                                       (codes[hashIndex + 3] << 24);
+
+                            RpcNames.Add(name, full);
+                            RpcHashes.Add(name, hash);
+                        }
+                    }
+
+                    for (var y = 0; y < properties.Length; y++)
+                    {
+                        var prop = properties[y];
+                        if (!prop.Name.StartsWith("Network")) continue;
+
+                        var name = $"{prop.ReflectedType.Name}.{prop.Name}";
+                        if (DirtyBits.ContainsKey(name)) continue;
+
+                        var setter = prop.GetSetMethod(true);
+                        if (setter is null) continue;
+
+                        var body = setter.GetMethodBody();
+                        if (body is null) continue;
+
+                        var il = body.GetILAsByteArray();
+                        if (il?.Length < 1) continue;
+                        
+                        var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
+
+                        DirtyBits.Add(name, bit);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Mirror Methods", ex);
+                }
+            }
+            
+            var writerExtensions = typeof(NetworkWriterExtensions).GetAllMethods();
+
+            for (var i = 0; i < writerExtensions.Length; i++)
+            {
+                try
+                {
+                    var method = writerExtensions[i];
+
+                    if (method.IsGenericMethod) continue;
+                    if (method.HasAttribute<ObsoleteAttribute>()) continue;
+
                     var parameters = method.GetAllParameters();
                     if (parameters.Length != 2) continue;
 
-                    var serializedType = parameters.FirstOrDefault(y => y.ParameterType != typeof(NetworkWriter))
-                        ?.ParameterType;
+                    var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
+                    if (type is null) continue;
+                    
+                    var invoker = FastReflection.ForMethod(method);
 
-                    if (serializedType is null) continue;
-                    if (Writers.ContainsKey(serializedType)) continue;
+                    Writers.Add(type, invoker);
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Mirror Methods", ex);
+                }
+            }
+            
+            var generatedType = assembly.GetType("Mirror.GeneratedNetworkCode");
+            var generatedMethods = generatedType.GetAllMethods();
+            
+            for (var i = 0; i < generatedMethods.Length; i++)
+            {
+                try
+                {
+                    var method = generatedMethods[i];
+
+                    if (method.IsGenericMethod) continue;
+                    if (method.ReturnType != typeof(void)) continue;
+
+                    var parameters = method.GetAllParameters();
+                    if (parameters.Length != 2) continue;
+
+                    var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
+
+                    if (type is null) continue;
+                    if (Writers.ContainsKey(type)) continue;
 
                     var invoker = FastReflection.ForMethod(method);
 
-                    Writers.Add(serializedType, invoker);
+                    Writers.Add(type, invoker);
                 }
-                else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
+                catch (Exception ex)
                 {
-                    var name = $"{method.ReflectedType.Name}.{method.Name}";
-
-                    if (RpcNames.ContainsKey(name))
-                        continue;
-
-                    var body = method.GetMethodBody();
-                    if (body is null) continue;
-
-                    var codes = body.GetILAsByteArray();
-                    if (codes?.Length < 1) continue;
-
-                    var full = method.Module.ResolveString(BitConverter.ToInt32(codes,
-                        codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
-                    var hashIndex = codes.IndexOf((byte)OpCodes.Ldc_I4.Value) + 1;
-                    var hash = codes[hashIndex] | (codes[hashIndex + 1] << 8) | (codes[hashIndex + 2] << 16) | (codes[hashIndex + 3] << 24);
-
-                    RpcNames.Add(name, full);
-                    RpcHashes.Add(name, hash);
+                    ApiLog.Error("Mirror Methods", ex);
                 }
             }
-
-            for (var y = 0; y < properties.Length; y++)
-            {
-                var prop = properties[y];
-                if (!prop.Name.StartsWith("Network")) continue;
-
-                var name = $"{prop.ReflectedType.Name}.{prop.Name}";
-                if (DirtyBits.ContainsKey(name)) continue;
-
-                var setter = prop.GetSetMethod(true);
-                if (setter is null) continue;
-
-                var body = setter.GetMethodBody();
-                if (body is null) continue;
-
-                var il = body.GetILAsByteArray();
-                if (il?.Length < 1) continue;
-
-                var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
-
-                DirtyBits.Add(name, bit);
-            }
         }
-
-        var writerExtensions = typeof(NetworkWriterExtensions).GetAllMethods();
-
-        for (var i = 0; i < writerExtensions.Length; i++)
+        catch (Exception ex)
         {
-            var method = writerExtensions[i];
-
-            if (method.IsGenericMethod) continue;
-            if (method.HasAttribute<ObsoleteAttribute>()) continue;
-
-            var parameters = method.GetAllParameters();
-            if (parameters.Length != 2) continue;
-
-            var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-            if (type is null) continue;
-
-            var invoker = FastReflection.ForMethod(method);
-
-            Writers.Add(type, invoker);
-        }
-
-        var generatedType = assembly.GetType("Mirror.GeneratedNetworkCode");
-        var generatedMethods = generatedType.GetAllMethods();
-
-        for (var i = 0; i < generatedMethods.Length; i++)
-        {
-            var method = generatedMethods[i];
-
-            if (method.IsGenericMethod) continue;
-            if (method.ReturnType != typeof(void)) continue;
-
-            var parameters = method.GetAllParameters();
-            if (parameters.Length != 2) continue;
-
-            var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-
-            if (type is null) continue;
-            if (Writers.ContainsKey(type)) continue;
-
-            var invoker = FastReflection.ForMethod(method);
-
-            Writers.Add(type, invoker);
+            ApiLog.Error("Mirror Methods", ex);
         }
     }
 }
