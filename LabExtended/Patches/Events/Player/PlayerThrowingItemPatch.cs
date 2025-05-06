@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using InventorySystem;
+using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.Usables.Scp330;
 
@@ -58,6 +59,9 @@ namespace LabExtended.Patches.Events.Player
             CustomItemManager.InventoryItems.TryGetValue(item, out var customItemInstance);
 
             ItemPickupBase pickup = null;
+            
+            if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
+                player.Inventory.Snake.Reset(false, true);
 
             if (customItemInstance != null)
             {

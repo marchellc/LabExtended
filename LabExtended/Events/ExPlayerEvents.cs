@@ -1,6 +1,8 @@
 ﻿using LabExtended.API;
 using LabExtended.Extensions;
+
 using LabExtended.Events.Player;
+using LabExtended.Events.Player.Snake;
 
 #pragma warning disable CS8604 // Possible null reference argument.
 
@@ -136,12 +138,15 @@ public static class ExPlayerEvents
 
     /// <inheritdoc cref="PlayerSnakeStartedEventArgs"/>
     public static event Action<PlayerSnakeStartedEventArgs>? SnakeStarted;
-
-    /// <inheritdoc cref="PlayerSnakeResetEventArgs"/>
-    public static event Action<PlayerSnakeResetEventArgs>? SnakeReset;
+    
+    /// <inheritdoc cref="PlayerSnakeStoppedEventArgs"/>
+    public static event Action<PlayerSnakeStoppedEventArgs>? SnakeStopped; 
 
     /// <inheritdoc cref="PlayerSnakeEatenEventArgs"/>
-    public static event Action<PlayerSnakeEatenEventArgs>? SnakeEaten; 
+    public static event Action<PlayerSnakeEatenEventArgs>? SnakeEaten;
+
+    /// <inheritdoc cref="PlayerSnakeMovedEventArgs"/>
+    public static event Action<PlayerSnakeMovedEventArgs>? SnakeMoved; 
     #endregion
 
     #region Handlers - Join & Leave
@@ -426,13 +431,13 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnSnakeStarted(PlayerSnakeStartedEventArgs args)
         => SnakeStarted.InvokeEvent(args);
-
+    
     /// <summary>
-    /// Invokes the <see cref="SnakeReset"/> event.
+    /// Invokes the <see cref="SnakeStopped"/> event.
     /// </summary>
     /// <param name="args">The event's arguments.</param>
-    public static void OnSnakeReset(PlayerSnakeResetEventArgs args)
-        => SnakeReset.InvokeEvent(args);
+    public static void OnSnakeStopped(PlayerSnakeStoppedEventArgs args)
+        => SnakeStopped.InvokeEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="SnakeEaten"/> event.
@@ -440,5 +445,12 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnSnakeEaten(PlayerSnakeEatenEventArgs args)
         => SnakeEaten.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SnakeMoved"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSnakeMoved(PlayerSnakeMovedEventArgs args)
+        => SnakeMoved.InvokeEvent(args);
     #endregion
 }

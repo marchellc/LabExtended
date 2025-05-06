@@ -2,7 +2,7 @@
 
 using InventorySystem;
 using InventorySystem.Items;
-
+using InventorySystem.Items.Keycards;
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
@@ -45,6 +45,9 @@ namespace LabExtended.Patches.Functions.Items
 
                 if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
+                
+                if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
+                    player.Inventory.Snake.Reset(false, true);
 
                 itemSerial = switchingArgs.NextItem?.Serial ?? 0;
 
@@ -74,8 +77,6 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
-                        
-                        player.Inventory.ResetSnake();
 
                         if (curCustomItem != null)
                         {
@@ -89,8 +90,6 @@ namespace LabExtended.Patches.Functions.Items
                     {
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
-                        
-                        player.Inventory.ResetSnake();
 
                         if (curCustomItem != null)
                         {
@@ -116,8 +115,6 @@ namespace LabExtended.Patches.Functions.Items
                     
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
-                    
-                    player.Inventory.ResetSnake();
                     
                     if (curCustomItem != null)
                     {

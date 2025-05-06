@@ -34,9 +34,6 @@ public class InventoryContainer : IDisposable
     internal HashSet<ItemPickupBase>? _droppedItems;
     internal CustomItemInstance? heldCustomItem;
 
-    internal bool snakeStatus;
-    internal Vector2Int? snakeDirection;
-
     /// <summary>
     /// Creates a new <see cref="InventoryContainer"/> instance.
     /// </summary>
@@ -46,6 +43,11 @@ public class InventoryContainer : IDisposable
     {
         Inventory = inventory;
         Player = player;
+        
+        Snake = new(player);
+
+        if (CurrentItem is ChaosKeycardItem chaosKeycard)
+            Snake.Keycard = chaosKeycard;
 
         UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
 
@@ -112,6 +114,11 @@ public class InventoryContainer : IDisposable
     /// Gets the currently held Custom Item instance.
     /// </summary>
     public CustomItemInstance? HeldCustomItem => heldCustomItem;
+    
+    /// <summary>
+    /// Gets the Snake minigame wrapper.
+    /// </summary>
+    public SnakeInfo Snake { get; private set; }
 
     /// <summary>
     /// Gets the amount of items in this player's inventory.
@@ -231,40 +238,6 @@ public class InventoryContainer : IDisposable
             return perms;
         }
     }
-
-    /// <summary>
-    /// Gets the player's snake engine. 
-    /// </summary>
-    public SnakeEngine? SnakeEngine
-    {
-        get
-        {
-            if (CurrentItem is not ChaosKeycardItem chaosKeycard)
-                return null;
-
-            return chaosKeycard._localEngine;
-        }
-    }
-
-    /// <summary>
-    /// Whether or not the player is currently playing snake.
-    /// </summary>
-    public bool SnakeEnabled => snakeStatus;
-
-    /// <summary>
-    /// Gets the amount of snake segments.
-    /// </summary>
-    public int SnakeLength => SnakeEngine?.CurLength ?? 0;
-
-    /// <summary>
-    /// Gets the player's current snake score.
-    /// </summary>
-    public int SnakeScore => SnakeEngine?.Score ?? 0;
-
-    /// <summary>
-    /// Gets the player's current snake direction.
-    /// </summary>
-    public Vector2Int? SnakeDirection => snakeDirection;
     
     /// <summary>
     /// Adds a new item to the player's inventory.
@@ -734,42 +707,6 @@ public class InventoryContainer : IDisposable
     public void SetGlobalUsableCooldown(ushort usableItemSerial, float cooldown)
         => UsableItemsController.GlobalItemCooldowns[usableItemSerial] = cooldown;
 
-    /// <summary>
-    /// Ends the Snake minigame in a game-over result.
-    /// </summary>
-    /// <returns>true if the minigame was ended</returns>
-    public bool SnakeGameOver()
-    {
-        if (CurrentItem is not ChaosKeycardItem chaosKeycard || !snakeStatus)
-            return false;
-
-        chaosKeycard.ServerSendMessage(SnakeNetworkMessage.NewGameOver());
-
-        var engine = SnakeEngine;
-        
-        ExPlayerEvents.OnSnakeGameOver(new(Player, chaosKeycard, engine, engine.Score, engine.CurLength));
-        
-        ResetSnake();
-        return true;
-    }
-
-    /// <summary>
-    /// Resets the Snake minigame.
-    /// </summary>
-    /// <returns>true if the minigame was reset</returns>
-    public bool SnakeReset()
-    {
-        if (CurrentItem is not ChaosKeycardItem chaosKeycard || !snakeStatus)
-            return false;
-        
-        chaosKeycard.ServerSendMessage(SnakeNetworkMessage.NewReset(null));
-        
-        ResetSnake();
-
-        snakeStatus = true;
-        return true;
-    }
-
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
@@ -779,12 +716,9 @@ public class InventoryContainer : IDisposable
 
             _droppedItems = null;
         }
-    }
-
-    internal void ResetSnake()
-    {
-        snakeStatus = false;
-        snakeDirection = null;
+        
+        Snake?.Reset(false, true);
+        Snake = null;
     }
 
     /// <inheritdoc cref="object.ToString"/>
