@@ -2,7 +2,7 @@
 
 using InventorySystem;
 using InventorySystem.Items;
-using InventorySystem.Items.Keycards;
+
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
@@ -10,6 +10,7 @@ using LabExtended.API.CustomItems;
 
 using LabExtended.Core;
 using LabExtended.Attributes;
+using LabExtended.Utilities;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
@@ -55,17 +56,26 @@ namespace LabExtended.Patches.Functions.Items
 
                 CustomItemInstance curCustomItem = null;
                 CustomItemInstance newCustomItem = null;
-                
+
+                ItemTracker curTracker = null;
+                ItemTracker newTracker = null;
+
                 if (curItem != null)
+                {
                     CustomItemManager.InventoryItems.TryGetValue(curItem, out curCustomItem);
-                
+                    ItemTracker.Trackers.TryGetValue(curItem.ItemSerial, out curTracker);
+                }
+
                 if (itemSerial == 0 || itemSerial == newItem?.ItemSerial || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
                         return false;
-                    
+
                     if (newItem is not null)
+                    {
                         CustomItemManager.InventoryItems.TryGetValue(newItem, out newCustomItem);
+                        ItemTracker.Trackers.TryGetValue(newItem.ItemSerial, out newTracker);
+                    }
 
                     if (curCustomItem != null && !curCustomItem.OnDeselecting(curItem))
                         return false;
@@ -85,6 +95,8 @@ namespace LabExtended.Patches.Functions.Items
 
                             player.Inventory.heldCustomItem = null;
                         }
+                        
+                        curTracker?.SetSelected(false);
                     }
                     else
                     {
@@ -106,6 +118,9 @@ namespace LabExtended.Patches.Functions.Items
 
                             player.Inventory.heldCustomItem = newCustomItem;
                         }
+                        
+                        curTracker?.SetSelected(false);
+                        newTracker?.SetSelected(true);
                     }
                 }
                 else if (!flag)
@@ -123,6 +138,8 @@ namespace LabExtended.Patches.Functions.Items
 
                         player.Inventory.heldCustomItem = null;
                     }
+                    
+                    curTracker?.SetSelected(false);
                 }
                 
                 ExPlayerEvents.OnSelectedItem(new(player, curItem, newItem, prevIdentifier, 

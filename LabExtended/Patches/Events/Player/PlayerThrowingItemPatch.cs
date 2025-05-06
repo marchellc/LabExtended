@@ -16,7 +16,7 @@ using LabExtended.Extensions;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
-
+using LabExtended.Utilities;
 using PlayerRoles.FirstPersonControl;
 
 using UnityEngine;
@@ -57,6 +57,7 @@ namespace LabExtended.Patches.Events.Player
                 return false;
 
             CustomItemManager.InventoryItems.TryGetValue(item, out var customItemInstance);
+            ItemTracker.Trackers.TryGetValue(item.ItemSerial, out var tracker);
 
             ItemPickupBase pickup = null;
             
@@ -86,10 +87,9 @@ namespace LabExtended.Patches.Events.Player
 
             tryThrow = droppingEv.IsThrow;
 
-            if (pickup is null)
-                return false;
-
             player.Inventory._droppedItems.Add(pickup);
+            
+            tracker?.SetPickup(pickup, player);
 
             PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup));
 

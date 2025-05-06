@@ -11,6 +11,7 @@ using LabExtended.API;
 using LabExtended.API.CustomItems;
 
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Functions.Items
 {
@@ -73,6 +74,9 @@ namespace LabExtended.Patches.Functions.Items
 
             if (item != null)
             {
+                if (ItemTracker.Trackers.TryGetValue(item.ItemSerial, out var tracker))
+                    tracker.SetItem(item, player);
+                
                 if (customItemInstance != null)
                 {
                     customItemInstance.Item = item;

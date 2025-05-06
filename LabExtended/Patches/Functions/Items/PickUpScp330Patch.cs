@@ -11,6 +11,7 @@ using LabApi.Events.Handlers;
 
 using LabExtended.API;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Functions.Items
 {
@@ -68,9 +69,16 @@ namespace LabExtended.Patches.Functions.Items
             PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(player.ReferenceHub, scp330Pickup, bag));
 
             if (scp330Pickup.StoredCandies.Count == 0)
+            {
                 scp330Pickup.DestroySelf();
+                
+                if (ItemTracker.Trackers.TryGetValue(scp330Pickup.ItemId.SerialNumber, out var tracker))
+                    tracker.Dispose();
+            }
             else
+            {
                 scp330Pickup.UnlockPickup();
+            }
 
             return false;
         }
