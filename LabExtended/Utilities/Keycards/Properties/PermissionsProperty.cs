@@ -86,11 +86,11 @@ public class PermissionsProperty : KeycardValue
     }
 
     /// <inheritdoc cref="KeycardValue.Apply"/>
-    public override void Apply(KeycardItem item)
+    public override void Apply(KeycardItem item, ushort itemSerial)
     {
-        base.Apply(item);
+        base.Apply(item, itemSerial);
 
-        if (item != null)
-            CustomPermsDetail.ServerCustomPermissions[item.ItemSerial] = levels.Permissions;
+        if (itemSerial != 0)
+            CustomPermsDetail.ServerCustomPermissions[itemSerial] = levels.Permissions;
     }
 }

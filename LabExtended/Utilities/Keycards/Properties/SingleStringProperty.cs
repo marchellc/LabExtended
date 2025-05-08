@@ -9,15 +9,11 @@ namespace LabExtended.Utilities.Keycards.Properties;
 /// </summary>
 public class SingleStringProperty : KeycardValue
 {
-    private Action<SingleStringProperty, KeycardItem>? applyAction;
-    
     /// <summary>
     /// Creates a new <see cref="SingleStringProperty"/> instance.
     /// </summary>
     /// <param name="type"></param>
-    /// <param name="applyAction">Delegate used to apply the custom value.</param>
-    public SingleStringProperty(Type type, Action<SingleStringProperty, KeycardItem>? applyAction = null) : base(type)
-        => this.applyAction = applyAction;
+    public SingleStringProperty(Type type) : base(type) { }
 
     /// <summary>
     /// Gets or sets the value of this property.
@@ -31,12 +27,4 @@ public class SingleStringProperty : KeycardValue
     /// <inheritdoc cref="KeycardValue.Reset"/>
     public override void Reset()
         => Value = null;
-    
-    /// <inheritdoc cref="KeycardValue.Apply"/>
-    public override void Apply(KeycardItem item)
-    {
-        base.Apply(item);
-        
-        applyAction?.Invoke(this, item);
-    }
 }

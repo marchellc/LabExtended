@@ -11,15 +11,11 @@ namespace LabExtended.Utilities.Keycards.Properties;
 /// </summary>
 public class SingleByteProperty : KeycardValue
 {
-    private Action<SingleByteProperty, KeycardItem>? applyAction;
-    
     /// <summary>
     /// Creates a new <see cref="SingleByteProperty"/> instance.
     /// </summary>
     /// <param name="type"></param>
-    /// <param name="applyAction">Delegate used to apply the custom value.</param>
-    public SingleByteProperty(Type type, Action<SingleByteProperty, KeycardItem>? applyAction = null) : base(type)
-        => this.applyAction = applyAction;
+    public SingleByteProperty(Type type) : base(type) { }
 
     /// <summary>
     /// Gets or sets the byte value of this property.
@@ -34,13 +30,5 @@ public class SingleByteProperty : KeycardValue
     public override void Reset()
     {
         Value = 0;
-    }
-
-    /// <inheritdoc cref="KeycardValue.Apply"/>
-    public override void Apply(KeycardItem item)
-    {
-        base.Apply(item);
-        
-        applyAction?.Invoke(this, item);
     }
 }

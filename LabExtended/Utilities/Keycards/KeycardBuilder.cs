@@ -1,4 +1,6 @@
-﻿using InventorySystem.Items.Keycards;
+﻿using Interactables.Interobjects.DoorUtils;
+
+using InventorySystem.Items.Keycards;
 
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
@@ -9,6 +11,8 @@ using LabExtended.Utilities.Keycards.Properties;
 using Mirror;
 
 using NorthwoodLib.Pools;
+
+using UnityEngine;
 
 namespace LabExtended.Utilities.Keycards;
 
@@ -23,7 +27,9 @@ public class KeycardBuilder : PoolObject
     public static KeycardBuilder Pooled => ObjectPool<KeycardBuilder>.Shared.Rent(null, () => new());
         
     private KeycardBuilder() { }
+    
     private List<KeycardValue> properties = new();
+    private bool propertiesOrdered;
 
     /// <summary>
     /// Gets the keycard's custom item name property.
@@ -61,15 +67,91 @@ public class KeycardBuilder : PoolObject
     public RankProperty Rank { get; } = new();
 
     /// <summary>
+    /// Sets the keycard's name.
+    /// </summary>
+    /// <param name="name">The name to set.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithName(string name)
+    {
+        Name.Value = name;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the keycard's serial number.
+    /// </summary>
+    /// <param name="serialNumber">The serial number to set.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithSerialNumber(string serialNumber)
+    {
+        SerialNumber.Value = serialNumber;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the keycard's label text and color.
+    /// </summary>
+    /// <param name="label">The text of the label.</param>
+    /// <param name="color">The color of the label.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithLabel(string label, Color32? color = null)
+    {
+        Label.Value = label;
+        
+        if (color.HasValue)
+            Label.Color = color.Value;
+        
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the keycard's tint color.
+    /// </summary>
+    /// <param name="color">The color to set.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithTint(Color32 color)
+    {
+        Tint.Value = color;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the keycard's wear level.
+    /// </summary>
+    /// <param name="level">The level to set.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithWearLevel(byte level)
+    {
+        Wear.Value = level;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the keycard's permissions.
+    /// </summary>
+    /// <param name="permissions">The permission flags to set.</param>
+    /// <param name="color">The color of the permission chart.</param>
+    /// <returns>This builder instance.</returns>
+    public KeycardBuilder WithPermissions(DoorPermissionFlags permissions, Color32? color = null)
+    {
+        Permissions.Flags = permissions;
+        
+        if (color.HasValue)
+            Permissions.Color = color.Value;
+        
+        return this;
+    }
+    
+    /// <summary>
     /// Applies the specified properties server-side.
     /// </summary>
     /// <param name="item">The target item.</param>
-    public void Apply(KeycardItem item)
+    public void Apply(KeycardItem item, ushort itemSerial)
     {
         if (item is null)
             throw new ArgumentNullException(nameof(item));
         
-        properties.ForEach(p => p.Apply(item));
+        properties.ForEach(p => p.Apply(item, itemSerial));
     }
 
     /// <summary>
@@ -80,22 +162,28 @@ public class KeycardBuilder : PoolObject
     /// <exception cref="ArgumentNullException"></exception>
     public ArraySegment<byte> ToSegment(KeycardItem item)
     {
-        if (item is null)
+        if (item == null)
             throw new ArgumentNullException(nameof(item));
 
-        var temp = ListPool<KeycardValue>.Shared.Rent(properties.Count);
-        var data = default(ArraySegment<byte>);
-
+        if (!propertiesOrdered)
+        {
+            var temp = ListPool<KeycardValue>.Shared.Rent(properties.Count);
+            
+            temp.AddRange(properties.OrderBy(x => item.Details.FindIndex(d => d.GetType() == x.DetailType)));
+            
+            properties.Clear();
+            properties.AddRange(temp);
+            
+            ListPool<KeycardValue>.Shared.Return(temp);
+            
+            propertiesOrdered = true;
+        }
+        
         using (var writer = NetworkWriterPool.Get())
         {
-            temp.AddRange(properties.OrderBy(x => item.Details.FindIndex(d => d.GetType() == x.DetailType)));
-            temp.ForEach(v => v.Write(writer, item));
-
-            data = writer.ToArraySegment();
+            properties.ForEach(v => v.Write(writer, item));
+            return writer.ToArraySegment();
         }
-
-        ListPool<KeycardValue>.Shared.Return(temp);
-        return data;
     }
 
     /// <inheritdoc cref="PoolObject.OnReturned"/>

@@ -38,5 +38,6 @@ public abstract class KeycardValue
     /// Applies the value of this property on a specific item.
     /// </summary>
     /// <param name="item">The target item.</param>
-    public virtual void Apply(KeycardItem item) { }
+    /// <param name="itemSerial">The serial of the target item.</param>
+    public virtual void Apply(KeycardItem item, ushort itemSerial) { }
 }
