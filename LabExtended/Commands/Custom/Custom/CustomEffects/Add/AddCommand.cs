@@ -46,7 +46,7 @@ public partial class CustomEffectsCommand
                     x.AppendLine($"[{t.Nickname} ({t.ClearUserId})]: Effect \"{effectType.Name}\" is already active");
                     return;
                 }
-
+                
                 if (customEffect is DurationCustomEffect durationCustomEffect)
                 {
                     if (effectDuration.HasValue)

@@ -51,7 +51,7 @@ public class CustomFirearmInstance : CustomItemInstance
     /// Gets called once a shot processing finishes.
     /// </summary>
     public virtual void OnProcessedShot(ExPlayer? target, Vector3? targetPosition) { }
-    
+
     /// <summary>
     /// Gets called when a custom firearm is shot.
     /// </summary>

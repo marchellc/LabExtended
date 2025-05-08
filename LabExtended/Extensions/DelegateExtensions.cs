@@ -4,6 +4,26 @@ namespace LabExtended.Extensions
 {
     public static class DelegateExtensions
     {
+        public static T? Invoke<T>(this Func<T> func, Func<T?, T?, T?> combiner, T? defaultResult = default)
+        {
+            if (func is null)
+                return defaultResult;
+            
+            if (combiner is null)
+                throw new ArgumentNullException(nameof(combiner));
+
+            var current = defaultResult;
+            
+            foreach (var listener in func.GetInvocationList())
+            {
+                var result = (listener as Func<T>)();
+
+                current = combiner(current, result);
+            }
+
+            return current;
+        }
+        
         public static void InvokeSafe(this Action action, bool throwException = false)
         {
             if (action is null)
