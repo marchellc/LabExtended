@@ -17,9 +17,10 @@ public static class AmmoLoadPatches
     [HarmonyPatch(typeof(AutomaticActionModule), nameof(AutomaticActionModule.ServerUnloadChambered))]
     public static bool AutomaticActionPrefix(AutomaticActionModule __instance)
     {
-        if (!CustomItemManager.InventoryItems.TryGetValue<CustomFirearmInstance>(__instance.Firearm,
-                out var customFirearm) || !customFirearm.CustomData.AmmoType.HasValue
-            || customFirearm.CustomData.AmmoType.Value.IsAmmo())
+        if (!__instance.Firearm.TryGetTracker(out var tracker) || tracker.CustomItem is not CustomFirearmInstance
+                                                                   customFirearm
+                                                               || !customFirearm.CustomData.AmmoType.HasValue ||
+                                                               customFirearm.CustomData.AmmoType.Value.IsAmmo())
             return true;
         
         if (!__instance.Firearm.TryGetModule<IPrimaryAmmoContainerModule>(out _))

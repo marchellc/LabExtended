@@ -39,21 +39,13 @@ public static class CustomGrenadeManager
             throw new Exception("This custom grenade has already been thrown.");
 
         customGrenadeInstance.OnSpawning();
-        
         customGrenadeInstance.Player.Inventory.RemoveItem(customGrenadeInstance.Item);
-        customGrenadeInstance.Player.customItems.Remove(customGrenadeInstance.Item);
 
-        var pickup = customGrenadeInstance.Player.Inventory.ThrowItem<ItemPickupBase>(
+        customGrenadeInstance.Player.Inventory.ThrowItem<ItemPickupBase>(
             customGrenadeInstance.CustomData.PickupType,
             customGrenadeInstance.CustomData.Force, 
             customGrenadeInstance.CustomData.PickupScale,
             customGrenadeInstance.ItemSerial);
-        
-        CustomItemManager.PickupItems.Add(pickup, customGrenadeInstance);
-        CustomItemManager.InventoryItems.Remove(customGrenadeInstance.Item);
-        
-        customGrenadeInstance.Item = null;
-        customGrenadeInstance.Pickup = pickup;
         
         customGrenadeInstance.RemainingTime = customGrenadeInstance.CustomData.Time;
         customGrenadeInstance.SpawnTime = Time.timeSinceLevelLoad;
@@ -112,10 +104,7 @@ public static class CustomGrenadeManager
             nade.IsDetonated = true;
             nade.DetonationTime = Time.timeSinceLevelLoad;
             
-            CustomItemManager.PickupItems.Remove(nade.Pickup);
-            
-            nade.Pickup.DestroySelf();
-            nade.Pickup = null;
+            nade.Tracker.Destroy();
             
             nade.OnDetonated();
             nade.OnDisabled();

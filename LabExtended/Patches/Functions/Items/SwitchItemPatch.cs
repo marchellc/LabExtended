@@ -6,7 +6,6 @@ using InventorySystem.Items;
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
 
 using LabExtended.Core;
 using LabExtended.Attributes;
@@ -47,6 +46,20 @@ namespace LabExtended.Patches.Functions.Items
                 if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
                 
+                ItemTracker curTracker = null;
+                ItemTracker newTracker = null;
+                
+                if (curItem != null)
+                    ItemTracker.Trackers.TryGetValue(curItem.ItemSerial, out curTracker);
+
+                if (curTracker?.CustomItem != null)
+                {
+                    curTracker.CustomItem.OnDeselecting(switchingArgs);
+
+                    if (!switchingArgs.IsAllowed)
+                        return false;
+                }
+                
                 if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
                     player.Inventory.Snake.Reset(false, true);
 
@@ -54,70 +67,33 @@ namespace LabExtended.Patches.Functions.Items
 
                 var flag = __instance.CurItem.SerialNumber == 0 || __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out curItem) && __instance.CurInstance != null;
 
-                CustomItemInstance curCustomItem = null;
-                CustomItemInstance newCustomItem = null;
-
-                ItemTracker curTracker = null;
-                ItemTracker newTracker = null;
-
-                if (curItem != null)
-                {
-                    CustomItemManager.InventoryItems.TryGetValue(curItem, out curCustomItem);
-                    ItemTracker.Trackers.TryGetValue(curItem.ItemSerial, out curTracker);
-                }
-
                 if (itemSerial == 0 || itemSerial == newItem?.ItemSerial || __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
                         return false;
 
                     if (newItem is not null)
-                    {
-                        CustomItemManager.InventoryItems.TryGetValue(newItem, out newCustomItem);
                         ItemTracker.Trackers.TryGetValue(newItem.ItemSerial, out newTracker);
+
+                    if (newTracker?.CustomItem != null)
+                    {
+                        newTracker.CustomItem.OnSelecting(switchingArgs);
+
+                        if (!switchingArgs.IsAllowed)
+                            return false;
                     }
-
-                    if (curCustomItem != null && !curCustomItem.OnDeselecting(curItem))
-                        return false;
-
-                    if (newCustomItem != null && !newCustomItem.OnSelecting(newItem))
-                        return false;
 
                     if (itemSerial == 0)
                     {
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
 
-                        if (curCustomItem != null)
-                        {
-                            curCustomItem.IsHeld = false;
-                            curCustomItem.OnDeselected();
-
-                            player.Inventory.heldCustomItem = null;
-                        }
-                        
                         curTracker?.SetSelected(false);
                     }
                     else
                     {
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
-
-                        if (curCustomItem != null)
-                        {
-                            curCustomItem.IsHeld = false;
-                            curCustomItem.OnDeselected();
-
-                            player.Inventory.heldCustomItem = null;
-                        }
-
-                        if (newCustomItem != null)
-                        {
-                            newCustomItem.IsHeld = true;
-                            newCustomItem.OnSelected();
-
-                            player.Inventory.heldCustomItem = newCustomItem;
-                        }
                         
                         curTracker?.SetSelected(false);
                         newTracker?.SetSelected(true);
@@ -125,24 +101,21 @@ namespace LabExtended.Patches.Functions.Items
                 }
                 else if (!flag)
                 {
-                    if (curCustomItem != null && !curCustomItem.OnDeselecting(curItem))
-                        return false;
+                    if (curTracker?.CustomItem != null)
+                    {
+                        curTracker.CustomItem.OnDeselecting(switchingArgs);
+
+                        if (!switchingArgs.IsAllowed)
+                            return false;
+                    }
                     
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
                     
-                    if (curCustomItem != null)
-                    {
-                        curCustomItem.IsHeld = false;
-                        curCustomItem.OnDeselected();
-
-                        player.Inventory.heldCustomItem = null;
-                    }
-                    
                     curTracker?.SetSelected(false);
                 }
                 
-                ExPlayerEvents.OnSelectedItem(new(player, curItem, newItem, prevIdentifier, 
+                ExPlayerEvents.OnSelectedItem(new (player, curItem, newItem, prevIdentifier,
                     newItem?.ItemId ?? ItemIdentifier.None));
                 return false;
             }

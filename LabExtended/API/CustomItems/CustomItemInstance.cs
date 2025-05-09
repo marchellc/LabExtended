@@ -1,6 +1,11 @@
 ﻿using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+using LabApi.Events.Arguments.PlayerEvents;
+using LabExtended.Events.Player;
+using LabExtended.Utilities;
 using UnityEngine;
+using PlayerDroppingItemEventArgs = LabExtended.Events.Player.PlayerDroppingItemEventArgs;
+using PlayerThrowingItemEventArgs = LabExtended.Events.Player.PlayerThrowingItemEventArgs;
 
 namespace LabExtended.API.CustomItems;
 
@@ -20,14 +25,19 @@ public class CustomItemInstance
     public CustomItemData? CustomData { get; internal set; }
     
     /// <summary>
+    /// Gets the item's tracker.
+    /// </summary>
+    public ItemTracker? Tracker { get; internal set; }
+
+    /// <summary>
     /// Gets the associated item.
     /// </summary>
-    public ItemBase? Item { get; internal set; }
+    public ItemBase? Item => Tracker?.Item;
     
     /// <summary>
     /// Gets the associated item pickup.
     /// </summary>
-    public ItemPickupBase? Pickup { get; internal set; }
+    public ItemPickupBase? Pickup => Tracker?.Pickup;
     
     /// <summary>
     /// Whether or not this custom item has an owner.
@@ -43,16 +53,16 @@ public class CustomItemInstance
     /// Whether or not this custom item is in inventory.
     /// </summary>
     public bool HasItem => Item is not null;
-    
+
     /// <summary>
     /// Whether or not this item is currently being held.
     /// </summary>
-    public bool IsHeld { get; internal set; }
+    public bool IsHeld => Tracker?.IsSelected ?? false;
     
     /// <summary>
     /// Gets the item's serial number.
     /// </summary>
-    public ushort ItemSerial { get; internal set; }
+    public ushort ItemSerial => Tracker?.ItemSerial ?? 0;
     
     /// <summary>
     /// Called once an item spawns (or is added to inventory).
@@ -67,9 +77,7 @@ public class CustomItemInstance
     /// <summary>
     /// Called when a player tries to select this item
     /// </summary>
-    /// <param name="previousItem">The item that's currently being held.</param>
-    /// <returns>true if the player should be allowed to switch their item.</returns>
-    public virtual bool OnSelecting(ItemBase? previousItem) => true;
+    public virtual void OnSelecting(PlayerSelectingItemEventArgs args) { }
     
     /// <summary>
     /// Called when a player selects this item.
@@ -79,65 +87,41 @@ public class CustomItemInstance
     /// <summary>
     /// Called when a player tries to unselect this item.
     /// </summary>
-    /// <param name="newItem">The item that's going to be held.</param>
-    /// <returns>true if the player should be allowed to switch their item.</returns>
-    public virtual bool OnDeselecting(ItemBase? newItem) => true;
+    public virtual void OnDeselecting(PlayerSelectingItemEventArgs args) { }
     
     /// <summary>
     /// Called when a player unselects this item.
     /// </summary>
-    public virtual void OnDeselected() { }
+    public virtual void OnDeselected(PlayerSelectedItemEventArgs args) { }
 
     /// <summary>
     /// Called when a player starts picking up this item.
     /// </summary>
-    /// <param name="player">The player that is picking up this item.</param>
-    /// <returns>true if the player should be allowed to pick the item up.</returns>
-    public virtual bool OnPickingUp(ExPlayer player) => true;
+    public virtual void OnPickingUp(PlayerPickingUpItemEventArgs args) { }
     
     /// <summary>
     /// Called when a new player picks up this item.
     /// </summary>
-    public virtual void OnPickedUp() { }
+    public virtual void OnPickedUp(PlayerPickedUpItemEventArgs args) { }
 
     /// <summary>
     /// Called once the player starts dropping this item.
     /// </summary>
-    /// <param name="isThrow">Whether or not the item should be thrown.</param>
-    /// <returns>true if the player should be able to drop the item.</returns>
-    public virtual bool OnDropping(ref bool isThrow) => true;
+    public virtual void OnDropping(PlayerDroppingItemEventArgs args) { }
     
     /// <summary>
     /// Called once the player drops this item.
-    /// <param name="isThrow">Whether or not the item was thrown.</param>
     /// </summary>
-    public virtual void OnDropped(bool isThrow) { }
+    public virtual void OnDropped(PlayerDroppedItemEventArgs args) { }
 
     /// <summary>
     /// Called once the player attempts to throw this item.
     /// </summary>
     /// <returns>true if the player should be allowed to throw this item.</returns>
-    public virtual bool OnThrowing(Rigidbody rigidbody, ref Vector3 startPosition, ref Vector3 velocity, ref Vector3 angularVelocity) => true;
+    public virtual void OnThrowing(PlayerThrowingItemEventArgs args) { }
     
     /// <summary>
     /// Called once this item gets thrown.
     /// </summary>
-    public virtual void OnThrown() { }
-    
-    internal virtual void OnItemSet() { }
-    internal virtual void OnPickupSet() { }
-
-    internal virtual void SetItem(ItemBase item)
-    {
-        Pickup = null;
-        Item = item;
-        OnItemSet();
-    }
-
-    internal virtual void SetPickup(ItemPickupBase pickup)
-    {
-        Pickup = pickup;
-        Item = null;
-        OnPickupSet();
-    }
+    public virtual void OnThrown(PlayerThrewItemEventArgs args) { }
 }

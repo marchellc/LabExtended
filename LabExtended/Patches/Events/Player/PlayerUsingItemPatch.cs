@@ -10,7 +10,7 @@ using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomUsables;
-
+using LabExtended.Extensions;
 using Mirror;
 
 using UnityEngine;
@@ -32,10 +32,11 @@ namespace LabExtended.Patches.Events.Player
             if (curUsable.ItemSerial != msg.ItemSerial)
                 return false;
 
+            var tracker = curUsable.GetTracker();
+            
             if (msg.Status is StatusMessage.StatusType.Start)
             {
-                if (CustomItemManager.InventoryItems.TryGetValue(curUsable, out var customItemInstance)
-                    && customItemInstance is CustomUsableInstance customUsableInstance)
+                if (tracker.CustomItem is CustomUsableInstance customUsableInstance)
                 {
                     var usingEventArgs = new PlayerUsingItemEventArgs(player.ReferenceHub, curUsable);
 
@@ -98,8 +99,7 @@ namespace LabExtended.Patches.Events.Player
             }
             else
             {
-                if (CustomItemManager.InventoryItems.TryGetValue(curUsable, out var customItemInstance)
-                    && customItemInstance is CustomUsableInstance customUsableInstance)
+                if (tracker.CustomItem is CustomUsableInstance customUsableInstance)
                 {
                     var cancellingArgs = new PlayerCancellingUsingItemEventArgs(player.ReferenceHub, curUsable);
 

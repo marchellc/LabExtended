@@ -17,7 +17,7 @@ public static class DryFirePatches
     [HarmonyPatch(typeof(DoubleActionModule), nameof(DoubleActionModule.FireDry))]
     public static bool DoubleActionPrefix(DoubleActionModule __instance)
     {
-        var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var customFirearm = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
 
         if (customFirearm is not null && !customFirearm.OnDryFiring())
             return false;

@@ -5,7 +5,7 @@ using InventorySystem.Items.ThrowableProjectiles;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomGrenades;
-
+using LabExtended.Extensions;
 using Mirror;
 
 using UnityEngine;
@@ -25,9 +25,9 @@ public static class ThrowableRequestPatch
             || player.Inventory.CurrentItem is not ThrowableItem throwableItem)
             return false;
 
-        if (!CustomItemManager.InventoryItems.TryGetValue(throwableItem, out var customItemInstance)
-            || customItemInstance is not CustomGrenadeInstance customGrenadeInstance)
-            return true;
+        if (!throwableItem.TryGetTracker(out var tracker) ||
+            tracker.CustomItem is not CustomGrenadeInstance customGrenadeInstance)
+            return false;
 
         if (customGrenadeInstance.IsDetonated || customGrenadeInstance.IsSpawned)
             return false;

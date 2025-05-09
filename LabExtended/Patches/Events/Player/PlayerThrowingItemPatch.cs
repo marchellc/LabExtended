@@ -56,26 +56,24 @@ namespace LabExtended.Patches.Events.Player
             if (!ExPlayerEvents.OnDroppingItem(droppingEv))
                 return false;
 
-            CustomItemManager.InventoryItems.TryGetValue(item, out var customItemInstance);
-            ItemTracker.Trackers.TryGetValue(item.ItemSerial, out var tracker);
+            var tracker = item.GetTracker();
 
             ItemPickupBase pickup = null;
             
             if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
                 player.Inventory.Snake.Reset(false, true);
 
-            if (customItemInstance != null)
+            if (tracker.CustomItem != null)
             {
-                if (!customItemInstance.OnDropping(ref tryThrow))
-                    return false;
+                tracker.CustomItem.OnDropping(droppingEv);
 
-                if (customItemInstance.CustomData.PickupType is ItemType.None)
+                if (!droppingEv.IsAllowed || tracker.CustomItem.CustomData.PickupType is ItemType.None)
                     return false;
                 
                 __instance.ServerRemoveItem(itemSerial, item.PickupDropModel);
 
-                pickup = ExMap.SpawnItem(customItemInstance.CustomData.PickupType, player.Position,
-                    customItemInstance.CustomData.PickupScale ?? Vector3.one, player.Rotation, customItemInstance.ItemSerial, 
+                pickup = ExMap.SpawnItem(tracker.CustomItem.CustomData.PickupType, player.Position,
+                    tracker.CustomItem.CustomData.PickupScale ?? Vector3.one, player.Rotation, tracker.ItemSerial, 
                     true);
             }
             else
@@ -89,24 +87,9 @@ namespace LabExtended.Patches.Events.Player
 
             player.Inventory._droppedItems.Add(pickup);
             
-            tracker?.SetPickup(pickup, player);
+            tracker.SetPickup(pickup, player);
 
             PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup));
-
-            if (customItemInstance != null)
-            {
-                customItemInstance.Item = null;
-                customItemInstance.IsHeld = false;
-                
-                customItemInstance.Pickup = pickup;
-                customItemInstance.OnDropped(tryThrow);
-                
-                CustomItemManager.PickupItems.Add(pickup, customItemInstance);
-                CustomItemManager.InventoryItems.Remove(item);
-
-                player.customItems.Remove(item);
-                player.Inventory.heldCustomItem = null;
-            }
 
             if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
             {
@@ -131,15 +114,19 @@ namespace LabExtended.Patches.Events.Player
 
                 if (!ExPlayerEvents.OnThrowingItem(throwingEv))
                     return false;
+                
+                if (tracker.CustomItem != null)
+                {
+                    tracker.CustomItem.OnThrowing(throwingEv);
+
+                    if (!throwingEv.IsAllowed)
+                        return false;
+                }
 
                 velocity = throwingEv.Velocity;
                 angular = throwingEv.AngularVelocity;
 
                 var position = throwingEv.Position;
-
-                if (customItemInstance != null &&
-                    !customItemInstance.OnThrowing(rigidbody, ref position, ref velocity, ref angular))
-                    return false;
 
                 rigidbody.position = position;
                 rigidbody.velocity = velocity;
@@ -147,10 +134,12 @@ namespace LabExtended.Patches.Events.Player
 
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
-                
-                customItemInstance?.OnThrown();
 
-                PlayerEvents.OnThrewItem(new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody));
+                var threwArgs = new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody);
+                
+                tracker.CustomItem?.OnThrown(threwArgs);
+
+                PlayerEvents.OnThrewItem(threwArgs);
             }
 
             return false;

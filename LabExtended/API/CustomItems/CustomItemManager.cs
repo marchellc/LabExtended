@@ -1,10 +1,9 @@
-﻿using InventorySystem;
-using InventorySystem.Items;
+﻿using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Attributes;
+using LabExtended.Utilities;
 
 using NorthwoodLib.Pools;
 
@@ -33,16 +32,6 @@ public static class CustomItemManager
     /// Gets all registered custom items.
     /// </summary>
     public static Dictionary<Type, CustomItemData> RegisteredItems { get; } = new();
-    
-    /// <summary>
-    /// Gets all active inventory custom items.
-    /// </summary>
-    public static Dictionary<ItemBase, CustomItemInstance> InventoryItems { get; } = new();
-    
-    /// <summary>
-    /// Gets all active pickup items.
-    /// </summary>
-    public static Dictionary<ItemPickupBase, CustomItemInstance> PickupItems { get; } = new();
 
     /// <summary>
     /// Throws the specified custom item.
@@ -57,9 +46,7 @@ public static class CustomItemManager
             throw new Exception("Custom Item is not in inventory.");
 
         item.Player.customItems.Remove(item.Item);
-        
-        item.Pickup = item.Player.Inventory.ThrowItem<ItemPickupBase>(item.Item);
-        item.OnThrown();
+        item.Player.Inventory.ThrowItem<ItemPickupBase>(item.Item);
     }
     
     /// <summary>
@@ -76,25 +63,7 @@ public static class CustomItemManager
         if (item.Item is null)
             throw new Exception("Custom Item is not in inventory.");
 
-        var isThrow = false;
-        
-        item.Player.customItems.Remove(item.Item);
-        item.Player.ReferenceHub.inventory.ServerRemoveItem(item.ItemSerial, item.Item.PickupDropModel);
-
-        InventoryItems.Remove(item.Item);
-        
-        item.OnDropping(ref isThrow);
-        
-        if (item.CustomData.PickupType is ItemType.None)
-            return;
-
-        var pickup = ExMap.SpawnItem(item.CustomData.PickupType, item.Player.Position,
-            item.CustomData.PickupScale ?? Vector3.one, item.Player.Rotation, item.ItemSerial);
-
-        item.SetPickup(pickup);
-        item.OnDropped(false);
-        
-        PickupItems.Add(pickup, item);
+        item.Player.Inventory.DropItem(item.Item);
     }
 
     /// <summary>
@@ -115,40 +84,7 @@ public static class CustomItemManager
         if (item.Item is null)
             throw new Exception("Custom Item is not in inventory.");
         
-        item.OnPickingUp(newOwner);
-        
-        if (item.Item != null)
-        {
-            item.Player ??= ExPlayer.Get(item.Item.Owner);
-            
-            if (item.Player != null)
-            {
-                item.Player.customItems.Remove(item.Item);
-                
-                item.Player.ReferenceHub.inventory.UserInventory.Items.Remove(item.ItemSerial);
-                item.Player.ReferenceHub.inventory.SendItemsNextFrame = true;
-            }
-
-            newOwner.customItems.Add(item.Item, item);
-            
-            newOwner.ReferenceHub.inventory.UserInventory.Items.Add(item.ItemSerial, item.Item);
-            newOwner.ReferenceHub.inventory.SendItemsNextFrame = true;
-
-            item.Player = newOwner;
-            item.OnPickedUp();
-        }
-        else if (item.Pickup != null)
-        {
-            item.SetItem(newOwner.Inventory.AddItem(item.CustomData.InventoryType, ItemAddReason.PickedUp, item.ItemSerial));
-            
-            newOwner.customItems.Add(item.Item, item);
-
-            PickupItems.Remove(item.Pickup);
-            InventoryItems.Add(item.Item, item);
-
-            item.Pickup = null;
-            item.OnPickedUp();
-        }
+        item.Item.TransferItem(newOwner.ReferenceHub);
     }
 
     /// <summary>
@@ -194,24 +130,25 @@ public static class CustomItemManager
 
         if (originalItem is null)
             throw new Exception($"Custom Item {itemType.FullName} could not be added");
-        
+
+        var tracker = originalItem.GetTracker();
         var customItem = Activator.CreateInstance(customItemData.Type) as CustomItemInstance;
+
+        tracker.CustomItem = customItem;
 
         customItem.CustomData = customItemData;
 
         target.customItems.Add(originalItem, customItem);
-        
-        customItem.SetItem(originalItem);
-        customItem.ItemSerial = originalItem.ItemSerial;
-        
+
+        customItem.Tracker = tracker;
         customItem.Player = target;
-        customItem.OnEnabled();
         
-        InventoryItems.Add(originalItem, customItem);
+        customItem.OnEnabled();
 
 #pragma warning disable CS8604 // Possible null reference argument.
         OnItemCreated.InvokeSafe(customItem);
 #pragma warning restore CS8604 // Possible null reference argument.
+        
         return customItem;
     }
     
@@ -256,20 +193,21 @@ public static class CustomItemManager
         var item = Activator.CreateInstance(customItemData.Type) as CustomItemInstance;
         var pickup = ExMap.SpawnItem(customItemData.PickupType, position,
             customItemData.PickupScale ?? Vector3.one, rotation, null, true);
+        var tracker = pickup.GetTracker();
         
         item.Player = owner;
+        item.Tracker = tracker;
         item.CustomData = customItemData;
-        
-        item.SetPickup(pickup);
-        
-        item.ItemSerial = pickup.Info.Serial;
+
+        tracker.CustomItem = item;
+
         item.OnEnabled();
         
-        PickupItems.Add(pickup, item);
         
 #pragma warning disable CS8604 // Possible null reference argument.
         OnItemCreated.InvokeSafe(item);
 #pragma warning restore CS8604 // Possible null reference argument.
+        
         return item;
     }
 
@@ -351,81 +289,34 @@ public static class CustomItemManager
         if (!RegisteredItems.Remove(itemType))
             return;
 
-        var pickupsToDestroy = ListPool<ItemPickupBase>.Shared.Rent();
-        var itemsToDestroy = ListPool<ItemBase>.Shared.Rent();
-        
-        PickupItems.ForEach(p =>
-        {
-            if (p.Value.CustomData.Type == itemType)
-                pickupsToDestroy.Add(p.Key);
-        });
-        
-        InventoryItems.ForEach(p =>
-        {
-            if (p.Value.CustomData.Type == itemType)
-            {
-                p.Value.OnDisabled();
-                
-                itemsToDestroy.Add(p.Key);
-                
-#pragma warning disable CS8604 // Possible null reference argument.
-                OnItemDestroyed.InvokeSafe(p.Value);
-#pragma warning restore CS8604 // Possible null reference argument.
-            }
-        });
-        
-        pickupsToDestroy.ForEach(p => p.DestroySelf());
-        itemsToDestroy.ForEach(p => p.Owner?.inventory.ServerRemoveItem(p.ItemSerial, p.PickupDropModel));
-        
-        ListPool<ItemPickupBase>.Shared.Return(pickupsToDestroy);
-        ListPool<ItemBase>.Shared.Return(itemsToDestroy);
-    }
+        var trackersToDestroy = ListPool<ItemTracker>.Shared.Rent();
 
-    private static void OnItemDespawned(ItemPickupBase pickup)
-    {
-        if (PickupItems.TryGetValue(pickup, out var customItemInstance) && customItemInstance.Item is null)
+        foreach (var tracker in ItemTracker.Trackers)
         {
-            customItemInstance.Pickup = null;
-            customItemInstance.OnDisabled();
-            
-#pragma warning disable CS8604 // Possible null reference argument.
-            OnItemDestroyed.InvokeSafe(customItemInstance);
-#pragma warning restore CS8604 // Possible null reference argument.
+            if (tracker.Value.CustomItem != null && tracker.Value.CustomItem.GetType() == itemType)
+            {
+                trackersToDestroy.Add(tracker.Value);
+            }
         }
         
-        PickupItems.Remove(pickup);
-    }
-
-    private static void OnPlayerLeft(ExPlayer? player)
-    {
-        player.customItems.ForEach(p =>
-        {
-            player.ReferenceHub.inventory.ServerRemoveItem(p.Key.ItemSerial, p.Key.PickupDropModel);
-            
-            p.Value.OnDisabled();
-            
-#pragma warning disable CS8604 // Possible null reference argument.
-            OnItemDestroyed.InvokeSafe(p.Value);
-#pragma warning restore CS8604 // Possible null reference argument.
-
-            InventoryItems.Remove(p.Key);
-        });
+        trackersToDestroy.ForEach(tracker => tracker.Destroy());
         
-        player.customItems.Clear();
+        ListPool<ItemTracker>.Shared.Return(trackersToDestroy);
     }
 
-    private static void OnWaiting()
+    private static void OnTrackerDestroyed(ItemTracker tracker)
     {
-        PickupItems.Clear();
-        InventoryItems.Clear();
+        if (tracker.CustomItem != null)
+        {
+            tracker.CustomItem.OnDisabled();
+            
+            OnItemDestroyed?.InvokeSafe(tracker.CustomItem);
+        }
     }
 
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        ItemPickupBase.OnPickupDestroyed += OnItemDespawned;
-        
-        InternalEvents.OnPlayerLeft += OnPlayerLeft;
-        InternalEvents.OnRoundWaiting += OnWaiting;
+        ItemTracker.Destroyed += OnTrackerDestroyed;
     }
 }

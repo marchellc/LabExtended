@@ -44,26 +44,19 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            CustomItemManager.PickupItems.TryGetValue(__instance.TargetPickup, out var customItemInstance);
-
+            var tracker = __instance.TargetPickup.GetTracker();
+            
             ItemBase item = null;
             
-            if (customItemInstance != null)
+            if (tracker?.CustomItem != null)
             {
-                if (!customItemInstance.OnPickingUp(player))
-                {
-                    __instance.TargetPickup.UnlockPickup();
-                    return false;
-                }
+                tracker.CustomItem.OnPickingUp(pickingUpArgs);
 
-                if (customItemInstance.CustomData.InventoryType is ItemType.None)
-                {
-                    __instance.TargetPickup.UnlockPickup();
+                if (!pickingUpArgs.IsAllowed || tracker.CustomItem.CustomData.InventoryType is ItemType.None)
                     return false;
-                }
 
-                item = __instance.Hub.inventory.ServerAddItem(customItemInstance.CustomData.InventoryType,
-                    ItemAddReason.PickedUp, customItemInstance.ItemSerial, __instance.TargetPickup);
+                item = __instance.Hub.inventory.ServerAddItem(tracker.CustomItem.CustomData.InventoryType,
+                    ItemAddReason.PickedUp, tracker.CustomItem.ItemSerial, __instance.TargetPickup);
             }
             else
             {
@@ -74,26 +67,15 @@ namespace LabExtended.Patches.Functions.Items
 
             if (item != null)
             {
-                if (ItemTracker.Trackers.TryGetValue(item.ItemSerial, out var tracker))
-                    tracker.SetItem(item, player);
+                var pickedUpArgs = new PlayerPickedUpItemEventArgs(player.ReferenceHub, item);
                 
-                if (customItemInstance != null)
-                {
-                    customItemInstance.Item = item;
-                    
-                    customItemInstance.Pickup = null;
-                    customItemInstance.OnPickedUp();
-
-                    CustomItemManager.PickupItems.Remove(__instance.TargetPickup);
-                    CustomItemManager.InventoryItems.Add(item, customItemInstance);
-                    
-                    player.customItems.Add(item, customItemInstance);
-                }
+                tracker.SetItem(item, player);
+                tracker.CustomItem?.OnPickedUp(pickedUpArgs);
                 
                 __instance.CheckCategoryLimitHint();
                 __instance.TargetPickup.DestroySelf();
 
-                PlayerEvents.OnPickedUpItem(new PlayerPickedUpItemEventArgs(player.ReferenceHub, item));
+                PlayerEvents.OnPickedUpItem(pickedUpArgs);
             }
             else
             {

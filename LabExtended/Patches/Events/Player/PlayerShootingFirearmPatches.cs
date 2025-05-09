@@ -32,7 +32,7 @@ public static class PlayerShootingFirearmPatches
         if (!Physics.Raycast(targetRay, out var hit, distance, HitscanHitregModuleBase.HitregMask))
             return false;
 
-        var custom = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var custom = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
         var args = new FirearmRayCastEventArgs(player, __instance.Firearm, targetRay, distance, hit);
 
         custom?.OnRayCast(args);

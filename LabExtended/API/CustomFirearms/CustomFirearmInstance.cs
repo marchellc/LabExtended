@@ -129,20 +129,4 @@ public class CustomFirearmInstance : CustomItemInstance
     /// </summary>
     /// <param name="args">The event arguments.</param>
     public virtual void OnChangedAttachments(PlayerChangedFirearmAttachmentsEventArgs args) { }
-
-    internal override void OnItemSet()
-    {
-        base.OnItemSet();
-        
-        Item = base.Item as Firearm;
-        Pickup = null;
-    }
-
-    internal override void OnPickupSet()
-    {
-        base.OnPickupSet();
-        
-        Pickup = base.Pickup as FirearmPickup;
-        Item = null;
-    }
 }

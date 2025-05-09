@@ -61,7 +61,7 @@ public static class ProcessingShotPatches
             ? dequeued.BacktrackData.PrimaryTargetRelativePosition.Position
             : null;
 
-        var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var customFirearm = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
 
         if (__instance.AmmoStored > 0 || (__instance.OpenBolt && __instance.PrimaryAmmoContainer.AmmoStored > 0))
         {
@@ -123,7 +123,7 @@ public static class ProcessingShotPatches
             return false;
         }
 
-        var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var customFirearm = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
 
         if (customFirearm is not null && !customFirearm.OnProcessingShot(null, null))
         {
@@ -164,7 +164,7 @@ public static class ProcessingShotPatches
         ExPlayer? targetPlayer = shotData.HasPrimaryTarget ? ExPlayer.Get(shotData.PrimaryTargetHub) : null;
         Vector3? targetPosition = shotData.HasPrimaryTarget ? shotData.PrimaryTargetRelativePosition.Position : null;
         
-        var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var customFirearm = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
 
         if (customFirearm != null && !customFirearm.OnProcessingShot(targetPlayer, targetPosition))
             return false;
@@ -213,7 +213,7 @@ public static class ProcessingShotPatches
         if (!shootingEventArgs.IsAllowed)
             return false;
 
-        var customFirearm = CustomItemManager.InventoryItems.GetValue<CustomFirearmInstance>(__instance.Firearm);
+        var customFirearm = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
 
         ExPlayer? targetPlayer = dequeued.HasPrimaryTarget ? ExPlayer.Get(dequeued.PrimaryTargetHub) : null;
         Vector3? targetPosition = dequeued.HasPrimaryTarget ? dequeued.PrimaryTargetRelativePosition.Position : null;
