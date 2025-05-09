@@ -82,7 +82,7 @@ public class CustomItemInstance
     /// <summary>
     /// Called when a player selects this item.
     /// </summary>
-    public virtual void OnSelected() { }
+    public virtual void OnSelected(PlayerSelectedItemEventArgs args) { }
     
     /// <summary>
     /// Called when a player tries to unselect this item.

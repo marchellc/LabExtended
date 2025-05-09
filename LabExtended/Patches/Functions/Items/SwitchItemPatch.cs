@@ -8,8 +8,9 @@ using LabApi.Features.Wrappers;
 using LabExtended.API;
 
 using LabExtended.Core;
-using LabExtended.Attributes;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
+using LabExtended.Attributes;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
@@ -45,12 +46,9 @@ namespace LabExtended.Patches.Functions.Items
 
                 if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
-                
-                ItemTracker curTracker = null;
-                ItemTracker newTracker = null;
-                
-                if (curItem != null)
-                    ItemTracker.Trackers.TryGetValue(curItem.ItemSerial, out curTracker);
+
+                ItemTracker? curTracker = curItem?.GetTracker();
+                ItemTracker? newTracker = null;
 
                 if (curTracker?.CustomItem != null)
                 {
@@ -72,8 +70,7 @@ namespace LabExtended.Patches.Functions.Items
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
                         return false;
 
-                    if (newItem is not null)
-                        ItemTracker.Trackers.TryGetValue(newItem.ItemSerial, out newTracker);
+                    newTracker = newItem?.GetTracker();
 
                     if (newTracker?.CustomItem != null)
                     {
@@ -89,6 +86,13 @@ namespace LabExtended.Patches.Functions.Items
                         __instance.CurInstance = null;
 
                         curTracker?.SetSelected(false);
+
+                        var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
+                            newItem?.ItemId ?? ItemIdentifier.None);
+                        
+                        ExPlayerEvents.OnSelectedItem(selectedArgs);
+                        
+                        curTracker?.CustomItem?.OnDeselected(selectedArgs);
                     }
                     else
                     {
@@ -97,6 +101,14 @@ namespace LabExtended.Patches.Functions.Items
                         
                         curTracker?.SetSelected(false);
                         newTracker?.SetSelected(true);
+                        
+                        var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
+                            newItem?.ItemId ?? ItemIdentifier.None);
+                        
+                        ExPlayerEvents.OnSelectedItem(selectedArgs);
+                        
+                        curTracker?.CustomItem?.OnDeselected(selectedArgs);
+                        newTracker?.CustomItem?.OnSelected(selectedArgs);
                     }
                 }
                 else if (!flag)
@@ -113,10 +125,15 @@ namespace LabExtended.Patches.Functions.Items
                     __instance.CurInstance = null;
                     
                     curTracker?.SetSelected(false);
+                    
+                    var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
+                        newItem?.ItemId ?? ItemIdentifier.None);
+                        
+                    ExPlayerEvents.OnSelectedItem(selectedArgs);
+                    
+                    curTracker?.CustomItem?.OnDeselected(selectedArgs);
                 }
                 
-                ExPlayerEvents.OnSelectedItem(new (player, curItem, newItem, prevIdentifier,
-                    newItem?.ItemId ?? ItemIdentifier.None));
                 return false;
             }
             catch (Exception ex)
