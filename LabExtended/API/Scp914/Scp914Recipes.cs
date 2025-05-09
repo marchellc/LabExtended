@@ -1,6 +1,15 @@
-﻿using LabExtended.Attributes;
+﻿using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
+using InventorySystem.Items.Firearms.Ammo;
+
+using LabExtended.API.Scp914.Interfaces;
+
 using LabExtended.Extensions;
+using LabExtended.Attributes;
+using LabExtended.Core;
+
 using Scp914;
+using Scp914.Processors;
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -37,7 +46,7 @@ public static class Scp914Recipes
     /// <summary>
     /// Gets called when additional chance for a player's upgrade is being collected.
     /// </summary>
-    public static event Func<ExPlayer, Scp914Recipe, Scp914Output, float>? CollectingChance;
+    public static event Func<ExPlayer, Scp914Recipe, IScp914Output, float>? CollectingChance;
 
     /// <summary>
     /// Adds (or replaces) an entry.
@@ -114,13 +123,35 @@ public static class Scp914Recipes
         return list.TryGetFirst(x => x != null && x.InputType == inputType, out entry);
     }
 
-    internal static float GetAdditionalChance(ExPlayer? owner, Scp914Recipe recipe, Scp914Output output)
+    internal static float GetAdditionalChance(ExPlayer? owner, Scp914Recipe recipe, IScp914Output output)
         => CollectingChance.InvokeCollect(owner, recipe, output, (prev, result) => prev + result, 0f);
+
+    internal static void PostProcessItem(ExPlayer player, ItemBase item, ItemBase originalItem, ItemPickupBase pickup,
+        ItemPickupBase originalPickup, Scp914Entry entry, Scp914Recipe recipe, IScp914Output output,
+        ref bool destroyPickup)
+    {
+        if (pickup is AmmoPickup ammoPickup && originalPickup is AmmoPickup originalAmmo)
+        {
+            AmmoItemProcessor.ExchangeAmmo(originalPickup.Info.ItemId, ammoPickup.Info.ItemId,
+                originalAmmo.SavedAmmo, out var exchangedAmmo, out var change);
+
+            destroyPickup = change == 0;
+
+            if (!destroyPickup)
+                originalAmmo.NetworkSavedAmmo = (ushort)change;
+
+            ammoPickup.NetworkSavedAmmo = (ushort)exchangedAmmo;
+        }
+    }
 
     [LoaderInitialize(1)]
     private static void OnInit()
     {
         Scp914Utils.FillDefaultRecipes(Recipes);
+        
+        if (!ApiLoader.ApiConfig.OtherSection.Scp914CustomRecipes)
+            return;
+        
         Scp914Utils.PrintRecipes(Recipes);
     }
 }

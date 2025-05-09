@@ -279,8 +279,6 @@ public static class ItemExtensions
 
         if (item.Owner != null)
         {
-            item.OnRemoved(null);
-            
             if (item.OwnerInventory.CurInstance == item)
             {
                 item.OwnerInventory.CurInstance = null;
@@ -289,20 +287,30 @@ public static class ItemExtensions
 
             item.OwnerInventory.UserInventory.Items.Remove(item.ItemSerial);
             item.OwnerInventory.SendItemsNextFrame = true;
+            
+            item.OnRemoved(null);
         }
 
         item.Owner = newOwner;
-        item.OwnerInventory.UserInventory.Items[item.ItemSerial] = item;
         
-        item.OnAdded(item.PickupDropModel);
+        if (item.Owner != null)
+            item.Owner.inventory.UserInventory.Items[item.ItemSerial] = item;
+        
+        item.OnAdded(null);
 
-        if (newOwner.isLocalPlayer && item is IAcquisitionConfirmationTrigger { AcquisitionAlreadyReceived: false } acquisitionConfirmationTrigger)
+        if (item.Owner != null)
         {
-            acquisitionConfirmationTrigger.ServerConfirmAcqusition();
-            acquisitionConfirmationTrigger.AcquisitionAlreadyReceived = true;
-        }
+            if (newOwner.isLocalPlayer && item is IAcquisitionConfirmationTrigger
+                {
+                    AcquisitionAlreadyReceived: false
+                } acquisitionConfirmationTrigger)
+            {
+                acquisitionConfirmationTrigger.ServerConfirmAcqusition();
+                acquisitionConfirmationTrigger.AcquisitionAlreadyReceived = true;
+            }
 
-        item.OwnerInventory.SendItemsNextFrame = true;
+            item.OwnerInventory.SendItemsNextFrame = true;
+        }
     }
     
     /// <summary>
@@ -311,14 +319,9 @@ public static class ItemExtensions
     /// <param name="item">The item instance to destroy.</param>
     public static void DestroyItem(this ItemBase item)
     {
-        if (item is null || !item)
-            return;
-
         if (item.Owner != null)
         {
-            item.OnRemoved(item.PickupDropModel);
-
-            if (item.OwnerInventory.CurInstance == item)
+            if (item.OwnerInventory.CurItem.SerialNumber == item.ItemSerial)
             {
                 item.OwnerInventory.CurInstance = null;
                 item.OwnerInventory.NetworkCurItem = ItemIdentifier.None;
@@ -326,6 +329,8 @@ public static class ItemExtensions
 
             item.OwnerInventory.UserInventory.Items.Remove(item.ItemSerial);
             item.OwnerInventory.SendItemsNextFrame = true;
+            
+            item.OnRemoved(null);
         }
 
         UnityEngine.Object.Destroy(item.gameObject);

@@ -1,5 +1,5 @@
 ﻿using InventorySystem;
-
+using LabExtended.API.Scp914.Outputs;
 using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
 
@@ -75,7 +75,7 @@ public static class Scp914Utils
                     var item = output.TargetItems[x];
                     var itemChance = typeChance[item];
                     
-                    recipe.WithItem(new(itemChance, item));
+                    recipe.WithItem(new Scp914ItemOutput(itemChance, item));
                 }
             }
         }
@@ -119,7 +119,7 @@ public static class Scp914Utils
                 if (recipe.Items.Any(x => x.Item == item))
                     continue;
                 
-                recipe.Items.Add(new(itemChance, item));
+                recipe.Items.Add(new Scp914ItemOutput(itemChance, item));
             }
         }
         
@@ -147,23 +147,23 @@ public static class Scp914Utils
                 
                 roughRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ammoProcessor._previousAmmo)));
+                    .WithItem(new Scp914AmmoOutput(100f, ammoProcessor._previousAmmo, 0)));
 
                 coarseRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ammoProcessor._previousAmmo)));
+                    .WithItem(new Scp914AmmoOutput(100f, ammoProcessor._previousAmmo, 0)));
 
                 oneToOneRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ammoProcessor._oneToOne)));
+                    .WithItem(new Scp914AmmoOutput(100f, ammoProcessor._oneToOne, 0)));
 
                 fineRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ammoProcessor._nextAmmo)));
+                    .WithItem(new Scp914AmmoOutput(100f, ammoProcessor._nextAmmo, 0)));
                 
                 veryFineRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ammoProcessor._nextAmmo)));
+                    .WithItem(new Scp914AmmoOutput(100f, ammoProcessor._nextAmmo, 0)));
             }
             else if (processor is DisruptorItemProcessor)
             {
@@ -184,23 +184,23 @@ public static class Scp914Utils
 
                 roughRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.Flashlight)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.Flashlight)));
 
                 coarseRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.GunE11SR)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.GunE11SR)));
                 
                 oneToOneRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.Jailbird)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.Jailbird)));
 
                 fineRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.ParticleDisruptor)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.ParticleDisruptor)));
 
                 veryFineRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.ParticleDisruptor)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.ParticleDisruptor)));
             }
             else if (processor is Scp1344ItemProcessor)
             {
@@ -212,14 +212,14 @@ public static class Scp914Utils
                 
                 oneToOneRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.GrenadeFlash))
-                    .WithItem(new(100f, ItemType.Adrenaline)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.GrenadeFlash))
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.Adrenaline)));
                 
                 veryFineRecipe.Recipes.Add(new Scp914Recipe()
                     .WithChance(100f)
-                    .WithItem(new(100f, ItemType.Adrenaline))
-                    .WithItem(new(100f, ItemType.Adrenaline))
-                    .WithItem(new(100f, ItemType.SCP2176)));
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.Adrenaline))
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.Adrenaline))
+                    .WithItem(new Scp914ItemOutput(100f, ItemType.SCP2176)));
             } 
             
             if (processor is FirearmItemProcessor firearmProcessor)
