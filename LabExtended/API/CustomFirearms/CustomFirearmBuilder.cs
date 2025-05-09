@@ -2,6 +2,7 @@
 
 namespace LabExtended.API.CustomFirearms;
 
+// TODO: Implement builder methods
 /// <summary>
 /// Configuration builder for Custom Firearms.
 /// </summary>

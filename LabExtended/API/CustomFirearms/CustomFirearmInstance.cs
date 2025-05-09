@@ -19,12 +19,12 @@ public class CustomFirearmInstance : CustomItemInstance
     /// <summary>
     /// Gets the associated Firearm item.
     /// </summary>
-    public new Firearm? Item { get; private set; }
-    
+    public new Firearm? Item => base.Item as Firearm;
+
     /// <summary>
     /// Gets the associated Firearm pickup.
     /// </summary>
-    public new FirearmPickup? Pickup { get; private set; }
+    public new FirearmPickup? Pickup => base.Pickup as FirearmPickup;
     
     /// <summary>
     /// Gets the Custom Firearm configuration.
@@ -70,6 +70,7 @@ public class CustomFirearmInstance : CustomItemInstance
     /// <param name="eventArgs">The <see cref="FirearmRayCastEventArgs"/> event arguments.</param>
     public virtual void OnRayCast(FirearmRayCastEventArgs eventArgs) { }
 
+    // TODO: Implement custom shooting logic
     /// <summary>
     /// Gets called before a player is damaged.
     /// </summary>
@@ -96,6 +97,7 @@ public class CustomFirearmInstance : CustomItemInstance
     /// </summary>
     public virtual void OnDryFired() { }
 
+    // TODO: Implement custom ammo loading
     /// <summary>
     /// Gets called before the firearm is reloaded.
     /// </summary>
@@ -107,6 +109,7 @@ public class CustomFirearmInstance : CustomItemInstance
     /// </summary>
     public virtual void OnReloaded() { }
 
+    // TODO: Implement custom ammo loading
     /// <summary>
     /// Gets called before the firearm's ammo is unloaded.
     /// </summary>
