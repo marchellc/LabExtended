@@ -4,7 +4,7 @@ namespace LabExtended.Extensions
 {
     public static class DelegateExtensions
     {
-        public static T? Invoke<T>(this Func<T> func, Func<T?, T?, T?> combiner, T? defaultResult = default)
+        public static T? InvokeCollect<T>(this Func<T> func, Func<T?, T?, T?> combiner, T? defaultResult = default)
         {
             if (func is null)
                 return defaultResult;
@@ -17,6 +17,66 @@ namespace LabExtended.Extensions
             foreach (var listener in func.GetInvocationList())
             {
                 var result = (listener as Func<T>)();
+
+                current = combiner(current, result);
+            }
+
+            return current;
+        }
+        
+        public static T? InvokeCollect<T, T1>(this Func<T1, T> func, T1 t1, Func<T?, T?, T?> combiner, T? defaultResult = default)
+        {
+            if (func is null)
+                return defaultResult;
+            
+            if (combiner is null)
+                throw new ArgumentNullException(nameof(combiner));
+
+            var current = defaultResult;
+            
+            foreach (var listener in func.GetInvocationList())
+            {
+                var result = (listener as Func<T1, T>)(t1);
+
+                current = combiner(current, result);
+            }
+
+            return current;
+        }
+        
+        public static T? InvokeCollect<T, T1, T2>(this Func<T1, T2, T> func, T1 t1, T2 t2, Func<T?, T?, T?> combiner, T? defaultResult = default)
+        {
+            if (func is null)
+                return defaultResult;
+            
+            if (combiner is null)
+                throw new ArgumentNullException(nameof(combiner));
+
+            var current = defaultResult;
+            
+            foreach (var listener in func.GetInvocationList())
+            {
+                var result = (listener as Func<T1, T2, T>)(t1, t2);
+
+                current = combiner(current, result);
+            }
+
+            return current;
+        }
+        
+        public static T? InvokeCollect<T, T1, T2, T3>(this Func<T1, T2, T3, T> func, T1 t1, T2 t2, T3 t3, Func<T?, T?, T?> combiner, T? defaultResult = default)
+        {
+            if (func is null)
+                return defaultResult;
+            
+            if (combiner is null)
+                throw new ArgumentNullException(nameof(combiner));
+
+            var current = defaultResult;
+            
+            foreach (var listener in func.GetInvocationList())
+            {
+                var result = (listener as Func<T1, T2, T3, T>)(t1, t2, t3);
 
                 current = combiner(current, result);
             }

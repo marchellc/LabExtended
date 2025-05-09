@@ -177,7 +177,7 @@ namespace LabExtended.API
         public static bool IsScp079Recontained { get; internal set; }
 
         /// <summary>
-        /// Gets a value indicating whether or not Light Containmetn Zone has started decontaminating.
+        /// Gets a value indicating whether or not Light Containment Zone has started decontaminating.
         /// </summary>
         [CommandPropertyAlias("isLczDecontaminated")]
         public static bool IsLczDecontaminated => DecontaminationController.Singleton?.IsDecontaminating ?? false;

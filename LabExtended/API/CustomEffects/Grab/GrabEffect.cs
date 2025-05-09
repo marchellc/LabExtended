@@ -1,6 +1,7 @@
 ﻿using LabExtended.API.CustomEffects.SubEffects;
 using LabExtended.Attributes;
 using LabExtended.Core.Networking.Manipulation;
+using LabExtended.Core.Networking.Manipulation.Wrappers;
 using LabExtended.Events;
 
 using PlayerRoles;
@@ -21,20 +22,11 @@ public class GrabEffect : UpdatingCustomEffect
     /// </summary>
     public NetworkObjectManipulator? Target
     {
-        get => field;
+        get;
         set
         {
             field?.Dispose();
             field = value;
-
-            if (value is null)
-                return;
-
-            if (value.Target.SupportsParenting)
-            {
-                value.Target.LocalPosition = Vector3.forward * 2f;
-                value.Target.ChangeParent(Player.CameraTransform);
-            }
         }
     }
     
@@ -49,14 +41,23 @@ public class GrabEffect : UpdatingCustomEffect
 
         if (!Physics.Raycast(Player.CameraTransform.position, Player.CameraTransform.forward, out var hit, 30f,
                 Physics.AllLayers)
-            || !NetworkObjectManipulator.FromRaycast(hit, out var target))
+            || !NetworkObjectManipulator.FromRaycast(hit, out var target)
+            || Target.Target is PlayerNetworkObject playerNetworkObject && playerNetworkObject.Target == Player)
         {
             Disable();
             return;
         }
         
-        Target?.Dispose();
         Target = target;
+        Target.Update();
+
+        if (target.Target.SupportsParenting)
+        {
+            target.Target.LocalRotation = Quaternion.LookRotation(Player.CameraTransform.position, Vector3.up);
+            target.Target.LocalPosition = Player.CameraTransform.forward + (Vector3.up * 2f);
+            
+            target.Target.ChangeParent(Player.CameraTransform);
+        }
     }
 
     /// <inheritdoc cref="CustomEffect.RemoveEffects"/>
@@ -64,7 +65,6 @@ public class GrabEffect : UpdatingCustomEffect
     {
         base.RemoveEffects();
         
-        Target?.Dispose();
         Target = null;
     }
 
@@ -80,6 +80,7 @@ public class GrabEffect : UpdatingCustomEffect
             if (Target.Target.SupportsParenting)
             {
                 Target.Target.LocalRotation = Quaternion.LookRotation(Player.CameraTransform.position, Vector3.up);
+                Target.Target.LocalPosition = Player.CameraTransform.forward + (Vector3.forward * 2f);
             }
             else
             {
