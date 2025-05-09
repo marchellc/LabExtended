@@ -2,6 +2,7 @@
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
+using LabExtended.API.CustomItems;
 using LabExtended.Attributes;
 
 using LabExtended.Core.Networking;
@@ -19,12 +20,17 @@ namespace LabExtended.Utilities;
 /// </summary>
 public class ItemTracker : IDisposable
 {
-    private static readonly Dictionary<ushort, ItemTracker> trackerBuffer = new();
+    private static readonly List<ItemTracker> trackerBuffer = new();
     
     /// <summary>
     /// Gets a list of item trackers.
     /// </summary>
     public static Dictionary<ushort, ItemTracker> Trackers { get; } = new();
+
+    /// <summary>
+    /// Gets a list of trackers for items with no serial number.
+    /// </summary>
+    public static Dictionary<object, ItemTracker> UnassignedTrackers { get; } = new();
 
     /// <summary>
     /// Gets called when a tracker is created.
@@ -35,6 +41,36 @@ public class ItemTracker : IDisposable
     /// Gets called when a tracker is destroyed.
     /// </summary>
     public static event Action<ItemTracker>? Destroyed;
+
+    /// <summary>
+    /// Gets called when a tracked item is selected.
+    /// </summary>
+    public static event Action<ItemTracker>? Selected;
+
+    /// <summary>
+    /// Gets called when a tracked item is de-selected.
+    /// </summary>
+    public static event Action<ItemTracker>? Deselected;
+
+    /// <summary>
+    /// Gets called when a tracked item is dropped.
+    /// </summary>
+    public static event Action<ItemTracker>? Dropped;
+
+    /// <summary>
+    /// Gets called when a tracked item is picked up.
+    /// </summary>
+    public static event Action<ItemTracker>? PickedUp;
+
+    /// <summary>
+    /// Gets called when a tracked item's owner is changed.
+    /// </summary>
+    public static event Action<ItemTracker>? OwnerChanged;
+
+    /// <summary>
+    /// Gets called when a serial number of a tracker is changed.
+    /// </summary>
+    public static event Action<ItemTracker>? SerialChanged; 
     
     /// <summary>
     /// Gets the tracked item serial.
@@ -45,6 +81,11 @@ public class ItemTracker : IDisposable
     /// Whether or not the item is selected.
     /// </summary>
     public bool IsSelected { get; internal set; }
+    
+    /// <summary>
+    /// Whether or not the tracker has been disposed.
+    /// </summary>
+    public bool IsDisposed { get; private set; }
     
     /// <summary>
     /// Gets the player that currently owns the item.
@@ -67,29 +108,14 @@ public class ItemTracker : IDisposable
     public PlayerStorage? Storage { get; internal set; }
     
     /// <summary>
+    /// Gets the custom item instance associated with this item.
+    /// </summary>
+    public CustomItemInstance? CustomItem { get; internal set; }
+    
+    /// <summary>
     /// Gets or sets the item tracker's custom data.
     /// </summary>
     public object? Data { get; set; }
-
-    /// <summary>
-    /// Gets called once the item's owner selects it in their inventory.
-    /// </summary>
-    public event Action? OnSelected;
-
-    /// <summary>
-    /// Gets called once the item's owner selects a different item.
-    /// </summary>
-    public event Action? OnDeselected;
-
-    /// <summary>
-    /// Gets called once the item is picked up.
-    /// </summary>
-    public event Action? OnPickedUp;
-
-    /// <summary>
-    /// Gets called once the item is dropped.
-    /// </summary>
-    public event Action? OnDropped;
 
     /// <summary>
     /// Creates a new <see cref="ItemTracker"/> instance.
@@ -111,7 +137,8 @@ public class ItemTracker : IDisposable
 
         Storage = new(false);
         
-        Trackers.Add(ItemSerial, this);
+        if (ItemSerial != 0)
+            Trackers.Add(ItemSerial, this);
         
         Created?.InvokeSafe(this);
     }
@@ -124,9 +151,6 @@ public class ItemTracker : IDisposable
     {
         if (item == null)
             throw new ArgumentNullException(nameof(item));
-        
-        if (item.NetworkInfo.Serial == 0)
-            throw new Exception($"The pickup's serial has not been set.");
 
         Pickup = item;
         ItemSerial = item.Info.Serial;
@@ -136,17 +160,36 @@ public class ItemTracker : IDisposable
         
         Storage = new(false);
         
-        Trackers.Add(ItemSerial, this);
+        if (ItemSerial != 0)
+            Trackers.Add(ItemSerial, this);
         
         Created?.InvokeSafe(this);
+    }
+
+    /// <summary>
+    /// Destroys this tracker and all associated items.
+    /// </summary>
+    public void Destroy()
+    {
+        if (Item != null)
+            Item.DestroyItem();
+        
+        if (Pickup != null)
+            Pickup.DestroySelf();
     }
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        if (ItemSerial != 0)
+        if (!IsDisposed)
         {
             Trackers.Remove(ItemSerial);
+
+            if (Item != null)
+                UnassignedTrackers.Remove(Item);
+            
+            if (Pickup != null)
+                UnassignedTrackers.Remove(Pickup);
             
             Destroyed?.InvokeSafe(this);
 
@@ -157,8 +200,11 @@ public class ItemTracker : IDisposable
             Item = null;
             Owner = null;
             Pickup = null;
+            CustomItem = null;
 
             ItemSerial = 0;
+
+            IsDisposed = true;
         }
     }
 
@@ -170,9 +216,9 @@ public class ItemTracker : IDisposable
         IsSelected = selected;
         
         if (IsSelected)
-            OnSelected?.InvokeSafe();
+            Selected?.InvokeSafe(this);
         else
-            OnDeselected?.InvokeSafe();
+            Deselected?.InvokeSafe(this);
     }
 
     internal void SetItem(ItemBase item, ExPlayer? owner = null)
@@ -182,9 +228,12 @@ public class ItemTracker : IDisposable
         Item = item;
         Owner = owner;
         
-        OnPickedUp?.InvokeSafe();
+        PickedUp?.InvokeSafe(this);
 
         IsSelected = false;
+        
+        if (ItemSerial == 0 && item.ItemSerial != 0)
+            SetSerial(item.ItemSerial);
     }
 
     internal void SetPickup(ItemPickupBase pickup, ExPlayer? owner = null)
@@ -194,27 +243,93 @@ public class ItemTracker : IDisposable
         Pickup = pickup;
         Owner = owner;
         
-        OnDropped?.InvokeSafe();
+        Dropped?.InvokeSafe(this);
 
         IsSelected = false;
+        
+        if (ItemSerial == 0 && pickup.Info.Serial != 0)
+            SetSerial(pickup.Info.Serial);
+    }
+
+    internal void SetOwner(ExPlayer owner)
+    {
+        Owner = owner;
+        OwnerChanged?.InvokeSafe(this);
+    }
+
+    internal void SetSerial(ushort serial)
+    {
+        if (serial == ItemSerial)
+            return;
+        
+        var curSerial = ItemSerial;
+
+        if (curSerial != 0)
+        {
+            Trackers.Remove(curSerial);
+        }
+        else if (serial != 0)
+        {
+            if (Item != null)
+                UnassignedTrackers.Remove(Item);
+
+            if (Pickup != null)
+                UnassignedTrackers.Remove(Pickup);
+        }
+        else if (serial == 0)
+        {
+            if (Item != null)
+                UnassignedTrackers[Item] = this;
+            
+            if (Pickup != null)
+                UnassignedTrackers[Pickup] = this;
+        }
+
+        ItemSerial = serial;
+        
+        if (serial != 0)
+            Trackers[ItemSerial] = this;
+        
+        SerialChanged?.InvokeSafe(this);
     }
 
     private static void OnSpawned(NetworkIdentity identity)
     {
         if (identity.gameObject.TryFindComponent<ItemPickupBase>(out var pickup) 
-            && pickup.NetworkInfo.Serial != 0
-            && !pickup.NetworkInfo.ItemId.IsAmmo()
-            && !Trackers.ContainsKey(pickup.NetworkInfo.Serial))
+            && !pickup.NetworkInfo.ItemId.IsAmmo())
         {
-            _ = new ItemTracker(pickup);
+            if (pickup.Info.Serial != 0)
+            {
+                if (Trackers.ContainsKey(pickup.Info.Serial))
+                    return;
+
+                _ = new ItemTracker(pickup);
+            }
+            else
+            {
+                UnassignedTrackers[pickup] = new ItemTracker(pickup);
+            }
         }
     }
     
     private static void OnCreated(ItemBase item)
     {
-        if (item.ItemSerial != 0 && !Trackers.ContainsKey(item.ItemSerial))
+        if (item.ItemSerial != 0)
         {
-            _ = new ItemTracker(item);
+            if (Trackers.ContainsKey(item.ItemSerial))
+                return;
+            
+            if (UnassignedTrackers.TryGetValue(item, out var tracker))
+                tracker.SetSerial(item.ItemSerial);
+            else
+                _ = new ItemTracker(item);
+        }
+        else
+        {
+            if (item.ItemSerial != 0 && UnassignedTrackers.TryGetValue(item, out var tracker))
+                tracker.SetSerial(item.ItemSerial);
+            else
+                UnassignedTrackers[item] = new ItemTracker(item);
         }
     }
 
@@ -223,13 +338,18 @@ public class ItemTracker : IDisposable
         trackerBuffer.Clear();
         
         foreach (var tracker in Trackers)
-            trackerBuffer.Add(tracker.Key, tracker.Value);
+            trackerBuffer.Add(tracker.Value);
+        
+        foreach (var tracker in UnassignedTrackers)
+            trackerBuffer.Add(tracker.Value);
         
         foreach (var tracker in trackerBuffer)
-            tracker.Value.Dispose();
+            tracker.Dispose();
         
         trackerBuffer.Clear();
+        
         Trackers.Clear();
+        UnassignedTrackers.Clear();
     }
 
     [LoaderInitialize(1)]

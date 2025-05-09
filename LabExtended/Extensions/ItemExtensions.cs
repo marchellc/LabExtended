@@ -106,7 +106,8 @@ public static class ItemExtensions
     /// </summary>
     /// <typeparam name="T">The type of the item to get.</typeparam>
     /// <param name="itemType">The type of the item to get.</param>
-    /// <returns>The item's instance, if succesfull. Otherwise <see langword="null"/>.</returns>
+    /// <param name="serial">The serial number to assign to the item.</param>
+    /// <returns>The item's instance, if successful. Otherwise <see langword="null"/>.</returns>
     public static T? GetItemInstance<T>(this ItemType itemType, ushort? serial = null) where T : ItemBase
     {
         if (!TryGetItemPrefab<T>(itemType, out var result))
@@ -114,10 +115,11 @@ public static class ItemExtensions
 
         var item = UnityEngine.Object.Instantiate(result);
 
-        if (serial.HasValue)
-            item.ItemSerial = serial.Value;
-        else
-            item.ItemSerial = ItemSerialGenerator.GenerateNext();
+        if (item != null)
+        {
+            item.ItemSerial = serial ?? ItemSerialGenerator.GenerateNext();
+            item.GetTracker().SetSerial(item.ItemSerial);
+        }
 
         return item;
     }
@@ -311,6 +313,9 @@ public static class ItemExtensions
 
             item.OwnerInventory.SendItemsNextFrame = true;
         }
+        
+        if (item.TryGetTracker(out var tracker))
+            tracker.SetOwner(ExPlayer.Get(newOwner));
     }
     
     /// <summary>
@@ -410,7 +415,12 @@ public static class ItemExtensions
         if (item.TryGetTracker(out var tracker))
             return tracker;
 
-        return new(item);
+        tracker = new(item);
+
+        if (item.ItemSerial == 0)
+            ItemTracker.UnassignedTrackers[item] = tracker;
+
+        return tracker;
     }
     
     /// <summary>
@@ -425,13 +435,15 @@ public static class ItemExtensions
         if (item == null)
             throw new ArgumentNullException(nameof(item));
 
-        if (item.Info.Serial == 0)
-            throw new Exception("Pickup's serial has not been set");
-
         if (item.TryGetTracker(out var tracker))
             return tracker;
 
-        return new(item);
+        tracker = new(item);
+
+        if (item.Info.Serial == 0)
+            ItemTracker.UnassignedTrackers[item] = tracker;
+        
+        return tracker;
     }
 
     /// <summary>
@@ -449,10 +461,20 @@ public static class ItemExtensions
         if (ItemTracker.Trackers.TryGetValue(item.ItemSerial, out tracker))
             return true;
 
-        if (item.ItemSerial != 0)
-            tracker = new(item);
+        if (ItemTracker.UnassignedTrackers.TryGetValue(item, out tracker))
+        {
+            if (item.ItemSerial != 0)
+                tracker.SetSerial(item.ItemSerial);
+            
+            return true;
+        }
+        
+        tracker = new(item);
 
-        return tracker != null;
+        if (item.ItemSerial == 0)
+            ItemTracker.UnassignedTrackers[item] = tracker;
+
+        return true;
     }
     
     /// <summary>
@@ -470,10 +492,20 @@ public static class ItemExtensions
         if (ItemTracker.Trackers.TryGetValue(pickup.NetworkInfo.Serial, out tracker))
             return true;
 
-        if (pickup.NetworkInfo.Serial != 0)
-            tracker = new(pickup);
+        if (ItemTracker.UnassignedTrackers.TryGetValue(pickup, out tracker))
+        {
+            if (pickup.Info.Serial != 0)
+                tracker.SetSerial(pickup.Info.Serial);
 
-        return tracker != null;
+            return true;
+        }
+        
+        tracker = new(pickup);
+        
+        if (pickup.Info.Serial == 0)
+            ItemTracker.UnassignedTrackers[pickup] = tracker;
+
+        return true;
     }
     
     /// <summary>
