@@ -408,6 +408,78 @@ public class InventoryContainer : IDisposable
         => Items.Count(it => it.ItemTypeId == type);
 
     /// <summary>
+    /// Gets the item at a specific inventory slot.
+    /// </summary>
+    /// <param name="slotNumber">The target inventory slot.</param>
+    /// <returns>The item at the specified slot (or null if none).</returns>
+    public ItemBase? GetItemAtSlot(byte slotNumber)
+    {
+        if (slotNumber > 8)
+            return null;
+
+        return UserInventory.Items.ElementAtOrDefault(slotNumber).Value;
+    }
+
+    /// <summary>
+    /// Selects the specified item.
+    /// </summary>
+    /// <param name="item">The item to select.</param>
+    /// <returns>true if the item was selected</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool Select(ItemBase item)
+    {
+        if (item == null)
+            throw new ArgumentNullException(nameof(item));
+
+        if (!UserInventory.Items.ContainsKey(item.ItemSerial))
+            return false;
+
+        if (CurrentItemIdentifier.SerialNumber == item.ItemSerial)
+            return false;
+        
+        Inventory.ServerSelectItem(item.ItemSerial);
+        return true;
+    }
+    
+    /// <summary>
+    /// Selects an item with a specific serial number.
+    /// </summary>
+    /// <param name="itemSerial">The serial number of the item to select.</param>
+    /// <returns>true if the item was selected</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool Select(ushort itemSerial)
+    {
+        if (!UserInventory.Items.TryGetValue(itemSerial, out var item))
+            return false;
+
+        if (CurrentItemIdentifier.SerialNumber == item.ItemSerial)
+            return false;
+        
+        Inventory.ServerSelectItem(item.ItemSerial);
+        return true;
+    }
+
+    /// <summary>
+    /// Selects an item at a specific inventory slot.
+    /// </summary>
+    /// <param name="slotNumber">The number of the inventory slot to select.</param>
+    /// <returns>true if the item was selected</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public bool SelectSlot(byte slotNumber)
+    {
+        var item = GetItemAtSlot(slotNumber);
+
+        if (item == null)
+            return false;
+        
+        if (CurrentItemIdentifier.SerialNumber == item.ItemSerial)
+            return false;
+        
+        Inventory.ServerSelectItem(item.ItemSerial);
+        return true;
+    }
+
+    /// <summary>
     /// Removes an item of a specific serial number.
     /// </summary>
     /// <param name="serial">The serial number to remove.</param>

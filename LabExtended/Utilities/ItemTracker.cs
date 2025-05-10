@@ -37,6 +37,26 @@ public class ItemTracker : IDisposable
     public static event Action<ItemTracker>? Destroyed;
     
     /// <summary>
+    /// Gets called once the item's owner selects it in their inventory.
+    /// </summary>
+    public static event Action<ItemTracker>? Selected;
+
+    /// <summary>
+    /// Gets called once the item's owner selects a different item.
+    /// </summary>
+    public static event Action<ItemTracker>? Deselected;
+
+    /// <summary>
+    /// Gets called once the item is picked up.
+    /// </summary>
+    public static event Action<ItemTracker>? PickedUp;
+
+    /// <summary>
+    /// Gets called once the item is dropped.
+    /// </summary>
+    public static event Action<ItemTracker>? Dropped;
+    
+    /// <summary>
     /// Gets the tracked item serial.
     /// </summary>
     public ushort ItemSerial { get; private set; }
@@ -70,26 +90,6 @@ public class ItemTracker : IDisposable
     /// Gets or sets the item tracker's custom data.
     /// </summary>
     public object? Data { get; set; }
-
-    /// <summary>
-    /// Gets called once the item's owner selects it in their inventory.
-    /// </summary>
-    public event Action? OnSelected;
-
-    /// <summary>
-    /// Gets called once the item's owner selects a different item.
-    /// </summary>
-    public event Action? OnDeselected;
-
-    /// <summary>
-    /// Gets called once the item is picked up.
-    /// </summary>
-    public event Action? OnPickedUp;
-
-    /// <summary>
-    /// Gets called once the item is dropped.
-    /// </summary>
-    public event Action? OnDropped;
 
     /// <summary>
     /// Creates a new <see cref="ItemTracker"/> instance.
@@ -170,9 +170,9 @@ public class ItemTracker : IDisposable
         IsSelected = selected;
         
         if (IsSelected)
-            OnSelected?.InvokeSafe();
+            Selected?.InvokeSafe(this);
         else
-            OnDeselected?.InvokeSafe();
+            Deselected?.InvokeSafe(this);
     }
 
     internal void SetItem(ItemBase item, ExPlayer? owner = null)
@@ -182,7 +182,7 @@ public class ItemTracker : IDisposable
         Item = item;
         Owner = owner;
         
-        OnPickedUp?.InvokeSafe();
+        PickedUp?.InvokeSafe(this);
 
         IsSelected = false;
     }
@@ -194,7 +194,7 @@ public class ItemTracker : IDisposable
         Pickup = pickup;
         Owner = owner;
         
-        OnDropped?.InvokeSafe();
+        Dropped?.InvokeSafe(this);
 
         IsSelected = false;
     }

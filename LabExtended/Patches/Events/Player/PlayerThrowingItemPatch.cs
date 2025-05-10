@@ -1,18 +1,19 @@
 ﻿using HarmonyLib;
 
 using InventorySystem;
-
+using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
-
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
-
+using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using UnityEngine;
@@ -52,12 +53,36 @@ namespace LabExtended.Patches.Events.Player
             if (!ExPlayerEvents.OnDroppingItem(droppingEv))
                 return false;
 
-            var tracker = item.GetTracker();
+            var itemBehaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
+            
+            CustomItemUtils.GetInventoryBehavioursNonAlloc(item.ItemSerial, itemBehaviours);
+
+            for (var i = 0; i < itemBehaviours.Count; i++)
+                itemBehaviours[i].OnDropping(droppingEv);
+
+            if (!droppingEv.IsAllowed)
+            {
+                ListPool<CustomItemInventoryBehaviour>.Shared.Return(itemBehaviours);
+                return false;
+            }
             
             if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
                 player.Inventory.Snake.Reset(false, true);
+
+            var tracker = item.GetTracker();
+            var targetBehaviour = CustomItemUtils.SelectItemBehaviour(itemBehaviours);
             
-            var pickup = __instance.ServerDropItem(itemSerial);
+            ItemPickupBase? pickup = null;
+
+            if (targetBehaviour != null)
+            {
+                pickup = ExMap.SpawnItem(targetBehaviour.Handler.PickupProperties.Type, player.Position,
+                    targetBehaviour.Handler.PickupProperties.Scale, player.Rotation, itemSerial);
+            }
+            else
+            {
+                pickup = __instance.ServerDropItem(itemSerial);
+            }
 
             __instance.SendItemsNextFrame = true;
 
@@ -67,8 +92,15 @@ namespace LabExtended.Patches.Events.Player
             
             tracker.SetPickup(pickup, player);
 
-            PlayerEvents.OnDroppedItem(new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup));
+            var pickupBehaviours = ListPool<CustomItemPickupBehaviour>.Shared.Rent();
+            var droppedArgs = new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup);
+            
+            PlayerEvents.OnDroppedItem(droppedArgs);
 
+            CustomItemUtils.ProcessDropped(itemBehaviours, pickup, player, droppedArgs, pickupBehaviours);
+            
+            item.DestroyItem();
+            
             if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
             {
                 var throwingArgs = new LabApi.Events.Arguments.PlayerEvents.PlayerThrowingItemEventArgs(player.ReferenceHub, pickup, rigidbody);
@@ -76,7 +108,12 @@ namespace LabExtended.Patches.Events.Player
                 PlayerEvents.OnThrowingItem(throwingArgs);
 
                 if (!throwingArgs.IsAllowed)
+                {
+                    ListPool<CustomItemInventoryBehaviour>.Shared.Return(itemBehaviours);
+                    ListPool<CustomItemPickupBehaviour>.Shared.Return(pickupBehaviours);
+
                     return false;
+                }
                 
                 var velocity = __instance._hub.GetVelocity();
                 var angular = Vector3.Lerp(item.ThrowSettings.RandomTorqueA, item.ThrowSettings.RandomTorqueB, UnityEngine.Random.value);
@@ -92,6 +129,17 @@ namespace LabExtended.Patches.Events.Player
 
                 if (!ExPlayerEvents.OnThrowingItem(throwingEv))
                     return false;
+                
+                for (var i = 0; i < pickupBehaviours.Count; i++)
+                    pickupBehaviours[i].OnThrowing(throwingEv);
+
+                if (!throwingEv.IsAllowed)
+                {
+                    ListPool<CustomItemInventoryBehaviour>.Shared.Return(itemBehaviours);
+                    ListPool<CustomItemPickupBehaviour>.Shared.Return(pickupBehaviours);
+
+                    return false;
+                }
 
                 velocity = throwingEv.Velocity;
                 angular = throwingEv.AngularVelocity;
@@ -99,7 +147,7 @@ namespace LabExtended.Patches.Events.Player
                 var position = throwingEv.Position;
 
                 rigidbody.position = position;
-                rigidbody.velocity = velocity;
+                rigidbody.linearVelocity = velocity;
                 rigidbody.angularVelocity = angular;
 
                 if (rigidbody.angularVelocity.magnitude > rigidbody.maxAngularVelocity)
@@ -108,8 +156,14 @@ namespace LabExtended.Patches.Events.Player
                 var threwArgs = new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody);
 
                 PlayerEvents.OnThrewItem(threwArgs);
+                
+                for (var i = 0; i < pickupBehaviours.Count; i++)
+                    pickupBehaviours[i].OnThrown(threwArgs);
             }
 
+            ListPool<CustomItemInventoryBehaviour>.Shared.Return(itemBehaviours);
+            ListPool<CustomItemPickupBehaviour>.Shared.Return(pickupBehaviours);
+            
             return false;
         }
     }

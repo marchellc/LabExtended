@@ -347,6 +347,20 @@ public static class CollectionExtensions
     #endregion
 
     #region Dictionary Extensions
+    public static TValue? GetValueOrDefault<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue? defaultValue = default)
+    {
+        if (dictionary is null)
+            throw new ArgumentNullException(nameof(dictionary));
+        
+        if (key is null)
+            throw new ArgumentNullException(nameof(key));
+
+        if (!dictionary.TryGetValue(key, out var value))
+            return defaultValue;
+
+        return value;
+    }
+    
     public static bool TryGetKey<TKey, TValue>(this IDictionary<TKey, TValue> dict, TValue value, out TKey key)
     {
         foreach (var pair in dict)
