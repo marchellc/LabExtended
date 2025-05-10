@@ -9,10 +9,9 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Utilities;
+
 using PlayerDroppingItemEventArgs = LabExtended.Events.Player.PlayerDroppingItemEventArgs;
 
 namespace LabExtended.Patches.Functions.Items
@@ -67,48 +66,22 @@ namespace LabExtended.Patches.Functions.Items
                     return false;
                 
                 var armorTracker = __instance._currentArmor.GetTracker();
-
-                if (armorTracker.CustomItem != null)
-                {
-                    armorTracker.CustomItem.OnDropping(droppingArgs);
-
-                    if (!droppingArgs.IsAllowed)
-                        return false;
-                }
                 
                 var pickup = __instance.Hub.inventory.ServerDropItem(__instance._currentArmor.ItemSerial);
                 var droppedArgs = new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup);
                 
                 PlayerEvents.OnDroppedItem(droppedArgs);
-                
-                armorTracker.CustomItem?.OnDropped(droppedArgs);
             }
-
-            ItemBase item = null;
             
-            if (tracker?.CustomItem != null)
-            {
-                tracker.CustomItem.OnPickingUp(pickingUpItemArgs);
-
-                if (!pickingUpItemArgs.IsAllowed || tracker.CustomItem.CustomData.InventoryType is ItemType.None)
-                    return false;
-
-                item = __instance.Hub.inventory.ServerAddItem(tracker.CustomItem.CustomData.InventoryType,
-                    ItemAddReason.PickedUp, tracker.CustomItem.ItemSerial, __instance.TargetPickup);
-            }
-            else
-            {
-                item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId,
-                    ItemAddReason.PickedUp,
-                    __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
-            }
+            var item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId,
+                ItemAddReason.PickedUp,
+                __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
 
             if (item != null)
             {
                 var pickedUpItemArgs = new PlayerPickedUpItemEventArgs(player.ReferenceHub, item);
                 
                 tracker.SetItem(item, player);
-                tracker.CustomItem?.OnPickedUp(pickedUpItemArgs);
                 
                 BodyArmorUtils.SetPlayerDirty(__instance.Hub);
                 

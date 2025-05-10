@@ -3,7 +3,6 @@ using LabExtended.API.Hints;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Containers;
 
-using LabExtended.API.CustomItems;
 using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomVoice;
 
@@ -443,7 +442,6 @@ public class ExPlayer : Player, IDisposable
     #endregion
 
     internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
-    internal Dictionary<ItemBase, CustomItemInstance> customItems = DictionaryPool<ItemBase, CustomItemInstance>.Shared.Rent();
     
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
     internal Dictionary<string, SettingsEntry>? settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
@@ -1366,12 +1364,6 @@ public class ExPlayer : Player, IDisposable
         {
             DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
             settingsMenuLookup = null;
-        }
-
-        if (customItems != null)
-        {
-            DictionaryPool<ItemBase, CustomItemInstance>.Shared.Return(customItems);
-            customItems = null;
         }
 
         if (customRoles != null)

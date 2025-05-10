@@ -4,11 +4,9 @@ using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
-using InventorySystem.Items.Keycards.Snake;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.Utilities.Keycards;
-using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
 
 using UnityEngine;
@@ -18,7 +16,6 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
-using LabExtended.Events;
 
 #pragma warning disable CS8603 // Possible null reference return.
 
@@ -31,8 +28,7 @@ namespace LabExtended.API.Containers;
 /// </summary>
 public class InventoryContainer : IDisposable
 {
-    internal HashSet<ItemPickupBase>? _droppedItems;
-    internal CustomItemInstance? heldCustomItem;
+    internal HashSet<ItemPickupBase>? droppedItems;
 
     /// <summary>
     /// Creates a new <see cref="InventoryContainer"/> instance.
@@ -51,7 +47,7 @@ public class InventoryContainer : IDisposable
 
         UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
 
-        _droppedItems = HashSetPool<ItemPickupBase>.Shared.Rent();
+        droppedItems = HashSetPool<ItemPickupBase>.Shared.Rent();
     }
 
     /// <summary>
@@ -109,11 +105,6 @@ public class InventoryContainer : IDisposable
     /// Gets the inventory item holder.
     /// </summary>
     public InventoryInfo UserInventory => Inventory.UserInventory;
-
-    /// <summary>
-    /// Gets the currently held Custom Item instance.
-    /// </summary>
-    public CustomItemInstance? HeldCustomItem => heldCustomItem;
     
     /// <summary>
     /// Gets the Snake minigame wrapper.
@@ -148,7 +139,7 @@ public class InventoryContainer : IDisposable
     /// <summary>
     /// Gets a list of all items that have been dropped by this player.
     /// </summary>
-    public IReadOnlyCollection<ItemPickupBase> DroppedItems => _droppedItems;
+    public IReadOnlyCollection<ItemPickupBase> DroppedItems => droppedItems;
 
     /// <summary>
     /// Gets permissions of the currently held keycard. <i>(<see cref="DoorPermissionFlags.None"/> if the player isn't holding a keycard)</i>.
@@ -710,11 +701,11 @@ public class InventoryContainer : IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        if (_droppedItems != null)
+        if (droppedItems != null)
         {
-            HashSetPool<ItemPickupBase>.Shared.Return(_droppedItems);
+            HashSetPool<ItemPickupBase>.Shared.Return(droppedItems);
 
-            _droppedItems = null;
+            droppedItems = null;
         }
         
         Snake?.Reset(false, true);

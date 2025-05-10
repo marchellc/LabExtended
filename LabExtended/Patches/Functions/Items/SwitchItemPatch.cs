@@ -49,14 +49,6 @@ namespace LabExtended.Patches.Functions.Items
 
                 ItemTracker? curTracker = curItem?.GetTracker();
                 ItemTracker? newTracker = null;
-
-                if (curTracker?.CustomItem != null)
-                {
-                    curTracker.CustomItem.OnDeselecting(switchingArgs);
-
-                    if (!switchingArgs.IsAllowed)
-                        return false;
-                }
                 
                 if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
                     player.Inventory.Snake.Reset(false, true);
@@ -72,14 +64,6 @@ namespace LabExtended.Patches.Functions.Items
 
                     newTracker = newItem?.GetTracker();
 
-                    if (newTracker?.CustomItem != null)
-                    {
-                        newTracker.CustomItem.OnSelecting(switchingArgs);
-
-                        if (!switchingArgs.IsAllowed)
-                            return false;
-                    }
-
                     if (itemSerial == 0)
                     {
                         __instance.NetworkCurItem = ItemIdentifier.None;
@@ -91,8 +75,6 @@ namespace LabExtended.Patches.Functions.Items
                             newItem?.ItemId ?? ItemIdentifier.None);
                         
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
-                        
-                        curTracker?.CustomItem?.OnDeselected(selectedArgs);
                     }
                     else
                     {
@@ -106,21 +88,10 @@ namespace LabExtended.Patches.Functions.Items
                             newItem?.ItemId ?? ItemIdentifier.None);
                         
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
-                        
-                        curTracker?.CustomItem?.OnDeselected(selectedArgs);
-                        newTracker?.CustomItem?.OnSelected(selectedArgs);
                     }
                 }
                 else if (!flag)
                 {
-                    if (curTracker?.CustomItem != null)
-                    {
-                        curTracker.CustomItem.OnDeselecting(switchingArgs);
-
-                        if (!switchingArgs.IsAllowed)
-                            return false;
-                    }
-                    
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
                     
@@ -130,8 +101,6 @@ namespace LabExtended.Patches.Functions.Items
                         newItem?.ItemId ?? ItemIdentifier.None);
                         
                     ExPlayerEvents.OnSelectedItem(selectedArgs);
-                    
-                    curTracker?.CustomItem?.OnDeselected(selectedArgs);
                 }
                 
                 return false;

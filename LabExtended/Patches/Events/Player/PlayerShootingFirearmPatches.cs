@@ -2,15 +2,14 @@
 
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
+
 using LabExtended.API;
-using LabExtended.API.CustomFirearms;
-using LabExtended.API.CustomItems;
+
 using LabExtended.Events;
-using LabExtended.Events.Firearms;
 using LabExtended.Events.Player;
-using LabExtended.Extensions;
+using LabExtended.Events.Firearms;
+
 using PlayerRoles;
-using PlayerStatsSystem;
 
 using UnityEngine;
 
@@ -31,11 +30,8 @@ public static class PlayerShootingFirearmPatches
 
         if (!Physics.Raycast(targetRay, out var hit, distance, HitscanHitregModuleBase.HitregMask))
             return false;
-
-        var custom = __instance.Firearm.GetTracker().CustomItem as CustomFirearmInstance;
+        
         var args = new FirearmRayCastEventArgs(player, __instance.Firearm, targetRay, distance, hit);
-
-        custom?.OnRayCast(args);
         
         if (!ExFirearmEvents.OnRayCast(args)  || !args.Hit.HasValue)
             return false;

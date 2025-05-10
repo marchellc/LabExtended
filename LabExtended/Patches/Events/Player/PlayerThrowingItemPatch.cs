@@ -1,22 +1,18 @@
 ﻿using HarmonyLib;
 
 using InventorySystem;
-using InventorySystem.Items.Keycards;
-using InventorySystem.Items.Pickups;
-using InventorySystem.Items.Usables.Scp330;
 
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 using LabApi.Features.Wrappers;
+
 using LabExtended.API;
-using LabExtended.API.CustomItems;
 
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
-using LabExtended.Events.Player;
-using LabExtended.Utilities;
+
 using PlayerRoles.FirstPersonControl;
 
 using UnityEngine;
@@ -57,35 +53,17 @@ namespace LabExtended.Patches.Events.Player
                 return false;
 
             var tracker = item.GetTracker();
-
-            ItemPickupBase pickup = null;
             
             if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null && __instance.CurInstance == player.Inventory.Snake.Keycard)
                 player.Inventory.Snake.Reset(false, true);
-
-            if (tracker.CustomItem != null)
-            {
-                tracker.CustomItem.OnDropping(droppingEv);
-
-                if (!droppingEv.IsAllowed || tracker.CustomItem.CustomData.PickupType is ItemType.None)
-                    return false;
-                
-                __instance.ServerRemoveItem(itemSerial, item.PickupDropModel);
-
-                pickup = ExMap.SpawnItem(tracker.CustomItem.CustomData.PickupType, player.Position,
-                    tracker.CustomItem.CustomData.PickupScale ?? Vector3.one, player.Rotation, tracker.ItemSerial, 
-                    true);
-            }
-            else
-            { 
-                pickup = __instance.ServerDropItem(itemSerial);
-            }
+            
+            var pickup = __instance.ServerDropItem(itemSerial);
 
             __instance.SendItemsNextFrame = true;
 
             tryThrow = droppingEv.IsThrow;
 
-            player.Inventory._droppedItems.Add(pickup);
+            player.Inventory.droppedItems.Add(pickup);
             
             tracker.SetPickup(pickup, player);
 
@@ -114,14 +92,6 @@ namespace LabExtended.Patches.Events.Player
 
                 if (!ExPlayerEvents.OnThrowingItem(throwingEv))
                     return false;
-                
-                if (tracker.CustomItem != null)
-                {
-                    tracker.CustomItem.OnThrowing(throwingEv);
-
-                    if (!throwingEv.IsAllowed)
-                        return false;
-                }
 
                 velocity = throwingEv.Velocity;
                 angular = throwingEv.AngularVelocity;
@@ -136,8 +106,6 @@ namespace LabExtended.Patches.Events.Player
                     rigidbody.maxAngularVelocity = rigidbody.angularVelocity.magnitude;
 
                 var threwArgs = new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody);
-                
-                tracker.CustomItem?.OnThrown(threwArgs);
 
                 PlayerEvents.OnThrewItem(threwArgs);
             }

@@ -579,7 +579,7 @@ namespace LabExtended.API
         {
             Pickups.Remove(pickup);
             
-            ExPlayer.AllPlayers.ForEach(p => p.Inventory._droppedItems.Remove(pickup));
+            ExPlayer.AllPlayers.ForEach(p => p.Inventory.droppedItems.Remove(pickup));
         }
 
         private static void OnPickupCreated(ItemPickupBase pickup)
