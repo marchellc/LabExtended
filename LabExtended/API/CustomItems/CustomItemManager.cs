@@ -44,8 +44,7 @@ public static class CustomItemManager
 
         if (item.Item is null)
             throw new Exception("Custom Item is not in inventory.");
-
-        item.Player.customItems.Remove(item.Item);
+        
         item.Player.Inventory.ThrowItem<ItemPickupBase>(item.Item);
     }
     
@@ -163,7 +162,7 @@ public static class CustomItemManager
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="Exception"></exception>
-    public static T SpawnItem<T>(Vector3 position, Quaternion rotation, ExPlayer owner = null) where T : CustomItemInstance
+    public static T SpawnItem<T>(Vector3 position, Quaternion rotation, ExPlayer? owner = null) where T : CustomItemInstance
     {
         return (T)SpawnItem(typeof(T), position, rotation, owner);
     }
@@ -179,7 +178,7 @@ public static class CustomItemManager
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="Exception"></exception>
-    public static CustomItemInstance SpawnItem(Type itemType, Vector3 position, Quaternion rotation, ExPlayer owner = null)
+    public static CustomItemInstance SpawnItem(Type itemType, Vector3 position, Quaternion rotation, ExPlayer? owner = null)
     {
         if (itemType is null)
             throw new ArgumentNullException(nameof(itemType));

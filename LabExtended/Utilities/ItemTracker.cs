@@ -238,6 +238,14 @@ public class ItemTracker : IDisposable
 
     internal void SetPickup(ItemPickupBase pickup, ExPlayer? owner = null)
     {
+        if (Item != null && CustomItem != null && Owner != null)
+        {
+            if (Owner.Inventory.heldCustomItem != null && Owner.Inventory.heldCustomItem == CustomItem)
+                Owner.Inventory.heldCustomItem = null;
+
+            Owner.customItems.Remove(Item);
+        }
+        
         Item = null;
 
         Pickup = pickup;
@@ -253,8 +261,31 @@ public class ItemTracker : IDisposable
 
     internal void SetOwner(ExPlayer owner)
     {
+        var curOwner = Owner;
+        
         Owner = owner;
         OwnerChanged?.InvokeSafe(this);
+
+        if (CustomItem is null)
+            return;
+        
+        if (curOwner != null)
+        {
+            if (curOwner.Inventory.heldCustomItem != null && curOwner.Inventory.heldCustomItem == CustomItem)
+                curOwner.Inventory.heldCustomItem = null;
+
+            if (Item != null)
+                curOwner.customItems.Remove(Item);
+        }
+
+        if (Owner != null)
+        {
+            if (IsSelected)
+                Owner.Inventory.heldCustomItem = CustomItem;
+            
+            if (Item != null)
+                Owner.customItems[Item] = CustomItem;
+        }
     }
 
     internal void SetSerial(ushort serial)

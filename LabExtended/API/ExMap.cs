@@ -350,7 +350,7 @@ namespace LabExtended.API
         /// <param name="spawn">Whether or not to spawn it for players.</param>
         /// <typeparam name="T">Generic type of the item.</typeparam>
         /// <returns>The spawned item.</returns>
-        public static T SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, 
+        public static T? SpawnItem<T>(ItemType item, Vector3 position, Vector3 scale, Quaternion rotation, 
             ushort? serial = null, bool spawn = true) where T : ItemPickupBase
         {
             if (!item.TryGetItemPrefab(out var prefab))
@@ -368,6 +368,7 @@ namespace LabExtended.API
             if (spawn)
             {
                 NetworkServer.Spawn(pickup.gameObject);
+                
                 LabApi.Events.Handlers.ServerEvents.OnItemSpawned(new ItemSpawnedEventArgs(pickup));
             }
 
