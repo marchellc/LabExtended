@@ -53,6 +53,8 @@ public class CustomRoleInstance : IDisposable
     internal void InvokeInstantiated()
     {
         PlayerLoopHelper.AfterLoop += InvokeUpdate;
+        
+        OnInstantiated();
     }
 
     private void InvokeUpdate()
