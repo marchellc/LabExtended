@@ -13,10 +13,10 @@ public static class ExMapEvents
     /// <inheritdoc cref="DistributedPickupEventArgs"/>
     public static event Action<DistributedPickupEventArgs>? DistributedPickup;
     
-    /// <inheritdoc cref="DistributingPickupsEventArgs"/>
+    /// <inheritdoc cref="DistributingPickupEventArgs"/>
     public static event Action<DistributingPickupEventArgs>? DistributingPickup; 
     
-    /// <inheritdoc cref="DistributingPickupsEventArgs"/>
+    /// <inheritdoc cref="LockerFillingChamberEventArgs"/>
     public static event Action<LockerFillingChamberEventArgs>? LockerFillingChamber; 
     
     /// <inheritdoc cref="PocketDimensionDestroyingItemEventArgs"/>
@@ -39,6 +39,9 @@ public static class ExMapEvents
 
     /// <inheritdoc cref="WarheadChangingLeverEventArgs"/>
     public static event Action<WarheadChangingLeverEventArgs>? WarheadChangingLever;
+    
+    /// <inheritdoc cref="PickupCollidedEventArgs"/>
+    public static event Action<PickupCollidedEventArgs>? PickupCollided; 
 
     /// <summary>
     /// Executes the <see cref="DistributedPickup"/> event.
@@ -109,4 +112,12 @@ public static class ExMapEvents
     /// <param name="args">The event arguments.</param>
     public static bool OnWarheadChangingLever(WarheadChangingLeverEventArgs args)
         => WarheadChangingLever.InvokeBooleanEvent(args);
+    
+    /// <summary>
+    /// Executes the <see cref="PickupCollided"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnPickupCollided(PickupCollidedEventArgs args)
+        => PickupCollided.InvokeBooleanEvent(args);
 }

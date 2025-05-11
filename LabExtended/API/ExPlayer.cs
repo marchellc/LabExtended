@@ -134,7 +134,6 @@ public class ExPlayer : Player, IDisposable
 
             Server.Host = host;
             return host;
-
         }
     }
 
