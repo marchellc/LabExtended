@@ -755,6 +755,31 @@ public class TranspilerContext
     }
 
     /// <summary>
+    /// Removes the current instruction.
+    /// </summary>
+    /// <returns>This transpiler context.</returns>
+    public TranspilerContext RemoveInstruction()
+    {
+        Instructions.RemoveAt(Index);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the current instruction.
+    /// </summary>
+    /// <param name="newInstruction">The instruction to insert.</param>
+    /// <returns>This transpiler context.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public TranspilerContext ReplaceInstruction(CodeInstruction newInstruction)
+    {
+        if (newInstruction is null)
+            throw new ArgumentNullException(nameof(newInstruction));
+        
+        Instructions[Index] = newInstruction;
+        return this;
+    }
+
+    /// <summary>
     /// Inserts the buffer into instructions.
     /// </summary>
     /// <param name="removeCount">The amount of instructions to remove.</param>
