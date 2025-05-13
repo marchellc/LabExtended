@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Text;
 
 using LabExtended.API.Enums;
 using LabExtended.API.RemoteAdmin.Enums;
@@ -14,8 +15,10 @@ using LabExtended.Patches.Functions.RemoteAdmin;
 
 using NorthwoodLib.Pools;
 
-using System.Text;
+using LabExtended.API.RemoteAdmin.Actions;
 using LabExtended.API.RemoteAdmin.Buttons;
+
+using NetworkManagerUtils.Dummies;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -32,6 +35,7 @@ public class RemoteAdminController : IDisposable
 
     // ReSharper disable once CollectionNeverUpdated.Local
     private static readonly HashSet<Type> globalObjects = new();
+    private static readonly HashSet<Type> globalModules = new();
     
     /// <summary>
     /// Gets all Remote Admin buttons.
@@ -91,7 +95,12 @@ public class RemoteAdminController : IDisposable
     /// <summary>
     /// Gets the parent player.
     /// </summary>
-    public ExPlayer Player { get; private set; }
+    public ExPlayer Player { get; }
+    
+    /// <summary>
+    /// Gets the Remote Admin Action provider.
+    /// </summary>
+    public RemoteAdminActionProvider Actions { get; private set; }
 
     /// <summary>
     /// Gets a list of custom Remote Admin objects.
@@ -104,10 +113,14 @@ public class RemoteAdminController : IDisposable
             throw new ArgumentNullException(nameof(player));
 
         Player = player;
+
+        Actions = new(player);
+        
         Objects = ListPool<IRemoteAdminObject>.Shared.Rent();
 
         globalObjects.ForEach(type => AddObject(type));
-        
+
+        InternalEvents.OnPlayerVerified += OnVerified;
         PlayerUpdateHelper.OnUpdate += Update;
     }
 
@@ -118,6 +131,9 @@ public class RemoteAdminController : IDisposable
         
         requestWatch?.Stop();
         requestWatch = null;
+        
+        Actions?.Dispose();
+        Actions = null;
 
         wasOpen = false;
 
@@ -445,5 +461,15 @@ public class RemoteAdminController : IDisposable
             
             wasOpen = IsOpen;
         }
+    }
+
+    private void OnVerified(ExPlayer player)
+    {
+        if (player != Player)
+            return;
+
+        InternalEvents.OnPlayerVerified -= OnVerified;
+        
+        _ = DummyActionCollector.GetCache(player.ReferenceHub);
     }
 }
