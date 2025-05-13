@@ -15,12 +15,9 @@ public partial class SpawnCommand
         [CommandParameter("Scale", "Scale of the capybara's model.")] Vector3 scale)
     {
         targetPlayer ??= Sender;
-
-        var toy = new CapybaraToy()
+        
+        var toy = new CapybaraToy(targetPlayer.Position, targetPlayer.Rotation)
         {
-            Position = targetPlayer.Position,
-            Rotation = targetPlayer.Rotation,
-            
             Scale = scale
         };
         
