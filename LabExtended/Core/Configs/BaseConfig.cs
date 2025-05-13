@@ -15,6 +15,9 @@ namespace LabExtended.Core.Configs
 
         [Description("Whether or not to skip game version compatibility checks.")]
         public bool SkipGameCompatibility { get; set; }
+        
+        [Description("Whether or not to skip the client version compatibility checks.")]
+        public bool SkipClientCompatibility { get; set; }
 
         [Description("Whether or not to disable Round Lock when the player who enabled it leaves.")]
         public bool DisableRoundLockOnLeave { get; set; } = true;
