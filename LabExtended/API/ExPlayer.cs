@@ -1022,7 +1022,7 @@ public class ExPlayer : Player, IDisposable
     /// Whether the player has the Remote Admin panel open.
     /// </summary>
     [CommandPropertyAlias("hasRaOpened")]
-    public bool HasRemoteAdminOpened => RemoteAdmin.IsRemoteAdminOpen;
+    public bool HasRemoteAdminOpened => RemoteAdmin.IsOpen;
 
     /// <summary>
     /// Whether the player has access to Staff Chat.

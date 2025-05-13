@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             if (!ExPlayer.TryGet(sender, out var player))
                 return true;
 
-            player.RemoteAdmin.InternalRegisterRequest();
+            player.RemoteAdmin.OnRequest();
 
             var array = data.Split(' ');
 
@@ -51,7 +51,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             var sorting = (RaPlayerList.PlayerSorting)sortingType;
             var builder = StringBuilderPool.Shared.Rent("\n");
 
-            player.RemoteAdmin.InternalPrependObjects(builder);
+            player.RemoteAdmin.PrependObjects(builder);
 
             foreach (var otherHub in array[2] == "1" ? __instance.SortPlayersDescending(sorting) : __instance.SortPlayers(sorting))
             {
@@ -83,7 +83,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 builder.AppendLine();
             }
 
-            player.RemoteAdmin.InternalAppendObjects(builder);
+            player.RemoteAdmin.AppendObjects(builder);
 
             sender.RaReply($"${__instance.DataId} {StringBuilderPool.Shared.ToStringReturn(builder)}", true, num != 1, string.Empty);
             return false;

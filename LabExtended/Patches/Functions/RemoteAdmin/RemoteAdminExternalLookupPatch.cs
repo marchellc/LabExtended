@@ -18,13 +18,18 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
         [HarmonyPatch(typeof(ExternalLookupCommand), nameof(ExternalLookupCommand.Execute))]
         public static bool Prefix(ExternalLookupCommand __instance, ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {
-            if (!RemoteAdminButtons.TryGetButton(RemoteAdminButtonType.ExternalLookup, out var button) || !ExPlayer.TryGet(sender, out var player))
+            if (!RemoteAdminController.Buttons.TryGetValue(RemoteAdminButtonType.ExternalLookup, out var button) 
+                || !ExPlayer.TryGet(sender, out var player))
             {
                 response = null;
                 return true;
             }
 
-            if (!sender.CheckPermission(PlayerPermissions.BanningUpToDay | PlayerPermissions.LongTermBanning | PlayerPermissions.SetGroup | PlayerPermissions.PlayersManagement | PlayerPermissions.PermissionsManagement | PlayerPermissions.ViewHiddenBadges | PlayerPermissions.PlayerSensitiveDataAccess | PlayerPermissions.ViewHiddenGlobalBadges, out response))
+            if (!sender.CheckPermission(PlayerPermissions.BanningUpToDay | PlayerPermissions.LongTermBanning 
+                                                                         | PlayerPermissions.SetGroup | PlayerPermissions.PlayersManagement 
+                                                                         | PlayerPermissions.PermissionsManagement | PlayerPermissions.ViewHiddenBadges 
+                                                                         | PlayerPermissions.PlayerSensitiveDataAccess 
+                                                                         | PlayerPermissions.ViewHiddenGlobalBadges, out response))
                 return __result = false;
 
             var playerCommandSender = sender as PlayerCommandSender;

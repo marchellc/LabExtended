@@ -24,7 +24,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 if (!ExPlayer.TryGet(sender, out var player))
                     return true;
 
-                if (!RemoteAdminButtons.TryGetButton(RemoteAdminButtonType.RequestAuth, out var dataButton))
+                if (!RemoteAdminController.Buttons.TryGetValue(RemoteAdminButtonType.RequestAuth, out var dataButton))
                     return true;
 
                 if (!player.IsNorthwoodStaff 

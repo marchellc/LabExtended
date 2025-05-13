@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (array.Length != 2 || !int.TryParse(array[0], out var result))
                 {
-                    player.RemoteAdmin.SendObjectHelp();
+                    player.RemoteAdmin.ViewObjectHelp();
                     return false;
                 }
 
@@ -39,11 +39,13 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (!array[1].TrySplit('.', true, null, out var args))
                 {
-                    player.RemoteAdmin.SendObjectHelp();
+                    player.RemoteAdmin.ViewObjectHelp();
                     return false;
                 }
 
-                if (!RemoteAdminButtons.TryGetButton(result is 1 ? RemoteAdminButtonType.RequestIp : RemoteAdminButtonType.Request, out var dataButton))
+                if (!RemoteAdminController.Buttons.TryGetValue(result is 1 
+                        ? RemoteAdminButtonType.RequestIp 
+                        : RemoteAdminButtonType.Request, out var dataButton))
                     return true;
 
                 var list = ListPool<int>.Shared.Rent();
