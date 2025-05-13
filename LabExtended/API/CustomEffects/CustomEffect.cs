@@ -139,7 +139,5 @@ public class CustomEffect
 
             Effects.Add(type);
         });
-        
-        ApiLog.Debug("Custom Effects", $"Found &1{Effects.Count}&r custom effect(s).");
     }
 }
