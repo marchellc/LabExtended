@@ -4,7 +4,7 @@ using Footprinting;
 
 using LabExtended.API.Wrappers;
 using LabExtended.Attributes;
-
+using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
 
@@ -383,19 +383,49 @@ namespace LabExtended.API.Toys
             if (Lookup.ContainsKey(toy))
                 return;
 
-            _ = toy switch
+            if (toy is Scp079CameraToy scp079CameraToy)
             {
-                Scp079CameraToy cameraToy => new CameraToy(cameraToy),
-                LightSourceToy lightSource => new LightToy(lightSource),
-                ShootingTarget shootingTarget => new TargetToy(shootingTarget),
-                PrimitiveObjectToy primitiveObject => new PrimitiveToy(primitiveObject),
-                InvisibleInteractableToy interactableToy => new InteractableToy(interactableToy),
-                
-                AdminToys.CapybaraToy capybaraToy => new CapybaraToy(capybaraToy),
-                AdminToys.SpeakerToy speakerToy => new SpeakerToy(speakerToy),
+                _ = new CameraToy(scp079CameraToy);
+                return;
+            }
 
-                _ => new AdminToy(toy)
-            };
+            if (toy is LightSourceToy lightSourceToy)
+            {
+                _ = new LightToy(lightSourceToy);
+                return;
+            }
+
+            if (toy is ShootingTarget shootingTarget)
+            {
+                _ = new TargetToy(shootingTarget);
+                return;
+            }
+
+            if (toy is PrimitiveObjectToy primitiveObjectToy)
+            {
+                _ = new PrimitiveToy(primitiveObjectToy);
+                return;
+            }
+
+            if (toy is InvisibleInteractableToy invisibleInteractableToy)
+            {
+                _ = new InteractableToy(invisibleInteractableToy);
+                return;
+            }
+
+            if (toy is AdminToys.CapybaraToy capybaraToy)
+            {
+                _ = new CapybaraToy(capybaraToy);
+                return;
+            }
+
+            if (toy is AdminToys.SpeakerToy speakerToy)
+            {
+                _ = new SpeakerToy(speakerToy);
+                return;
+            }
+            
+            ApiLog.Error("LabExtended API", $"Spawned an unknown admin toy: &1{toy.GetType().FullName}&r");
         }
 
         private static void OnDestroyed(AdminToyBase toy)
