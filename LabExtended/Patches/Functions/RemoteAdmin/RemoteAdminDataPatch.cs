@@ -29,32 +29,22 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 if (array.Length != 2 || !int.TryParse(array[0], out var result))
                 {
                     player.RemoteAdmin.SendObjectHelp();
-
-                    ApiLog.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
                     return false;
                 }
 
                 if (result == 1 && !player.IsNorthwoodStaff 
                                 && !player.ReferenceHub.authManager.BypassBansFlagSet 
                                 && !CommandProcessor.CheckPermissions(sender, PlayerPermissions.PlayerSensitiveDataAccess))
-                {
-                    ApiLog.Debug("Remote Admin API", $"Missing permissions");
                     return false;
-                }
 
                 if (!array[1].TrySplit('.', true, null, out var args))
                 {
                     player.RemoteAdmin.SendObjectHelp();
-
-                    ApiLog.Debug("Remote Admin API", $"Failed to split {array[1]}");
                     return false;
                 }
 
                 if (!RemoteAdminButtons.TryGetButton(result is 1 ? RemoteAdminButtonType.RequestIp : RemoteAdminButtonType.Request, out var dataButton))
-                {
-                    ApiLog.Debug("Remote Admin API", $"Unknown button");
                     return true;
-                }
 
                 var list = ListPool<int>.Shared.Rent();
 
