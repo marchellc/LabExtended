@@ -5,7 +5,12 @@ using LabExtended.API.Prefabs;
 
 using Mirror;
 
+using UnityEngine;
+
 using VoiceChat.Playbacks;
+
+#pragma warning disable CS8601 // Possible null reference assignment.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace LabExtended.API.Toys
 {
@@ -17,19 +22,23 @@ namespace LabExtended.API.Toys
         /// <summary>
         /// Spawns a new speaker toy.
         /// </summary>
+        /// <param name="position">The toy spawn position.</param>
+        /// <param name="rotation">The toy spawn rotation.</param>
         /// <exception cref="Exception"></exception>
-        public SpeakerToy() : base(PrefabList.Speaker.CreateInstance().GetComponent<AdminToyBase>())
+        public SpeakerToy(Vector3? position = null, Quaternion? rotation = null) 
+            : base(PrefabList.Speaker.CreateInstance().GetComponent<AdminToyBase>())
         {
-#pragma warning disable CS8601 // Possible null reference assignment.
             Base = base.Base as AdminToys.SpeakerToy;
-#pragma warning restore CS8601 // Possible null reference assignment.
 
             if (Base is null)
                 throw new Exception($"Failed to spawn SpeakerToy.");
             
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
             Base.SpawnerFootprint = ExPlayer.Host.Footprint;
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            
+            Base.NetworkPosition = position ?? Vector3.zero;
+            Base.NetworkRotation = rotation ?? Quaternion.identity;
+            
+            Base.transform.SetPositionAndRotation(Base.NetworkPosition, Base.NetworkRotation);
             
             NetworkServer.Spawn(Base.gameObject);
         }

@@ -234,7 +234,7 @@ public class PrimitiveImageToy : IDisposable
             
             for (int y = width; y > 0; y--)
             {
-                var primitive = new PrimitiveToy(PrimitiveType.Cube)
+                var primitive = new PrimitiveToy(null, null, PrimitiveType.Cube)
                 {
                     MovementSmoothing = 0,
                     IsStatic = true

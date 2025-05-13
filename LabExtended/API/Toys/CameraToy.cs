@@ -9,6 +9,7 @@ using Mirror;
 
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8601 // Possible null reference assignment.
 
 namespace LabExtended.API.Toys;
@@ -21,15 +22,19 @@ public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
     /// <summary>
     /// Spawns a new SCP-079 camera toy (Heavy Containment Zone version).
     /// </summary>
+    /// <param name="position">The camera spawn position.</param>
+    /// <param name="rotation">The camera spawn rotation.</param>
     /// <exception cref="Exception"></exception>
-    public CameraToy() : this(PrefabList.HczCamera) { }
+    public CameraToy(Vector3? position = null, Quaternion? rotation = null) : this(PrefabList.HczCamera, position, rotation) { }
     
     /// <summary>
     /// Spawns a new SCP-079 camera toy with a selectable prefab type.
     /// </summary>
     /// <param name="cameraPrefab">The camera prefab to use.</param>
+    /// <param name="position">The camera spawn position.</param>
+    /// <param name="rotation">The camera spawn rotation.</param>
     /// <exception cref="Exception"></exception>
-    public CameraToy(PrefabDefinition cameraPrefab) 
+    public CameraToy(PrefabDefinition cameraPrefab, Vector3? position = null, Quaternion? rotation = null) 
         : base(cameraPrefab.CreateInstance().GetComponent<AdminToyBase>())
     {
         Base = base.Base as Scp079CameraToy;
@@ -38,6 +43,16 @@ public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
             throw new Exception("Could not spawn Scp079CameraToy");
         
         Camera = Camera.Get(Base._camera);
+
+        Base.NetworkPosition = position ?? Vector3.zero;
+        Base.NetworkRotation = rotation ?? Quaternion.identity;
+        
+        Base.SpawnerFootprint = ExPlayer.Host.Footprint;
+
+        if (Base.Position.TryGetRoom(out var room))
+            Base.NetworkRoom = room;
+        
+        Base.transform.SetPositionAndRotation(Base.NetworkPosition, Base.NetworkRotation);
         
         NetworkServer.Spawn(Base.gameObject);
     }

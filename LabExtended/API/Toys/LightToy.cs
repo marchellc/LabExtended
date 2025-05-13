@@ -17,7 +17,8 @@ namespace LabExtended.API.Toys
         /// <summary>
         /// Spawns a new light source toy.
         /// </summary>
-        public LightToy() : base(PrefabList.LightSource.CreateInstance().GetComponent<AdminToyBase>())
+        public LightToy(Vector3? position = null, Quaternion? rotation = null) 
+            : base(PrefabList.LightSource.CreateInstance().GetComponent<AdminToyBase>())
         {
 #pragma warning disable CS8601 // Possible null reference assignment.
             Base = base.Base as LightSourceToy;
@@ -27,6 +28,11 @@ namespace LabExtended.API.Toys
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
             Base.SpawnerFootprint = ExPlayer.Host.Footprint;
+
+            Base.NetworkPosition = position ?? Vector3.zero;
+            Base.NetworkRotation = rotation ?? Quaternion.identity;
+            
+            Base.transform.SetPositionAndRotation(Base.NetworkPosition, Base.NetworkRotation);
 
             NetworkServer.Spawn(Base.gameObject);
         }

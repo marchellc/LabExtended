@@ -7,6 +7,9 @@ using Mirror;
 
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8601 // Possible null reference assignment.
+
 namespace LabExtended.API.Toys
 {
     /// <summary>
@@ -17,27 +20,30 @@ namespace LabExtended.API.Toys
         /// <summary>
         /// Spawns a new PrimitiveToy.
         /// </summary>
+        /// <param name="position">Primitive spawn position.</param>
+        /// <param name="rotation">Primitive spawn rotation.</param>
         /// <param name="type">Type of the primitive object.</param>
         /// <param name="flags">Primitive flags.</param>
         /// <exception cref="Exception"></exception>
-        public PrimitiveToy(
+        public PrimitiveToy(Vector3? position = null, Quaternion? rotation = null,
             PrimitiveType type = PrimitiveType.Capsule, 
             PrimitiveFlags flags = PrimitiveFlags.Visible | PrimitiveFlags.Collidable) 
             : base(PrefabList.Primitive.CreateInstance().GetComponent<AdminToyBase>())
         {
-#pragma warning disable CS8601 // Possible null reference assignment.
             Base = base.Base as PrimitiveObjectToy;
-#pragma warning restore CS8601 // Possible null reference assignment.
             
             if (Base is null)
                 throw new Exception($"Failed to spawn PrimitiveObjectToy");
-
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
+            
             Base.SpawnerFootprint = ExPlayer.Host.Footprint;
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
 
+            Base.NetworkPosition = position ?? Vector3.zero;
+            Base.NetworkRotation = rotation ?? Quaternion.identity;
+            
             Base.PrimitiveType = type;
             Base.PrimitiveFlags = flags;
+            
+            Base.transform.SetPositionAndRotation(Base.NetworkPosition, Base.NetworkRotation);
 
             NetworkServer.Spawn(Base.gameObject);
         }

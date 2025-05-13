@@ -6,6 +6,7 @@ using LabExtended.API.Prefabs;
 using Mirror;
 using UnityEngine;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8601 // Possible null reference assignment.
 
 namespace LabExtended.API.Toys;
@@ -17,9 +18,12 @@ public class InteractableToy : AdminToy, IWrapper<InvisibleInteractableToy>, IDi
 {
     /// <summary>
     /// Spawns a new interactable toy.
+    /// <param name="position">The toy's spawn position.</param>
+    /// <param name="rotation">The toy's spawn rotation.</param>
     /// </summary>
     /// <exception cref="Exception"></exception>
-    public InteractableToy() : base(PrefabList.Interactable.CreateInstance().GetComponent<AdminToyBase>())
+    public InteractableToy(Vector3? position = null, Quaternion? rotation = null) 
+        : base(PrefabList.Interactable.CreateInstance().GetComponent<AdminToyBase>())
     {
         Base = base.Base as InvisibleInteractableToy;
         
@@ -28,6 +32,13 @@ public class InteractableToy : AdminToy, IWrapper<InvisibleInteractableToy>, IDi
 
         Shape = InvisibleInteractableToy.ColliderShape.Box;
         InteractionDuration = 0f;
+        
+        Base.SpawnerFootprint = ExPlayer.Host.Footprint;
+        
+        Base.NetworkPosition = position ?? Vector3.zero;
+        Base.NetworkRotation = rotation ?? Quaternion.identity;
+        
+        Base.transform.SetPositionAndRotation(Base.NetworkPosition, Base.NetworkRotation);
         
         NetworkServer.Spawn(Base.gameObject);
     }
