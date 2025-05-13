@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 
-namespace LabExtended.API.CustomEffects.SubEffects;
+namespace LabExtended.API.CustomEffects;
 
 /// <summary>
 /// A subtype of UpdatingCustomEffect which adds a duration property.
 /// </summary>
-public abstract class DurationCustomEffect : UpdatingCustomEffect
+public abstract class CustomDurationEffect : CustomTickingEffect
 {
     /// <summary>
     /// Gets or sets the remaining duration (in seconds).
     /// </summary>
-    public float Remaining { get; set; } = 0f;
+    public float RemainingDuration { get; set; } = 0f;
 
     /// <summary>
     /// Gets the effect's default duration.
@@ -24,27 +24,27 @@ public abstract class DurationCustomEffect : UpdatingCustomEffect
     /// <returns>Seconds to add to remaining duration.</returns>
     public virtual float CheckDuration() => 0f;
 
-    /// <inheritdoc cref="UpdatingCustomEffect.Update"/>
-    public override void Update()
+    /// <inheritdoc cref="CustomTickingEffect.Tick"/>
+    public override void Tick()
     {
-        base.Update();
+        base.Tick();
 
         if (!IsActive)
             return;
 
-        Remaining -= Time.deltaTime;
+        RemainingDuration -= Time.deltaTime;
 
-        if (Remaining <= 0f)
+        if (RemainingDuration <= 0f)
         {
             var addDuration = CheckDuration();
 
             if (addDuration > 0f)
             {
-                Remaining += addDuration;
+                RemainingDuration += addDuration;
                 return;
             }
             
-            Remaining = 0f;
+            RemainingDuration = 0f;
             
             IsActive = false;
             
@@ -54,8 +54,8 @@ public abstract class DurationCustomEffect : UpdatingCustomEffect
     
     internal override void OnApplyEffects()
     {
-        Remaining = GetDuration();
-        IsActive = Remaining > 0f;
+        RemainingDuration = GetDuration();
+        IsActive = RemainingDuration > 0f;
         
         if (IsActive)
             base.OnApplyEffects();
@@ -63,7 +63,7 @@ public abstract class DurationCustomEffect : UpdatingCustomEffect
 
     internal override void OnRemoveEffects()
     {
-        Remaining = 0f;
+        RemainingDuration = 0f;
         base.OnRemoveEffects();
     }
 }

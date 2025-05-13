@@ -1,7 +1,4 @@
-﻿using LabExtended.API.CustomEffects.SubEffects;
-
-using LabExtended.Core;
-using LabExtended.Attributes;
+﻿using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using PlayerRoles;
@@ -11,7 +8,7 @@ namespace LabExtended.API.CustomEffects;
 /// <summary>
 /// Represents a custom player effect.
 /// </summary>
-public class CustomEffect
+public class CustomPlayerEffect
 {
     /// <summary>
     /// A list of known custom effects by type.
@@ -132,9 +129,9 @@ public class CustomEffect
     {
         TypeExtensions.ForEachLoadedType(type =>
         {
-            if (!type.InheritsType<CustomEffect>()
-                || type == typeof(UpdatingCustomEffect)
-                || type == typeof(DurationCustomEffect))
+            if (!type.InheritsType<CustomPlayerEffect>()
+                || type == typeof(CustomTickingEffect)
+                || type == typeof(CustomDurationEffect))
                 return;
 
             Effects.Add(type);

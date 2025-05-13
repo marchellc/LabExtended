@@ -2,33 +2,33 @@
 
 using UnityEngine;
 
-namespace LabExtended.API.CustomEffects.SubEffects;
+namespace LabExtended.API.CustomEffects;
 
 /// <summary>
 /// A subtype of CustomEffect which adds ticking abilities.
 /// </summary>
-public class UpdatingCustomEffect : CustomEffect
+public class CustomTickingEffect : CustomPlayerEffect
 {
-    private float _remainingTime = 0f;
+    private float delayTime = 0f;
     
     /// <summary>
-    /// The custom delay between each tick.
+    /// Custom delay between each tick.
     /// </summary>
     public virtual float Delay { get; } = 0f;
     
     /// <summary>
     /// Called once a frame.
     /// </summary>
-    public virtual void Update() { }
+    public virtual void Tick() { }
 
-    /// <inheritdoc cref="CustomEffect.Start"/>
+    /// <inheritdoc cref="CustomPlayerEffect.Start"/>
     public override void Start()
     {
         base.Start();
         PlayerUpdateHelper.OnUpdate += OnUpdate;
     }
 
-    /// <inheritdoc cref="CustomEffect.Stop"/>
+    /// <inheritdoc cref="CustomPlayerEffect.Stop"/>
     public override void Stop()
     {
         base.Stop();
@@ -42,14 +42,14 @@ public class UpdatingCustomEffect : CustomEffect
 
         if (Delay > 0f)
         {
-            _remainingTime -= Time.deltaTime;
+            delayTime -= Time.deltaTime;
 
-            if (_remainingTime > 0f)
+            if (delayTime > 0f)
                 return;
             
-            _remainingTime = Delay;
+            delayTime = Delay;
         }
 
-        Update();
+        Tick();
     }
 }

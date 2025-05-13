@@ -42,7 +42,7 @@ public class EffectContainer : IDisposable
     /// <summary>
     /// Gets the dictionary that contains all custom effects.
     /// </summary>
-    public Dictionary<Type, CustomEffect> CustomEffects { get; internal set; }
+    public Dictionary<Type, CustomPlayerEffect> CustomEffects { get; internal set; }
 
     /// <summary>
     /// Gets the target player's effects controller.
@@ -376,7 +376,7 @@ public class EffectContainer : IDisposable
             Player = player;
             Controller = controller;
 
-            CustomEffects = DictionaryPool<Type, CustomEffect>.Shared.Rent();
+            CustomEffects = DictionaryPool<Type, CustomPlayerEffect>.Shared.Rent();
 
             InternalEvents.OnRoleChanged += OnRoleChanged;
 
@@ -735,13 +735,13 @@ public class EffectContainer : IDisposable
         return (T)effect;
     }
 
-    public bool HasCustomEffect<T>() where T : CustomEffect
+    public bool HasCustomEffect<T>() where T : CustomPlayerEffect
         => CustomEffects.ContainsKey(typeof(T));
 
-    public bool HasCustomEffectActive<T>() where T : CustomEffect
+    public bool HasCustomEffectActive<T>() where T : CustomPlayerEffect
         => CustomEffects.TryGetValue(typeof(T), out var effect) && effect.IsActive;
 
-    public bool TryGetCustomEffect<T>(out T effect) where T : CustomEffect
+    public bool TryGetCustomEffect<T>(out T effect) where T : CustomPlayerEffect
     {
         effect = null;
 
@@ -752,7 +752,7 @@ public class EffectContainer : IDisposable
         return true;
     }
 
-    public T GetCustomEffect<T>() where T : CustomEffect
+    public T GetCustomEffect<T>() where T : CustomPlayerEffect
     {
         if (!CustomEffects.TryGetValue(typeof(T), out var effect))
             throw new KeyNotFoundException($"No effect found for type {typeof(T).Name}");
@@ -760,7 +760,7 @@ public class EffectContainer : IDisposable
         return (T)effect;
     }
 
-    public T GetOrAddCustomEffect<T>(bool enableEffect = false) where T : CustomEffect
+    public T GetOrAddCustomEffect<T>(bool enableEffect = false) where T : CustomPlayerEffect
     {
         if (!TryGetCustomEffect<T>(out var effect))
             return AddCustomEffect<T>(enableEffect);
@@ -768,7 +768,7 @@ public class EffectContainer : IDisposable
         return effect;
     }
 
-    public T AddCustomEffect<T>(bool enableEffect = false) where T : CustomEffect
+    public T AddCustomEffect<T>(bool enableEffect = false) where T : CustomPlayerEffect
     {
         if (CustomEffects.TryGetValue(typeof(T), out var activeEffect))
             return (T)activeEffect;
@@ -786,7 +786,7 @@ public class EffectContainer : IDisposable
         return effect;
     }
 
-    public bool RemoveCustomEffect<T>() where T : CustomEffect
+    public bool RemoveCustomEffect<T>() where T : CustomPlayerEffect
     {
         if (!CustomEffects.TryGetValue(typeof(T), out var effect))
             return false;
@@ -831,7 +831,7 @@ public class EffectContainer : IDisposable
                 customEffect.Value.Stop();
             }
 
-            DictionaryPool<Type, CustomEffect>.Shared.Return(CustomEffects);
+            DictionaryPool<Type, CustomPlayerEffect>.Shared.Return(CustomEffects);
             CustomEffects = null;
         }
 
