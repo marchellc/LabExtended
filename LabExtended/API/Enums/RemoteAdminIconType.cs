@@ -19,6 +19,11 @@
         /// <summary>
         /// The Overwatch icon.
         /// </summary>
-        OverwatchIcon = 4
+        OverwatchIcon = 4,
+        
+        /// <summary>
+        /// The Dummy player icon.
+        /// </summary>
+        DummyIcon = 8,
     }
 }

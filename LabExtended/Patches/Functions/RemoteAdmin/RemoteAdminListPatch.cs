@@ -14,6 +14,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 {
     public static class RemoteAdminListPatch
     {
+        public const string DummyIconPrefix = "[<color=#fcba03>\ud83d\udcbb</color>] ";
         public const string MutedIconPrefix = "<link=RA_Muted><color=white>[</color>\ud83d\udd07<color=white>]</color></link> ";
         public const string OverwatchIconPrefix = "<link=RA_OverwatchEnabled><color=white>[</color><color=#03f8fc>\uf06e</color><color=white>]</color></link> ";
 
@@ -65,6 +66,9 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
 
                 if (icons != RemoteAdminIconType.None)
                 {
+                    if (!otherHub.IsDummy && (icons & RemoteAdminIconType.DummyIcon) != 0)
+                        builder.Append(DummyIconPrefix);
+                    
                     if ((icons & RemoteAdminIconType.MutedIcon) != 0)
                         builder.Append(MutedIconPrefix);
 
