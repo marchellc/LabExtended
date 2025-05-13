@@ -46,11 +46,11 @@ public static class ImageUtils
         if (image is null)
             throw new ArgumentNullException(nameof(image));
 
-        var height = verticalResolution.HasValue ? verticalResolution.Value : image.Height;
-        var width = horizontalResolution.HasValue ? horizontalResolution.Value : image.Width;
+        var height = verticalResolution ?? image.Height;
+        var width = horizontalResolution ?? image.Width;
         
         if (!image.FrameDimensionsList.Contains(FrameDimension.Time.Guid))
-            return new Bitmap[] { new Bitmap(image, new Size(width, height)) };
+            return [new Bitmap(image, new Size(width, height))];
 
         var count = image.GetFrameCount(FrameDimension.Time);
         
@@ -62,7 +62,7 @@ public static class ImageUtils
         for (int i = 0; i < count; i++)
         {
             image.SelectActiveFrame(FrameDimension.Time, i);
-            frames.Add(new Bitmap(image, new Size(width, height)));
+            frames.Add(new(image, new Size(width, height)));
         }
 
         return ListPool<Bitmap>.Shared.ToArrayReturn(frames);

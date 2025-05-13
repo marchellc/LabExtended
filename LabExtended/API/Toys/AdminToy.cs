@@ -3,10 +3,11 @@
 using Footprinting;
 
 using LabExtended.API.Wrappers;
-using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Attributes;
 
 using Mirror;
 

@@ -1,4 +1,5 @@
-﻿using Hazards;
+﻿using DrawableLine;
+using Hazards;
 
 using Interactables;
 
@@ -36,6 +37,7 @@ using UnityEngine;
 
 using Utils;
 using Utils.Networking;
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace LabExtended.API
 {

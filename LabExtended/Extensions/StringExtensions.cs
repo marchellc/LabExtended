@@ -2,6 +2,7 @@
 using NorthwoodLib.Pools;
 
 using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace LabExtended.Extensions
 {
@@ -85,6 +86,35 @@ namespace LabExtended.Extensions
 
             value = str[index];
             return true;
+        }
+
+        public static List<string> SplitByLength(this string str, int maxLength)
+        {
+            var list = new List<string>(Mathf.CeilToInt(str.Length / maxLength));
+            
+            SplitByLengthNonAlloc(str, maxLength, list);
+            return list;
+        }
+
+        public static void SplitByLengthNonAlloc(this string str, int maxLength, ICollection<string> target)
+        {
+            if (maxLength <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxLength));
+            
+            var builder = StringBuilderPool.Shared.Rent();
+
+            for (var i = 0; i < str.Length; i++)
+            {
+                var c = str[i];
+                
+                builder.Append(c);
+
+                if (builder.Length >= maxLength)
+                {
+                    target.Add(builder.ToString());
+                    builder.Clear();
+                }
+            }
         }
 
         public static string[] SplitLines(this string line)
