@@ -3,10 +3,11 @@
 /// <summary>
 /// Gets the properties of a custom item while in inventory.
 /// </summary>
-public class CustomItemInventoryProperties
+public class CustomItemInventoryProperties : CustomItemCommonProperties
 {
     /// <summary>
-    /// Gets or sets the type of the inventory item.
+    /// Whether or not the item should be dropped when it's owner leaves.
+    /// <remarks>Item will be destroyed if the owner leaves and this is set to false.</remarks>
     /// </summary>
-    public ItemType Type { get; set; }   
+    public bool DropOnOwnerLeave { get; set; }
 }

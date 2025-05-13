@@ -36,6 +36,7 @@ public static class AmmoRemovePatches
         }
         
         __instance._serverQueuedRequests.Trigger(__instance.TimeBetweenShots);
+        
         __instance.SendRpc(x => x != __instance.Firearm.Owner, writer =>
         {
             writer.WriteSubheader(AutomaticActionModule.MessageHeader.RpcFire);
@@ -43,9 +44,7 @@ public static class AmmoRemovePatches
         });
         
         __instance.PlayFire(ammoToFire);
-        
-        if (!player.Toggles.HasUnlimitedAmmo)
-            __instance.ServerCycleAction();
+        __instance.ServerCycleAction();
 
         if (!__instance.Firearm.TryGetModule<IHitregModule>(out var hitregModule))
             return false;

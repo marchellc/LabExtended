@@ -1,0 +1,47 @@
+﻿using LabExtended.API.CustomFirearms.Behaviours;
+using LabExtended.API.CustomFirearms.Properties;
+
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomItems.Behaviours;
+
+using LabExtended.Utilities.Firearms;
+
+#pragma warning disable CS8603 // Possible null reference return.
+
+namespace LabExtended.API.CustomFirearms;
+
+/// <summary>
+/// Manages a Custom Firearm item.
+/// </summary>
+public abstract class CustomFirearmHandler : CustomItemHandler
+{
+    /// <summary>
+    /// Gets the firearm's inventory properties.
+    /// </summary>
+    public CustomFirearmInventoryProperties FirearmInventoryProperties => InventoryProperties as CustomFirearmInventoryProperties;
+    
+    /// <summary>
+    /// Gets the firearm's pickup properties.
+    /// </summary>
+    public CustomFirearmPickupProperties FirearmPickupProperties => PickupProperties as CustomFirearmPickupProperties;
+
+    /// <summary>
+    /// Whether or not this firearm uses custom ammo.
+    /// </summary>
+    public bool UsesCustomAmmo =>
+        FirearmInventoryProperties.AmmoType is ItemType.None && FirearmInventoryProperties.AmmoId != 0;
+
+    internal override void InternalInitializeItem(CustomItemInventoryBehaviour item, CustomItemPickupBehaviour? pickup)
+    {
+        base.InternalInitializeItem(item, pickup);
+
+        if (item is not CustomFirearmInventoryBehaviour firearmBehaviour)
+            return;
+        
+        if (FirearmInventoryProperties.Attachments != null)
+        {
+            firearmBehaviour.Item.DisableAttachments(firearmBehaviour.Item.GetEnabledAttachments());
+            firearmBehaviour.Item.EnableAttachments(FirearmInventoryProperties.Attachments.DefaultAttachments);
+        }
+    }
+}

@@ -2,7 +2,7 @@
 
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Modules;
-
+using InventorySystem.Items.Firearms.Modules.Scp127;
 using MEC;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.

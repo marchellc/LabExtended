@@ -16,6 +16,7 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
+using LabExtended.API.CustomAmmo;
 
 #pragma warning disable CS8603 // Possible null reference return.
 
@@ -44,6 +45,8 @@ public class InventoryContainer : IDisposable
 
         if (CurrentItem is ChaosKeycardItem chaosKeycard)
             Snake.Keycard = chaosKeycard;
+
+        CustomAmmo = new();
 
         UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
 
@@ -110,6 +113,11 @@ public class InventoryContainer : IDisposable
     /// Gets the Snake minigame wrapper.
     /// </summary>
     public SnakeInfo Snake { get; private set; }
+    
+    /// <summary>
+    /// Gets the player's custom ammo storage.
+    /// </summary>
+    public CustomAmmoStorage CustomAmmo { get; private set; }
 
     /// <summary>
     /// Gets the amount of items in this player's inventory.
@@ -774,14 +782,15 @@ public class InventoryContainer : IDisposable
     public void Dispose()
     {
         if (droppedItems != null)
-        {
             HashSetPool<ItemPickupBase>.Shared.Return(droppedItems);
-
-            droppedItems = null;
-        }
         
         Snake?.Reset(false, true);
         Snake = null;
+        
+        CustomAmmo?.Dispose();
+        CustomAmmo = null;
+        
+        droppedItems = null;
     }
 
     /// <inheritdoc cref="object.ToString"/>

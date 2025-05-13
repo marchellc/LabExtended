@@ -1,10 +1,17 @@
-﻿using LabExtended.API.CustomItems.Behaviours;
-using LabExtended.Attributes;
-using LabExtended.Extensions;
+﻿using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
+using LabExtended.API.CustomItems.Behaviours;
+
 using LabExtended.Core;
 using LabExtended.Events;
+using LabExtended.Attributes;
+using LabExtended.Events.Map;
+using LabExtended.Extensions;
+
 using LabExtended.Utilities.Testing.CustomItems;
 using LabExtended.Utilities.Update;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.API.CustomItems;
@@ -121,6 +128,26 @@ public static class CustomItemRegistry
         => Unregister(typeof(THandler));
     
     /// <summary>
+    /// Unregisters a Custom Item handler.
+    /// </summary>
+    /// <param name="type">The type to unregister.</param>
+    /// <returns>true if the handler was unregistered</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static bool Unregister(Type type)
+    {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
+        if (!Handlers.TryGetValue(type, out var existingHandler))
+            return false;
+        
+        Handlers.Remove(type);
+        
+        existingHandler.OnUnregistered();
+        return true;
+    }
+    
+    /// <summary>
     /// Registers a new Custom Item.
     /// </summary>
     /// <typeparam name="THandler">The handler's type.</typeparam>
@@ -159,26 +186,6 @@ public static class CustomItemRegistry
         
         handler.OnRegistered();
         return handler;
-    }
-
-    /// <summary>
-    /// Unregisters a Custom Item handler.
-    /// </summary>
-    /// <param name="type">The type to unregister.</param>
-    /// <returns>true if the handler was unregistered</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static bool Unregister(Type type)
-    {
-        if (type is null)
-            throw new ArgumentNullException(nameof(type));
-
-        if (!Handlers.TryGetValue(type, out var existingHandler))
-            return false;
-        
-        Handlers.Remove(type);
-        
-        existingHandler.OnUnregistered();
-        return true;
     }
     
     private static void OnUpdate()
@@ -255,15 +262,40 @@ public static class CustomItemRegistry
         {
             if (x is CustomItemInventoryBehaviour inventoryBehaviour)
             {
-                x.Handler.DestroyItem(inventoryBehaviour);
-                return;
+                if (inventoryBehaviour.Handler.InventoryProperties.DropOnOwnerLeave)
+                {
+                    inventoryBehaviour.Drop();
+                    return;
+                }
+                
+                inventoryBehaviour.Destroy(true);
             }
-            
-            x.Handler.DestroyPickup((CustomItemPickupBehaviour)x);
+            else if (x is CustomItemPickupBehaviour pickupBehaviour)
+            {
+                if (pickupBehaviour.Handler.PickupProperties.DestroyOnOwnerLeave)
+                {
+                    pickupBehaviour.Destroy(true);
+                }
+            }
         });
         
         ListPool<CustomItemBehaviour>.Shared.Return(behaviours);
     }
+
+    private static void OnTogglingFlashlight(PlayerTogglingFlashlightEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour(args.LightItem.Serial, item => item.OnTogglingLight(args));
+
+    private static void OnToggledFlashlight(PlayerToggledFlashlightEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour(args.LightItem.Serial, item => item.OnToggledLight(args));
+
+    private static void OnFlippingCoin(PlayerFlippingCoinEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour(args.CoinItem.Serial, item => item.OnFlippingCoin(args));
+
+    private static void OnFlippedCoin(PlayerFlippedCoinEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour(args.CoinItem.Serial, item => item.OnFlippedCoin(args));
+
+    private static void OnCollided(PickupCollidedEventArgs args)
+        => CustomItemUtils.ForEachPickupBehaviour(args.Pickup.Info.Serial, pickup => pickup.OnCollided(args));
 
     [LoaderInitialize(1)]
     private static void OnInit()
@@ -272,6 +304,14 @@ public static class CustomItemRegistry
         
         InternalEvents.OnPlayerLeft += OnLeaving;
         InternalEvents.OnRoundRestart += OnRestart;
+        
+        PlayerEvents.TogglingFlashlight += OnTogglingFlashlight;
+        PlayerEvents.ToggledFlashlight += OnToggledFlashlight;
+        
+        PlayerEvents.FlippingCoin += OnFlippingCoin;
+        PlayerEvents.FlippedCoin += OnFlippedCoin;
+        
+        ExMapEvents.PickupCollided += OnCollided;
         
         TypeExtensions.ForEachLoadedType(type =>
         {

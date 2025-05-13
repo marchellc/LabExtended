@@ -12,6 +12,12 @@ public static class ExFirearmEvents
 {
     /// <inheritdoc cref="FirearmRayCastEventArgs"/>
     public static event Action<FirearmRayCastEventArgs>? RayCast;
+    
+    /// <inheritdoc cref="FirearmProcessingEventEventArgs"/>
+    public static event Action<FirearmProcessingEventEventArgs>? ProcessingEvent; 
+    
+    /// <inheritdoc cref="FirearmProcessedEventEventArgs"/>
+    public static event Action<FirearmProcessedEventEventArgs>? ProcessedEvent;
 
     /// <summary>
     /// Invokes the <see cref="RayCast"/> event.
@@ -20,4 +26,19 @@ public static class ExFirearmEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnRayCast(FirearmRayCastEventArgs args)
         => RayCast.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="ProcessingEvent"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnProcessingEvent(FirearmProcessingEventEventArgs args)
+        => ProcessingEvent.InvokeBooleanEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="ProcessedEvent"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnProcessedEvent(FirearmProcessedEventEventArgs args)
+        => ProcessedEvent.InvokeEvent(args);
 }

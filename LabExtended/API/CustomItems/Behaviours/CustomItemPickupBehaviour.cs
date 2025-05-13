@@ -1,7 +1,7 @@
 ﻿using InventorySystem.Items.Pickups;
 
 using LabApi.Events.Arguments.PlayerEvents;
-
+using LabExtended.Events.Map;
 using PlayerThrowingItemEventArgs = LabExtended.Events.Player.PlayerThrowingItemEventArgs;
 
 namespace LabExtended.API.CustomItems.Behaviours;
@@ -52,4 +52,11 @@ public class CustomItemPickupBehaviour : CustomItemBehaviour
     /// </summary>
     /// <param name="args">The event arguments.</param>
     public virtual void OnThrown(PlayerThrewItemEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called once a pickup collides.
+    /// <remarks>Only called for pickups that inherit from <see cref="CollisionDetectionPickup"/></remarks>
+    /// </summary>
+    /// <param name="args">The event arguments</param>
+    public virtual void OnCollided(PickupCollidedEventArgs args) { }
 }

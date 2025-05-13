@@ -5,6 +5,7 @@ using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.API.CustomItems.Properties;
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
+using LabExtended.Extensions;
 using UnityEngine;
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
@@ -117,6 +118,18 @@ public abstract class CustomItemHandler
     public virtual void OnUpdate() { }
     
     /// <summary>
+    /// Gets called once the behaviour of an item is destroyed.
+    /// </summary>
+    /// <param name="item">The behaviour that is being destroyed.</param>
+    public virtual void OnItemDestroyed(CustomItemInventoryBehaviour item) { }
+    
+    /// <summary>
+    /// Gets called once the behaviour of a pickup is destroyed.
+    /// </summary>
+    /// <param name="pickup">The behaviour that is being destroyed.</param>
+    public virtual void OnPickupDestroyed(CustomItemPickupBehaviour pickup) { }
+    
+    /// <summary>
     /// Gets called when a new pickup behaviour is created.
     /// </summary>
     /// <param name="item">The item that was dropped, can be null.</param>
@@ -177,12 +190,83 @@ public abstract class CustomItemHandler
         return ToPickup(owner, pickup, null);
     }
 
+    internal CustomItemPickupBehaviour ThrowItem(CustomItemInventoryBehaviour item, float force)
+    {
+        if (PickupProperties is null)
+            throw new Exception($"Custom Item {Id} ({Name}) does not have any pickup properties defined!");
+
+        if (PickupProperties.Type is ItemType.None)
+            throw new Exception($"Custom Item {Id} ({Name}) set it's pickup type to None!");
+
+        var pickup = item.Player.Inventory.ThrowItem<ItemPickupBase>(PickupProperties.Type, force,
+            PickupProperties.Scale, item.Item.ItemSerial);
+        var behaviour = ToPickup(item.Player, pickup, item);
+        
+        item.OnDropping(new(item.Player, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        
+        item.OnRemoved(behaviour);
+        
+        DestroyItem(item);
+        
+        item.Item?.DestroyItem();
+        return behaviour;
+    }
+
+    internal CustomItemPickupBehaviour DropItem(CustomItemInventoryBehaviour item)
+    {
+        if (PickupProperties is null)
+            throw new Exception($"Custom Item {Id} ({Name}) does not have any pickup properties defined!");
+
+        if (PickupProperties.Type is ItemType.None)
+            throw new Exception($"Custom Item {Id} ({Name}) set it's pickup type to None!");
+        
+        var pickup = ExMap.SpawnItem<ItemPickupBase>(PickupProperties.Type, item.Player.Position, PickupProperties.Scale, 
+            item.Player.Rotation, item.Item.ItemSerial);
+        var behaviour = ToPickup(item.Player, pickup, item);
+        
+        item.OnDropping(new(item.Player, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        
+        item.OnRemoved(behaviour);
+        
+        DestroyItem(item);
+        
+        item.Item?.DestroyItem();
+        return behaviour;
+    }
+    
+    internal CustomItemPickupBehaviour SpawnItem(CustomItemInventoryBehaviour item, Vector3 position, Quaternion? rotation = null)
+    {
+        if (PickupProperties is null)
+            throw new Exception($"Custom Item {Id} ({Name}) does not have any pickup properties defined!");
+
+        if (PickupProperties.Type is ItemType.None)
+            throw new Exception($"Custom Item {Id} ({Name}) set it's pickup type to None!");
+        
+        var pickup = ExMap.SpawnItem<ItemPickupBase>(PickupProperties.Type, position, PickupProperties.Scale, 
+            rotation ?? Quaternion.identity, item.Item.ItemSerial);
+        var behaviour = ToPickup(item.Player, pickup, item);
+        
+        item.OnDropping(new(item.Player, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        
+        item.OnRemoved(behaviour);
+        
+        DestroyItem(item);
+        
+        item.Item?.DestroyItem();
+        return behaviour;
+    }
+
     internal void DestroyItem(CustomItemInventoryBehaviour item)
     {
         inventoryItems.Remove(item.Item.ItemSerial);
 
         item.IsEnabled = false;
         item.OnDisabled();
+        
+        OnItemDestroyed(item);
         
         InventoryPool.Return(item);
     }
@@ -194,10 +278,12 @@ public abstract class CustomItemHandler
         pickup.IsEnabled = false;
         pickup.OnDisabled();
         
+        OnPickupDestroyed(pickup);
+        
         PickupPool.Return(pickup);
     }
 
-    internal CustomItemPickupBehaviour ToPickup(ExPlayer player, ItemPickupBase pickup, CustomItemInventoryBehaviour item)
+    internal virtual CustomItemPickupBehaviour ToPickup(ExPlayer player, ItemPickupBase pickup, CustomItemInventoryBehaviour item)
     {
         var pickupBehaviour = PickupPool.Rent(PickupFactory);
 
@@ -221,7 +307,7 @@ public abstract class CustomItemHandler
         return pickupBehaviour;
     }
 
-    internal CustomItemInventoryBehaviour ToItem(ExPlayer player, ItemBase item, CustomItemPickupBehaviour pickup)
+    internal virtual CustomItemInventoryBehaviour ToItem(ExPlayer player, ItemBase item, CustomItemPickupBehaviour pickup)
     {
         var inventoryBehaviour = InventoryPool.Rent(InventoryFactory);
         

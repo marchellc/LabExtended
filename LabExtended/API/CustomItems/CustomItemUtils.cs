@@ -1,8 +1,10 @@
-﻿using System.Runtime.Serialization.Formatters;
-using InventorySystem.Items;
+﻿using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabExtended.API.CustomItems.Behaviours;
+
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace LabExtended.API.CustomItems;
 
@@ -11,6 +13,11 @@ namespace LabExtended.API.CustomItems;
 /// </summary>
 public static class CustomItemUtils
 {
+    /// <summary>
+    /// Gets a dictionary of custom item weights per item type.
+    /// </summary>
+    public static Dictionary<ItemType, float> CustomWeight { get; } = new();
+    
     /// <summary>
     /// Gets all pickup behaviours that target a specific item serial.
     /// </summary>
@@ -658,6 +665,96 @@ public static class CustomItemUtils
         behaviour = null;
         return false;
     }
+    
+    /// <summary>
+    /// Gets the sum of custom item's weight.
+    /// </summary>
+    /// <param name="type">The item's type.</param>
+    /// <param name="itemSerial">The item's serial.</param>
+    /// <param name="defaultWeight">The item's default weight.</param>
+    /// <returns>The custom item weight if any, otherwise the default weight.</returns>
+    public static float GetInventoryCustomWeight(ItemType type, ushort itemSerial, float defaultWeight)
+    {
+        if (CustomWeight.TryGetValue(type, out var customWeight))
+            defaultWeight = customWeight;
+
+        var countWeight = 0f;
+        var anyCustom = false;
+        
+        foreach (var handler in CustomItemRegistry.Handlers)
+        {
+            if (handler.Value.InventoryProperties.Weight.HasValue
+                && handler.Value.inventoryItems.ContainsKey(itemSerial))
+            {
+                countWeight += handler.Value.InventoryProperties.Weight.Value;
+                anyCustom = true;
+            }
+        }
+        
+        return anyCustom ? countWeight : defaultWeight;
+    }
+    
+    /// <summary>
+    /// Gets the sum of custom item's weight.
+    /// </summary>
+    /// <param name="type">The item's type.</param>
+    /// <param name="itemSerial">The item's serial.</param>
+    /// <param name="defaultWeight">The item's default weight.</param>
+    /// <returns>The custom item weight if any, otherwise the default weight.</returns>
+    public static float GetPickupCustomWeight(ItemType type, ushort itemSerial, float defaultWeight)
+    {
+        if (CustomWeight.TryGetValue(type, out var customWeight))
+            defaultWeight = customWeight;
+        
+        var countWeight = 0f;
+        var anyCustom = false;
+        
+        foreach (var handler in CustomItemRegistry.Handlers)
+        {
+            if (handler.Value.PickupProperties.Weight.HasValue
+                && handler.Value.pickupItems.ContainsKey(itemSerial))
+            {
+                countWeight += handler.Value.PickupProperties.Weight.Value;
+                anyCustom = true;
+            }
+        }
+        
+        return anyCustom ? countWeight : defaultWeight;
+    }
+
+    /// <summary>
+    /// Whether or not a specific item serial is a custom item.
+    /// </summary>
+    /// <param name="itemSerial">The item's serial number.</param>
+    /// <returns>true if the given serial belongs to a custom item</returns>
+    public static bool IsCustomItem(ushort itemSerial)
+    {
+        foreach (var handler in CustomItemRegistry.Handlers)
+        {
+            if (handler.Value.inventoryItems.ContainsKey(itemSerial)
+                || handler.Value.pickupItems.ContainsKey(itemSerial))
+                return true;
+        }
+
+        return false;
+    }
+    
+    /// <summary>
+    /// Whether or not a specific item serial is a custom item.
+    /// </summary>
+    /// <param name="itemSerial">The item's serial number.</param>
+    /// <returns>true if the given serial belongs to a custom item</returns>
+    public static bool IsCustomItem<TBehaviour>(ushort itemSerial) where TBehaviour : CustomItemBehaviour
+    {
+        foreach (var handler in CustomItemRegistry.Handlers)
+        {
+            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour) && inventoryBehaviour is TBehaviour
+                || handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour) && pickupBehaviour is TBehaviour)
+                return true;
+        }
+
+        return false;
+    }
 
     internal static CustomItemInventoryBehaviour SelectItemBehaviour(List<CustomItemInventoryBehaviour> itemBehaviours)
         => itemBehaviours.FirstOrDefault(x =>
@@ -678,6 +775,8 @@ public static class CustomItemUtils
             var behaviourPickup = behaviour.Handler.ToPickup(player, pickup, behaviour);
 
             behaviour.OnDropped(args, behaviourPickup);
+            behaviour.OnRemoved(behaviourPickup);
+            
             behaviour.Handler.DestroyItem(behaviour);
             
             newPickups?.Add(behaviourPickup);
