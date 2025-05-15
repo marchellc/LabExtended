@@ -96,8 +96,4 @@
       <Compile Remove="Patches\Events\PlayerSpawningPatch.cs" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Commands\Custom\List\" />
-    </ItemGroup>
-
 </Project>

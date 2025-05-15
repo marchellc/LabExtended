@@ -32,7 +32,7 @@ public static class TextImageToyUtils
             builder.Append("{");
             builder.Append(i);
             builder.Append("}");
-            builder.AppendLine();
+            builder.Append("\n");
         }
 
         return StringBuilderPool.Shared.ToStringReturn(builder);

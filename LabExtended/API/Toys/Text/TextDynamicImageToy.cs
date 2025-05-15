@@ -103,7 +103,7 @@ public class TextDynamicImageToy : IDisposable
     public event Action? Finished;
     
     /// <summary>
-    /// Creates a new <see cref="TextImageToy"/> wrapper instance.
+    /// Creates a new <see cref="TextDynamicImageToy"/> wrapper instance.
     /// </summary>
     /// <param name="baseToy"></param>
     /// <exception cref="ArgumentNullException"></exception>
@@ -115,7 +115,6 @@ public class TextDynamicImageToy : IDisposable
         imageList = ListPool<List<string>>.Shared.Rent();
         
         Toy = baseToy;
-        Toy.Clear(true);
 
         Watch = new();
 
@@ -137,6 +136,8 @@ public class TextDynamicImageToy : IDisposable
         if (frames.Count == 0)
             throw new ArgumentException("Frames cannot be empty", nameof(frames));
         
+        Watch.Stop();
+        
         Clear();
         
         FramesPerSecond = frameRate is > 0 ? frameRate.Value : 24;
@@ -144,8 +145,7 @@ public class TextDynamicImageToy : IDisposable
         imageList.Clear();
         imageList.AddRange(frames);
         
-        Watch.Reset();
-        Watch.Start();
+        Watch.Restart();
     }
 
     /// <summary>

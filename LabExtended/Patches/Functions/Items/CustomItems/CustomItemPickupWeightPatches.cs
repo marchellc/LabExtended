@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Functions.Items.CustomItems;
 /// <summary>
 /// Implements custom weight from custom items.
 /// </summary>
-public static class CustomItemsPickupWeightPatches
+public static class CustomItemPickupWeightPatches
 {
     [HarmonyPatch(typeof(PickupRippleTrigger), nameof(PickupRippleTrigger.OnCollided))]
     private static bool RippleOnCollidedPrefix(PickupRippleTrigger __instance, CollisionDetectionPickup cdp,
@@ -110,7 +110,7 @@ public static class CustomItemsPickupWeightPatches
         return false;
     }
     
-    [HarmonyPatch(typeof(BodyArmor), nameof(BodyArmorPickup.OnTriggerStay))]
+    [HarmonyPatch(typeof(BodyArmorPickup), nameof(BodyArmorPickup.OnTriggerStay))]
     private static bool BodyArmorTriggerStayPrefix(BodyArmorPickup __instance, Collider other)
     {
         if (other.gameObject.layer != 9)

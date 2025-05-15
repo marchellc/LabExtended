@@ -161,14 +161,5 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IDisposable
             DynamicDisplay.Dispose();
             DynamicDisplay = null;
         }
-        
-        if (Base != null)
-        {
-            if (Arguments != null)
-            {
-                Arguments.Reset();
-                Arguments.OnModified -= Base.RefreshText;
-            }
-        }
     }
 }
