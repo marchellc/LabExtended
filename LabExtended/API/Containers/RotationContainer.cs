@@ -88,6 +88,11 @@ namespace LabExtended.API.Containers
         /// Gets a list of players that are currently in the line of sight of this player.
         /// </summary>
         public IEnumerable<ExPlayer> PlayersInSight => ExPlayer.Players.Where(p => p.Rotation.IsInLineOfSight(Player));
+        
+        /// <summary>
+        /// Gets a new Ray with the forward direction.
+        /// </summary>
+        public Ray ForwardRay => new(CameraPosition, CameraForward);
 
         /// <summary>
         /// Gets or sets the player's rotation
@@ -139,6 +144,107 @@ namespace LabExtended.API.Containers
         {
             get => new(Rotation);
             set => Rotation = value.Value;
+        }
+        
+        /// <summary>
+        /// Casts a forward ray.
+        /// </summary>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+            
+            var result = Physics.Raycast(ForwardRay, out hit);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
+        }
+
+        /// <summary>
+        /// Casts a ray.
+        /// </summary>
+        /// <param name="ray">The ray to cast.</param>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(Ray ray, out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+            
+            var result = Physics.Raycast(ray, out hit);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
+        }
+        
+        /// <summary>
+        /// Casts a forward ray.
+        /// </summary>
+        /// <param name="layerMask">The layers to collide with.</param>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(int layerMask, out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+
+            var ray = ForwardRay;
+            var result = Physics.Raycast(ray.origin, ray.direction, out hit, 0f, layerMask);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
+        }
+        
+        /// <summary>
+        /// Casts a ray.
+        /// </summary>
+        /// <param name="ray">The ray to cast.</param>
+        /// <param name="layerMask">The layers to collide with.</param>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(Ray ray, int layerMask, out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+            
+            var result = Physics.Raycast(ray.origin, ray.direction, out hit, 0f, layerMask);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
+        }
+        
+        /// <summary>
+        /// Casts a forward ray.
+        /// </summary>
+        /// <param name="distance">The maximum hit distance.</param>
+        /// <param name="layerMask">The layers to collide with.</param>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(float distance, int layerMask, out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+
+            var ray = ForwardRay;
+            var result = Physics.Raycast(ray.origin, ray.direction, out hit, distance, layerMask);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
+        }
+        
+        /// <summary>
+        /// Casts a ray.
+        /// </summary>
+        /// <param name="ray">The ray to cast.</param>
+        /// <param name="distance">The maximum hit distance.</param>
+        /// <param name="layerMask">The layers to collide with.</param>
+        /// <param name="hit">The hit data.</param>
+        /// <returns>true if the cast succeeded</returns>
+        public bool CastRay(Ray ray, float distance, int layerMask, out RaycastHit hit)
+        {
+            Player.ReferenceHub.SetHitboxes(false);
+            
+            var result = Physics.Raycast(ray.origin, ray.direction, out hit, distance, layerMask);
+            
+            Player.ReferenceHub.SetHitboxes(true);
+            return result;
         }
 
         /// <summary>
