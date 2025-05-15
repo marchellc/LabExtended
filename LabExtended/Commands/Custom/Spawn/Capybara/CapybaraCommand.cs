@@ -12,13 +12,13 @@ public partial class SpawnCommand
     [CommandOverload("capybara", "Spawns a capybara.")]
     public void CapybaraOverload(
         [CommandParameter("Target", "The target player.")] ExPlayer targetPlayer, 
-        [CommandParameter("Scale", "Scale of the capybara's model.")] Vector3 scale)
+        [CommandParameter("Scale", "Scale of the capybara's model.")] Vector3? scale = null)
     {
         targetPlayer ??= Sender;
         
         var toy = new CapybaraToy(targetPlayer.Position, targetPlayer.Rotation)
         {
-            Scale = scale
+            Scale = scale ?? Vector3.one
         };
         
         Ok($"Capybara spawned with ID {toy.NetId}");
