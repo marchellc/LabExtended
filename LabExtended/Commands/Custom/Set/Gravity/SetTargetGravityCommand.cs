@@ -1,0 +1,19 @@
+﻿using LabExtended.API;
+using LabExtended.Commands.Attributes;
+
+using UnityEngine;
+
+namespace LabExtended.Commands.Custom.Set;
+
+public partial class SetTargetCommand
+{
+    [CommandOverload("gravity", "Sets the gravity of a specific player.")]
+    public void GravityTarget(Vector3 gravity, ExPlayer? target = null)
+    {
+        var player = target ?? Sender;
+        
+        player.Position.Gravity = gravity;
+        
+        Ok($"Set gravity of \"{player.Nickname}\" ({player.UserId}) to {gravity.ToPreciseString()}");
+    }
+}
