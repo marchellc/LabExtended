@@ -70,9 +70,12 @@ public static class RemoteAdminHelpPatch
         {
             var args = ListPool<string>.Shared.Rent(arguments);
             
-            if (CommandManager.TryGetCommand(args, null, out var foundCommand)
+            if (CommandManager.TryGetCommand(args, null, out var likelyCommands, out var foundCommand)
                 && !foundCommand.IsHidden)
             {
+                if (likelyCommands != null)
+                    ListPool<CommandData>.Shared.Return(likelyCommands);
+
                 ListPool<string>.Shared.Return(args);
                 
                 response = foundCommand.GetString();
@@ -82,6 +85,9 @@ public static class RemoteAdminHelpPatch
             }
             else
             {
+                if (likelyCommands != null)
+                    ListPool<CommandData>.Shared.Return(likelyCommands);
+
                 ListPool<string>.Shared.Return(args);
                 
                 response = $"Unknown command!";

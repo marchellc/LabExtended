@@ -239,8 +239,21 @@ public static class CommandManager
 
             var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
 
-            if (!TryGetCommand(args, ev.CommandType, out var command))
+            if (!TryGetCommand(args, ev.CommandType, out var likelyCommands, out var command))
+            {
+                if (!ev.CommandFound && likelyCommands?.Count > 0)
+                {
+                    ev.IsAllowed = false;
+                    ev.Sender.Respond(CommandResponseFormatter.FormatLikelyCommands(likelyCommands,
+                        ev.CommandName + " " + string.Join(" ", ev.Arguments)));
+                }
+
+                if (likelyCommands != null)
+                    ListPool<CommandData>.Shared.Return(likelyCommands);
+
+                ListPool<string>.Shared.Return(args);
                 return;
+            }
 
             ev.IsAllowed = false;
 
@@ -477,9 +490,10 @@ public static class CommandManager
         return buffer;
     }
 
-    internal static bool TryGetCommand(List<string> args, CommandType? commandType, out CommandData? foundCommand)
+    internal static bool TryGetCommand(List<string> args, CommandType? commandType, out List<CommandData>? likelyCommands, out CommandData? foundCommand)
     {
         foundCommand = null;
+        likelyCommands = null;
         
         if (args.Count < 1)
             return false;
@@ -498,29 +512,81 @@ public static class CommandManager
                 continue;
 
             if (args.Count < command.Path.Count)
-                continue;
-
-            var matched = true;
-
-            for (var x = 0; x < command.Path.Count; x++)
             {
-                if (string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                if (x + 1 >= command.Path.Count
-                    && command.Aliases.Any(alias => string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
-                    continue;
+                var count = 0;
                 
-                matched = false;
-                break;
+                for (var x = 0; x < command.Path.Count; x++)
+                {
+                    if (x < args.Count && string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
+                    {
+                        count++;
+                        continue;
+                    }
+
+                    if (x + 1 < args.Count && x + 1 >= command.Path.Count
+                        && command.Aliases.Any(alias =>
+                            string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
+                    {
+                        count++;
+                        continue;
+                    }
+                    
+                    break;
+                }
+                
+                if (count > 0)
+                {
+                    likelyCommands ??= ListPool<CommandData>.Shared.Rent();
+
+                    if (!likelyCommands.Contains(command))
+                        likelyCommands.Add(command);
+                }
             }
-
-            if (matched)
+            else
             {
-                args.RemoveRange(0, command.Path.Count);
-                
-                foundCommand = command;
-                return true;
+                var matched = true;
+                var count = 0;
+
+                for (var x = 0; x < command.Path.Count; x++)
+                {
+                    if (string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
+                    {
+                        count++;
+                        continue;
+                    }
+
+                    if (x + 1 >= command.Path.Count
+                        && command.Aliases.Any(alias =>
+                            string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
+                    {
+                        count++;
+                        continue;
+                    }
+
+                    matched = false;
+                    break;
+                }
+
+                if (matched)
+                {
+                    if (likelyCommands != null)
+                        ListPool<CommandData>.Shared.Return(likelyCommands);
+
+                    likelyCommands = null;
+
+                    args.RemoveRange(0, command.Path.Count);
+
+                    foundCommand = command;
+                    return true;
+                }
+
+                if (count > 0)
+                {
+                    likelyCommands ??= ListPool<CommandData>.Shared.Rent();
+
+                    if (!likelyCommands.Contains(command))
+                        likelyCommands.Add(command);
+                }
             }
         }
 

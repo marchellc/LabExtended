@@ -36,6 +36,18 @@ internal static class CommandResponseFormatter
         continuableCommand = null;
         return false;
     }
+
+    internal static string FormatLikelyCommands(List<CommandData> likelyCommands, string query)
+    {
+        return StringBuilderPool.Shared.BuildString(x =>
+        {
+            x.AppendLine($"Unable to find a command matching your query (\"{query.Trim()}\"), did you perhaps mean one of these?");
+            x.AppendLine();
+            
+            for (var i = 0; i < likelyCommands.Count; i++)
+                x.Append(likelyCommands[i].GetString(false));
+        });
+    }
     
     internal static string FormatCommandResponse(this CommandContext ctx)
     {
