@@ -70,7 +70,14 @@ public partial class ListCommand
             }
 
             foreach (var list in groupedObjects)
-                x.AppendLine($"[{list.Key.Name}] {list.Value.Count} object(s) [{string.Join(", ", list.Value).SubstringPostfix(24, " ...")}]");
+            {
+                x.AppendLine(
+                    $"[{list.Key.Name}] {list.Value.Count} object(s) [{string.Join(", ", list.Value).SubstringPostfix(24, " ...")}]");
+                
+                ListPool<uint>.Shared.Return(list.Value);
+            }
+            
+            DictionaryPool<Type, List<uint>>.Shared.Return(groupedObjects);
         });
     }
 }
