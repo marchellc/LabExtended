@@ -39,7 +39,7 @@ public class DespawnCommand : CommandBase, IRemoteAdminCommand
             return;
         }
 
-        if (hit.collider.gameObject.TryFindComponent<ReferenceHub>(out var referenceHub))
+        if (hit.TryFindComponent<ReferenceHub>(out var referenceHub))
         {
             if (!ExPlayer.TryGet(referenceHub, out var player))
             {
@@ -58,7 +58,7 @@ public class DespawnCommand : CommandBase, IRemoteAdminCommand
             
             Ok($"Killed player \"{player.Nickname} ({player.UserId})\".");
         }
-        else if (hit.collider.gameObject.TryFindComponent<NetworkIdentity>(out var networkIdentity))
+        else if (hit.TryFindComponent<NetworkIdentity>(out var networkIdentity))
         {
             Ok($"Destroyed network object \"{networkIdentity.name} ({networkIdentity.netId})\"");
             
