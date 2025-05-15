@@ -8,9 +8,9 @@ using NorthwoodLib.Pools;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-namespace LabExtended.Commands.Custom.List;
+namespace LabExtended.Commands.Custom.View;
 
-public partial class ListCommand
+public partial class ViewCommand
 {
     [CommandOverload("objects", "Lists all spawned network objects.")]
     public void ListObjects(
