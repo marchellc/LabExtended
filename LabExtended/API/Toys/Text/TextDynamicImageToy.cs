@@ -18,8 +18,6 @@ namespace LabExtended.API.Toys.Text;
 public class TextDynamicImageToy : IDisposable
 {
     private List<List<string>>? imageList;
-    private List<string>? curList;
-    
     private int prevFrameIndex = -1;
     private float targetFrameDelay = 1000f / 24;
     
@@ -208,10 +206,8 @@ public class TextDynamicImageToy : IDisposable
             return;
         
         prevFrameIndex = FrameIndex;
-        curList = imageList[IsPaused ? FrameIndex : FrameIndex++];
         
-        Toy.Arguments.Clear();
-        Toy.Arguments.AddRange(curList);
+        Toy.AddRange(true, imageList[IsPaused ? FrameIndex : FrameIndex++]);
         
         Displayed?.InvokeSafe();
     }
