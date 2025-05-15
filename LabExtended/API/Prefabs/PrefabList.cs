@@ -379,6 +379,11 @@ public static class PrefabList
     public static PrefabDefinition Interactable { get; } = new("InvisibleInteractableToy");
     
     /// <summary>
+    /// Gets the prefab of the text toy.
+    /// </summary>
+    public static PrefabDefinition Text { get; } = new("TextToy");
+    
+    /// <summary>
     /// Gets the prefab of the SCP-079 camera toy (Entrance Zone w/ arm version).
     /// </summary>
     public static PrefabDefinition EzArmCamera { get; } = new("EzArmCameraToy");
