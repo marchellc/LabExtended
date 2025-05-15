@@ -425,6 +425,12 @@ namespace LabExtended.API.Toys
                 _ = new SpeakerToy(speakerToy);
                 return;
             }
+
+            if (toy is AdminToys.TextToy textToy)
+            {
+                _ = new TextToy(textToy);
+                return;
+            }
             
             ApiLog.Error("LabExtended API", $"Spawned an unknown admin toy: &1{toy.GetType().FullName}&r");
         }
