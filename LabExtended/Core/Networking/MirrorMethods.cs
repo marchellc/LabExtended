@@ -8,8 +8,9 @@ using Mirror;
 using System.Reflection.Emit;
 
 using UnityEngine;
-#pragma warning disable CS8601 // Possible null reference assignment.
 
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -51,6 +52,34 @@ public static class MirrorMethods
     /// Gets the <see cref="NetworkServer.SendSpawnMessage"/> delegate.
     /// </summary>
     public static Action<NetworkIdentity, NetworkConnection> SendSpawnMessage { get; private set; }
+
+    /// <summary>
+    /// Attempts to get a specific behaviour component of a network identity.
+    /// </summary>
+    /// <param name="identityId">The ID of the identity.</param>
+    /// <param name="behaviour">The resolved behaviour.</param>
+    /// <typeparam name="T">The behaviour type to find.</typeparam>
+    /// <returns>true if the identity and behaviour were found</returns>
+    public static bool TryGetBehaviour<T>(uint identityId, out T behaviour) where T : NetworkBehaviour
+    {
+        if (!NetworkServer.spawned.TryGetValue(identityId, out var identity))
+        {
+            behaviour = null;
+            return false;
+        }
+
+        for (var i = 0; i < identity.NetworkBehaviours.Length; i++)
+        {
+            if (identity.NetworkBehaviours[i] is not T target)
+                continue;
+
+            behaviour = target;
+            return true;
+        }
+        
+        behaviour = null;
+        return false;
+    }
 
     /// <summary>
     /// Attempts to retrieve a writer delegate from <see cref="Writers"/>.
