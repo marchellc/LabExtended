@@ -33,11 +33,7 @@ public class DespawnCommand : CommandBase, IRemoteAdminCommand
             return;
         }
         
-        var ray = new Ray(origin.CameraTransform.position, origin.CameraTransform.forward);
-
-        if (!Physics.Raycast(ray, out var hit, distance, PhysicsUtils.VisibleMask | PhysicsUtils.PlayerCollisionMask,
-                QueryTriggerInteraction.Ignore)
-            || hit.collider is null)
+        if (!origin.Rotation.CastRay(distance, PhysicsUtils.VisibleMask | PhysicsUtils.PlayerCollisionMask, out var hit))
         {
             Fail("Raycast failed.");
             return;
