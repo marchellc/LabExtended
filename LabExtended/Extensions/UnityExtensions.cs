@@ -19,5 +19,16 @@ namespace LabExtended.Extensions
 
             return true;
         }
+
+        public static bool TryFindComponent<T>(this RaycastHit hit, out T component)
+        {
+            if (hit.collider == null || hit.transform?.root?.gameObject == null)
+            {
+                component = default;
+                return false;
+            }
+            
+            return hit.transform.root.gameObject.TryFindComponent<T>(out component);
+        }
     }
 }
