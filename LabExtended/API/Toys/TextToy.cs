@@ -1,6 +1,9 @@
-﻿using LabExtended.API.Interfaces;
+﻿using LabExtended.API.Images;
 using LabExtended.API.Prefabs;
-using LabExtended.API.Toys.Text;
+using LabExtended.API.Interfaces;
+using LabExtended.Core;
+using LabExtended.Images.Playback;
+
 using Mirror;
 
 using UnityEngine;
@@ -13,7 +16,7 @@ namespace LabExtended.API.Toys;
 /// <summary>
 /// <see cref="AdminToys.TextToy"/> wrapper.
 /// </summary>
-public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IDisposable
+public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 {
     /// <summary>
     /// Gets the default size of a text toy display.
@@ -33,8 +36,8 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IDisposable
 
         if (Base == null)
             throw new Exception("Could not spawn TextToy");
-        
-        DynamicDisplay = new(this);
+
+        PlaybackDisplay = new(this);
         
         Base.NetworkPosition = position ?? Vector3.zero;
         Base.NetworkRotation = rotation ?? Quaternion.identity;
@@ -47,17 +50,15 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IDisposable
     internal TextToy(AdminToys.TextToy textToy) : base(textToy)
     {
         Base = textToy;
-        DynamicDisplay = new(this);
+        PlaybackDisplay = new(this);
     }
     
     /// <inheritdoc cref="IWrapper{T}.Base"/>
     public new AdminToys.TextToy Base { get; }
-    
-    /// <summary>
-    /// Gets the toy's dynamic display.
-    /// </summary>
-    public TextDynamicImageToy DynamicDisplay { get; private set; }
-    
+
+    /// <inheritdoc cref="IPlaybackDisplay.PlaybackDisplay"/>
+    public PlaybackBase PlaybackDisplay { get; private set; }
+
     /// <summary>
     /// Gets the list of arguments.
     /// </summary>
@@ -153,13 +154,34 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IDisposable
             Arguments.Add(values[i].ToString());
     }
 
+    /// <inheritdoc cref="IPlaybackDisplay.SetFrame"/>
+    public void SetFrame(ImageFrame? frame)
+    {
+        if (frame is null)
+        {
+            Clear(true);
+            
+            Size = DefaultSize;
+            return;
+        }
+
+        if (Size != frame.File.toyDisplaySize)
+            Size = frame.File.toyDisplaySize;
+
+        if (Format is null || Format != frame.toyFrameFormat)
+            Format = frame.toyFrameFormat;
+
+        Arguments.Clear();
+        Arguments.AddRange(frame.toyFrameData);
+    }
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        if (DynamicDisplay != null)
+        if (PlaybackDisplay != null)
         {
-            DynamicDisplay.Dispose();
-            DynamicDisplay = null;
+            PlaybackDisplay.Dispose();
+            PlaybackDisplay = null;
         }
     }
 }
