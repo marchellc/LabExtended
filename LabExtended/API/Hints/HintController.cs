@@ -37,11 +37,6 @@ namespace LabExtended.API.Hints;
 /// </summary>
 public static class HintController
 {
-    /// <summary>
-    /// Exposes the controller's internal update loop.
-    /// </summary>
-    public struct HintUpdateLoop { }
-
     #region Temporary Hint Settings
 
     /// <summary>
