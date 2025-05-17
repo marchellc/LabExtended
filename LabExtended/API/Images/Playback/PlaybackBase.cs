@@ -12,6 +12,8 @@ namespace LabExtended.Images.Playback;
 public class PlaybackBase : IDisposable
 {
     private int frameIndex = 0;
+    private bool staticImageDisplayed = false;
+    
     private Stopwatch transitionTime = new();
     
     /// <summary>
@@ -185,6 +187,7 @@ public class PlaybackBase : IDisposable
         transitionTime.Reset();
 
         frameIndex = 0;
+        staticImageDisplayed = false;
         
         State = PlaybackState.Idle;
     }
@@ -196,25 +199,47 @@ public class PlaybackBase : IDisposable
         
         if (CurrentFile != null)
         {
-            if (frameIndex != 0 && IsPaused)
-                return;
-
-            if (frameIndex != 0 && transitionTime.ElapsedMilliseconds < CurrentFile.FrameDuration)
+            if (CurrentFile.IsDisposed)
             {
-                State = PlaybackState.Waiting;
+                Finish();
                 return;
             }
+            
+            if (CurrentFile.IsAnimated)
+            {
+                if (frameIndex != 0 && IsPaused)
+                    return;
 
-            State = PlaybackState.Playing;
-            
-            transitionTime.Restart();
-            
-            Display.SetFrame(CurrentFile.Frames[frameIndex++]);
-            
-            Changed?.Invoke();
-            
-            if (frameIndex >= CurrentFile.Frames.Count)
-                Finish();
+                if (frameIndex != 0 && transitionTime.ElapsedMilliseconds < CurrentFile.FrameDuration)
+                {
+                    State = PlaybackState.Waiting;
+                    return;
+                }
+
+                State = PlaybackState.Playing;
+
+                transitionTime.Restart();
+
+                Display.SetFrame(CurrentFile.Frames[frameIndex++]);
+
+                Changed?.Invoke();
+
+                if (frameIndex >= CurrentFile.Frames.Count)
+                    Finish();
+            }
+            else
+            {
+                State = PlaybackState.Playing;
+                
+                if (!staticImageDisplayed)
+                {
+                    Display.SetFrame(CurrentFile.Frames[0]);
+
+                    staticImageDisplayed = true;
+                    
+                    Changed?.Invoke();
+                }
+            }
         }
     }
 
@@ -230,7 +255,7 @@ public class PlaybackBase : IDisposable
         
         State = PlaybackState.Idle;
         
-        if (file != null && IsLooping)
+        if (file != null && !file.IsDisposed && IsLooping)
             Play(file);
     }
 }
