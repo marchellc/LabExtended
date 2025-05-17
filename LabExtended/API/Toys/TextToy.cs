@@ -162,11 +162,18 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
             Clear(true);
             
             Size = DefaultSize;
+
+            if (Scale != Vector3.one)
+                Scale = Vector3.one;
+            
             return;
         }
 
         if (Size != frame.File.toyDisplaySize)
             Size = frame.File.toyDisplaySize;
+
+        if (Scale != frame.File.toyStringImageData.Scale)
+            Scale = frame.File.toyStringImageData.Scale;
 
         if (Format is null || Format != frame.toyFrameFormat)
             Format = frame.toyFrameFormat;

@@ -13,6 +13,7 @@ namespace LabExtended.API.Images;
 public class ImageFile : IDisposable
 {
     internal Vector2 toyDisplaySize;
+    internal ToyStringImageConvertor.ToyStringImageData toyStringImageData = new();
     
     /// <summary>
     /// Gets the list of frames that this image contains.
@@ -23,6 +24,11 @@ public class ImageFile : IDisposable
     /// Gets the date of this image creation.
     /// </summary>
     public DateTime CreatedAt { get; internal set; }
+
+    /// <summary>
+    /// Gets the path to the image file.
+    /// </summary>
+    public string Path { get; internal set; } = string.Empty;
 
     /// <summary>
     /// Gets the name of the image file.
@@ -68,6 +74,11 @@ public class ImageFile : IDisposable
     /// Whether or not the image has multiple frames.
     /// </summary>
     public bool IsAnimated => Frames.Count > 1;
+    
+    /// <summary>
+    /// Whether or not the file has been disposed.
+    /// </summary>
+    public bool IsDisposed { get; private set; }
 
     /// <summary>
     /// Gets the remaining duration at a specific frame index.
@@ -86,6 +97,11 @@ public class ImageFile : IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
+        if (IsDisposed)
+            return;
+        
+        IsDisposed = true;
+        
         if (Frames != null)
         {
             Frames.ForEach(f => f.Dispose());

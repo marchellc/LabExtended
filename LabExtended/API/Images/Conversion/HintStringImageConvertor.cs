@@ -1,6 +1,8 @@
 ﻿using NorthwoodLib.Pools;
 
-using UnityEngine;
+using System.Drawing;
+
+using LabExtended.Utilities;
 
 namespace LabExtended.API.Images.Conversion;
 
@@ -35,7 +37,8 @@ public static class HintStringImageConvertor
             throw new ArgumentNullException(nameof(file));
         
         var builder = StringBuilderPool.Shared.Rent();
-        var last = Color.white;
+
+        Color? last = null;
         
         file.Frames.ForEach(frame =>
         {
@@ -55,10 +58,10 @@ public static class HintStringImageConvertor
                 {
                     var pixel = pixels[y];
 
-                    if (pixel.Color != last)
+                    if (!last.HasValue || last.Value != pixel.Color)
                     {
                         builder.Append("<color=");
-                        builder.Append(pixel.Color.ToHex());
+                        builder.Append(pixel.Color.ToShortHex());
                         builder.Append(">");
 
                         last = pixel.Color;

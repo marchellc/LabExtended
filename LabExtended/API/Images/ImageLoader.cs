@@ -4,7 +4,10 @@ using LabExtended.Attributes;
 
 using NorthwoodLib.Pools;
 
-using UnityEngine;
+using System.Drawing;
+
+using LabExtended.API.Images.Conversion;
+using LabExtended.Core.Pooling.Pools;
 
 namespace LabExtended.API.Images;
 
@@ -13,6 +16,8 @@ namespace LabExtended.API.Images;
 /// </summary>
 public static class ImageLoader
 {
+    private static FileSystemWatcher watcher;
+    
     /// <summary>
     /// Gets a list of all loaded images.
     /// </summary>
@@ -50,9 +55,9 @@ public static class ImageLoader
     public static bool TryGet(string name, out ImageFile file)
         => LoadedImages.TryGetValue(name, out file);
     
-    internal static ImageFile ReadFile(byte[] data, string name)
+    internal static ImageFile ReadFile(byte[] data)
     {
-        var image = new ImageFile() { Name = name };
+        var image = new ImageFile();
         
         using (var stream = new MemoryStream(data))
         using (var reader = new BinaryReader(stream))
@@ -100,12 +105,13 @@ public static class ImageLoader
                             pixel.PreviousPixel = pixels[x - 1];
                             pixel.PreviousPixel.NextPixel = pixel;
                         }
+
+                        var red = reader.ReadByte();
+                        var green = reader.ReadByte();
+                        var blue = reader.ReadByte();
+                        var alpha = reader.ReadByte();
                         
-                        pixel.Color = new Color(
-                            reader.ReadByte(), 
-                            reader.ReadByte(), 
-                            reader.ReadByte(), 
-                            reader.ReadByte());
+                        pixel.Color = Color.FromArgb(alpha, red, green, blue);
                         
                         pixels.Add(pixel);
                     }
@@ -115,32 +121,126 @@ public static class ImageLoader
                 
                 image.Frames.Add(frame);
             }
-
-            image.ConvertFormats();
+            
+            ToyStringImageConvertor.ReadImage(image, reader);
         }
-
+        
+        image.ConvertFormats();
         return image;
+    }
+
+    private static void OnCreated(object _, FileSystemEventArgs ev)
+    {
+        if (!string.IsNullOrEmpty(Path.GetExtension(ev.FullPath)))
+            return;
+
+        var name = Path.GetFileNameWithoutExtension(ev.FullPath);
+        
+        if (LoadedImages.TryGetValue(name, out var curImage))
+            curImage.Dispose();
+
+        LoadedImages.Remove(name);
+        
+        Task.Run(() =>
+        {
+            try
+            {
+
+                var data = File.ReadAllBytes(ev.FullPath);
+                var image = ReadFile(data);
+
+                image.Name = name;
+                image.Path = ev.FullPath;
+
+#if IMAGE_LOADER_DEBUG
+                    ToyStringImageConvertor.DebugImage(image, Path.Combine(Directory, image.Name + "_ToyStringImageConvertorDebug.txt"));
+#endif
+
+                LoadedImages.Add(name, image);
+
+                ApiLog.Debug("Image Loader", $"Loaded image &6{image.Name}&r");
+            }
+            catch (Exception ex)
+            {
+                ApiLog.Error("Image Loader",
+                    $"Failed while trying to load image file &3{Path.GetFileName(ev.FullPath)}&r:\n{ex}");
+            }
+        });
+    }
+
+    private static void OnDeleted(object _, FileSystemEventArgs ev)
+    {
+        var images = DictionaryPool<string, ImageFile>.Shared.Rent(LoadedImages);
+
+        try
+        {
+            foreach (var image in images)
+            {
+                if (image.Value.Path == ev.FullPath)
+                {
+                    image.Value.Dispose();
+                    
+                    ApiLog.Debug("Image Loader", $"Removed image &6{image.Value.Name}&r");
+                    
+                    LoadedImages.Remove(image.Key);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("Image Loader",
+                $"Failed while trying to un-load image file &3{Path.GetFileName(ev.FullPath)}&r:\n{ex}");
+        }
+        
+        DictionaryPool<string, ImageFile>.Shared.Return(images);
     }
 
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        if (!System.IO.Directory.Exists(Directory))
-            System.IO.Directory.CreateDirectory(Directory);
-
-        foreach (var filePath in System.IO.Directory.GetFiles(Directory))
+        Task.Run(() =>
         {
-            try
+            if (!System.IO.Directory.Exists(Directory))
+                System.IO.Directory.CreateDirectory(Directory);
+
+            foreach (var filePath in System.IO.Directory.GetFiles(Directory))
             {
-                var name = Path.GetFileNameWithoutExtension(filePath);
-                var data = File.ReadAllBytes(filePath);
-                
-                LoadedImages.Add(name, ReadFile(data, name));
+                try
+                {
+                    if (!string.IsNullOrEmpty(Path.GetExtension(filePath)))
+                        continue;
+                    
+                    var data = File.ReadAllBytes(filePath);
+                    var image = ReadFile(data);
+                    
+                    image.Name = Path.GetFileNameWithoutExtension(filePath);
+                    image.Path = filePath;
+                    
+#if IMAGE_LOADER_DEBUG
+                    ToyStringImageConvertor.DebugImage(image, Path.Combine(Directory, image.Name + "_ToyStringImageConvertorDebug.txt"));
+#endif
+                    
+                    LoadedImages.Add(image.Name, image);
+                }
+                catch (Exception ex)
+                {
+                    ApiLog.Error("Image Loader",
+                        $"Failed while trying to load image file &3{Path.GetFileName(filePath)}&r:\n{ex}");
+                }
             }
-            catch (Exception ex)
-            {
-                ApiLog.Error("Image Loader", $"Failed while trying to load image file &3{Path.GetFileName(filePath)}&r:\n{ex}");
-            }
-        }
+        }).ContinueWithOnMain(_ =>
+        {
+            watcher = new(Directory);
+            
+            watcher.Created += OnCreated;
+            watcher.Deleted += OnDeleted;
+
+            watcher.NotifyFilter = NotifyFilters.Attributes | NotifyFilters.CreationTime | NotifyFilters.FileName |
+                                   NotifyFilters.LastAccess | NotifyFilters.LastWrite | NotifyFilters.Size;
+            
+            watcher.EnableRaisingEvents = true;
+            
+            ApiLog.Debug("Image Loader", $"Loaded &6{LoadedImages.Count}&r image(s).");
+        });
     }
 }

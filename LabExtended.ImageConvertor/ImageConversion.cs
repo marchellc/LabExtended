@@ -1,9 +1,10 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
-
+using System.Globalization;
 using System.Net;
-
+using System.Numerics;
 using CommonLib;
+using CommonLib.Extensions;
 using CommonLib.Utilities.Console;
 
 namespace LabExtended.ImageConvertor;
@@ -78,8 +79,12 @@ public static class ImageConversion
             
             var imageDelay = 0f;
             
-            var resolutionHeight = ConsoleArgs.GetValueOrDefault<int>("height", int.Parse, sourceImage.Height);
-            var resolutionWidth = ConsoleArgs.GetValueOrDefault<int>("width", int.Parse, sourceImage.Width);
+            var resolutionHeight = ConsoleArgs.GetValueOrDefault("height", int.Parse, sourceImage.Height);
+            var resolutionWidth = ConsoleArgs.GetValueOrDefault("width", int.Parse, sourceImage.Width);
+
+            var toyStringSize = ConsoleArgs.GetValueOrDefault("textToySize", int.Parse, 33);
+            var toyStringHeight = ConsoleArgs.GetValueOrDefault("textToyHeight", int.Parse, 75);
+            var toyScale = ConsoleArgs.GetValueOrDefault("textToyScale", ParseVector, Vector3.One);
             
             if (sourceImage.IsAnimated())
             {
@@ -113,16 +118,16 @@ public static class ImageConversion
             using (var writer = new BinaryWriter(stream))
             {
                 writer.Write(Path.GetExtension(inputPath));
-                
+
                 writer.Write(imageDelay);
-                
+
                 writer.Write(File.GetCreationTimeUtc(inputPath).Ticks);
-                
+
                 writer.Write(resolutionHeight);
                 writer.Write(resolutionWidth);
 
                 writer.Write(sourceFrames.Count);
-                
+
                 foreach (var frame in sourceFrames)
                 {
                     for (var y = 0; y < resolutionHeight; y++)
@@ -130,7 +135,7 @@ public static class ImageConversion
                         for (var x = 0; x < resolutionWidth; x++)
                         {
                             var pixel = frame.GetPixel(x, y);
-                            
+
                             writer.Write(pixel.R);
                             writer.Write(pixel.G);
                             writer.Write(pixel.B);
@@ -138,15 +143,69 @@ public static class ImageConversion
                         }
                     }
                 }
-                
+
+                writer.Write(toyStringSize);
+                writer.Write(toyStringHeight);
+
+                writer.Write(toyScale.X);
+                writer.Write(toyScale.Y);
+                writer.Write(toyScale.Z);
+
                 File.WriteAllBytes(outputPath, stream.ToArray());
             }
-            
+
             CommonLog.Info("Conversion", $"Finished converting '{Path.GetFileName(inputPath)}'");
         }
         catch (Exception ex)
         {
             CommonLog.Error("Conversion", $"An error occured while attempting to convert file '{Path.GetFileName(inputPath)}':\n{ex}");
         }
+    }
+
+    private static Vector3 ParseVector(string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return Vector3.One;
+
+        if (!str.TrySplit(',', true, null, out var parts))
+        {
+            CommonLog.Warn("Conversion", $"Could not parse input vector string '{str}'");
+            return Vector3.One;
+        }
+
+        if (parts.Length > 0)
+        {
+            if (!float.TryParse(parts[0], NumberFormatInfo.InvariantInfo, out var x))
+            {
+                CommonLog.Warn("Conversion", $"Could not parse vector X axis ('{parts[0]}')");
+                return Vector3.One;
+            }
+            
+            if (parts.Length > 1)
+            {
+                if (!float.TryParse(parts[1], NumberFormatInfo.InvariantInfo, out var y))
+                {
+                    CommonLog.Warn("Conversion", $"Could not parse vector Y axis ('{parts[1]}')");
+                    return Vector3.One;
+                }
+
+                if (parts.Length > 2)
+                {
+                    if (!float.TryParse(parts[2], NumberFormatInfo.InvariantInfo, out var z))
+                    {
+                        CommonLog.Warn("Conversion", $"Could not parse vector Z axis ('{parts[2]}')");
+                        return Vector3.One;
+                    }
+                    
+                    return new Vector3(x, y, z);
+                }
+                
+                return new Vector3(x, y, 1f);
+            }
+
+            return new Vector3(x, 1f, 1f);
+        }
+        
+        return Vector3.One;
     }
 }
