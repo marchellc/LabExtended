@@ -59,6 +59,18 @@ public static class CustomFirearmEvents
                 if (!item.OnUnloading())
                     args.IsAllowed = false;
             });
+    
+    private static void OnShooting(PlayerShootingWeaponEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour<CustomFirearmInventoryBehaviour>(args.FirearmItem.Serial,
+            item =>
+            {
+                if (!item.OnShooting())
+                    args.IsAllowed = false;
+            });
+
+    private static void OnShot(PlayerShotWeaponEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour<CustomFirearmInventoryBehaviour>(args.FirearmItem.Serial,
+            item => item.OnShot());
 
     private static void OnProcessingEvent(FirearmProcessingEventEventArgs args)
     {
@@ -149,5 +161,8 @@ public static class CustomFirearmEvents
         
         PlayerEvents.UnloadingWeapon += OnUnloading;
         PlayerEvents.ReloadingWeapon += OnReloading;
+
+        PlayerEvents.ShootingWeapon += OnShooting;
+        PlayerEvents.ShotWeapon += OnShot;
     }
 }

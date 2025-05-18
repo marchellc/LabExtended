@@ -250,6 +250,40 @@ public static class FirearmAttachmentExtensions
     }
 
     /// <summary>
+    /// Modifies the firearm's attachments.
+    /// </summary>
+    /// <param name="firearm">The target firearm.</param>
+    /// <param name="isEnabled">The function used to check for enabled attachments.</param>
+    /// <returns>true if any attachments were enabled or disabled</returns>
+    public static bool SetAttachments(this Firearm firearm, Func<Attachment, bool> isEnabled)
+    {
+        if (firearm == null)
+            throw new ArgumentNullException(nameof(firearm));
+        
+        if (isEnabled is null)
+            throw new ArgumentNullException(nameof(isEnabled));
+        
+        var anyChanged = false;
+
+        for (var i = 0; i < firearm.Attachments.Length; i++)
+        {
+            var attachment = firearm.Attachments[i];
+            var enabled = isEnabled(attachment);
+            
+            if (attachment.IsEnabled == enabled)
+                continue;
+
+            attachment.IsEnabled = enabled;
+            anyChanged = true;
+        }
+
+        if (anyChanged)
+            firearm.SyncAttachments();
+        
+        return anyChanged;
+    }
+
+    /// <summary>
     /// Sets random attachments to a firearm.
     /// </summary>
     /// <param name="firearm">The target firearm.</param>

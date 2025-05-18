@@ -42,7 +42,8 @@ public static class ProcessingShotPatches
         {
             x.WriteSubheader(DisruptorActionModule.MessageType.RpcStartFiring);
             x.WriteBool(ads);
-            x.WriteBool(__instance._magModule.AmmoStored == 1);
+            x.WriteBool(__instance._magModule.AmmoStored == 1 
+                        && (shootingEventArgs.Player is not ExPlayer ply || !ply.Toggles.HasUnlimitedAmmo));
         });
         
         if (shootingEventArgs.Player is not ExPlayer player

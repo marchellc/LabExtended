@@ -35,13 +35,15 @@ public abstract class CustomFirearmHandler : CustomItemHandler
     {
         base.InternalInitializeItem(item, pickup);
 
-        if (item is not CustomFirearmInventoryBehaviour firearmBehaviour)
-            return;
-        
-        if (FirearmInventoryProperties.Attachments != null)
+        if (item is CustomFirearmInventoryBehaviour firearmInventoryBehaviour)
         {
-            firearmBehaviour.Item.DisableAttachments(firearmBehaviour.Item.GetEnabledAttachments());
-            firearmBehaviour.Item.EnableAttachments(FirearmInventoryProperties.Attachments.DefaultAttachments);
+            firearmInventoryBehaviour.Modules = firearmInventoryBehaviour.Item.GetModules();
+
+            if (FirearmInventoryProperties.Attachments != null)
+            {
+                firearmInventoryBehaviour.Item.SetAttachments(attachment =>
+                    FirearmInventoryProperties.Attachments.DefaultAttachments.Contains(attachment.Name));
+            }
         }
     }
 }

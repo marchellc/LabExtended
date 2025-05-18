@@ -9,6 +9,26 @@ namespace LabExtended.Utilities.Firearms;
 public static class FirearmModuleExtensions
 {
     /// <summary>
+    /// Gets the module cache for a firearm.
+    /// </summary>
+    /// <param name="firearm">The target firearm.</param>
+    /// <returns>The resolved module cache.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static FirearmModuleCache GetModules(this Firearm firearm)
+    {
+        if (firearm == null)
+            throw new ArgumentNullException(nameof(firearm));
+
+        if (FirearmModuleCache.List.TryGetValue(firearm, out var cache))
+            return cache;
+
+        cache = new();
+        cache.Update(firearm);
+
+        return cache;
+    }
+    
+    /// <summary>
     /// Retrieves a property from a given module.
     /// </summary>
     /// <param name="firearm">The target firearm.</param>

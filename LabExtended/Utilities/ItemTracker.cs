@@ -1,4 +1,5 @@
 ﻿using InventorySystem.Items;
+using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
@@ -9,7 +10,7 @@ using LabExtended.Core.Networking;
 using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions.Items;
-
+using LabExtended.Utilities.Firearms;
 using Mirror;
 
 namespace LabExtended.Utilities;
@@ -87,6 +88,11 @@ public class ItemTracker : IDisposable
     public PlayerStorage? Storage { get; internal set; }
     
     /// <summary>
+    /// Gets the firearm's module cache. Will be null if the item is not a firearm.
+    /// </summary>
+    public FirearmModuleCache? FirearmModules { get; internal set; }
+    
+    /// <summary>
     /// Gets or sets the item tracker's custom data.
     /// </summary>
     public object? Data { get; set; }
@@ -110,6 +116,9 @@ public class ItemTracker : IDisposable
             Owner = ExPlayer.Get(item.Owner);
 
         Storage = new(false);
+        
+        if (Item is Firearm firearm)
+            FirearmModules = firearm.GetModules();
         
         Trackers.Add(ItemSerial, this);
         
@@ -158,6 +167,8 @@ public class ItemTracker : IDisposable
             Owner = null;
             Pickup = null;
 
+            FirearmModules = null;
+
             ItemSerial = 0;
         }
     }
@@ -182,6 +193,9 @@ public class ItemTracker : IDisposable
         Item = item;
         Owner = owner;
         
+        if (item is Firearm firearm)
+            FirearmModules = firearm.GetModules();
+        
         PickedUp?.InvokeSafe(this);
 
         IsSelected = false;
@@ -195,6 +209,8 @@ public class ItemTracker : IDisposable
         Owner = owner;
         
         Dropped?.InvokeSafe(this);
+
+        FirearmModules = null;
 
         IsSelected = false;
     }
