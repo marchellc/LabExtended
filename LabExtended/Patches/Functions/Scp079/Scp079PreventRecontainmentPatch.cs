@@ -18,7 +18,7 @@ public static class Scp079PreventRecontainmentPatch
     {
         if (prb.TryGetOwner(out var owner)
             && ExPlayer.TryGet(owner, out var player)
-            && player.Toggles.PreventsRecontaining079)
+            && !player.Toggles.PreventsRecontaining079)
             return __result = false;
 
         __result = prb.Team is Team.SCPs && prb.RoleTypeId is not RoleTypeId.Scp079;
