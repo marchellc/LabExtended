@@ -1,66 +1,59 @@
 ﻿using LabExtended.API;
 using LabExtended.Attributes;
-using LabExtended.Utilities.Unity;
+using LabExtended.Utilities.Update;
 
 using PlayerRoles;
 
-using UnityEngine.PlayerLoop;
+namespace LabExtended.Core.Networking.Synchronization.Role;
 
-namespace LabExtended.Core.Networking.Synchronization.Role
+/// <summary>
+/// Sends role synchronization messages to players.
+/// </summary>
+public static class RoleSynchronizer
 {
-    public static class RoleSynchronizer
+    private static void OnUpdate()
     {
-        public struct RoleSyncUpdateLoop { }
-        
-        internal static void OnUpdate()
+        if (ExPlayer.AllPlayers.Count < 1)
+            return;
+
+        for (var i = 0; i < ExPlayer.AllPlayers.Count; i++)
         {
-            if (ExPlayer.AllPlayers.Count < 1)
-                return;
+            var target = ExPlayer.AllPlayers[i];
 
-            for (int i = 0; i < ExPlayer.AllPlayers.Count; i++)
+            if (target?.Role is null || target.SentRoles is null)
+                continue;
+
+            for (var x = 0; x < ExPlayer.AllPlayers.Count; x++)
             {
-                var target = ExPlayer.AllPlayers[i];
+                var receiver = ExPlayer.AllPlayers[x];
+                var role = target.Role.Type;
 
-                if (target is null || target.Role is null || target.SentRoles is null)
+                if (receiver is null || !receiver || receiver.Role is null)
                     continue;
 
-                for (int x = 0; x < ExPlayer.AllPlayers.Count; x++)
-                {
-                    var receiver = ExPlayer.AllPlayers[x];
-                    var role = target.Role.Type;
+                if (target.Role.Role is IObfuscatedRole obfuscatedRole)
+                    role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
 
-                    if (receiver is null || !receiver || receiver.Role is null)
-                        continue;
+                if (target.Role.FakedList.HasGlobalValue)
+                    role = target.Role.FakedList.GlobalValue;
 
-                    if (target.Role.Role is IObfuscatedRole obfuscatedRole)
-                        role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
+                if (target.Role.FakedList.TryGetValue(receiver, out var fakedRole))
+                    role = fakedRole;
 
-                    if (target.Role.FakedList.HasGlobalValue)
-                        role = target.Role.FakedList.GlobalValue;
+                if (!receiver.Role.IsAlive && !target.Toggles.IsVisibleInSpectatorList)
+                    role = RoleTypeId.Spectator;
 
-                    if (target.Role.FakedList.TryGetValue(receiver, out var fakedRole))
-                        role = fakedRole;
+                if (target.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) && sentRole == role)
+                    continue;
 
-                    if (!receiver.Role.IsAlive && !target.Toggles.IsVisibleInSpectatorList)
-                        role = RoleTypeId.Spectator;
-
-                    if (target.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) && sentRole == role)
-                        continue;
-
-                    target.SentRoles[receiver.NetworkId] = role;
-                    receiver.Connection.Send(new RoleSyncInfo(target.ReferenceHub, role, receiver.ReferenceHub));
-                }
+                target.SentRoles[receiver.NetworkId] = role;
+                
+                receiver.Connection.Send(new RoleSyncInfo(target.ReferenceHub, role, receiver.ReferenceHub));
             }
         }
-
-        [LoaderInitialize(2)]
-        private static void Init()
-        {
-            if (ApiLoader.ApiConfig.OtherSection.MirrorAsync)
-                return;
-            
-            PlayerLoopHelper.ModifySystem(x =>
-                x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(RoleSyncUpdateLoop)) ? x : null);
-        }
     }
+
+    [LoaderInitialize(2)]
+    private static void OnInit()
+        => PlayerUpdateHelper.OnUpdate += OnUpdate;
 }

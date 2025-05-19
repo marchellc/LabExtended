@@ -9,7 +9,7 @@ using LabExtended.Extensions;
 using LabExtended.Events;
 
 using LabExtended.Utilities.Unity;
-
+using LabExtended.Utilities.Update;
 using Mirror;
 
 using PlayerRoles.FirstPersonControl;
@@ -31,11 +31,6 @@ namespace LabExtended.Core.Networking.Synchronization.Position;
 /// </summary>
 public static class PositionSynchronizer
 {
-    /// <summary>
-    /// Exposes the update loop.
-    /// </summary>
-    public struct PositionUpdateLoop { }
-
     private static NetworkWriter writer = NetworkWriterPool.Get();
     private static ExPlayer[]? validBuffer;
     private static float sendTime = 0f;
@@ -209,16 +204,6 @@ public static class PositionSynchronizer
             OnSpawned);
 
         InternalEvents.OnRoundRestart += OnRoundRestart;
-
-        if (ApiLoader.ApiConfig.OtherSection.MirrorAsync)
-            return;
-        
-        PlayerLoopHelper.ModifySystem(x =>
-        {
-            if (!x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(OnUpdate, typeof(PositionUpdateLoop)))
-                return null;
-
-            return x;
-        });
+        PlayerUpdateHelper.OnUpdate += OnUpdate;
     }
 }
