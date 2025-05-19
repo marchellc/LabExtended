@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using CentralAuth;
+using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
@@ -57,8 +58,14 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             {
                 var other = ExPlayer.Get(otherHub);
 
-                if (other is null) continue;
-                if (!other.Toggles.IsVisibleInRemoteAdmin) continue;
+                if (other is null) 
+                    continue;
+                
+                if (other.InstanceMode is ClientInstanceMode.Unverified)
+                    continue;
+                
+                if (!other.Toggles.IsVisibleInRemoteAdmin) 
+                    continue;
 
                 var icons = other.RemoteAdminActiveIcons;
 
