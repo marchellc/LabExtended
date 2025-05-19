@@ -961,11 +961,11 @@ public static class HintController
                         {
                             removeNextFrame.Add(element);
                         }
+
+                        return;
                     }
-                    else
-                    {
-                        element.nullBuilderWarning = false;
-                    }
+
+                    element.nullBuilderWarning = false;
 
                     if (element.ClearParameters)
                         element.Parameters.Clear();
