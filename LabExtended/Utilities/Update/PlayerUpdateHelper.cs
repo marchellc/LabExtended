@@ -23,6 +23,11 @@ namespace LabExtended.Utilities.Update;
 /// </summary>
 public static class PlayerUpdateHelper
 {
+    /// <summary>
+    /// Exposes the update loop.
+    /// </summary>
+    public struct PlayerUpdateLoop { }
+    
     private static long longestUpdate = -1;
     private static long shortestUpdate = -1;
 
@@ -190,16 +195,6 @@ public static class PlayerUpdateHelper
         updatesCount++;
         return reference;
     }
-
-    private static async Awaitable UpdateAsync()
-    {
-        while (true)
-        {
-            await Awaitable.NextFrameAsync();
-            
-            Update();
-        }
-    }
     
     private static void Update()
     {
@@ -288,6 +283,12 @@ public static class PlayerUpdateHelper
     {
         InternalEvents.OnRoundWaiting += OnWaiting;
 
-        UpdateAsync();
+        PlayerLoopHelper.ModifySystem(x =>
+        {
+            if (!x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(Update, typeof(PlayerUpdateLoop)))
+                return null;
+
+            return x;
+        });
     }
 }
