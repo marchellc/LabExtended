@@ -35,7 +35,8 @@ public abstract class HintElement
 
     internal long _tickNum = 0;
     internal string? _prevCompiled = null;
-
+    internal bool nullBuilderWarning;
+    
     /// <summary>
     /// Gets the element's ID.
     /// </summary>

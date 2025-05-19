@@ -67,6 +67,8 @@ public static class HintController
 
     private static volatile List<HintParameter> paramBuffer;
     private static volatile List<HintElement> elements;
+
+    private static List<HintElement> removeNextFrame;
     
     private static volatile StringBuilder builder;
 
@@ -106,6 +108,7 @@ public static class HintController
     {
         elements = new List<HintElement>();
         paramBuffer = new List<HintParameter>();
+        removeNextFrame = new();
         
         watch = new Stopwatch();
         writer = new NetworkWriter();
@@ -842,13 +845,65 @@ public static class HintController
 
             tickNum++;
 
+            if (removeNextFrame.Count > 0)
+            {
+                removeNextFrame.ForEach(element =>
+                {
+                    try
+                    {
+                        if (element.IsActive)
+                        {
+                            element.IsActive = false;
+                            element.OnDisabled();
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+
+                    elements.Remove(element);
+                });
+                
+                removeNextFrame.Clear();
+            }
+
             for (var i = 0; i < ExPlayer.Count; i++)
             {
                 var player = ExPlayer.Players[i];
 
-                if (!player || player.Hints is null) 
+                if (player?.Hints is null) 
                     continue;
                 
+                if (player.HintElements is null)
+                    continue;
+
+                if (player.elementsToRemove is null)
+                    continue;
+
+                if (player.elementsToRemove.Count > 0)
+                {
+                    player.elementsToRemove.ForEach(element =>
+                    {
+                        try
+                        {
+                            if (element.IsActive)
+                            {
+                                element.IsActive = false;
+                                element.OnDisabled();
+                            }
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+
+                        player.HintElements.Remove(element);
+                    });
+
+                    player.elementsToRemove.Clear();
+                }
+
                 if (player.Hints.IsPaused) 
                     continue;
 
@@ -885,6 +940,32 @@ public static class HintController
                 {
                     if (!element.IsActive)
                         return;
+
+                    if (element.Builder is null)
+                    {
+                        if (!element.nullBuilderWarning)
+                        {
+                            ApiLog.Warn("Hint Controller", $"Encountered a null Builder while processing element &3{element.GetType().Name}&r (&r{element.CustomId ?? "(null custom ID)"}&r | &6{element.Id}&r");
+                            
+                            element.nullBuilderWarning = true;
+                        }
+
+                        if (element is PersonalHintElement personalHintElement)
+                        {
+                            if (!player.elementsToRemove.Contains(personalHintElement))
+                            {
+                                player.elementsToRemove.Add(personalHintElement);
+                            }
+                        }
+                        else if (!removeNextFrame.Contains(element))
+                        {
+                            removeNextFrame.Add(element);
+                        }
+                    }
+                    else
+                    {
+                        element.nullBuilderWarning = false;
+                    }
 
                     if (element.ClearParameters)
                         element.Parameters.Clear();

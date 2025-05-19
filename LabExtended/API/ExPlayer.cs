@@ -1371,6 +1371,12 @@ public class ExPlayer : Player, IDisposable
             DictionaryPool<Type, CustomRoleInstance>.Shared.Return(customRoles);
             customRoles = null;
         }
+
+        if (elementsToRemove != null)
+        {
+            ListPool<PersonalHintElement>.Shared.Return(elementsToRemove);
+            elementsToRemove = null;
+        }
         
         if (HintElements != null)
         {
