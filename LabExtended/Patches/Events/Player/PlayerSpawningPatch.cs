@@ -58,7 +58,8 @@ namespace LabExtended.Patches.Events.Player
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                     __instance._sendNextFrame = true;
 
-                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, newRole, __instance.CurrentRole, reason, spawnFlags));
+                    PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, curRole?.RoleTypeId ?? RoleTypeId.None, 
+                        __instance.CurrentRole, reason, spawnFlags));
                 }
 
                 return false;
