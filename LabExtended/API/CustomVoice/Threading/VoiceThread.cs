@@ -5,6 +5,7 @@ using LabExtended.API.CustomVoice.Threading.Pitch;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
+using LabExtended.Utilities.Update;
 
 using Mirror;
 
@@ -13,14 +14,23 @@ using VoiceChat.Codec.Enums;
 
 using VoiceChat.Networking;
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
+// ReSharper disable CompareOfFloatsByEqualityOperator
+
 namespace LabExtended.API.CustomVoice.Threading;
 
-public delegate void SetupMessageHandler(ref VoiceMessage message);
-
+/// <summary>
+/// Used to modify voice messages on a background thread.
+/// </summary>
 public class VoiceThread : IDisposable
 {
     private static volatile float globalPitch = 1f;
 
+    /// <summary>
+    /// Gets or sets the global voice pitch.
+    /// </summary>
     public static float GlobalPitch
     {
         get => globalPitch;
@@ -41,12 +51,18 @@ public class VoiceThread : IDisposable
     
     private volatile Action<VoiceThreadPacket> onPacketProcessed;
 
+    /// <summary>
+    /// Gets or sets the pitch applied to this player.
+    /// </summary>
     public float InstancePitch
     {
         get => instancePitch;
         set => instancePitch = value;
     }
 
+    /// <summary>
+    /// Gets the currently active voice pitch.
+    /// </summary>
     public float ActivePitch
     {
         get
@@ -58,10 +74,20 @@ public class VoiceThread : IDisposable
         }
     }
     
+    /// <summary>
+    /// Whether or not this instance has been disposed.
+    /// </summary>
     public bool IsDisposed => isDisposed;
 
+    /// <summary>
+    /// Creates a new <see cref="VoiceThread"/> instance.
+    /// </summary>
+    /// <param name="controller">The parent voice controller.</param>
     public VoiceThread(VoiceController controller)
     {
+        if (controller is null)
+            throw new ArgumentNullException(nameof(controller));
+        
         voiceController = controller;
         voicePitchAction = new VoicePitchAction();
 
@@ -72,16 +98,17 @@ public class VoiceThread : IDisposable
 
         Task.Run(UpdateInputQueue);
 
-        StaticUnityMethods.OnFixedUpdate += UpdateOutputQueue;
+        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
         ExServerEvents.Quitting += Dispose;
     }
 
+    /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
         if (isDisposed)
             return;
 
-        StaticUnityMethods.OnFixedUpdate -= UpdateOutputQueue;
+        PlayerUpdateHelper.OnUpdate -= UpdateOutputQueue;
         ExServerEvents.Quitting -= Dispose;
         
         isDisposed = true;
@@ -104,13 +131,34 @@ public class VoiceThread : IDisposable
         outputQueue = null;
     }
     
-    public void ProcessCustom<T>(byte[] originalData, int originalLength, IVoiceThreadAction action, Action<T> onProcessed, Func<T> packetFactory) where T : VoiceThreadPacket
+    /// <summary>
+    /// Adds a custom voice packet to be processed via the provided action.
+    /// </summary>
+    /// <param name="originalData">The data to modify.</param>
+    /// <param name="originalLength">The original data length.</param>
+    /// <param name="action">The action to invoke.</param>
+    /// <param name="onProcessed">The method to call once the packet is processed.</param>
+    /// <param name="packetFactory">The method used to create a new packet.</param>
+    /// <typeparam name="T">The voice packet type.</typeparam>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public void ProcessCustom<T>(byte[] originalData, int originalLength, IVoiceThreadAction action, Action<T> onProcessed, Func<T> packetFactory) 
+        where T : VoiceThreadPacket
     {
-        if (originalData is null) throw new ArgumentNullException(nameof(originalData));
-        if (originalLength < 0 || originalLength > originalData.Length) throw new ArgumentOutOfRangeException(nameof(originalData));
-        if (action is null) throw new ArgumentNullException(nameof(action));
-        if (onProcessed is null) throw new ArgumentNullException(nameof(onProcessed));
-        if (packetFactory is null) throw new ArgumentNullException(nameof(packetFactory));
+        if (originalData is null) 
+            throw new ArgumentNullException(nameof(originalData));
+        
+        if (originalLength < 0 || originalLength > originalData.Length) 
+            throw new ArgumentOutOfRangeException(nameof(originalData));
+        
+        if (action is null) 
+            throw new ArgumentNullException(nameof(action));
+        
+        if (onProcessed is null)
+            throw new ArgumentNullException(nameof(onProcessed));
+        
+        if (packetFactory is null)
+            throw new ArgumentNullException(nameof(packetFactory));
         
         var newBuffer = new byte[originalData.Length];
         
@@ -132,12 +180,30 @@ public class VoiceThread : IDisposable
         inputQueue.Enqueue(newPacket);
     }
 
-    public void ProcessCustom(byte[] originalData, int originalLength, IVoiceThreadAction action, Action<VoiceThreadPacket> onProcessed, Func<VoiceThreadPacket> packetFactory = null)
+    /// <summary>
+    /// Adds a custom voice packet to be processed via the provided action.
+    /// </summary>
+    /// <param name="originalData">The data to modify.</param>
+    /// <param name="originalLength">The original data length.</param>
+    /// <param name="action">The action to invoke.</param>
+    /// <param name="onProcessed">The method to call once the packet is processed.</param>
+    /// <param name="packetFactory">The method used to create a new packet.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public void ProcessCustom(byte[] originalData, int originalLength, IVoiceThreadAction action, Action<VoiceThreadPacket> onProcessed,
+        Func<VoiceThreadPacket> packetFactory = null)
     {
-        if (originalData is null) throw new ArgumentNullException(nameof(originalData));
-        if (originalLength < 0 || originalLength > originalData.Length) throw new ArgumentOutOfRangeException(nameof(originalData));
-        if (action is null) throw new ArgumentNullException(nameof(action));
-        if (onProcessed is null) throw new ArgumentNullException(nameof(onProcessed));
+        if (originalData is null) 
+            throw new ArgumentNullException(nameof(originalData));
+        
+        if (originalLength < 0 || originalLength > originalData.Length) 
+            throw new ArgumentOutOfRangeException(nameof(originalData));
+        
+        if (action is null) 
+            throw new ArgumentNullException(nameof(action));
+        
+        if (onProcessed is null) 
+            throw new ArgumentNullException(nameof(onProcessed));
         
         var newBuffer = new byte[originalData.Length];
         
@@ -159,11 +225,25 @@ public class VoiceThread : IDisposable
         inputQueue.Enqueue(newPacket);
     }
 
+    /// <summary>
+    /// Applies pitch to the provided voice packet.
+    /// </summary>
+    /// <param name="originalData">The voice packet data.</param>
+    /// <param name="originalLength">The voice packet data length.</param>
+    /// <param name="pitchFactor">The pitch to apply.</param>
+    /// <param name="onProcessed">The method to call once the pitch is processed.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
     public void Pitch(byte[] originalData, int originalLength, float pitchFactor, Action<VoiceThreadPacket> onProcessed)
     {
-        if (originalData is null) throw new ArgumentNullException(nameof(originalData));
-        if (originalLength < 0 || originalLength > originalData.Length) throw new ArgumentOutOfRangeException(nameof(originalData));
-        if (onProcessed is null) throw new ArgumentNullException(nameof(onProcessed));
+        if (originalData is null) 
+            throw new ArgumentNullException(nameof(originalData));
+        
+        if (originalLength < 0 || originalLength > originalData.Length) 
+            throw new ArgumentOutOfRangeException(nameof(originalData));
+        
+        if (onProcessed is null)
+            throw new ArgumentNullException(nameof(onProcessed));
         
         var newBuffer = new byte[originalData.Length];
         
@@ -186,23 +266,7 @@ public class VoiceThread : IDisposable
         inputQueue.Enqueue(newPacket);
     }
 
-    public void Process(VoiceThreadPacket packet, SetupMessageHandler setupMessageHandler = null)
-    {
-        if (packet is null)
-            throw new ArgumentNullException(nameof(packet));
-        
-        var newBuffer = new byte[packet.Data.Length];
-        
-        Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
-
-        var newMessage = new VoiceMessage(voiceController.Player.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
-        
-        setupMessageHandler?.Invoke(ref newMessage);
-        
-        voiceController.ProcessMessage(ref newMessage);
-    }
-
-    private void ProcessPitch(ref VoiceMessage message)
+    internal void ProcessPitch(ref VoiceMessage message)
     {
         var newBuffer = new byte[message.Data.Length];
         
@@ -238,27 +302,21 @@ public class VoiceThread : IDisposable
         voiceController.ProcessMessage(ref newMessage);
     }
 
-    internal void ProcessMessage(ref VoiceMessage msg)
-    {
-        if (!isDisposed)
-        {
-            if (!ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice && ActivePitch != 1f)
-            {
-                ProcessPitch(ref msg);
-                return;
-            }
-
-            voiceController.ProcessMessage(ref msg);
-        }
-    }
-
     private void UpdateOutputQueue()
     {
         try
         {
+            var maxOutput = ApiLoader.ApiConfig.VoiceSection.MaxThreadOutput;
+            var curOutput = 0;
+            
             while (outputQueue.TryDequeue(out var packet) && ExServer.IsRunning && !isDisposed)
             {
                 packet.OnProcessed.InvokeSafe(packet);
+
+                if (maxOutput > 0 && curOutput + 1 >= maxOutput)
+                    break;
+
+                curOutput++;
             }
         }
         catch (Exception ex)
@@ -288,16 +346,5 @@ public class VoiceThread : IDisposable
                 ApiLog.Error("Voice Thread Input", ex);
             }
         }
-    }
-
-    public static VoiceMessage GetMessage(VoiceThreadPacket packet)
-    {
-        if (packet is null)
-            throw new ArgumentNullException(nameof(packet));
-        
-        var newBuffer = new byte[packet.Data.Length];
-        
-        Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
-        return new VoiceMessage(packet.Speaker.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
     }
 }

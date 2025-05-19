@@ -10,14 +10,17 @@ using LabExtended.Utilities.Unity;
 
 using LabExtended.API.CustomVoice.Profiles;
 using LabExtended.API.CustomVoice.Threading;
-
+using LabExtended.Core;
 using LabExtended.Extensions;
-
+using LabExtended.Utilities.Update;
 using UnityEngine;
 
 using VoiceChat;
 using VoiceChat.Networking;
 
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8603 // Possible null reference return.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
 
 namespace LabExtended.API.CustomVoice;
@@ -78,12 +81,13 @@ public class VoiceController : IDisposable
     {
         Player = player;
         
-        Thread = new VoiceThread(this);
+        if (!ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice)
+            Thread = new VoiceThread(this);
         
         sessionPackets = DictionaryPool<long, VoiceMessage>.Shared.Rent();
         profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
-        PlayerLoopHelper.AfterLoop += UpdateSpeaking;
+        PlayerUpdateHelper.OnUpdate += UpdateSpeaking;
         InternalEvents.OnSpawning += HandleSpawn;
         
         OnJoined.InvokeSafe(this);
@@ -269,7 +273,7 @@ public class VoiceController : IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        PlayerLoopHelper.AfterLoop -= UpdateSpeaking;
+        PlayerUpdateHelper.OnUpdate -= UpdateSpeaking;
         InternalEvents.OnSpawning -= HandleSpawn;
         
         Thread?.Dispose();
@@ -300,8 +304,11 @@ public class VoiceController : IDisposable
 
     internal void ProcessMessage(ref VoiceMessage msg)
     {
-        if (!IsOnline) return;
-        if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId) return;
+        if (!IsOnline) 
+            return;
+        
+        if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId) 
+            return;
 
         if (IsCapturing)
             sessionPackets.Add(DateTime.Now.Ticks, msg);

@@ -12,5 +12,8 @@ namespace LabExtended.Core.Configs.Sections
 
         [Description("Sets a custom voice chat rate limit.")]
         public int CustomRateLimit { get; set; } = 128;
+
+        [Description("Sets the maximum amount of modified voice packets that can be processed per frame.")]
+        public int MaxThreadOutput { get; set; } = 100;
     }
 }

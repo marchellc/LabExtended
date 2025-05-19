@@ -53,7 +53,15 @@ namespace LabExtended.Patches.Functions.Players
                 OnSpeakingTerms.OnVoiceMessageReceiving(msg, msg.Speaker);
             }
 
-            speaker.Voice.Thread.ProcessMessage(ref msg);
+            if (speaker.Voice.Thread is { IsDisposed: false })
+            {
+                speaker.Voice.Thread.ProcessPitch(ref msg);
+            }
+            else
+            {
+                speaker.Voice.ProcessMessage(ref msg);
+            }
+
             return false;
         }
     }
