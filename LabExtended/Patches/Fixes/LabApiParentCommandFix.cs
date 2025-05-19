@@ -15,9 +15,12 @@ using static LabApi.Loader.CommandLoader;
 
 namespace LabExtended.Patches.Fixes;
 
+/// <summary>
+/// Fixes an issue in LabAPI's CommandManager which prevents the registration of multiple parent commands.
+/// </summary>
 public static class LabApiParentCommandFix
 {
-    public static bool Prefix(Type commandType, Type commandHandlerType, out ICommand? command, string logName, ref bool __result)
+    private static bool Prefix(Type commandType, Type commandHandlerType, out ICommand? command, string logName, ref bool __result)
     {
         command = default;
         
