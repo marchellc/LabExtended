@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
 using LabExtended.API.CustomVoice.Threading.Pitch;
-
+using LabExtended.Attributes;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
@@ -27,6 +27,9 @@ namespace LabExtended.API.CustomVoice.Threading;
 public class VoiceThread : IDisposable
 {
     private static volatile float globalPitch = 1f;
+    
+    private static volatile ConcurrentQueue<VoiceThreadPacket> inputQueue = new();
+    private static volatile ConcurrentQueue<VoiceThreadPacket> outputQueue = new();
 
     /// <summary>
     /// Gets or sets the global voice pitch.
@@ -45,9 +48,6 @@ public class VoiceThread : IDisposable
     
     private volatile OpusEncoder opusEncoder;
     private volatile OpusDecoder opusDecoder;
-    
-    private volatile ConcurrentQueue<VoiceThreadPacket> inputQueue = new();
-    private volatile ConcurrentQueue<VoiceThreadPacket> outputQueue = new();
     
     private volatile Action<VoiceThreadPacket> onPacketProcessed;
 
@@ -96,9 +96,6 @@ public class VoiceThread : IDisposable
 
         onPacketProcessed = ProcessPitched;
 
-        Task.Run(UpdateInputQueue);
-
-        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
         ExServerEvents.Quitting += Dispose;
     }
 
@@ -108,7 +105,6 @@ public class VoiceThread : IDisposable
         if (isDisposed)
             return;
 
-        PlayerUpdateHelper.OnUpdate -= UpdateOutputQueue;
         ExServerEvents.Quitting -= Dispose;
         
         isDisposed = true;
@@ -302,14 +298,14 @@ public class VoiceThread : IDisposable
         voiceController.ProcessMessage(ref newMessage);
     }
 
-    private void UpdateOutputQueue()
+    private static void UpdateOutputQueue()
     {
         try
         {
             var maxOutput = ApiLoader.ApiConfig.VoiceSection.MaxThreadOutput;
             var curOutput = 0;
             
-            while (outputQueue.TryDequeue(out var packet) && ExServer.IsRunning && !isDisposed)
+            while (outputQueue.TryDequeue(out var packet))
             {
                 packet.OnProcessed.InvokeSafe(packet);
 
@@ -325,13 +321,13 @@ public class VoiceThread : IDisposable
         }
     }
 
-    private void UpdateInputQueue()
+    private static void UpdateInputQueue()
     {
-        while (!isDisposed && ExServer.IsRunning)
+        while (true)
         {
             try
             {
-                while (inputQueue.TryDequeue(out var packet) && ExServer.IsRunning)
+                while (inputQueue.TryDequeue(out var packet))
                 {
                     if (packet.Action is null)
                         continue;
@@ -346,5 +342,16 @@ public class VoiceThread : IDisposable
                 ApiLog.Error("Voice Thread Input", ex);
             }
         }
+    }
+
+    [LoaderInitialize(1)]
+    private static void OnInit()
+    {
+        if (ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice)
+            return;
+        
+        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
+        
+        new Thread(UpdateInputQueue).Start();
     }
 }
