@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
     - name: Download Dependencies
       run: wget https://github.com/marchellc/LabExtended/raw/refs/heads/refs/refs.rar
     - name: Install RAR
