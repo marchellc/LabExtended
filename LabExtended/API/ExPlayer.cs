@@ -1327,7 +1327,7 @@ public class ExPlayer : Player, IDisposable
 
         if (PersistentStorage != null)
         {
-            if (!PlayerStorage._persistentStorage.ContainsKey(UserId))
+            if (!string.IsNullOrWhiteSpace(UserId) && !PlayerStorage._persistentStorage.ContainsKey(UserId))
                 PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
 
             PersistentStorage.LeaveTime = DateTime.Now;
