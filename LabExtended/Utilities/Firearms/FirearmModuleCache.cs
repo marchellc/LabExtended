@@ -361,7 +361,7 @@ public class FirearmModuleCache : IDisposable
         Modules.Clear();
         
         ResetFields();
-        
+
         for (var i = 0; i < firearm.Modules.Length; i++)
         {
             var module = firearm.Modules[i];

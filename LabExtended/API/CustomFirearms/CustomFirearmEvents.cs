@@ -9,6 +9,7 @@ using LabExtended.Events.Player;
 using LabExtended.Events.Firearms;
 
 using LabExtended.Attributes;
+using LabExtended.Core;
 using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;

@@ -23,8 +23,8 @@ namespace LabExtended.Patches.Functions.Items.Firearms;
 public static class FirearmEventPatch
 {
     [HarmonyPatch(typeof(EventManagerModule.LayerEventProcessor), nameof(EventManagerModule.LayerEventProcessor.Process))]
-    private static bool Prefix(EventManagerModule.LayerEventProcessor __instance, AnimatorStateInfo stateInfo,
-        Dictionary<int, float> continuationTimes)
+    private static bool Prefix(EventManagerModule.LayerEventProcessor __instance, ref AnimatorStateInfo stateInfo,
+        ref Dictionary<int, float> continuationTimes)
     {
         if (__instance._curHash != stateInfo.shortNameHash)
         {
@@ -42,13 +42,14 @@ public static class FirearmEventPatch
         var lastFrame = __instance._lastFrame;
         
         // ReSharper disable once PossibleNullReferenceException
-        __instance._prevEvents.ForEach(eventIndex =>
+        for (var index = 0; index < __instance._prevEvents.Count; index++)
         {
+            var eventIndex = __instance._prevEvents[index];
             var firearmEvent = __instance._eventManager.Events[eventIndex];
             var eventTime = stateInfo.normalizedTime;
 
             if (stateInfo.loop)
-                eventTime -= eventTime;
+                eventTime -= (float)(int)eventTime;
 
             __instance._lastFrame = eventTime * firearmEvent.LengthFrames;
 
@@ -58,34 +59,34 @@ public static class FirearmEventPatch
                 var args = new FirearmProcessingEventEventArgs(ExPlayer.Get(__instance._eventManager.Firearm.Owner),
                     __instance._eventManager.Firearm, firearmEvent, details);
 
+                FirearmEvent.CurrentlyInvokedEvent = firearmEvent;
+                
                 if (!ExFirearmEvents.OnProcessingEvent(args))
-                    return;
+                    continue;
 
                 var exception = default(Exception);
-                
+
                 try
                 {
-                    FirearmEvent.CurrentlyInvokedEvent = firearmEvent;
-
                     firearmEvent.LastInvocation = details;
                     firearmEvent.Action.Invoke();
                 }
                 catch (Exception ex)
                 {
                     exception = ex;
-                    
+
                     ApiLog.Error("Firearm Event", ex);
                 }
 
                 FirearmEvent.CurrentlyInvokedEvent = null;
-                
+
                 if (!__instance._isCurrent)
                     continuationTimes[__instance._curHash] = __instance._lastFrame;
 
                 ExFirearmEvents.OnProcessedEvent(new(args.Player, __instance._eventManager.Firearm, firearmEvent,
                     details, args.Module, args.Method, exception));
             }
-        });
+        }
 
         return false;
     }
