@@ -32,7 +32,7 @@ namespace LabExtended.Patches.Events.Player
                 && !player.IsNorthwoodStaff)
                 return false;
 
-            q = Misc.SanitizeRichText(q, "[", "]");
+            q = Misc.SanitizeRichText(q.Replace("~", "-"), "[", "]").Trim();
 
             if (string.IsNullOrWhiteSpace(q.Remove("@")))
                 return false;
@@ -64,7 +64,7 @@ namespace LabExtended.Patches.Events.Player
 
             foreach (var ply in ExPlayer.Players)
             {
-                if (!ply.HasRemoteAdminAccess || !ply.IsVerified)
+                if (!ply.IsVerified || !ply.HasStaffChatAccess)
                     continue;
 
                 ply.ReferenceHub.encryptedChannelManager.TrySendMessageToClient(str, EncryptedChannelManager.EncryptedChannel.AdminChat);
