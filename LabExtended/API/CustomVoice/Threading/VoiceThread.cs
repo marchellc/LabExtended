@@ -119,12 +119,6 @@ public class VoiceThread : IDisposable
         
         opusEncoder?.Dispose();
         opusEncoder = null;
-        
-        inputQueue?.Clear();
-        inputQueue = null;
-        
-        outputQueue?.Clear();
-        outputQueue = null;
     }
     
     /// <summary>
@@ -344,11 +338,19 @@ public class VoiceThread : IDisposable
         }
     }
 
+    private static void OnRestart()
+    {
+        outputQueue.Clear();
+        inputQueue.Clear();
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
         if (ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice)
             return;
+        
+        InternalEvents.OnRoundRestart += OnRestart;
         
         PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
         
