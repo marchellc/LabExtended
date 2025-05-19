@@ -4,14 +4,13 @@ using LabExtended.API.Hints.Elements.Personal;
 using LabExtended.API.Enums;
 
 using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
 
-using LabExtended.Extensions;
-
 using LabExtended.Utilities;
-using LabExtended.Utilities.Unity;
+using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
 
@@ -19,17 +18,15 @@ using System.Text;
 using System.Diagnostics;
 
 using Hints;
-using LabExtended.Utilities.Update;
-using Mirror;
 
-using UnityEngine;
-using UnityEngine.PlayerLoop;
+using Mirror;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
 
-// ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
-
+#pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
+
+// ReSharper disable PrivateFieldCanBeConvertedToLocalVariable
 
 namespace LabExtended.API.Hints;
 
@@ -223,6 +220,13 @@ public static class HintController
         }
     }
 
+    /// <summary>
+    /// Removes a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <typeparam name="T">Type of the element.</typeparam>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement<T>(this ExPlayer target) where T : PersonalHintElement
     {
         if (!target)
@@ -234,6 +238,12 @@ public static class HintController
         return RemoveHintElement(target, element);
     }
 
+    /// <summary>
+    /// Removes a global hint element.
+    /// </summary>
+    /// <typeparam name="T">Type of the element.</typeparam>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement<T>() where T : HintElement
     {
         if (!TryGetHintElement<T>(out var element))
@@ -242,6 +252,13 @@ public static class HintController
         return RemoveHintElement(element);
     }
 
+    /// <summary>
+    /// Removes a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <param name="customId">Custom ID of the element.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(this ExPlayer target, string customId)
     {
         if (!TryGetHintElement(target, customId, out var element))
@@ -250,6 +267,12 @@ public static class HintController
         return RemoveHintElement(element);
     }
 
+    /// <summary>
+    /// Removes a global hint element.
+    /// </summary>
+    /// <param name="customId">Custom ID of the element.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(string customId)
     {
         if (!TryGetHintElement(customId, out var element))
@@ -258,6 +281,13 @@ public static class HintController
         return RemoveHintElement(element);
     }
 
+    /// <summary>
+    /// Removes a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <param name="elementId">Assigned ID of the element.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(this ExPlayer target, int elementId)
     {
         if (!TryGetHintElement(target, elementId, out var element))
@@ -266,6 +296,12 @@ public static class HintController
         return RemoveHintElement(element);
     }
 
+    /// <summary>
+    /// Removes a global hint element.
+    /// </summary>
+    /// <param name="elementId">Assigned ID of the element.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(int elementId)
     {
         if (!TryGetHintElement(elementId, out var element))
@@ -274,6 +310,13 @@ public static class HintController
         return RemoveHintElement(element);
     }
 
+    /// <summary>
+    /// Removes a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <param name="hintElement">The element instance to remove.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(this ExPlayer target, PersonalHintElement hintElement)
     {
         if (hintElement is null)
@@ -296,6 +339,12 @@ public static class HintController
         return true;
     }
 
+    /// <summary>
+    /// Removes a global hint element.
+    /// </summary>
+    /// <param name="element">Element instance to remove.</param>
+    /// <returns>true if the element was removed</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool RemoveHintElement(this HintElement element)
     {
         if (element is null)
@@ -315,6 +364,13 @@ public static class HintController
         return true;
     }
 
+    /// <summary>
+    /// Adds a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <typeparam name="T">Type of the element.</typeparam>
+    /// <returns>true if the element was added</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool AddHintElement<T>(this ExPlayer target) where T : PersonalHintElement
     {
         if (target is null)
@@ -328,6 +384,12 @@ public static class HintController
         return AddHintElement(target, instance);
     }
 
+    /// <summary>
+    /// Adds a global hint element.
+    /// </summary>
+    /// <typeparam name="T">Type of the element.</typeparam>
+    /// <returns>true if the element was added</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool AddHintElement<T>() where T : HintElement
     {
         var instance = Activator.CreateInstance<T>();
@@ -338,6 +400,13 @@ public static class HintController
         return AddHintElement(instance);
     }
 
+    /// <summary>
+    /// Adds a personal hint element.
+    /// </summary>
+    /// <param name="target">The player that owns the element.</param>
+    /// <param name="hintElement">Element instance to add.</param>
+    /// <returns>true if the element was added</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool AddHintElement(this ExPlayer target, PersonalHintElement hintElement)
     {
         if (hintElement is null)
@@ -362,6 +431,12 @@ public static class HintController
         return true;
     }
 
+    /// <summary>
+    /// Adds a global hint element.
+    /// </summary>
+    /// <param name="element">Element instance to add.</param>
+    /// <returns>true if the element was added</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool AddHintElement(this HintElement element)
     {
         if (element is null)
@@ -384,6 +459,12 @@ public static class HintController
         return true;
     }
 
+    /// <summary>
+    /// Gets a list of global elements matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>A list of matching elements.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static IEnumerable<HintElement> GetHintElements(Predicate<HintElement> predicate)
     {
         if (predicate is null)
@@ -392,6 +473,13 @@ public static class HintController
         return elements.Where(x => predicate(x));
     }
 
+    /// <summary>
+    /// Gets a list of personal elements matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>A list of matching elements.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static IEnumerable<PersonalHintElement> GetHintElements(this ExPlayer target,
         Predicate<PersonalHintElement> predicate)
     {
@@ -404,15 +492,28 @@ public static class HintController
         return target.HintElements.Where(x => predicate(x));
     }
 
-    public static IEnumerable<T> GetHintElements<T>(Predicate<T> predicate = null) where T : HintElement
+    /// <summary>
+    /// Gets a list of global elements matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>A list of matching elements.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static IEnumerable<T> GetHintElements<T>(Predicate<T>? predicate = null) where T : HintElement
     {
         if (predicate is null)
             return elements.Where<T>();
-        else
-            return elements.Where<T>(x => predicate(x));
+
+        return elements.Where<T>(x => predicate(x));
     }
 
-    public static IEnumerable<T> GetHintElements<T>(this ExPlayer target, Predicate<T> predicate = null)
+    /// <summary>
+    /// Gets a list of personal elements matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>A list of matching elements.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static IEnumerable<T> GetHintElements<T>(this ExPlayer target, Predicate<T>? predicate = null)
         where T : PersonalHintElement
     {
         if (target is null)
@@ -420,22 +521,54 @@ public static class HintController
 
         if (predicate is null)
             return target.HintElements.Where<T>();
-        else
-            return target.HintElements.Where<T>(x => predicate(x));
+        
+        return target.HintElements.Where<T>(x => predicate(x));
     }
 
+    /// <summary>
+    /// Gets a global hint element.
+    /// </summary>
+    /// <param name="id">Assigned ID of the element.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static T GetHintElement<T>(int id) where T : HintElement
         => GetHintElement<T>(x => x.Id == id);
 
+    /// <summary>
+    /// Gets a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="id">Assigned ID of the element.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static T GetHintElement<T>(this ExPlayer target, int id) where T : PersonalHintElement
         => GetHintElement<T>(target, x => x.Id == id);
 
+    /// <summary>
+    /// Gets a global hint element.
+    /// </summary>
+    /// <param name="customId">Custom ID of the element.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static T GetHintElement<T>(string customId) where T : PersonalHintElement
         => GetHintElement<T>(x => x.CompareId(customId));
 
+    /// <summary>
+    /// Gets a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="customId">Custom ID of the element.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static T GetHintElement<T>(this ExPlayer target, string customId) where T : PersonalHintElement
         => GetHintElement<T>(target, x => x.CompareId(customId));
 
+    /// <summary>
+    /// Gets a global hint element matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static HintElement GetHintElement(Predicate<HintElement> predicate)
     {
         if (predicate is null)
@@ -444,6 +577,13 @@ public static class HintController
         return elements.TryGetFirst(x => predicate(x), out var element) ? element : null;
     }
 
+    /// <summary>
+    /// Gets a personal hint element matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static PersonalHintElement GetHintElement(this ExPlayer target, Predicate<PersonalHintElement> predicate)
     {
         if (target is null)
@@ -455,7 +595,13 @@ public static class HintController
         return target.HintElements.TryGetFirst(x => predicate(x), out var element) ? element : null;
     }
 
-    public static T GetHintElement<T>(Predicate<T> predicate = null) where T : HintElement
+    /// <summary>
+    /// Gets a global hint element matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static T GetHintElement<T>(Predicate<T>? predicate = null) where T : HintElement
     {
         if (predicate != null)
             return elements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
@@ -463,7 +609,14 @@ public static class HintController
             return elements.TryGetFirst<T>(out var element) ? element : null;
     }
 
-    public static T GetHintElement<T>(this ExPlayer target, Predicate<T> predicate = null) where T : PersonalHintElement
+    /// <summary>
+    /// Gets a personal hint element matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <returns>Resolved element instance (or null if not found).</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static T GetHintElement<T>(this ExPlayer target, Predicate<T>? predicate = null) where T : PersonalHintElement
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
@@ -474,37 +627,112 @@ public static class HintController
             return target.HintElements.TryGetFirst<T>(out var element) ? element : null;
     }
 
+    /// <summary>
+    /// Attempts to find a global hint element.
+    /// </summary>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(out T element) where T : HintElement
         => elements.TryGetFirst(out element);
 
+    /// <summary>
+    /// Attempts to find a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(this ExPlayer target, out T element) where T : PersonalHintElement
         => target.HintElements.TryGetFirst(out element);
 
+    /// <summary>
+    /// Attempts to find a global hint element.
+    /// </summary>
+    /// <param name="id">The assigned ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(int id, out T element) where T : HintElement
         => TryGetHintElement(x => x.Id == id, out element);
 
+    /// <summary>
+    /// Attempts to find a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="id">The assigned ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(this ExPlayer target, int id, out T element) where T : PersonalHintElement
         => TryGetHintElement(target, x => x.Id == id, out element);
 
+    /// <summary>
+    /// Attempts to find a global hint element.
+    /// </summary>
+    /// <param name="id">The assigned ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement(int id, out HintElement element)
         => TryGetHintElement(x => x.Id == id, out element);
 
-    public static bool TryGetHintElement(this ExPlayer target, int id, out PersonalHintElement hintElement)
-        => TryGetHintElement(target, x => x.Id == id, out hintElement);
+    /// <summary>
+    /// Attempts to find a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="id">The assigned ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
+    public static bool TryGetHintElement(this ExPlayer target, int id, out PersonalHintElement element)
+        => TryGetHintElement(target, x => x.Id == id, out element);
 
+    /// <summary>
+    /// Attempts to find a global hint element.
+    /// </summary>
+    /// <param name="customId">The custom ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(string customId, out T element) where T : HintElement
         => TryGetHintElement(x => x.CompareId(customId), out element);
 
+    /// <summary>
+    /// Attempts to find a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="customId">The custom ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <typeparam name="T">Element type.</typeparam>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(this ExPlayer target, string customId, out T element)
         where T : PersonalHintElement
         => TryGetHintElement(target, x => x.CompareId(customId), out element);
 
+    /// <summary>
+    /// Attempts to find a global hint element.
+    /// </summary>
+    /// <param name="customId">The custom ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement(string customId, out HintElement element)
         => TryGetHintElement(x => x.CompareId(customId), out element);
 
-    public static bool TryGetHintElement(this ExPlayer target, string customId, out PersonalHintElement hintElement)
-        => TryGetHintElement(target, x => x.CompareId(customId), out hintElement);
+    /// <summary>
+    /// Attempts to find a personal hint element.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="customId">The custom ID of the element.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
+    public static bool TryGetHintElement(this ExPlayer target, string customId, out PersonalHintElement element)
+        => TryGetHintElement(target, x => x.CompareId(customId), out element);
 
+    /// <summary>
+    /// Attempts to find a global hint element matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(Predicate<T> predicate, out T element) where T : HintElement
     {
         if (predicate is null)
@@ -513,6 +741,13 @@ public static class HintController
         return elements.TryGetFirst(x => predicate(x), out element);
     }
 
+    /// <summary>
+    /// Attempts to find a personal hint element matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(this ExPlayer target, Predicate<T> predicate, out T element)
         where T : PersonalHintElement
     {
@@ -525,6 +760,12 @@ public static class HintController
         return target.HintElements.TryGetFirst(x => predicate(x), out element);
     }
 
+    /// <summary>
+    /// Attempts to find a global hint element matching a predicate.
+    /// </summary>
+    /// <param name="predicate">The predicate.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement(Predicate<HintElement> predicate, out HintElement element)
     {
         if (predicate is null)
@@ -533,8 +774,15 @@ public static class HintController
         return elements.TryGetFirst(x => predicate(x), out element);
     }
 
+    /// <summary>
+    /// Attempts to find a personal hint element matching a predicate.
+    /// </summary>
+    /// <param name="target">The target player.</param>
+    /// <param name="predicate">The predicate.</param>
+    /// <param name="element">The resolved element instance.</param>
+    /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement(this ExPlayer target, Predicate<PersonalHintElement> predicate,
-        out PersonalHintElement hintElement)
+        out PersonalHintElement element)
     {
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
@@ -542,7 +790,7 @@ public static class HintController
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
-        return target.HintElements.TryGetFirst(x => predicate(x), out hintElement);
+        return target.HintElements.TryGetFirst(x => predicate(x), out element);
     }
 
     internal static void Update()
@@ -568,8 +816,11 @@ public static class HintController
             {
                 var player = ExPlayer.Players[i];
 
-                if (!player || player.Hints is null) continue;
-                if (player.Hints.IsPaused) continue;
+                if (!player || player.Hints is null) 
+                    continue;
+                
+                if (player.Hints.IsPaused) 
+                    continue;
 
                 paramBuffer.Clear();
 
@@ -699,13 +950,17 @@ public static class HintController
 
                 foreach (var element in elements)
                 {
-                    if (anyOverride) break;
+                    if (anyOverride) 
+                        break;
+                    
                     ProcessElement(element);
                 }
 
                 foreach (var personalElement in player.HintElements)
                 {
-                    if (anyOverride) break;
+                    if (anyOverride) 
+                        break;
+                    
                     ProcessElement(personalElement);
                 }
 
@@ -751,7 +1006,7 @@ public static class HintController
         }
         catch (Exception ex)
         {
-            ApiLog.Error("Hint API", ex);
+            ApiLog.Error("Hint Controller", ex);
         }
 
         sendNextFrame = false;
