@@ -12,7 +12,7 @@ using LabExtended.Events.Map;
 using LabExtended.Events.Player;
 
 using LabExtended.Extensions;
-
+using LabExtended.Utilities.Update;
 using MapGeneration;
 
 using PlayerRoles;
@@ -417,11 +417,10 @@ namespace LabExtended.API
 
         private static void OnUpdate()
         {
-            if (!StaticUnityMethods.IsPlaying)
-                return;
-            
-            Gates.ForEach(gate =>
+            for (var index = 0; index < Gates.Count; index++)
             {
+                var gate = Gates[index];
+                
                 try
                 {
                     gate.Update();
@@ -430,7 +429,7 @@ namespace LabExtended.API
                 {
                     ApiLog.Error("LabExtended", $"Failed to update tesla gate {gate.NetId}!\n{ex.ToColoredString()}");
                 }
-            });
+            }
         }
 
         private static void OnTeslaSpawned(TeslaGate gate)
@@ -459,7 +458,7 @@ namespace LabExtended.API
             TeslaGate.OnAdded += OnTeslaSpawned;
             TeslaGate.OnRemoved += OnTeslaDestroyed;
             
-            StaticUnityMethods.OnFixedUpdate += OnUpdate;
+            PlayerUpdateHelper.OnUpdate += OnUpdate;
 
             InternalEvents.OnRoundRestart += Lookup.Clear;
             InternalEvents.OnRoundRestart += Gates.Clear;
