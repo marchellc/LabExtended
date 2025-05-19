@@ -95,6 +95,12 @@ public abstract class HintElement
     /// Whether or not to clear the parameter list for every player.
     /// </summary>
     public virtual bool ClearParameters { get; }
+    
+    /// <summary>
+    /// Whether or not to clear the <see cref="Builder"/> before the <see cref="OnUpdate"/> method is called.
+    /// <para>The builder will be cleared only before <see cref="OnDraw"/> is called if set to false.</para>
+    /// </summary>
+    public virtual bool ClearBuilderOnUpdate { get; }
 
     /// <summary>
     /// Gets called once per tick.
