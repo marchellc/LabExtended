@@ -22,6 +22,7 @@ using Hints;
 using Mirror;
 
 using HintMessage = LabExtended.API.Messages.HintMessage;
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
 #pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -325,7 +326,7 @@ public static class HintController
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
-        if (!target.HintElements.Remove(hintElement))
+        if (target.HintElements is null || !target.HintElements.Remove(hintElement))
             return false;
 
         hintElement.IsActive = false;
@@ -415,6 +416,9 @@ public static class HintController
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
+        if (target.HintElements is null)
+            return false;
+
         hintElement.Id = idClock++;
         hintElement.Player = target;
 
@@ -426,8 +430,6 @@ public static class HintController
         hintElement.OnEnabled();
         hintElement.IsActive = true;
 
-        ApiLog.Debug("Hint API",
-            $"Added personal element &1{hintElement.Id}&r (&6{hintElement.GetType().Name}&r) to player &1{target.Nickname}&r (&6{target.UserId}&r)");
         return true;
     }
 
@@ -454,8 +456,7 @@ public static class HintController
 
         element.OnEnabled();
         element.IsActive = true;
-
-        ApiLog.Debug("Hint API", $"Added element &1{element.Id}&r (&6{element.GetType().Name}&r)");
+        
         return true;
     }
 
@@ -489,7 +490,7 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return target.HintElements.Where(x => predicate(x));
+        return target.HintElements?.Where(x => predicate(x)) ?? Array.Empty<PersonalHintElement>();
     }
 
     /// <summary>
@@ -520,9 +521,9 @@ public static class HintController
             throw new ArgumentNullException(nameof(target));
 
         if (predicate is null)
-            return target.HintElements.Where<T>();
+            return target.HintElements?.Where<T>() ?? Array.Empty<T>();
         
-        return target.HintElements.Where<T>(x => predicate(x));
+        return target.HintElements?.Where<T>(x => predicate(x)) ?? Array.Empty<T>();
     }
 
     /// <summary>
@@ -592,7 +593,10 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return target.HintElements.TryGetFirst(x => predicate(x), out var element) ? element : null;
+        if (target.HintElements != null)
+            return target.HintElements.TryGetFirst(x => predicate(x), out var element) ? element : null;
+
+        return null;
     }
 
     /// <summary>
@@ -621,6 +625,9 @@ public static class HintController
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
+        if (target.HintElements is null)
+            return null;
+        
         if (predicate != null)
             return target.HintElements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
         else
@@ -644,7 +651,18 @@ public static class HintController
     /// <typeparam name="T">Element type.</typeparam>
     /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(this ExPlayer target, out T element) where T : PersonalHintElement
-        => target.HintElements.TryGetFirst(out element);
+    {
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
+        if (target.HintElements is null)
+        {
+            element = null;
+            return false;
+        }
+        
+        return target.HintElements.TryGetFirst(out element);
+    }
 
     /// <summary>
     /// Attempts to find a global hint element.
@@ -757,6 +775,12 @@ public static class HintController
         if (target is null)
             throw new ArgumentNullException(nameof(target));
 
+        if (target.HintElements is null)
+        {
+            element = null;
+            return false;
+        }
+
         return target.HintElements.TryGetFirst(x => predicate(x), out element);
     }
 
@@ -789,6 +813,12 @@ public static class HintController
 
         if (target is null)
             throw new ArgumentNullException(nameof(target));
+
+        if (target.HintElements is null)
+        {
+            element = null;
+            return false;
+        }
 
         return target.HintElements.TryGetFirst(x => predicate(x), out element);
     }
