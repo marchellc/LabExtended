@@ -1,6 +1,8 @@
 ﻿using LabExtended.API.Interfaces;
 using LabExtended.Extensions;
+
 using UnityEngine;
+
 using UserSettings.ServerSpecific;
 
 namespace LabExtended.API.Settings.Entries.Buttons
