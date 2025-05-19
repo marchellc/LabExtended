@@ -4,10 +4,7 @@ using System.Reflection;
 
 using CommandSystem.Commands.Shared;
 
-using GameCore;
-
 using LabApi.Loader;
-using LabApi.Loader.Features.Paths;
 using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 
@@ -20,8 +17,6 @@ using LabExtended.Core.Configs;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
-
-using UnityEngine;
 
 using Version = System.Version;
 
@@ -218,9 +213,16 @@ namespace LabExtended.Core
                 }
             }
 
-            loadedAssemblies.ForEach(x => x.InvokeStaticMethods(
-                y => y.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0, 
-                y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
+            try
+            {
+                loadedAssemblies.ForEach(x => x.InvokeStaticMethods(
+                    y => y.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0,
+                    y => y.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false));
+            }
+            catch
+            {
+                // ignored, logged by the extension
+            }
 
             ListPool<Assembly>.Shared.Return(loadedAssemblies);
 
