@@ -40,6 +40,9 @@ public class PersonalStaticHintElement : PersonalHintElement
         if (Content is null)
             return false;
 
+        if (Builder is null)
+            return false;
+
         Builder.AppendLine(Content);
         return true;
     }
