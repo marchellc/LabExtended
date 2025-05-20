@@ -13,7 +13,6 @@ using LabExtended.API.Hints.Elements.Personal;
 
 using LabExtended.Core.Networking;
 using LabExtended.Core.Pooling.Pools;
-using LabExtended.Core.Networking.Synchronization.Position;
 
 using LabExtended.Commands.Attributes;
 
@@ -690,12 +689,6 @@ public class ExPlayer : Player, IDisposable
         DictionaryPool<uint, RoleTypeId>.Shared.Rent();
 
     /// <summary>
-    /// Gets the player's sent positions cache.
-    /// </summary>
-    public Dictionary<uint, PositionData>? SentPositions { get; internal set; } =
-        DictionaryPool<uint, PositionData>.Shared.Rent();
-
-    /// <summary>
     /// Gets the currently spectated player.
     /// </summary>
     [CommandPropertyAlias("spectatedPlayer")]
@@ -1313,8 +1306,6 @@ public class ExPlayer : Player, IDisposable
                 return;
             
             ply.SentRoles?.Remove(NetworkId);
-            ply.SentPositions?.Remove(NetworkId);
-
             ply.PersonalGhostFlags &= ~GhostBit;
         });
 
@@ -1349,12 +1340,6 @@ public class ExPlayer : Player, IDisposable
         {
             DictionaryPool<uint, RoleTypeId>.Shared.Return(SentRoles);
             SentRoles = null;
-        }
-
-        if (SentPositions != null)
-        {
-            DictionaryPool<uint, PositionData>.Shared.Return(SentPositions);
-            SentPositions = null;
         }
 
         if (settingsIdLookup != null)
