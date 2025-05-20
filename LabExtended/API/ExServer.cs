@@ -15,6 +15,7 @@ using PlayerStatsSystem;
 using RoundRestarting;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace LabExtended.API;
 
@@ -294,7 +295,7 @@ public static class ExServer
 
     // For some odd reason the tick rate keeps getting reset to 60 once the Facility scene is loaded
     // I suspect it's due to Headless but I ain't dealing with that
-    private static void UpdateTargetTickRate()
+    private static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (ServerStatic.ServerTickrate != Application.targetFrameRate && !IsIdleModeActive)
         {
@@ -306,6 +307,6 @@ public static class ExServer
     private static void OnInit()
     {
         ExServerEvents.Quitting += OnQuitting;
-        PlayerUpdateHelper.OnUpdate += UpdateTargetTickRate;
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 }
