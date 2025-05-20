@@ -20,7 +20,7 @@ public static class RoleSynchronizer
         {
             var target = ExPlayer.AllPlayers[i];
 
-            if (target?.Role is null || target.SentRoles is null || !target.IsVerified)
+            if (target?.Role is null || target.SentRoles is null)
                 continue;
 
             for (var x = 0; x < ExPlayer.AllPlayers.Count; x++)
