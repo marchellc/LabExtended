@@ -880,6 +880,9 @@ public static class HintController
 
                 if (player.elementsToRemove is null)
                     continue;
+                
+                if (!player.IsVerified)
+                    continue;
 
                 if (player.elementsToRemove.Count > 0)
                 {
@@ -1011,6 +1014,7 @@ public static class HintController
                     if (!element.ShouldParse)
                     {
                         builder.Append(content);
+                        
                         anyAppended = true;
                     }
                     else

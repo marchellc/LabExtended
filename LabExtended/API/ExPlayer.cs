@@ -946,7 +946,16 @@ public class ExPlayer : Player, IDisposable
     /// Whether the player has fully connected.
     /// </summary>
     [CommandPropertyAlias("isVerified")]
-    public bool IsVerified => InstanceMode is ClientInstanceMode.ReadyClient;
+    public bool IsVerified
+    {
+        get
+        {
+            if (ClientConnection is { isReady: false })
+                return false;
+
+            return InstanceMode is not ClientInstanceMode.Unverified;
+        }
+    }
 
     /// <summary>
     /// Whether the player is still connecting.
