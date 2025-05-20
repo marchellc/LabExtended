@@ -881,7 +881,7 @@ public static class HintController
                 if (player.elementsToRemove is null)
                     continue;
                 
-                if (!player.IsVerified)
+                if (player.IsUnverified)
                     continue;
 
                 if (player.elementsToRemove.Count > 0)
