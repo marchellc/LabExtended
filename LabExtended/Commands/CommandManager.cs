@@ -466,6 +466,9 @@ public static class CommandManager
         
         Executed.InvokeSafe(ctx);
 
+        ServerEvents.OnCommandExecuted(new(ctx.Sender.ReferenceHub.queryProcessor._sender, ctx.Type, null,
+            new(ctx.Args.ToArray()), ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
+
         if (ctx.Args != null)
             ListPool<string>.Shared.Return(ctx.Args);
 
