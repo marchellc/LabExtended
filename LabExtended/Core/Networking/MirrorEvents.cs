@@ -1,4 +1,7 @@
-﻿using LabExtended.Extensions;
+﻿using LabExtended.Events.Mirror;
+using LabExtended.Events;
+
+using LabExtended.Extensions;
 
 using Mirror;
 
@@ -20,6 +23,9 @@ public static class MirrorEvents
     /// Called when a new <see cref="NetworkBehaviour"/> spawns.
     /// </summary>
     public static event Action<NetworkIdentity>? Spawning;
+    
+    /// <inheritdoc cref="MirrorAddingObserverEventArgs"/>
+    public static event Action<MirrorAddingObserverEventArgs>? AddingObserver; 
 
     /// <summary>
     /// Invokes the <see cref="Destroying"/> event.
@@ -34,5 +40,12 @@ public static class MirrorEvents
     /// <param name="identity">The identity that is being spawned.</param>
     public static void OnSpawning(NetworkIdentity identity)
         => Spawning.InvokeSafe(identity);
-
+    
+    /// <summary>
+    /// Invokes the <see cref="AddingObserver"/> event.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnAddingObserver(MirrorAddingObserverEventArgs args)
+        => AddingObserver.InvokeBooleanEvent(args);
 }
