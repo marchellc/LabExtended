@@ -5,29 +5,25 @@ using Hints;
 using LabExtended.API;
 using LabExtended.API.Hints;
 
-using MEC;
+#pragma warning disable CS8604 // Possible null reference argument.
 
-namespace LabExtended.Patches.Functions.Players
+namespace LabExtended.Patches.Functions.Players;
+
+/// <summary>
+/// Allows vanilla hints to be displayed over custom hint displays.
+/// </summary>
+public static class HintPatch
 {
-    public static class HintPatch
+    [HarmonyPatch(typeof(HintDisplay), nameof(HintDisplay.Show))]
+    private static bool Prefix(HintDisplay __instance, Hint hint)
     {
-        [HarmonyPatch(typeof(HintDisplay), nameof(HintDisplay.Show))]
-        public static bool Prefix(HintDisplay __instance, Hint hint)
-        {
-            if (hint is null || __instance.connectionToClient is null)
-                return false;
-
-            if (HintDisplay.SuppressedReceivers.Contains(__instance.connectionToClient))
-                return false;
-
-            if (!ExPlayer.TryGet(__instance.connectionToClient, out var player))
-                return true;
-
-            player.PauseHints();
-            player.Connection.Send(new HintMessage(hint));
-
-            Timing.CallDelayed(hint.DurationScalar + 0.1f, () => HintController.ResumeHints(player));
+        if (HintDisplay.SuppressedReceivers.Contains(__instance.connectionToClient))
             return false;
-        }
+
+        if (!ExPlayer.TryGet(__instance.connectionToClient, out var player))
+            return false;
+        
+        player.ShowHint(hint);
+        return false;
     }
 }

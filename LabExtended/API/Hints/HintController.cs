@@ -18,12 +18,13 @@ using System.Text;
 using System.Diagnostics;
 
 using Hints;
-
+using MEC;
 using Mirror;
-
+using UnityEngine;
 using HintMessage = LabExtended.API.Messages.HintMessage;
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -141,6 +142,49 @@ public static class HintController
     /// <returns>true if the player's hints were paused</returns>
     public static bool ToggleHints(this ExPlayer player) 
         => player.Hints.IsPaused = !player.Hints.IsPaused;
+
+    /// <summary>
+    /// Shows a base-game hint for a specific player.
+    /// </summary>
+    /// <param name="hub">The player to show the hint to.</param>
+    /// <param name="hint">The hint to show.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void ShowHint(this ReferenceHub hub, Hint hint)
+    {
+        if (!ExPlayer.TryGet(hub, out var player))
+            return;
+        
+        ShowHint(player, hint);
+    }
+
+    /// <summary>
+    /// Shows a base-game hint for a specific player.
+    /// </summary>
+    /// <param name="player">The player to show the hint to.</param>
+    /// <param name="hint">The hint to show.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void ShowHint(this ExPlayer player, Hint hint)
+    {
+        if (player is null)
+            throw new ArgumentNullException(nameof(player));
+        
+        if (hint is null)
+            throw new ArgumentNullException(nameof(hint));
+        
+        if (hint is TextHint textHint)
+        {
+            player.ShowHint(textHint.Text, (ushort)Mathf.CeilToInt(textHint.DurationScalar), true, textHint.Parameters);
+            return;
+        }
+        
+        // Translation hints are shown locally, so just wait until it's over.
+        
+        player.PauseHints();
+        
+        SendNextFrame = true;
+
+        Timing.CallDelayed(hint.DurationScalar + 0.1f, player.ResumeHints);
+    }
 
     /// <summary>
     /// Sends a new hint.
