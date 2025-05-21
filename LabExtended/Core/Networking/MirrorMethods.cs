@@ -328,6 +328,25 @@ public static class MirrorMethods
     }
 
     /// <summary>
+    /// Adds all players as observers for a specific identity.
+    /// </summary>
+    /// <param name="identity">The target identity.</param>
+    /// <param name="predicate">The optional filtering predicate.</param>
+    public static void AddAllObservers(this NetworkIdentity identity, Predicate<ExPlayer>? predicate = null)
+    {
+        ExPlayer.Players.ForEach(ply =>
+        {
+            if (!ply.IsVerified || ply.ClientConnection is null || !ply.ClientConnection.isReady)
+                return;
+
+            if (predicate != null && !predicate(ply))
+                return;
+
+            identity.AddObserver(ply.ClientConnection);
+        });
+    }
+
+    /// <summary>
     /// Sends a custom <see cref="SpawnMessage"/>.
     /// </summary>
     /// <param name="identity">The targeted network identity</param>
@@ -595,6 +614,9 @@ public static class MirrorMethods
         if (target is null)
             throw new ArgumentNullException(nameof(target));
         
+        if (target is NetworkConnectionToClient connectionToClient)
+            InternalDestroyFor(behaviour.netIdentity, connectionToClient);
+        
         target.Send(new ObjectDestroyMessage { netId = behaviour.netId });
     }
 
@@ -614,7 +636,13 @@ public static class MirrorMethods
 
         var msg = new ObjectDestroyMessage { netId = behaviour.netId };
 
-        connections.ForEach(c => c.Send(msg));
+        connections.ForEach(c =>
+        {
+            if (c is NetworkConnectionToClient connectionToClient)
+                InternalDestroyFor(behaviour.netIdentity, connectionToClient);
+
+            c.Send(msg);
+        });
     }
     
     /// <summary>
@@ -633,7 +661,15 @@ public static class MirrorMethods
 
         var msg = new ObjectDestroyMessage { netId = behaviour.netId };
 
-        players.ForEach(c => c.Send(msg));
+        players.ForEach(c =>
+        {
+            if (c.ClientConnection is null)
+                return;
+            
+            InternalDestroyFor(behaviour.netIdentity, c.ClientConnection);
+
+            c.Send(msg);
+        });
     }
     
     /// <summary>
@@ -654,11 +690,20 @@ public static class MirrorMethods
 
         ExPlayer.Players.ForEach(p =>
         {
-            if (!predicate(p))
+            if (p.ClientConnection is null || !predicate(p))
                 return;
+            
+            InternalDestroyFor(behaviour.netIdentity, p.ClientConnection);
             
             p.Send(msg);
         });
+    }
+
+    private static void InternalDestroyFor(NetworkIdentity identity, NetworkConnectionToClient conn)
+    {
+        identity.RemoveObserver(conn);
+        
+        conn.RemoveFromObserving(identity, false);
     }
     #endregion
     
