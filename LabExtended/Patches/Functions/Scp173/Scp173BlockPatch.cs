@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
+
 using LabExtended.Events;
 using LabExtended.Events.Player;
 
@@ -16,7 +16,6 @@ namespace LabExtended.Patches.Functions.Scp173
 {
     public static class Scp173BlockPatch
     {
-        [EventPatch(typeof(PlayerObservingScp173EventArgs), true)]
         [HarmonyPatch(typeof(Scp173ObserversTracker), nameof(Scp173ObserversTracker.IsObservedBy))]
         public static bool Prefix(Scp173ObserversTracker __instance, ReferenceHub target, float widthMultiplier, ref bool __result)
         {

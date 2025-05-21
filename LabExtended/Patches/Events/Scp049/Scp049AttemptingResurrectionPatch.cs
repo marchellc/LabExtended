@@ -7,7 +7,6 @@ using PlayerRoles;
 using PlayerStatsSystem;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using LabExtended.Events;
 using LabExtended.Events.Scp049;
@@ -16,7 +15,6 @@ namespace LabExtended.Patches.Events.Scp049
 {
     public static class Scp049AttemptingResurrectionPatch
     {
-        [EventPatch(typeof(Scp049AttemptingResurrectionEventArgs))]
         [HarmonyPatch(typeof(Scp049ResurrectAbility), nameof(Scp049ResurrectAbility.CheckBeginConditions))]
         public static bool Prefix(Scp049ResurrectAbility __instance, BasicRagdoll ragdoll, ref Scp049ResurrectAbility.ResurrectError __result)
         {

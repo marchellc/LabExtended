@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
+
 using LabExtended.Events;
 using LabExtended.Events.Scp049;
+
 using LabExtended.Extensions;
 
 using Mirror;
@@ -20,8 +21,7 @@ namespace LabExtended.Patches.Functions.Scp049
     public static class Scp049SensePatch
     {
         public static double NullTargetCooldown = 2.5;
-
-        [EventPatch(typeof(Scp049SensingTargetEventArgs), true)]
+        
         [HarmonyPatch(typeof(Scp049SenseAbility), nameof(Scp049SenseAbility.ServerProcessCmd))]
         public static bool Prefix(Scp049SenseAbility __instance, NetworkReader reader)
         {

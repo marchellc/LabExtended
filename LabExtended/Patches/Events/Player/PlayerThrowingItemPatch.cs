@@ -2,18 +2,22 @@
 
 using InventorySystem;
 using InventorySystem.Items.Pickups;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
+
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Behaviours;
-using LabExtended.Attributes;
+
 using LabExtended.Extensions;
 
 using LabExtended.Events;
+
 using NorthwoodLib.Pools;
+
 using PlayerRoles.FirstPersonControl;
 
 using UnityEngine;
@@ -25,8 +29,6 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerThrowingItemPatch
     {
-        [EventPatch(typeof(PlayerThrowingItemEventArgs), true)]
-        [EventPatch(typeof(PlayerDroppingItemEventArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.UserCode_CmdDropItem__UInt16__Boolean))]
         public static bool Prefix(Inventory __instance, ushort itemSerial, bool tryThrow)
         {

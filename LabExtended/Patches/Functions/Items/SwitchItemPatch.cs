@@ -11,7 +11,6 @@ using LabExtended.API.CustomItems.Behaviours;
 
 using LabExtended.Core;
 using LabExtended.Utilities;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
@@ -23,8 +22,6 @@ namespace LabExtended.Patches.Functions.Items
 {
     public static class SwitchItemPatch
     {
-        [EventPatch(typeof(PlayerSelectingItemEventArgs), true)]
-        [EventPatch(typeof(PlayerSelectedItemEventArgs), true)]
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.ServerSelectItem))]
         public static bool Prefix(Inventory __instance, ushort itemSerial)
         {

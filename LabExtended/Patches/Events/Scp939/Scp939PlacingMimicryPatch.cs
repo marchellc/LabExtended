@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using LabExtended.Events;
 using LabExtended.Events.Scp939;
@@ -16,8 +15,6 @@ namespace LabExtended.Patches.Events.Scp939
 {
     public static class Scp939PlacingMimicryPatch
     {
-        [EventPatch(typeof(Scp939PlacingMimicryEventArgs), true)]
-        [EventPatch(typeof(Scp939RemovingMimicryEventArgs), true)]
         [HarmonyPatch(typeof(MimicPointController), nameof(MimicPointController.ServerProcessCmd))]
         public static bool Prefix(MimicPointController __instance, NetworkReader reader)
         {

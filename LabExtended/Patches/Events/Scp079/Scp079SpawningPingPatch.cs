@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
+
 using LabExtended.Events;
 using LabExtended.Events.Scp079;
+
 using LabExtended.Extensions;
 
 using Mirror;
@@ -16,8 +17,6 @@ namespace LabExtended.Patches.Events.Scp079
 {
     public static class Scp079SpawningPingPatch
     {
-        [EventPatch(typeof(Scp079SpawnedPingEventArgs))]
-        [EventPatch(typeof(Scp079SpawningPingEventArgs))]
         [HarmonyPatch(typeof(Scp079PingAbility), nameof(Scp079PingAbility.ServerProcessCmd))]
         public static bool Prefix(Scp079PingAbility __instance, NetworkReader reader)
         {

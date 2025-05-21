@@ -1,9 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 using LabExtended.Events;
-using LabExtended.Events.Scp3114;
 
 using Mirror;
 
@@ -13,7 +11,6 @@ namespace LabExtended.Patches.Functions.Scp3114
 {
     public static class Scp3114StranglePatch
     {
-        [EventPatch(typeof(Scp3114StranglingEventArgs), true)]
         [HarmonyPatch(typeof(Scp3114Strangle), nameof(Scp3114Strangle.ServerProcessCmd))]
         public static bool Prefix(Scp3114Strangle __instance, NetworkReader reader)
         {

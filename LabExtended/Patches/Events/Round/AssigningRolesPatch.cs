@@ -3,17 +3,13 @@
 using PlayerRoles.RoleAssign;
 using PlayerRoles;
 
-using LabExtended.Events.Round;
 using LabExtended.Events;
-
 using LabExtended.API;
-using LabExtended.Attributes;
 
 namespace LabExtended.Patches.Events.Round
 {
     public static class AssigningRolesPatch
     {
-        [EventPatch(typeof(AssigningRolesEventArgs))]
         [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
         public static bool Prefix()
         {

@@ -4,8 +4,6 @@ using Interactables.Interobjects.DoorUtils;
 
 using LabApi.Features.Wrappers;
 
-using LabExtended.Attributes;
-
 using LabExtended.Events;
 using LabExtended.Events.Map;
 
@@ -17,7 +15,6 @@ namespace LabExtended.Patches.Events
 {
     public static class SpawningStructurePatch
     {
-        [EventPatch(typeof(SpawningStructureEventArgs))]
         [HarmonyPatch(typeof(StructureDistributor), nameof(StructureDistributor.SpawnStructure))]
         public static bool Prefix(StructureDistributor __instance, SpawnableStructure structure, Transform tr, string doorName)
         {

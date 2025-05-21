@@ -4,7 +4,6 @@ using CommandSystem.Commands.RemoteAdmin;
 using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
@@ -13,7 +12,6 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerTogglingLobbyLockPatch
     {
-        [EventPatch(typeof(PlayerTogglingLobbyLockEventArgs), true)]
         [HarmonyPatch(typeof(LobbyLockCommand), nameof(LobbyLockCommand.Execute))]
         public static bool Prefix(ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
         {

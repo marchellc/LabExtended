@@ -4,8 +4,9 @@ using Interactables;
 using Interactables.Interobjects;
 using Interactables.Interobjects.DoorUtils;
 using LabApi.Events.Handlers;
+
 using LabExtended.API;
-using LabExtended.Attributes;
+
 using LabExtended.Events;
 using LabExtended.Events.Scp079;
 
@@ -22,7 +23,6 @@ namespace LabExtended.Patches.Events.Scp079
 {
     public static class Scp079RecontainingPatch
     {
-        [EventPatch(typeof(Scp079RecontainingEventArgs))]
         [HarmonyPatch(typeof(Scp079Recontainer), nameof(Scp079Recontainer.BeginOvercharge))]
         public static bool Prefix(Scp079Recontainer __instance)
         {

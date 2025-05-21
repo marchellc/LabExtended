@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
@@ -16,7 +15,6 @@ namespace LabExtended.Patches.Events.Player
 {
     public static class PlayerOverridingPositionPatch
     {
-        [EventPatch(typeof(PlayerOverridingPositionEventArgs))]
         [HarmonyPatch(typeof(FirstPersonMovementModule), nameof(FirstPersonMovementModule.ServerOverridePosition))]
         public static bool Prefix(FirstPersonMovementModule __instance, Vector3 position)
         {

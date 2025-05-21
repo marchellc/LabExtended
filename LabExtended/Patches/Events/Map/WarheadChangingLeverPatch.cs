@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using LabExtended.Events;
 using LabExtended.Events.Map;
@@ -10,7 +9,6 @@ namespace LabExtended.Patches.Events
 {
     public static class WarheadChangingLeverPatch
     {
-        [EventPatch(typeof(WarheadChangingLeverEventArgs))]
         [HarmonyPatch(typeof(PlayerInteract), nameof(PlayerInteract.UserCode_CmdUsePanel__AlphaPanelOperations))]
         public static bool Prefix(PlayerInteract __instance, PlayerInteract.AlphaPanelOperations n)
         {

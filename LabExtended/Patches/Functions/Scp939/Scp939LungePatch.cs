@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 using LabApi.Events.Arguments.Scp939Events;
 using LabApi.Events.Handlers;
+
 using LabExtended.API;
-using LabExtended.Attributes;
 using LabExtended.Events;
+
 using Mirror;
 
 using PlayerRoles.FirstPersonControl;
@@ -15,13 +16,13 @@ using RelativePositioning;
 using UnityEngine;
 
 using Utils.Networking;
+
 using Scp939LungingEventArgs = LabExtended.Events.Scp939.Scp939LungingEventArgs;
 
 namespace LabExtended.Patches.Functions.Scp939
 {
     public static class Scp939LungePatch
     {
-        [EventPatch(typeof(Scp939LungingEventArgs), true)]
         [HarmonyPatch(typeof(Scp939LungeAbility), nameof(Scp939LungeAbility.ServerProcessCmd))]
         public static bool Prefix(Scp939LungeAbility __instance, NetworkReader reader)
         {

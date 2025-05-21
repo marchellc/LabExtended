@@ -7,8 +7,6 @@ using InventorySystem.Items.Pickups;
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
 
-using LabExtended.Attributes;
-
 using LabExtended.Events;
 using LabExtended.Events.Map;
 
@@ -18,8 +16,6 @@ namespace LabExtended.Patches.Events.Map
 {
     public static class DistributingItemPatch
     {
-        [EventPatch(typeof(DistributedPickupEventArgs))]
-        [EventPatch(typeof(DistributingPickupEventArgs))]
         [HarmonyPatch(typeof(ItemDistributor), nameof(ItemDistributor.ServerRegisterPickup))]
         public static bool Prefix(ItemDistributor __instance, ItemPickupBase pickup, string triggerDoor)
         {

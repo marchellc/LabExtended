@@ -3,7 +3,6 @@
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
@@ -17,7 +16,6 @@ namespace LabExtended.Patches.Events
 {
     public static class LockerSpawningPickupPatch
     {
-        [EventPatch(typeof(LockerFillingChamberEventArgs))]
         [HarmonyPatch(typeof(LockerChamber), nameof(LockerChamber.SpawnItem))]
         public static bool Prefix(LockerChamber __instance, ItemType id, int amount)
         {

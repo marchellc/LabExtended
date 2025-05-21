@@ -2,7 +2,6 @@
 
 using LabApi.Features.Wrappers;
 
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events;
@@ -18,8 +17,6 @@ namespace LabExtended.Patches.Functions.Scp106
 {
     public static class Scp106PocketItemsUpdatePatch
     {
-        [EventPatch(typeof(PocketDimensionDroppingItemEventArgs), true)]
-        [EventPatch(typeof(PocketDimensionDestroyingItemEventArgs), true)]
         [HarmonyPatch(typeof(Scp106PocketItemManager), nameof(Scp106PocketItemManager.Update))]
         public static bool Prefix()
         {
