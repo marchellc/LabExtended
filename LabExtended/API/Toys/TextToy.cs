@@ -2,10 +2,11 @@
 using LabExtended.API.Prefabs;
 using LabExtended.API.Interfaces;
 using LabExtended.Core;
+using LabExtended.Core.Networking;
 using LabExtended.Images.Playback;
 
 using Mirror;
-
+using NorthwoodLib.Pools;
 using UnityEngine;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
@@ -18,6 +19,11 @@ namespace LabExtended.API.Toys;
 /// </summary>
 public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 {
+    /// <summary>
+    /// Gets the format for a singular string.
+    /// </summary>
+    public const string SingleStringFormat = "{0}";
+    
     /// <summary>
     /// Gets the default size of a text toy display.
     /// </summary>
@@ -80,6 +86,35 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
     {
         get => Base._textFormat;
         set => Base.Network_textFormat = value;
+    }
+
+    /// <summary>
+    /// Clears the frame and sets it to a custom string.
+    /// </summary>
+    /// <param name="value">The string to set.</param>
+    /// <param name="setFormat">Whether or not to set a custom text format. The string may not be displayed correctly if this is set to false.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public void Set(string value, bool setFormat = true)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            throw new ArgumentNullException(nameof(value));
+
+        Arguments.Clear();
+        
+        if (value.Length > MirrorMethods.MaxStringLength)
+        {
+            SplitStringNonAlloc(value, Arguments, out var format);
+            
+            if (setFormat)
+                Format = format;
+        }
+        else
+        {
+            Format = SingleStringFormat;
+            
+            if (setFormat)
+                Arguments.Add(value);
+        }
     }
 
     /// <summary>
@@ -190,5 +225,53 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
             PlaybackDisplay.Dispose();
             PlaybackDisplay = null;
         }
+    }
+
+    /// <summary>
+    /// Splits a string into a target string collection.
+    /// </summary>
+    /// <param name="value">The string to split.</param>
+    /// <param name="target">The target collection.</param>
+    /// <param name="format">Generated text toy string format.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void SplitStringNonAlloc(string value, ICollection<string> target, out string format)
+    {
+        if (string.IsNullOrEmpty(value))
+            throw new ArgumentNullException(nameof(value));
+
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
+        var valueBuilder = StringBuilderPool.Shared.Rent();
+        
+        var formatBuilder = StringBuilderPool.Shared.Rent();
+        var formatCount = target.Count;
+
+        void AppendFormat()
+        {
+            formatBuilder.Append('{');
+            formatBuilder.Append(formatCount);
+            formatBuilder.Append('}');
+
+            formatCount++;
+        }
+
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (valueBuilder.Length + 1 >= MirrorMethods.MaxStringLength)
+            {
+                AppendFormat();
+                
+                target.Add(valueBuilder.ToString());
+                
+                valueBuilder.Clear();
+            }
+            
+            valueBuilder.Append(value[i]);
+        }
+
+        format = StringBuilderPool.Shared.ToStringReturn(formatBuilder);
+        
+        StringBuilderPool.Shared.Return(valueBuilder);
     }
 }
