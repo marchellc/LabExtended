@@ -44,10 +44,29 @@ namespace LabExtended.Events
             if (player.IsNpc) 
                 return;
 
-            if (string.IsNullOrWhiteSpace(player.CountryCode)
-                && !string.IsNullOrWhiteSpace(player.UserId)
-                && ExPlayer.preauthData.TryGetValue(player.UserId, out var region))
-                player.CountryCode = region;
+            if (!string.IsNullOrWhiteSpace(player.UserId))
+            {
+                if (string.IsNullOrWhiteSpace(player.CountryCode) &&
+                    ExPlayer.preauthData.TryGetValue(player.UserId, out var region))
+                    player.CountryCode = region;
+
+                if (player.PersistentStorage is null)
+                {
+                    if (PlayerStorage._persistentStorage.TryGetValue(player.UserId, out var persistentStorage))
+                    {
+                        persistentStorage.Player = player;
+                        
+                        player.PersistentStorage = persistentStorage;
+                    }
+                    else
+                    {
+                        player.PersistentStorage = new(true, player);
+                    }
+            
+                    player.PersistentStorage.JoinTime = DateTime.Now;
+                    player.PersistentStorage.Lifes++;
+                }
+            }
             
             ApiLog.Info("LabExtended",
                 $"Player &3{player.Nickname}&r (&6{player.UserId}&r) &2joined&r from &3{player.IpAddress} ({player.CountryCode})&r!");
@@ -85,7 +104,7 @@ namespace LabExtended.Events
             
             OnPlayerLeft.InvokeSafe(player);
 
-            if (player is { IsServer: false, IsNpc: false })
+            if (player is { IsServer: false, IsNpc: false , IsVerified: true })
                 ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
             
             ExPlayerEvents.OnLeft(player);

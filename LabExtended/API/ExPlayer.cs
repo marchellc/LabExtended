@@ -55,6 +55,7 @@ using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 
 using UserSettings.ServerSpecific;
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 #pragma warning disable CS8604 // Possible null reference argument.
 
@@ -438,6 +439,9 @@ public class ExPlayer : Player, IDisposable
 
     #endregion
 
+    private UserIdHelper.UserIdInfo? idInfo;
+    private string idInfoValue = string.Empty;
+
     internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
     
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
@@ -503,6 +507,9 @@ public class ExPlayer : Player, IDisposable
 
         if (!string.IsNullOrWhiteSpace(referenceHub.authManager.UserId))
         {
+            idInfo = UserIdHelper.GetInfo(referenceHub.authManager.UserId);
+            idInfoValue = referenceHub.authManager.UserId;
+            
             if (PlayerStorage._persistentStorage.TryGetValue(referenceHub.authManager.UserId,
                     out var persistentStorage))
             {
@@ -513,18 +520,14 @@ public class ExPlayer : Player, IDisposable
             {
                 PersistentStorage = new(true, this);
             }
+            
+            PersistentStorage.JoinTime = DateTime.Now;
+            PersistentStorage.Lifes++;
 
             CountryCode = preauthData.TryGetValue(referenceHub.authManager.UserId, out var region)
                 ? region
                 : string.Empty;
         }
-        else
-        {
-            PersistentStorage = TemporaryStorage;
-        }
-
-        PersistentStorage.JoinTime = DateTime.Now;
-        PersistentStorage.Lifes++;
 
         AllPlayers.Add(this);
 
@@ -750,6 +753,37 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     [CommandPropertyAlias("cameraTransform")]
     public Transform CameraTransform => ReferenceHub.PlayerCameraReference;
+
+    /// <summary>
+    /// Gets the player's <see cref="UserIdHelper.UserIdInfo"/> instance.
+    /// </summary>
+    public UserIdHelper.UserIdInfo UserIdInfo
+    {
+        get
+        {
+            if (!idInfo.HasValue)
+            {
+                if (string.IsNullOrWhiteSpace(UserId))
+                    throw new Exception("Cannot get UserIdInfo, UserId has not been assigned yet.");
+
+                idInfo = UserIdHelper.GetInfo(UserId);
+                idInfoValue = UserId;
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(UserId))
+                    throw new Exception("Cannot get UserIdInfo, UserId has not been assigned yet.");
+                
+                if (idInfoValue != UserId)
+                {
+                    idInfo = UserIdHelper.GetInfo(UserId);
+                    idInfoValue = UserId;
+                }
+            }
+            
+            return idInfo.Value;
+        }
+    }
 
     /// <summary>
     /// Gets the player's <see cref="Footprinting.Footprint"/>.
