@@ -176,6 +176,9 @@ namespace LabExtended.Events
             if (args.Target is not ExPlayer target)
                 return;
 
+            if (target.IsDummy)
+                return;
+
             if ((ExPlayer.GhostedFlags & target.GhostBit) == target.GhostBit)
             {
                 args.IsVisible = false;
