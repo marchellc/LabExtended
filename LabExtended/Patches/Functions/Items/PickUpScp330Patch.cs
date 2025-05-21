@@ -1,86 +1,63 @@
 ﻿using HarmonyLib;
 
 using InventorySystem.Items.Usables.Scp330;
-using InventorySystem.Items;
-
 using InventorySystem.Searching;
-using InventorySystem;
 
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.Extensions;
+using LabExtended.API.Containers;
+
 using LabExtended.Utilities;
 
-namespace LabExtended.Patches.Functions.Items
+namespace LabExtended.Patches.Functions.Items;
+
+/// <summary>
+/// Implements the functionality of the <see cref="SwitchContainer.CanPickUpItems"/> toggle.
+/// </summary>
+public static class PickUpScp330Patch
 {
-    public static class PickUpScp330Patch
+    [HarmonyPatch(typeof(Scp330SearchCompletor), nameof(Scp330SearchCompletor.Complete))]
+    private static bool Prefix(Scp330SearchCompletor __instance)
     {
-        [HarmonyPatch(typeof(Scp330SearchCompletor), nameof(Scp330SearchCompletor.Complete))]
-        public static bool Prefix(Scp330SearchCompletor __instance)
-        {
-            var player = ExPlayer.Get(__instance.Hub);
-
-            if (player is null)
-                return true;
-
-            if (__instance.TargetPickup is null || __instance.TargetPickup is not Scp330Pickup scp330Pickup)
-            {
-                __instance.TargetPickup?.UnlockPickup();
-                return false;
-            }
-
-            if (!player.Toggles.CanPickUpItems)
-            {
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-
-            var scp330Args = new PlayerPickingUpScp330EventArgs(player.ReferenceHub, scp330Pickup);
-
-            PlayerEvents.OnPickingUpScp330(scp330Args);
-
-            if (!scp330Args.IsAllowed)
-            {
-                __instance.TargetPickup.UnlockPickup();
-                return false;
-            }
-
-            if (!Scp330Bag.TryGetBag(__instance.Hub, out var bag))
-            {
-                var bagItem = __instance.Hub.inventory.ServerAddItem(ItemType.SCP330, ItemAddReason.PickedUp);
-
-                if (bagItem is null)
-                {
-                    __instance.TargetPickup.UnlockPickup();
-                    return false;
-                }
-
-                bag = (Scp330Bag)bagItem;
-            }
-            
-            while (scp330Pickup.StoredCandies.Count > 0 && bag.TryAddSpecific(scp330Pickup.StoredCandies[0]) && ExServer.IsRunning)
-                scp330Pickup.StoredCandies.RemoveAt(0);
-
-            if (bag.AcquisitionAlreadyReceived)
-                bag.ServerRefreshBag();
-
-            PlayerEvents.OnPickedUpScp330(new PlayerPickedUpScp330EventArgs(player.ReferenceHub, scp330Pickup, bag));
-
-            if (scp330Pickup.StoredCandies.Count == 0)
-            {
-                scp330Pickup.DestroySelf();
-                
-                if (ItemTracker.Trackers.TryGetValue(scp330Pickup.ItemId.SerialNumber, out var tracker))
-                    tracker.Dispose();
-            }
-            else
-            {
-                scp330Pickup.UnlockPickup();
-            }
-
+        if (!ExPlayer.TryGet(__instance.Hub, out var player))
             return false;
+        
+        if (__instance.TargetPickup is not Scp330Pickup scp330Pickup)
+            return false;
+
+        if (!player.Toggles.CanPickUpItems)
+            return false;
+        
+        PlayerEvents.OnSearchedPickup(new(__instance.Hub, __instance.TargetPickup));
+
+        var pickingUpArgs = new PlayerPickingUpScp330EventArgs(__instance.Hub, scp330Pickup);
+        
+        PlayerEvents.OnPickingUpScp330(pickingUpArgs);
+
+        if (!pickingUpArgs.IsAllowed)
+            return false;
+        
+        Scp330Bag.ServerProcessPickup(__instance.Hub, scp330Pickup, out var scp330Bag);
+
+        if (scp330Pickup.StoredCandies.Count == 0)
+        {
+            if (ItemTracker.Trackers.TryGetValue(scp330Pickup.Info.Serial, out var tracker))
+                tracker.Dispose();
+            
+            scp330Pickup.DestroySelf();
         }
+        else
+        {
+            var info = scp330Pickup.Info;
+            
+            info.InUse = false;
+            
+            scp330Pickup.NetworkInfo = info;
+        }
+        
+        PlayerEvents.OnPickedUpScp330(new(__instance.Hub, scp330Pickup, scp330Bag));
+        return false;
     }
 }
