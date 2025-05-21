@@ -445,8 +445,6 @@ public class ExPlayer : Player, IDisposable
 
     internal Dictionary<int, SettingsEntry>?
         settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
-    
-    internal List<PersonalHintElement> elementsToRemove = ListPool<PersonalHintElement>.Shared.Rent();
 
     /// <summary>
     /// Spawns a new dummy player with the specified nickname.
@@ -1355,12 +1353,6 @@ public class ExPlayer : Player, IDisposable
         {
             DictionaryPool<Type, CustomRoleInstance>.Shared.Return(customRoles);
             customRoles = null;
-        }
-
-        if (elementsToRemove != null)
-        {
-            ListPool<PersonalHintElement>.Shared.Return(elementsToRemove);
-            elementsToRemove = null;
         }
         
         if (HintElements != null)
