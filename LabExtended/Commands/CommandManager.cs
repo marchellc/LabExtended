@@ -467,8 +467,10 @@ public static class CommandManager
         
         Executed.InvokeSafe(ctx);
 
+        string nameWithOverload = ctx.Command.Name + (string.IsNullOrWhiteSpace(ctx.Overload.Name) ? string.Empty : " " + ctx.Overload.Name);
+        ArraySegment<string> cmdArgs = new([nameWithOverload, .. ctx.Args], 1, ctx.Args.Count);
         ServerEvents.OnCommandExecuted(new(ctx.Sender.ReferenceHub.queryProcessor._sender, ctx.Type, null,
-            new(ctx.Args.ToArray()), ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
+            cmdArgs, ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
 
         if (ctx.Args != null)
             ListPool<string>.Shared.Return(ctx.Args);
