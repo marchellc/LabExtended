@@ -107,7 +107,7 @@ namespace LabExtended.Patches.Functions.Scp939
                 hub.transform.rotation = curRot;
             }
 
-            foreach (var other in ExPlayer.Players)
+            foreach (var other in ExPlayer.AllPlayers)
             {
                 if (other != target && HitboxIdentity.IsEnemy(__instance.Owner, other.ReferenceHub) 
                                     && other.Role.Is<IFpcRole>(out var otherRole))
