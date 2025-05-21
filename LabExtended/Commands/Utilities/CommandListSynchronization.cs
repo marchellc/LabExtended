@@ -1,4 +1,4 @@
-﻿using LabExtended.Commands.Parameters;
+﻿using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
 
@@ -23,46 +23,83 @@ public static class CommandListSynchronization
         if (CommandManager.Commands.Count < 1)
             return;
         
-        QueryProcessor.CommandData ToData(CommandData command, CommandOverload? ov, string name, string? aliasOf = null)
+        QueryProcessor.CommandData ToData(CommandData command, CommandOverload ov)
         {
             var data = new QueryProcessor.CommandData();
 
-            data.Command = name;
+            data.Command = command.Path[0];
                 
             data.Hidden = command.IsHidden;
-            data.Description = command.Description;
+            
+            data.Description = command.DefaultOverload != null && command.DefaultOverload == ov
+                ? command.Description
+                : ov.Description;
 
-            data.Usage = ov?.Parameters?.CompileParameters() ?? Array.Empty<string>();
-            
-            if (aliasOf != null)
-                data.AliasOf = aliasOf;
-            
+            data.Usage = GetUsage(command, ov);
             return data;
         }
         
         CommandManager.Commands.ForEach(cmd =>
         {
-            commands.Add(ToData(cmd, cmd.DefaultOverload, cmd.Name));
+            if (cmd.DefaultOverload != null)
+                commands.Add(ToData(cmd, cmd.DefaultOverload));
 
             foreach (var overload in cmd.Overloads)
-                commands.Add(ToData(cmd, overload.Value, $"{cmd.Name} {overload.Key}"));
-
-            if (cmd.Aliases.Count > 0)
-            {
-                var aliasSwapBuffer = ListPool<string>.Shared.Rent(cmd.Path);
-
-                foreach (var alias in cmd.Aliases)
-                {
-                    commands.Add(ToData(cmd, cmd.DefaultOverload, alias, cmd.Name));
-
-                    aliasSwapBuffer[aliasSwapBuffer.Count - 1] = alias;
-
-                    foreach (var overload in cmd.Overloads)
-                        commands.Add(ToData(cmd, overload.Value, $"{string.Join(" ", aliasSwapBuffer)} {overload.Key}", $"{cmd.Name} {overload.Key}"));
-                }
-                
-                ListPool<string>.Shared.Return(aliasSwapBuffer);
-            }
+                commands.Add(ToData(cmd, overload.Value));
         });
+    }
+
+    private static string[] GetUsage(CommandData command, CommandOverload overload)
+    {
+        var list = ListPool<string>.Shared.Rent();
+
+        if (command.Path.Count > 1)
+        {
+            for (var i = 1; i < command.Path.Count; i++)
+            {
+                list.Add(command.Path[i]);
+            }
+        }
+        
+        if (command.DefaultOverload != null && command.DefaultOverload == overload)
+        {
+            foreach (var parameter in overload.Parameters)
+            {
+                if (parameter.UsageAlias?.Length > 0)
+                {
+                    list.Add(parameter.UsageAlias);
+                }
+                else if (parameter.FriendlyAlias?.Length > 0)
+                {
+                    list.Add(parameter.FriendlyAlias);
+                }
+                else
+                {
+                    list.Add(parameter.Name);
+                }
+            }
+        }
+        else
+        {
+            list.Add(overload.Name);
+            
+            foreach (var parameter in overload.Parameters)
+            {
+                if (parameter.UsageAlias?.Length > 0)
+                {
+                    list.Add(parameter.UsageAlias);
+                }
+                else if (parameter.FriendlyAlias?.Length > 0)
+                {
+                    list.Add(parameter.FriendlyAlias);
+                }
+                else
+                {
+                    list.Add(parameter.Name);
+                }
+            }
+        }
+
+        return ListPool<string>.Shared.ToArrayReturn(list);
     }
 }

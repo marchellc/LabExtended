@@ -244,8 +244,9 @@ public static class CommandManager
                 if (!ev.CommandFound && likelyCommands?.Count > 0)
                 {
                     ev.IsAllowed = false;
-                    ev.Sender.Respond(CommandResponseFormatter.FormatLikelyCommands(likelyCommands,
-                        ev.CommandName + " " + string.Join(" ", ev.Arguments)));
+                    ev.WriteError(
+                        CommandResponseFormatter.FormatLikelyCommands(likelyCommands,
+                            ev.CommandName + " " + string.Join(" ", ev.Arguments)), "magenta");
                 }
 
                 if (likelyCommands != null)
@@ -259,7 +260,7 @@ public static class CommandManager
 
             if (command.Permission != null && !player.HasPermissions(command.Permission))
             {
-                ev.Sender.Respond(CommandResponseFormatter.FormatMissingPermissionsFailure(command.Permission, command.Name, ev.CommandType));
+                ev.WriteError(CommandResponseFormatter.FormatMissingPermissionsFailure(command.Permission, command.Name, ev.CommandType), "red");
                 
                 ListPool<string>.Shared.Return(args);
                 return;
@@ -273,7 +274,7 @@ public static class CommandManager
             {
                 if (command.DefaultOverload is null)
                 {
-                    ev.Sender.Respond(CommandResponseFormatter.FormatUnknownOverloadFailure(command));
+                    ev.WriteError(CommandResponseFormatter.FormatUnknownOverloadFailure(command), "red");
 
                     ListPool<string>.Shared.Return(args);
                     return;
@@ -500,7 +501,7 @@ public static class CommandManager
         
         if (args.Count < 1)
             return false;
-
+        
         for (var i = 0; i < Commands.Count; i++)
         {
             var command = Commands[i];

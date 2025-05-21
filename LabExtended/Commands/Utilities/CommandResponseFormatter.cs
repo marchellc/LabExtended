@@ -1,8 +1,11 @@
-﻿using NorthwoodLib.Pools;
+﻿using LabApi.Events.Arguments.ServerEvents;
+using NorthwoodLib.Pools;
 
 using LabApi.Features.Enums;
 
 using LabExtended.Commands.Parameters;
+using LabExtended.Core;
+using RemoteAdmin;
 
 namespace LabExtended.Commands.Utilities;
 
@@ -13,6 +16,21 @@ using Extensions;
 /// </summary>
 internal static class CommandResponseFormatter
 {
+    internal static void WriteError(this CommandExecutingEventArgs args, string response, string? color = null)
+    {
+        if (args.CommandType is CommandType.Client)
+        {
+            if (args.Sender is PlayerCommandSender sender)
+            {
+                sender.ReferenceHub.gameConsoleTransmission.SendToClient(response, color ?? "magenta");
+            }
+        }
+        else
+        {
+            args.Sender.Respond(response, false);
+        }
+    }
+    
     internal static bool WriteResponse(this CommandContext ctx, out ContinuableCommandBase continuableCommand)
     {
         if (ctx.Response.HasValue)
