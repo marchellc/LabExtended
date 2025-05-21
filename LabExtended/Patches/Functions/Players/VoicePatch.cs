@@ -44,15 +44,6 @@ namespace LabExtended.Patches.Functions.Players
             if (!sendingArgs.IsAllowed)
                 return false;
 
-            if (ApiLoader.ApiConfig.VoiceSection.EnableLegacyEvent)
-            {
-                OnReceiving.InvokeEvent(null, msg, msg.Speaker);
-            }
-            else
-            {
-                OnSpeakingTerms.OnVoiceMessageReceiving(msg, msg.Speaker);
-            }
-
             if (speaker.Voice.Thread is { IsDisposed: false })
             {
                 speaker.Voice.Thread.ProcessPitch(ref msg);

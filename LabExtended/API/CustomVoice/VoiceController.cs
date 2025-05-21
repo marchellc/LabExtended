@@ -1,4 +1,5 @@
-﻿using LabApi.Events.Arguments.PlayerEvents;
+﻿using Achievements.Handlers;
+using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.Core.Pooling.Pools;
@@ -12,6 +13,7 @@ using LabExtended.API.CustomVoice.Profiles;
 using LabExtended.API.CustomVoice.Threading;
 using LabExtended.Core;
 using LabExtended.Extensions;
+using LabExtended.Patches.Functions.Players;
 using LabExtended.Utilities.Update;
 using UnityEngine;
 
@@ -373,6 +375,15 @@ public class VoiceController : IDisposable
 
             if (!receivingArgs.IsAllowed)
                 continue;
+            
+            if (ApiLoader.ApiConfig.VoiceSection.EnableLegacyEvent)
+            {
+                VoicePatch.OnReceiving.InvokeEvent(null, msg, player.ReferenceHub);
+            }
+            else
+            {
+                OnSpeakingTerms.OnVoiceMessageReceiving(msg, player.ReferenceHub);
+            }
             
             player.Send(msg);
         }
