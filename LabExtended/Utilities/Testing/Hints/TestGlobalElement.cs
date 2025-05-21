@@ -1,4 +1,4 @@
-﻿#define ENABLE_TEST_GLOBAL_HINT
+﻿// #define ENABLE_TEST_GLOBAL_HINT
 
 using LabExtended.API;
 using LabExtended.API.Hints;
