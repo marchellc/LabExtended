@@ -32,8 +32,9 @@ public class RemoteAdminAction : IDisposable
     
     /// <summary>
     /// Gets called once the action button is pressed.
+    /// <param name="player">The player who pressed the action's button.</param>
     /// </summary>
-    public virtual void Invoke()
+    public virtual void Invoke(ExPlayer player)
     {
         
     }
@@ -48,6 +49,8 @@ public class RemoteAdminAction : IDisposable
 
     internal DummyAction ToDummyAction()
     {
-        return new(Name, Invoke);
+        return new(Name, DummyInvoke);
     }
+    
+    private void DummyInvoke() { }
 }

@@ -2,7 +2,8 @@
 using CommandSystem.Commands.RemoteAdmin.Dummies;
 
 using HarmonyLib;
-
+using LabExtended.API;
+using LabExtended.API.RemoteAdmin.Actions;
 using LabExtended.Extensions;
 
 using NetworkManagerUtils.Dummies;
@@ -36,6 +37,8 @@ public static class RemoteAdminDummyExecutePatch
          return __result = false;
       }
 
+      var player = ExPlayer.Get(sender);
+
       var moduleName = arguments.At(1);
       var actionName = arguments.At(2);
 
@@ -62,7 +65,14 @@ public static class RemoteAdminDummyExecutePatch
             }
             else if (isCategory && name == actionName)
             {
-               action.Action.InvokeSafe();
+               if (action.Action.Target is RemoteAdminAction remoteAdminAction)
+               {
+                  remoteAdminAction.Invoke(player);
+               }
+               else
+               {
+                  action.Action.InvokeSafe();
+               }
 
                count++;
             }
