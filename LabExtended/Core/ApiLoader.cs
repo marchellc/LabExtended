@@ -20,6 +20,8 @@ using NorthwoodLib.Pools;
 
 using Version = System.Version;
 
+#pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
+
 namespace LabExtended.Core
 {
     /// <summary>
