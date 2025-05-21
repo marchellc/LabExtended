@@ -198,6 +198,9 @@ namespace LabExtended.Core
                         
                         assembly.RegisterUpdates();
                         assembly.RegisterCommands();
+                        
+                        if (type.HasAttribute<LoaderPatchAttribute>())
+                            ApiPatcher.ApplyPatches(assembly);
                     }
                     
                     var loadMethod = type.FindMethod("ExtendedLoad");
