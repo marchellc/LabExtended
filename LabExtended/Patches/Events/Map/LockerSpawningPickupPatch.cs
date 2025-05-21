@@ -25,6 +25,9 @@ namespace LabExtended.Patches.Events
             var spawned = 0;
             var spawnPoint = __instance.Spawnpoint;
 
+            if (spawnPoint == null)
+                return false;
+
             var locker = ExMap.Lockers.FirstOrDefault(locker => locker.Chambers.Contains(__instance));
             var fillingArgs = new LockerFillingChamberEventArgs(locker, __instance, spawnPoint, amount, id);
 
@@ -34,8 +37,11 @@ namespace LabExtended.Patches.Events
             id = fillingArgs.Type;
             amount = fillingArgs.Amount;
 
-            for (int i = 0; i < amount; i++)
+            for (var i = 0; i < amount; i++)
             {
+                if (prefab == null || prefab.PickupDropModel == null)
+                    continue;
+                
                 if (__instance._useMultipleSpawnpoints && __instance._spawnpoints.Length > 0)
                 {
                     if (spawned > __instance._spawnpoints.Length)
@@ -44,6 +50,9 @@ namespace LabExtended.Patches.Events
                     spawnPoint = __instance._spawnpoints[spawned];
                     spawned++;
                 }
+                
+                if (spawnPoint == null)
+                    continue;
 
                 var pickup = UnityEngine.Object.Instantiate(prefab.PickupDropModel, spawnPoint.position, spawnPoint.rotation);
 
