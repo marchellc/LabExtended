@@ -53,10 +53,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 foreach (var arg in args)
                 {
                     if (!int.TryParse(arg.Remove("."), out var id))
-                    {
-                        ApiLog.Debug("Remote Admin API", $"Failed to parse: {arg.Remove(".")}");
                         continue;
-                    }
 
                     list.Add(id);
                 }

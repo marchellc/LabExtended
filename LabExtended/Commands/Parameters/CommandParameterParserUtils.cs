@@ -224,31 +224,12 @@ public static class CommandParameterParserUtils
             throw new ArgumentNullException(nameof(parserResults));
 
         if (context.Tokens.Count < context.Overload.RequiredParameters)
-        {
-            if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                ApiLog.Debug("Command Parameter Parser", $"Received less tokens that required ({context.Tokens.Count} / {context.Overload.RequiredParameters})");
-            
             return new(false, null, "MISSING_ARGS", null);
-        }
 
         if (context.Tokens.Count < 1)
         {
-            if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                ApiLog.Debug("Command Parameter Parser", "Received no tokens");
-            
             context.Overload.Parameters.ForEach(p => parserResults.Add(new(true, p.DefaultValue, null, p)));
             return new(true, null, null, null);
-        }
-
-        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-        {
-            ApiLog.Debug("Command Parameter Parser",
-                $"Parsing overload &1{context.Overload.Name}&r with &6{context.Overload.Parameters.Count}&r parameters " +
-                $"(from method &6{context.Overload.Target.GetMemberName()}&r)" +
-                $" with &6{context.Tokens.Count}&r token(s)");
-
-            for (var i = 0; i < context.Tokens.Count; i++)
-                ApiLog.Debug("Command Parameter Parser", $"&3{i}&r = &6{context.Tokens[i].GetType().Name}");
         }
 
         var index = 0;
@@ -257,20 +238,12 @@ public static class CommandParameterParserUtils
         {
             try
             {
-                
-                if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                    ApiLog.Debug("Command Parameter Parser", $"Parsing parameter &1{parameter.Name}&r (Index: {index} / {context.Tokens.Count})");
-                
                 if (index < context.Tokens.Count)
                 {
                     var parameterToken = context.Tokens[index];
 
                     if (!parameter.Type.Parser.AcceptsToken(parameterToken))
                     {
-                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                            ApiLog.Debug("Command Parameter Parser", $"Token &1{parameterToken.GetType().FullName}&r cannot be accepted " +
-                                                                     $"by &1{parameter.Type.Parser.GetType().FullName}&r");
-                        
                         parserResults.Add(new(false, null,
                             $"Token {parameterToken.GetType().Name} is not acceptable.", parameter));
 
@@ -278,26 +251,17 @@ public static class CommandParameterParserUtils
                         return;
                     }
 
-                    if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                        ApiLog.Debug("Command Parameter Parser", $"Parsing token (parser: {parameter.Type.Parser.GetType().FullName}");
-                    
                     var parameterResult =
                         parameter.Type.Parser.Parse(context.Tokens, parameterToken, index, context, parameter);
 
                     if (parameterResult.Success)
                     {
-                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                            ApiLog.Debug("Command Parameter Parser", $"Successfully parsed: {parameterResult.Value?.GetType().FullName ?? "null"}");
-                        
                         string? argumentError = null;
 
                         foreach (var restriction in parameter.Restrictions)
                         {
                             if (!restriction.IsValid(parameterResult.Value, context, parameter, out var error))
                             {
-                                if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                                    ApiLog.Debug("Command Parameter Parser", $"Restriction {restriction} prevented");
-                                
                                 argumentError = error;
                                 break;
                             }
@@ -313,17 +277,11 @@ public static class CommandParameterParserUtils
                     }
 
                     parserResults.Add(parameterResult);
-                    
-                    if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                        ApiLog.Debug("Command Parameter Parser", $"Added result ({parserResults.Count})");
                 }
                 else
                 {
                     if (!parameter.HasDefault)
                     {
-                        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                            ApiLog.Debug("Command Parameter Parser", $"No more tokens available for a non-optional parameter");
-                        
                         parserResults.Add(new(false, null, "MISSING_ARGS", parameter));
 
                         index++;
@@ -331,9 +289,6 @@ public static class CommandParameterParserUtils
                     }
 
                     parserResults.Add(new(true, parameter.DefaultValue, null, parameter));
-                    
-                    if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                        ApiLog.Debug("Command Parameter Parser", $"Added default value of {parameter.Name}");
                 }
             }
             catch (Exception ex)

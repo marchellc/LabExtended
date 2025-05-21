@@ -17,14 +17,11 @@ public static class AddObserverPatch
     [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.AddObserver))]
     private static bool Prefix(NetworkIdentity __instance, NetworkConnectionToClient conn)
     {
-        if (!ExPlayer.TryGet(conn, out var player))
-        {
-            ApiLog.Debug("AddObserverPatch", $"Could not get observer for connection &6{conn.connectionId}&r (&6{conn.address ?? "null"}&r)");
-            return true;
-        }
-        
         if (__instance.observers.ContainsKey(conn.connectionId))
             return false;
+        
+        if (!ExPlayer.TryGet(conn, out var player))
+            return true;
 
         if (!MirrorEvents.OnAddingObserver(new(player, __instance)))
             return false;

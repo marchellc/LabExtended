@@ -30,22 +30,13 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
             var array = data.Split(' ');
 
             if (array.Length != 3)
-            {
-                ApiLog.Debug("Remote Admin API", $"Array size false ({array.Length} / 3)");
                 return false;
-            }
 
             if (!int.TryParse(array[0], out var num) || !int.TryParse(array[1], out var sortingType))
-            {
-                ApiLog.Debug("Remote Admin API", $"Failed to parse sorting type");
                 return false;
-            }
 
             if (!Enum.IsDefined(typeof(RaPlayerList.PlayerSorting), sortingType))
-            {
-                ApiLog.Debug("Remote Admin API", $"Sorting type is not defined");
                 return false;
-            }
 
             var hasHiddenBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenBadges);
             var hasGlobalHiddenBadges = CommandProcessor.CheckPermissions(sender, PlayerPermissions.ViewHiddenGlobalBadges);

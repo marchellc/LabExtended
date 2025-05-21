@@ -62,7 +62,7 @@ namespace LabExtended.Patches.Functions.Networking
             }
             catch (Exception ex)
             {
-                ApiLog.Debug("NetworkSpawnPatch", $"Failed to spawn network identity:\n{ex.ToColoredString()}");
+                ApiLog.Error("NetworkSpawnPatch", $"Failed to spawn network identity:\n{ex.ToColoredString()}");
             }
 
             return false;

@@ -431,8 +431,6 @@ namespace LabExtended.Utilities.Unity
 
                         return false;
                     });
-
-                    ApiLog.Debug("Player Loop", $"Removed &1{count}&r loop(s)");
                 }
 
                 var allLoops = x.GetLoopNames();
@@ -440,8 +438,7 @@ namespace LabExtended.Utilities.Unity
                 if (config.AllLoops.Count != allLoops.Count || !config.AllLoops.SequenceEqual(allLoops))
                 {
                     config.AllLoops = allLoops;
-                    
-                    ApiLog.Debug("Player Loop", $"Player Loop name list mismatch, saving new config ..");
+
                     ApiLoader.SaveConfig();
                 }
                 

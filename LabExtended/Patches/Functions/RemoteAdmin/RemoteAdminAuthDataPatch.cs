@@ -35,10 +35,7 @@ namespace LabExtended.Patches.Functions.RemoteAdmin
                 var array = data.Split(' ');
 
                 if (array.Length != 1)
-                {
-                    ApiLog.Debug("Remote Admin API", $"Array size or parsing failed ({array.Length} / 2) ({array[0]})");
                     return false;
-                }
 
                 if (!array[0].TrySplit('.', true, null, out var args))
                     return false;

@@ -229,16 +229,9 @@ public class CommandTokenParserContext
     {
         if (CurrentToken is null)
             return false;
-
-        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-            ApiLog.Debug("Command Token Parser", $"Terminating token: {CurrentToken.GetType().Name}");
-
+        
         if (!overrideParser && CurrentParser != null && !CurrentParser.OnTerminating(this))
-        {
-            if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-                ApiLog.Debug("Command Token Parser", "Termination cancelled by parser");
             return false;
-        }
         
         CurrentParser?.OnTerminated(this);
 
@@ -255,8 +248,6 @@ public class CommandTokenParserContext
         CurrentToken = null;
         CurrentParser = null;
 
-        if (ApiLoader.ApiConfig.CommandSection.TokenParserDebug)
-            ApiLog.Debug("Command Token Parser", $"Token terminated ({Tokens.Count})");
         return true;
     }
 
