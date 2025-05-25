@@ -100,7 +100,11 @@ public static class HintController
         {
             writer.WriteHintData(0f, string.Empty);
 
-            EmptyHintMessage = writer.ToArraySegment();
+            var array = new byte[writer.buffer.Length];
+            
+            Buffer.BlockCopy(writer.buffer, 0, array, 0, writer.Position);
+
+            EmptyHintMessage = new(array, 0, writer.Position);
         }
     }
 
