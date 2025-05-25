@@ -1,4 +1,5 @@
 using LabExtended.API;
+using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
@@ -61,11 +62,6 @@ public static class RoleSelector
         /// The overflow Hume Shield multiplier.
         /// </summary>
         public float ScpOverflowHsMultiplier = 0f;
-        
-        /// <summary>
-        /// The source player list.
-        /// </summary>
-        public List<ExPlayer> Players = ListPool<ExPlayer>.Shared.Rent();
 
         /// <summary>
         /// List of generated SCP players.
@@ -100,9 +96,6 @@ public static class RoleSelector
         /// <inheritdoc cref="IDisposable.Dispose"/>
         public void Dispose()
         {
-            if (Players != null)
-                ListPool<ExPlayer>.Shared.Return(Players);
-            
             if (ScpPlayers != null)
                 ListPool<ExPlayer>.Shared.Return(ScpPlayers);
             
@@ -119,7 +112,6 @@ public static class RoleSelector
                 DictionaryPool<ExPlayer, float>.Shared.Return(SelectedScpChancesBuffer);
 
             Target = null;
-            Players = null;
             ScpPlayers = null;
             HumanRoles = null;
             TotalQueue = null;
@@ -141,31 +133,32 @@ public static class RoleSelector
     /// Fills the dictionary with a round-start role selection.
     /// </summary>
     /// <param name="target">The target dictionary.</param>
-    /// <param name="sourcePlayers">List of players to select from.</param>
     /// <param name="allowScpOverflow">Whether or not to allow SCP roles to overflow.</param>
     /// <param name="registerHumanHistory">Whether or not to register selected human roles to role history.</param>
     /// <param name="modifyScpTickets">Whether or not to modify player SCP tickets.</param>
     /// <param name="respawnQueue">Team respawn queue string.</param>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="Exception"></exception>
-    public static void GetRolesNonAlloc(IDictionary<ExPlayer, RoleTypeId> target, IEnumerable<ExPlayer> sourcePlayers, bool allowScpOverflow = false, 
+    public static void GetRolesNonAlloc(IDictionary<ExPlayer, RoleTypeId> target, bool allowScpOverflow = false, 
         bool registerHumanHistory = false, bool modifyScpTickets = false, string respawnQueue = "4014314031441404134041434414")
     {
         if (target is null)
             throw new ArgumentNullException(nameof(target));
-
-        if (sourcePlayers is null)
-            throw new ArgumentNullException(nameof(sourcePlayers));
         
         if (string.IsNullOrWhiteSpace(respawnQueue))
             throw new ArgumentNullException(nameof(respawnQueue));
 
         using (var context = new RoleSelectorContext())
         {
+            ApiLog.Debug("Role Selector",
+                $"Selecting roles ({ExPlayer.Players.Count} player(s)); allowScpOverflow={allowScpOverflow}; " +
+                $"registerHumanHistory={registerHumanHistory}; modifyScpTickets={modifyScpTickets}; respawnQueue={respawnQueue}");
+            
             context.Target = target;
+            context.ModifyScpTickets = modifyScpTickets;
             context.RegisterRoleHistory = registerHumanHistory;
             
-            SelectPlayers(context, sourcePlayers);
+            ApiLog.Debug("Role Selector", $"Generating queues");
 
             context.TotalQueue = new Team[respawnQueue.Length];
             context.HumanQueue = new Team[respawnQueue.Length];
@@ -189,13 +182,17 @@ public static class RoleSelector
                     }
                 }
             }
+            
+            ApiLog.Debug("Role Selector", $"TotalIndex={totalIndex}; HumanIndex={humanIndex}");
 
             if (totalIndex == 0)
                 throw new Exception("Failed to assign roles, queue has failed to load.");
 
             var maxScps = ScpSpawner.MaxSpawnableScps;
             var scpCount = 0;
-            var playerCount = context.Players.Count;
+            var playerCount = ExPlayer.Players.Count(x => RoleAssigner.CheckPlayer(x.ReferenceHub));
+            
+            ApiLog.Debug("Role Selector", $"Generating SCP overflow, MaxScps={maxScps}");
 
             for (var i = 0; i < playerCount; i++)
             {
@@ -208,32 +205,26 @@ public static class RoleSelector
                         context.ScpOverflowHsMultiplier = 1f + (playerCount - i) * 0.05f;
                         context.ScpsOverflowing = true;
 
+                        ApiLog.Debug("Role Selector", $"SCPS are overflowing");
                         break;
                     }
                 }
             }
 
+            ApiLog.Debug("Role Selector", $"Selecting SCPs ({scpCount})");
+            
             SelectScps(context, scpCount);
+            
+            ApiLog.Debug("Role Selector", $"Selecting humans ({humanIndex})");
+            
             SelectHumans(context, humanIndex);
-        }
-    }
+            
+            ApiLog.Debug("Role Selector", $"Generated list ({target.Count}):");
 
-    private static void SelectPlayers(RoleSelectorContext ctx, IEnumerable<ExPlayer> sourcePlayers)
-    {
-        ctx.Players.Clear();
-        
-        foreach (var player in sourcePlayers)
-        {
-            if (player is null || player.IsUnverified)
-                continue;
-            
-            if (!RoleAssigner.CheckPlayer(player.ReferenceHub))
-                continue;
-            
-            if (ctx.Players.Contains(player))
-                continue;
-            
-            ctx.Players.Add(player);
+            foreach (var pair in target)
+            {
+                ApiLog.Debug("Role Selector", $"{pair.Key.Nickname} = {pair.Value}");
+            }
         }
     }
 
@@ -243,18 +234,25 @@ public static class RoleSelector
         
         HumanSpawner._queueClock = 0;
         HumanSpawner._queueLength = humanCount;
+        
+        ApiLog.Debug("Role Selector", $"Selecting {humanCount} human(s)");
 
-        ctx.HumanRoles = new RoleTypeId[ctx.Players.Count];
+        var plyCount =
+            ExPlayer.Players.Count(x => RoleAssigner.CheckPlayer(x.ReferenceHub) && !ctx.Target.ContainsKey(x));
+        
+        ctx.HumanRoles = new RoleTypeId[plyCount];
 
-        for (var i = 0; i < ctx.Players.Count; i++)
+        for (var i = 0; i < plyCount; i++)
             ctx.HumanRoles[i] = HumanSpawner.NextHumanRoleToSpawn;
         
         ctx.HumanRoles.ShuffleList();
-
-        var count = ctx.Players.Count;
         
-        for (var i = 0; i < count; i++)
+        ApiLog.Debug("Role Selector", $"Generated human roles, assigning to {plyCount} player(s)");
+        
+        for (var i = 0; i < plyCount; i++)
             AssignHuman(ctx, ctx.HumanRoles[i]);
+        
+        ApiLog.Debug("Role Selector", $"Assigned human roles");
     }
 
     private static void AssignHuman(RoleSelectorContext ctx, RoleTypeId role)
@@ -262,39 +260,51 @@ public static class RoleSelector
         ctx.HumanPlayers.Clear();
 
         var num = int.MaxValue;
+        
+        ApiLog.Debug("Role Selector", $"Assigning role {role}");
 
-        for (var i = 0; i < ctx.Players.Count; i++)
+        for (var i = 0; i < ExPlayer.Players.Count; i++)
         {
-            var player = ctx.Players[i];
-            var history = HumanSpawner.History.GetOrAdd(player.UserId, () => new());
-            var count = 0;
+            var player = ExPlayer.Players[i];
 
-            for (var x = 0; x < 5; x++)
+            if (RoleAssigner.CheckPlayer(player.ReferenceHub) && !ctx.Target.ContainsKey(player))
             {
-                if (history.History[x] == role)
+                var history = HumanSpawner.History.GetOrAdd(player.UserId, () => new());
+                var count = 0;
+
+                for (var x = 0; x < 5; x++)
                 {
-                    count++;
+                    if (history.History[x] == role)
+                    {
+                        count++;
+                    }
                 }
-            }
 
-            if (count <= num)
-            {
-                if (count < num)
-                    ctx.HumanPlayers.Clear();
-                
-                ctx.HumanPlayers.Add(player);
+                if (count <= num)
+                {
+                    if (count < num)
+                        ctx.HumanPlayers.Clear();
 
-                num = count;
+                    ctx.HumanPlayers.Add(player);
+
+                    ApiLog.Debug("Role Selector", $"Added candidate {player.Nickname}");
+
+                    num = count;
+                }
             }
         }
 
         if (ctx.HumanPlayers.Count == 0)
+        {
+            ApiLog.Debug("Role Selector", $"No human role candidates");
             return;
+        }
 
         var randomPlayer = ctx.HumanPlayers.RandomItem();
-
-        ctx.Players.Remove(randomPlayer);
+        
         ctx.Target[randomPlayer] = role;
+        
+        ApiLog.Debug("Role Selector", $"Set player {randomPlayer.Nickname} for role {role}");
         
         if (ctx.RegisterRoleHistory)
             HumanSpawner.History[randomPlayer.UserId].RegisterRole(role);
@@ -305,16 +315,24 @@ public static class RoleSelector
     {
         ctx.EnqueuedScps.Clear();
 
+        ApiLog.Debug("Role Selector", $"Selecting {scpCount} SCPs");
+
         for (var i = 0; i < scpCount; i++)
             ctx.EnqueuedScps.Add(ScpSpawner.NextScp);
         
+        ApiLog.Debug("Role Selector", $"Enqueued {ctx.EnqueuedScps.Count} SCP roles, selecting players");
+        
         SelectScpPlayers(ctx, scpCount);
+        
+        ApiLog.Debug("Role Selector", $"Selected {ctx.ScpPlayers.Count} SCP player(s)");
 
         while (ctx.EnqueuedScps.Count > 0)
         {
             var scp = ctx.EnqueuedScps[0];
             
             ctx.EnqueuedScps.RemoveAt(0);
+         
+            ApiLog.Debug("Role Selector", $"Selecting player for SCP {scp}");
             
             AssignScp(ctx, scp);
         }
@@ -322,6 +340,8 @@ public static class RoleSelector
     
     private static void SelectScpPlayers(RoleSelectorContext ctx, int scpCount)
     {
+        ApiLog.Debug("Role Selector", $"Selecting {scpCount} player(s) for SCP roles");
+        
 	    using (var tickerLoader = new ScpTicketsLoader())
 	    {
 		    GenerateScps(ctx, tickerLoader, scpCount);
@@ -333,6 +353,7 @@ public static class RoleSelector
                     var player = ExPlayer.Players[i];
 
                     if (RoleAssigner.CheckPlayer(player.ReferenceHub) &&
+                        ctx.Target.ContainsKey(player) &&
                         !ScpPlayerPicker.IsOptedOutOfScp(player.ReferenceHub))
                         tickerLoader.ModifyTickets(player.ReferenceHub,
                             tickerLoader.GetTickets(player.ReferenceHub, 10) + 2);
@@ -340,32 +361,44 @@ public static class RoleSelector
             }
         }
 	    
-	    if (scpCount != ScpPlayerPicker.ScpsToSpawn.Count)
+	    if (scpCount != ctx.ScpPlayers.Count)
 		    throw new InvalidOperationException("Failed to meet target number of SCPs.");
     }
 
     private static void GenerateScps(RoleSelectorContext ctx, ScpTicketsLoader loader, int scpCount)
     {
         ctx.ScpPlayers.Clear();
+        
+        ApiLog.Debug("Role Selector", $"Generating list of SCP candidates ({scpCount})");
 
         if (scpCount < 1)
+        {
+            ApiLog.Debug("Role Selector", $"No SCPs are to be spawned");
             return;
+        }
 
         var num = 0;
         
-        for (var i = 0; i < ctx.Players.Count; i++)
+        for (var i = 0; i < ExPlayer.Count; i++)
         {
-            var player = ctx.Players[i];
-            var tickets = loader.GetTickets(player.ReferenceHub, 10);
+            var player = ExPlayer.Players[i];
 
-            if (tickets >= num)
+            if (RoleAssigner.CheckPlayer(player.ReferenceHub)
+                && !ctx.Target.ContainsKey(player))
             {
-                if (tickets > num)
-                    ctx.ScpPlayers.Clear();
+                var tickets = loader.GetTickets(player.ReferenceHub, 10);
 
-                num = tickets;
-                
-                ctx.ScpPlayers.Add(player);
+                if (tickets >= num)
+                {
+                    if (tickets > num)
+                        ctx.ScpPlayers.Clear();
+
+                    num = tickets;
+
+                    ctx.ScpPlayers.Add(player);
+
+                    ApiLog.Debug("Role Selector", $"Added SCP candidate {player.Nickname}");
+                }
             }
         }
 
@@ -375,6 +408,8 @@ public static class RoleSelector
             
             ctx.ScpPlayers.Clear();
             ctx.ScpPlayers.Add(randomPlayer);
+            
+            ApiLog.Debug("Role Selector", $"Added random candidate {randomPlayer.Nickname}");
         }
 
         scpCount -= ctx.ScpPlayers.Count;
@@ -385,11 +420,13 @@ public static class RoleSelector
         var potentialScps = ListPool<KeyValuePair<ExPlayer, long>>.Shared.Rent();
         var weight = 0L;
 
-        for (var i = 0; i < ctx.Players.Count; i++)
+        for (var i = 0; i < ExPlayer.Count; i++)
         {
-            var player = ctx.Players[i];
+            var player = ExPlayer.Players[i];
 
-            if (!ctx.ScpPlayers.Contains(player))
+            if (!ctx.ScpPlayers.Contains(player)
+                && RoleAssigner.CheckPlayer(player.ReferenceHub)
+                && !ctx.Target.ContainsKey(player))
             {
                 var playerWeight = 1L;
                 var playerTickets = loader.GetTickets(player.ReferenceHub, 10);
@@ -477,10 +514,9 @@ public static class RoleSelector
 
             if (pair.Value >= randomChance)
             {
-                ctx.Players.Remove(pair.Key);
                 ctx.ScpPlayers.Remove(pair.Key);
-
                 ctx.Target[pair.Key] = scpRole;
+                
                 break;
             }
         }

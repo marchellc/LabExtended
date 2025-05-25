@@ -18,12 +18,12 @@ namespace LabExtended.Patches.Events.Round;
 /// </summary>
 public static class AssigningRolesPatch
 {
-    [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
+    // [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
     private static bool Prefix()
     {
         var roles = DictionaryPool<ExPlayer, RoleTypeId>.Shared.Rent();
 
-        RoleSelector.GetRolesNonAlloc(roles, ExPlayer.Players,
+        RoleSelector.GetRolesNonAlloc(roles,
             ConfigFile.ServerConfig.GetBool("allow_scp_overflow"),
             true, true, ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414"));
 
