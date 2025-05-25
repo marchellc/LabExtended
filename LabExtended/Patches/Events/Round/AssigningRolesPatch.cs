@@ -1,27 +1,39 @@
-﻿using HarmonyLib;
+﻿using GameCore;
+
+using HarmonyLib;
 
 using PlayerRoles.RoleAssign;
 using PlayerRoles;
 
-using LabExtended.Events;
+using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.API;
+using LabExtended.Events;
+using LabExtended.Utilities;
 
-namespace LabExtended.Patches.Events.Round
+namespace LabExtended.Patches.Events.Round;
+
+/// <summary>
+/// Implements the <see cref="ExRoundEvents.AssigningRoles"/> event.
+/// </summary>
+public static class AssigningRolesPatch
 {
-    public static class AssigningRolesPatch
+    [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
+    private static bool Prefix()
     {
-        [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
-        public static bool Prefix()
-        {
-            var roles = ExRound.ChooseRoles();
+        var roles = DictionaryPool<ExPlayer, RoleTypeId>.Shared.Rent();
 
-            if (!ExRoundEvents.OnAssigningRoles(new(roles)))
-                return false;
+        RoleSelector.GetRolesNonAlloc(roles, ExPlayer.Players,
+            ConfigFile.ServerConfig.GetBool("allow_scp_overflow"),
+            true, true, ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414"));
 
-            foreach (var pair in roles)
-                pair.Key.Role.Set(pair.Value, RoleChangeReason.RoundStart, RoleSpawnFlags.All);
-
+        if (!ExRoundEvents.OnAssigningRoles(new(roles)))
             return false;
-        }
+
+        foreach (var pair in roles)
+            pair.Key.Role.Set(pair.Value, RoleChangeReason.RoundStart, RoleSpawnFlags.All);
+
+        DictionaryPool<ExPlayer, RoleTypeId>.Shared.Return(roles);
+        return false;
     }
 }
