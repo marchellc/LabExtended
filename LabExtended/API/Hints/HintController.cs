@@ -1,5 +1,4 @@
-﻿using LabExtended.API.Hints.Interfaces;
-using LabExtended.API.Hints.Elements.Personal;
+﻿using LabExtended.API.Hints.Elements.Personal;
 
 using LabExtended.API.Enums;
 
@@ -7,20 +6,18 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Core;
-using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
 
-using NorthwoodLib.Pools;
-
-using System.Text;
-using System.Diagnostics;
-
 using Hints;
+
 using MEC;
+
 using Mirror;
+
 using UnityEngine;
+
 using HintMessage = LabExtended.API.Messages.HintMessage;
 
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -65,60 +62,46 @@ public static class HintController
     /// Gets the maximum length of a string in a hint.
     /// </summary>
     public const ushort MaxHintTextLength = 65534;
-
-    private static volatile List<HintParameter> paramBuffer;
-    private static volatile List<HintElement> elements;
-    
-    private static volatile StringBuilder builder;
-
-    private static NetworkWriter writer;
-    private static NetworkWriter emptyWriter;
-
-    private static Stopwatch watch;
-
-    private static ArraySegment<byte> emptyData;
+ 
+    /// <summary>
+    /// Serialized empty hint message data.
+    /// </summary>
+    public static ArraySegment<byte> EmptyHintMessage { get; }
 
     private static int idClock;
-    private static float updateInterval;
-    private static long tickNum;
 
-    internal static volatile bool sendNextFrame;
+    /// <summary>
+    /// Exposes the controller's internal properties.
+    /// </summary>
+    public static HintState State { get; } = new();
 
     /// <summary>
     /// Gets a list of all active hint elements (not including personal elements).
     /// </summary>
-    public static IReadOnlyList<HintElement> Elements => elements;
+    public static List<HintElement> Elements { get; } = new();
 
     /// <summary>
     /// Gets the count of active hint elements (not including personal elements).
     /// </summary>
-    public static int ElementCount => elements.Count;
+    public static int ElementCount => Elements.Count;
 
     /// <summary>
     /// Whether or not to forcibly update overlays on the next frame.
     /// </summary>
     public static bool SendNextFrame
     {
-        get => sendNextFrame;
-        set => sendNextFrame = value;
+        get => State.ForceSend;
+        set => State.ForceSend = value;
     }
 
     static HintController()
     {
-        elements = new List<HintElement>();
-        paramBuffer = new List<HintParameter>();
-        
-        watch = new Stopwatch();
-        writer = new NetworkWriter();
+        using (var writer = NetworkWriterPool.Get())
+        {
+            writer.WriteHintData(0f, string.Empty);
 
-        emptyWriter = new NetworkWriter();
-        emptyWriter.WriteHintData(0f, string.Empty);
-
-        emptyData = emptyWriter.ToArraySegment();
-
-        idClock = 0;
-
-        builder = StringBuilderPool.Shared.Rent();
+            EmptyHintMessage = writer.ToArraySegment();
+        }
     }
 
     /// <summary>
@@ -230,19 +213,19 @@ public static class HintController
     /// <param name="clearPersonal">Whether or not to remove all personal elements as well.</param>
     public static void ClearHintElements(bool clearPersonal = false)
     {
-        elements.ForEach(x =>
+        Elements.ForEach(x =>
         {
             x.IsActive = false;
 
             x.Id = 0;
 
-            x._tickNum = 0;
-            x._prevCompiled = null;
+            x.tickNum = 0;
+            x.prevCompiled = null;
 
             x.OnDisabled();
         });
 
-        elements.Clear();
+        Elements.Clear();
 
         if (clearPersonal)
         {
@@ -254,8 +237,8 @@ public static class HintController
 
                     x.Id = 0;
 
-                    x._tickNum = 0;
-                    x._prevCompiled = null;
+                    x.tickNum = 0;
+                    x.prevCompiled = null;
 
                     x.OnDisabled();
                 });
@@ -377,8 +360,8 @@ public static class HintController
 
         hintElement.Id = 0;
 
-        hintElement._prevCompiled = null;
-        hintElement._tickNum = 0;
+        hintElement.prevCompiled = null;
+        hintElement.tickNum = 0;
 
         hintElement.OnDisabled();
         return true;
@@ -397,13 +380,13 @@ public static class HintController
 
         element.IsActive = false;
 
-        if (!elements.Remove(element))
+        if (!Elements.Remove(element))
             return false;
 
         element.Id = 0;
 
-        element._prevCompiled = null;
-        element._tickNum = 0;
+        element.prevCompiled = null;
+        element.tickNum = 0;
 
         element.OnDisabled();
         return true;
@@ -466,8 +449,8 @@ public static class HintController
         hintElement.Id = idClock++;
         hintElement.Player = target;
 
-        hintElement._prevCompiled = null;
-        hintElement._tickNum = 0;
+        hintElement.prevCompiled = null;
+        hintElement.tickNum = 0;
 
         target.HintElements.Add(hintElement);
 
@@ -493,10 +476,10 @@ public static class HintController
 
         element.Id = idClock++;
 
-        element._prevCompiled = null;
-        element._tickNum = 0;
+        element.prevCompiled = null;
+        element.tickNum = 0;
 
-        elements.Add(element);
+        Elements.Add(element);
 
         element.OnEnabled();
         element.IsActive = true;
@@ -515,7 +498,7 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return elements.Where(x => predicate(x));
+        return Elements.Where(x => predicate(x));
     }
 
     /// <summary>
@@ -546,9 +529,9 @@ public static class HintController
     public static IEnumerable<T> GetHintElements<T>(Predicate<T>? predicate = null) where T : HintElement
     {
         if (predicate is null)
-            return elements.Where<T>();
+            return Elements.Where<T>();
 
-        return elements.Where<T>(x => predicate(x));
+        return Elements.Where<T>(x => predicate(x));
     }
 
     /// <summary>
@@ -619,7 +602,7 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return elements.TryGetFirst(x => predicate(x), out var element) ? element : null;
+        return Elements.TryGetFirst(x => predicate(x), out var element) ? element : null;
     }
 
     /// <summary>
@@ -652,9 +635,9 @@ public static class HintController
     public static T GetHintElement<T>(Predicate<T>? predicate = null) where T : HintElement
     {
         if (predicate != null)
-            return elements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
+            return Elements.TryGetFirst<T>(x => predicate(x), out var element) ? element : null;
         else
-            return elements.TryGetFirst<T>(out var element) ? element : null;
+            return Elements.TryGetFirst<T>(out var element) ? element : null;
     }
 
     /// <summary>
@@ -685,7 +668,7 @@ public static class HintController
     /// <typeparam name="T">Element type.</typeparam>
     /// <returns>true if the element was found</returns>
     public static bool TryGetHintElement<T>(out T element) where T : HintElement
-        => elements.TryGetFirst(out element);
+        => Elements.TryGetFirst(out element);
 
     /// <summary>
     /// Attempts to find a personal hint element.
@@ -800,7 +783,7 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return elements.TryGetFirst(x => predicate(x), out element);
+        return Elements.TryGetFirst(x => predicate(x), out element);
     }
 
     /// <summary>
@@ -839,7 +822,7 @@ public static class HintController
         if (predicate is null)
             throw new ArgumentNullException(nameof(predicate));
 
-        return elements.TryGetFirst(x => predicate(x), out element);
+        return Elements.TryGetFirst(x => predicate(x), out element);
     }
 
     /// <summary>
@@ -867,244 +850,69 @@ public static class HintController
         return target.HintElements.TryGetFirst(x => predicate(x), out element);
     }
 
-    internal static void Update()
+    private static void Update()
     {
-        try
+        if (!State.ShouldUpdate)
+            return;
+
+        State.ResetFrame();
+        
+        for (var i = 0; i < ExPlayer.Count; i++)
         {
-            if (ExPlayer.Count < 1)
-                return;
+            var player = ExPlayer.Players[i];
 
-            if (!sendNextFrame && updateInterval > 0 && watch.ElapsedMilliseconds < updateInterval)
-                return;
+            if (player?.Hints is null)
+                continue;
 
-            float lowestRate = ApiLoader.ApiConfig.HintSection.UpdateInterval;
+            if (player.HintElements is null)
+                continue;
 
-            watch.Restart();
+            if (player.IsUnverified)
+                continue;
 
-            if (tickNum + 1 >= long.MaxValue)
-                tickNum = 0;
+            if (player.Hints.IsPaused)
+                continue;
 
-            tickNum++;
+            State.ResetPlayer();
+            State.Builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
 
-            for (var i = 0; i < ExPlayer.Count; i++)
+            HintProcessor.ProcessPlayer(player);
+
+            if (!State.AnyAppended)
             {
-                var player = ExPlayer.Players[i];
-
-                if (player?.Hints is null) 
-                    continue;
-                
-                if (player.HintElements is null)
-                    continue;
-                
-                if (player.IsUnverified)
-                    continue;
-
-                if (player.Hints.IsPaused) 
-                    continue;
-
-                paramBuffer.Clear();
-
-                builder.Clear();
-                builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
-
-                var anyAppended = false;
-                var anyOverride = false;
-
-                var overrideParse = false;
-
-                player.Hints.RefreshRatio();
-
-                if (player.Hints.CurrentMessage is null || player.Hints.UpdateTime())
-                    player.Hints.NextMessage();
-
-                if (player.Hints.CurrentMessage != null)
+                if (!player.Hints.WasClearedAfterEmpty)
                 {
-                    player.Hints.ParseTemp();
-
-                    paramBuffer.AddRange(player.Hints.CurrentMessage.Parameters);
-
-                    if (player.Hints.TempData.Count > 0)
-                    {
-                        HintUtils.AppendMessages(player.Hints.TempData, TemporaryHintAlign, builder,
-                            player.Hints.LeftOffset);
-                        anyAppended = true;
-                    }
+                    player.Connection.Send(EmptyHintMessage);
+                    player.Hints.WasClearedAfterEmpty = true;
                 }
 
-                void ProcessElement(HintElement element)
-                {
-                    if (!element.IsActive)
-                        return;
-
-                    if (element.Builder is null)
-                    {
-                        if (!element.nullBuilderWarning)
-                        {
-                            ApiLog.Warn("Hint Controller", $"Encountered a null Builder while processing element &3{element.GetType().Name}&r (&r{element.CustomId ?? "(null custom ID)"}&r | &6{element.Id}&r");
-                            
-                            element.nullBuilderWarning = true;
-                        }
-
-                        return;
-                    }
-
-                    element.nullBuilderWarning = false;
-
-                    if (element.ClearParameters)
-                        element.Parameters.Clear();
-
-                    if (element._tickNum != tickNum)
-                    {
-                        if (element.ClearBuilderOnUpdate)
-                            element.Builder.Clear();
-
-                        element._tickNum = tickNum;
-                        element.OnUpdate();
-                    }
-
-                    if (!element.ClearBuilderOnUpdate)
-                        element.Builder.Clear();
-
-                    if (!element.OnDraw(player) || element.Builder.Length < 1)
-                        return;
-
-                    if ((builder.Length + element.Builder.Length) >= MaxHintTextLength)
-                    {
-                        ApiLog.Warn("Hint API",
-                            $"Could not append text from element &1{element.GetType().Name}&r for player &3{player.Nickname}&r (&6{player.UserId}&r) " +
-                            $"due to it exceeding maximum allowed limit (&1{builder.Length + element.Builder.Length}&r / &2{MaxHintTextLength}&r)");
-
-                        return;
-                    }
-
-                    var content = element.Builder.ToString();
-
-                    if (element.OverridesOthers)
-                    {
-                        anyOverride = true;
-
-                        builder.Clear();
-
-                        if (element.ShouldParse)
-                            builder.Append("~\n<line-height=1285%>\n<line-height=0>\n");
-                        else
-                            overrideParse = true;
-                    }
-
-                    if (!element.ShouldParse)
-                    {
-                        builder.Append(content);
-                        
-                        anyAppended = true;
-                    }
-                    else
-                    {
-                        if (!element.ShouldCache || element._prevCompiled is null ||
-                            element._prevCompiled != content)
-                        {
-                            element.Data.ForEach(x => ObjectPool<HintData>.Shared.Return(x));
-                            element.Data.Clear();
-
-                            element._prevCompiled = content;
-
-                            content = content
-                                .Replace("\r\n", "\n")
-                                .Replace("\\n", "\n")
-                                .Replace("<br>", "\n")
-                                .TrimEnd();
-
-                            HintUtils.TrimStartNewLines(ref content, out var count);
-
-                            var offset = element.GetVerticalOffset(player);
-
-                            if (offset == 0f)
-                                offset = -count;
-
-                            HintUtils.GetMessages(content, element.Data, offset, element.ShouldWrap,
-                                element.GetPixelSpacing(player));
-                        }
-
-                        if (element.Data.Count > 0)
-                        {
-                            paramBuffer.AddRange(element.Parameters);
-
-                            HintUtils.AppendMessages(element.Data, element.GetAlignment(player), builder,
-                                player.Hints.LeftOffset);
-                            anyAppended = true;
-                        }
-                    }
-
-                    if (element is IHintRateModifier hintRateModifier)
-                    {
-                        var requestedInterval = hintRateModifier.GetDesiredDelay(lowestRate);
-
-                        if (requestedInterval >= 0f && requestedInterval < lowestRate)
-                            lowestRate = requestedInterval;
-                    }
-                }
-
-                foreach (var element in elements)
-                {
-                    if (anyOverride) 
-                        break;
-                    
-                    ProcessElement(element);
-                }
-
-                foreach (var personalElement in player.HintElements)
-                {
-                    if (anyOverride) 
-                        break;
-                    
-                    ProcessElement(personalElement);
-                }
-
-                if (!anyAppended)
-                {
-                    if (!player.Hints.WasClearedAfterEmpty)
-                    {
-                        player.Connection.Send(emptyData);
-                        player.Hints.WasClearedAfterEmpty = true;
-                    }
-
-                    continue;
-                }
-
-                if (!overrideParse)
-                    builder.Append("<voffset=0><line-height=2100%>\n~");
-
-                var text = builder.ToString();
-
-                if (text.Length >= MaxHintTextLength)
-                {
-                    if (!player.Hints.WasClearedAfterEmpty)
-                    {
-                        player.Connection.Send(emptyData);
-                        player.Hints.WasClearedAfterEmpty = true;
-                    }
-
-                    ApiLog.Warn("Hint API",
-                        $"The compiled hint is too big! (&1{text.Length}&r / &2{MaxHintTextLength}&r)");
-                    continue;
-                }
-
-                writer.Reset();
-                writer.WriteHintData(ApiLoader.ApiConfig.HintSection.HintDuration, text, paramBuffer);
-
-                paramBuffer.Clear();
-
-                player.Connection.Send(writer.ToArraySegment());
-                player.Hints.WasClearedAfterEmpty = false;
+                continue;
             }
 
-            updateInterval = lowestRate;
-        }
-        catch (Exception ex)
-        {
-            ApiLog.Error("Hint Controller", ex);
-        }
+            if (!State.AnyOverrideParse)
+                State.Builder.Append("<voffset=0><line-height=2100%>\n~");
 
-        sendNextFrame = false;
+            var text = State.Builder.ToString();
+
+            if (text.Length >= MaxHintTextLength)
+            {
+                if (!player.Hints.WasClearedAfterEmpty)
+                {
+                    player.Connection.Send(EmptyHintMessage);
+                    player.Hints.WasClearedAfterEmpty = true;
+                }
+
+                ApiLog.Warn("Hint API",
+                    $"The compiled hint is too big! (&1{text.Length}&r / &2{MaxHintTextLength}&r)");
+                continue;
+            }
+
+            State.Writer.Reset();
+            State.Writer.WriteHintData(ApiLoader.ApiConfig.HintSection.HintDuration, text, State.Parameters);
+
+            player.Connection.Send(State.Writer.ToArraySegment());
+            player.Hints.WasClearedAfterEmpty = false;
+        }
     }
 
     [LoaderInitialize(1)]

@@ -33,9 +33,9 @@ public abstract class HintElement
     /// </summary>
     public const HintAlign DefaultHintAlign = HintAlign.Center;
 
-    internal long _tickNum = 0;
-    internal string? _prevCompiled = null;
-    internal bool nullBuilderWarning;
+    internal ulong tickNum = 0;
+    internal string? prevCompiled = null;
+    internal bool disableCalled;
     
     /// <summary>
     /// Gets the element's ID.
@@ -50,7 +50,7 @@ public abstract class HintElement
     /// <summary>
     /// Gets the number of processed ticks.
     /// </summary>
-    public long TickNumber => _tickNum;
+    public ulong TickNumber => tickNum;
 
     /// <summary>
     /// Gets the element's string builder.
@@ -142,6 +142,8 @@ public abstract class HintElement
         Parameters = null;
         Builder = null;
         Data = null;
+
+        disableCalled = true;
     }
 
     /// <summary>
