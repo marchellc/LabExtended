@@ -175,7 +175,7 @@ public static class HintProcessor
         {
             var requestedInterval = hintRateModifier.GetDesiredDelay(state.Interval);
 
-            if (requestedInterval >= 0f && requestedInterval < state.LowestInterval)
+            if (requestedInterval >= 0f && (state.LowestInterval == -1f || requestedInterval < state.LowestInterval))
                 state.LowestInterval = requestedInterval;
         }
     }
