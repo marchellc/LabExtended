@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Functions.Networking
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogException(ex);
+                    UnityEngine.Debug.LogException(ex);
                 }
             }
 
