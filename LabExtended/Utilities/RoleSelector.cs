@@ -133,13 +133,14 @@ public static class RoleSelector
     /// Fills the dictionary with a round-start role selection.
     /// </summary>
     /// <param name="target">The target dictionary.</param>
+    /// <param name="scpHsOverflow">Generated Hume Shield overflow multiplier.</param>
     /// <param name="allowScpOverflow">Whether or not to allow SCP roles to overflow.</param>
     /// <param name="registerHumanHistory">Whether or not to register selected human roles to role history.</param>
     /// <param name="modifyScpTickets">Whether or not to modify player SCP tickets.</param>
     /// <param name="respawnQueue">Team respawn queue string.</param>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="Exception"></exception>
-    public static void GetRolesNonAlloc(IDictionary<ExPlayer, RoleTypeId> target, bool allowScpOverflow = false, 
+    public static void GetRolesNonAlloc(IDictionary<ExPlayer, RoleTypeId> target, out float? scpHsOverflow, bool allowScpOverflow = false, 
         bool registerHumanHistory = false, bool modifyScpTickets = false, string respawnQueue = "4014314031441404134041434414")
     {
         if (target is null)
@@ -147,6 +148,8 @@ public static class RoleSelector
         
         if (string.IsNullOrWhiteSpace(respawnQueue))
             throw new ArgumentNullException(nameof(respawnQueue));
+
+        scpHsOverflow = null;
 
         using (var context = new RoleSelectorContext())
         {
@@ -168,21 +171,20 @@ public static class RoleSelector
 
             for (var i = 0; i < respawnQueue.Length; i++)
             {
-                var teamNum = (Team)(respawnQueue[i] - '0');
+                if (!byte.TryParse(respawnQueue[i].ToString(), out var teamId))
+                    continue;
 
-                if (Enum.IsDefined(typeof(Team), teamNum))
-                {
-                    if (teamNum != Team.SCPs)
-                    {
-                        context.HumanQueue[humanIndex++] = teamNum;
-                    }
-                    else
-                    {
-                        context.TotalQueue[totalIndex++] = teamNum;
-                    }
-                }
+                if (!Enum.IsDefined(typeof(Team), teamId))
+                    continue;
+
+                var team = (Team)teamId;
+
+                if (team != Team.SCPs)
+                    context.HumanQueue[humanIndex++] = team;
+
+                context.TotalQueue[totalIndex++] = team;
             }
-            
+
             ApiLog.Debug("Role Selector", $"TotalIndex={totalIndex}; HumanIndex={humanIndex}");
 
             if (totalIndex == 0)
@@ -210,6 +212,9 @@ public static class RoleSelector
                     }
                 }
             }
+
+            if (context.ScpsOverflowing)
+                scpHsOverflow = context.ScpOverflowHsMultiplier;
 
             ApiLog.Debug("Role Selector", $"Selecting SCPs ({scpCount})");
             

@@ -44,6 +44,11 @@ namespace LabExtended.API.Containers
         public RoleChangeReason ChangeReason => Role.ServerSpawnReason;
         public RoleSpawnFlags SpawnFlags => Role.ServerSpawnFlags;
 
+        /// <summary>
+        /// Gets the player's first spawned role (when the round started, will be None if the player joined afterwards).
+        /// </summary>
+        public RoleTypeId RoundStartRole { get; internal set; } = RoleTypeId.None;
+
         public RoleTypeId Type
         {
             get => Role.RoleTypeId;
