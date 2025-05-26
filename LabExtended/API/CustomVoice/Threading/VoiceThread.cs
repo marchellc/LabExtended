@@ -315,10 +315,12 @@ public class VoiceThread : IDisposable
         }
     }
 
-    private static void UpdateInputQueue()
+    private static async Task UpdateInputQueueAsync()
     {
         while (true)
         {
+            await Task.Delay(50);
+            
             try
             {
                 while (inputQueue.TryDequeue(out var packet))
@@ -353,12 +355,7 @@ public class VoiceThread : IDisposable
         InternalEvents.OnRoundRestart += OnRestart;
         
         PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
-        
-        new Thread(UpdateInputQueue)
-        {
-            IsBackground = true,
-            Priority = ThreadPriority.BelowNormal,
-            Name = "LabExtended Voice Thread Input Queue Processor"
-        }.Start();
+
+        Task.Run(UpdateInputQueueAsync);
     }
 }
