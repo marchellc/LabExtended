@@ -123,6 +123,6 @@ public class HintState
         Watch.Restart();
 
         Interval = ApiLoader.ApiConfig.HintSection.UpdateInterval;
-        LowestInterval = 0f;
+        LowestInterval = -1f;
     }
 }

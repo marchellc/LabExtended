@@ -82,7 +82,7 @@ public static class HintProcessor
         
         player.removeNextFrame.Clear();
 
-        if (state.LowestInterval < state.Interval)
+        if (state.LowestInterval != -1f && state.LowestInterval < state.Interval)
             state.Interval = state.LowestInterval;
     }
 
