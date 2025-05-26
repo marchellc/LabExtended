@@ -445,33 +445,30 @@ public static class RoleSelector
             }
         }
 
-        if (scpCount < 1)
+        while (scpCount > 0)
         {
-            ListPool<KeyValuePair<ExPlayer, long>>.Shared.Return(potentialScps);
-            return;
-        }
+            var randomWeight = weight * Random.value;
 
-        var randomWeight = weight * Random.value;
-
-        for (var i = 0; i < potentialScps.Count; i++)
-        {
-            var pair = potentialScps[i];
-
-            randomWeight -= pair.Value;
-
-            if (randomWeight <= 0.0)
+            for (var i = 0; i < potentialScps.Count; i++)
             {
-                scpCount--;
-                
-                ctx.ScpPlayers.Add(pair.Key);
-                
-                potentialScps.RemoveAt(i);
+                var pair = potentialScps[i];
 
-                weight -= pair.Value;
-                break;
+                randomWeight -= pair.Value;
+
+                if (randomWeight <= 0.0)
+                {
+                    scpCount--;
+
+                    ctx.ScpPlayers.Add(pair.Key);
+
+                    potentialScps.RemoveAt(i);
+
+                    weight -= pair.Value;
+                    break;
+                }
             }
         }
-        
+
         ListPool<KeyValuePair<ExPlayer, long>>.Shared.Return(potentialScps);
     }
 
