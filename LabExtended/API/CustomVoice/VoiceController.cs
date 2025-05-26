@@ -15,6 +15,7 @@ using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions.Players;
 using LabExtended.Utilities.Update;
+using PlayerRoles.Voice;
 using UnityEngine;
 
 using VoiceChat;
@@ -309,13 +310,14 @@ public class VoiceController : IDisposable
         if (!IsOnline) 
             return;
         
-        if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId) 
+        if (msg.Speaker is null || msg.Speaker.netId != Player.NetworkId || msg.Speaker.roleManager.CurrentRole is not IVoiceRole voiceRole
+            || voiceRole.VoiceModule is null) 
             return;
 
         if (IsCapturing)
             sessionPackets.Add(DateTime.Now.Ticks, msg);
 
-        var origChannel = Player.Role.VoiceModule.ValidateSend(msg.Channel);
+        var origChannel = voiceRole.VoiceModule.ValidateSend(msg.Channel);
         
         ExVoiceChatEvents.OnSendingVoiceMessage(Player, ref msg);
 
@@ -338,10 +340,10 @@ public class VoiceController : IDisposable
             var player = ExPlayer.Players[i];
             var send = true;
             
-            if (!player)
+            if (player is null || player.IsUnverified)
                 continue;
             
-            msg.Channel = GetChannel(player, origChannel);
+            msg.Channel = GetChannel(player, voiceRole, origChannel);
 
             foreach (var profile in profiles)
             {
@@ -440,9 +442,9 @@ public class VoiceController : IDisposable
         wasSpeaking = !wasSpeaking;
     }
     
-    private VoiceChatChannel GetChannel(ExPlayer receiver, VoiceChatChannel messageChannel)
+    private VoiceChatChannel GetChannel(ExPlayer receiver, IVoiceRole senderRole, VoiceChatChannel messageChannel)
     {
-        if (receiver.Role.VoiceModule is null)
+        if (receiver?.Role.Role is not IVoiceRole receiverRole || receiverRole.VoiceModule is null)
             return VoiceChatChannel.None;
 
         if (receiver == Player && messageChannel != VoiceChatChannel.Mimicry)
