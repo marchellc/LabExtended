@@ -354,6 +354,11 @@ public class VoiceThread : IDisposable
         
         PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
         
-        new Thread(UpdateInputQueue).Start();
+        new Thread(UpdateInputQueue)
+        {
+            IsBackground = true,
+            Priority = ThreadPriority.BelowNormal,
+            Name = "LabExtended Voice Thread Input Queue Processor"
+        }.Start();
     }
 }
