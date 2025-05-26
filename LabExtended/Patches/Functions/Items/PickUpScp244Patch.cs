@@ -61,7 +61,6 @@ namespace LabExtended.Patches.Functions.Items
                 return false;
             }
 
-            var tracker = __instance.TargetPickup.GetTracker();
             var targetBehaviour = CustomItemUtils.SelectPickupBehaviour(pickupBehaviours);
             
             ItemBase? item = null;
@@ -82,7 +81,8 @@ namespace LabExtended.Patches.Functions.Items
             {
                 var pickedUpArgs = new PlayerPickedUpItemEventArgs(player.ReferenceHub, item);
                 
-                tracker.SetItem(item, player);
+                if (__instance.TargetPickup.TryGetTracker(out var tracker))
+                    tracker.SetItem(item, player);
                 
                 CustomItemUtils.ProcessPickedUp(pickupBehaviours, item, player, pickedUpArgs);
 

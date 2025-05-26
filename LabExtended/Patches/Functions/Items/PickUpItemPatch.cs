@@ -10,7 +10,9 @@ using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Behaviours;
+
 using LabExtended.Extensions;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Patches.Functions.Items;
@@ -43,7 +45,6 @@ public static class PickUpItemPatch
         }
 
         var targetBehaviour = CustomItemUtils.SelectPickupBehaviour(customItems);
-        var pickupTracker = __instance.TargetPickup.GetTracker();
         
         ItemBase? item = null;
 
@@ -59,7 +60,8 @@ public static class PickUpItemPatch
         
         CustomItemUtils.ProcessPickedUp(customItems, item, player, pickedUpArgs);
         
-        pickupTracker.SetItem(item, player);
+        if (__instance.TargetPickup.TryGetTracker(out var tracker))
+            tracker.SetItem(item, player);
         
         __instance.TargetPickup.DestroySelf();
         __instance.CheckCategoryLimitHint();

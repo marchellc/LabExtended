@@ -43,9 +43,6 @@ public static class PickUpScp330Patch
 
         if (scp330Pickup.StoredCandies.Count == 0)
         {
-            if (ItemTracker.Trackers.TryGetValue(scp330Pickup.Info.Serial, out var tracker))
-                tracker.Dispose();
-            
             scp330Pickup.DestroySelf();
         }
         else

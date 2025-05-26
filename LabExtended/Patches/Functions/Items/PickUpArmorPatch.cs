@@ -57,7 +57,6 @@ public static class PickUpArmorPatch
         }
 
         var targetItem = CustomItemUtils.SelectPickupBehaviour(customItems);
-        var pickupTracker = __instance.TargetPickup.GetTracker();
 
         if (__instance._currentArmor != null)
             __instance.Hub.inventory.ServerDropItem(__instance._currentArmor.ItemSerial);
@@ -77,7 +76,8 @@ public static class PickUpArmorPatch
 
         CustomItemUtils.ProcessPickedUp(customItems, item, player, pickedUpItemArgs);
         
-        pickupTracker.SetItem(item, player);
+        if (__instance.TargetPickup.TryGetTracker(out var tracker))
+            tracker.SetItem(item, player);
         
         if (item is BodyArmor bodyArmor)
             PlayerEvents.OnPickedUpArmor(new(__instance.Hub, bodyArmor));
