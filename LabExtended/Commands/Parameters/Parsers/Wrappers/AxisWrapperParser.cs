@@ -1,4 +1,6 @@
-﻿using LabExtended.Commands.Tokens;
+﻿using System.Globalization;
+
+using LabExtended.Commands.Tokens;
 using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Interfaces;
 
@@ -51,33 +53,46 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             if (result.GetType() == parameter.Type.Type)
                 return new(true, result, null, parameter);
 
-            return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+            if (result.GetType() == typeof(string))
+                sourceString = result as string;
+            else
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
         }
-        
-        if (token is StringToken stringToken)
-            sourceString = stringToken.Value;
-        else
-            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
 
+        if (sourceString == string.Empty)
+        {
+            if (token is StringToken stringToken)
+                sourceString = stringToken.Value;
+            else
+                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+        }
+
+        sourceString = sourceString.Trim();
+        
         if (ToAxis(sourceString, out var preResult))
             return new(true, preResult, null, parameter);
-        
+
         var axis = DictionaryPool<char, float>.Shared.Rent();
         var parts = sourceString.Split(CommandManager.spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
         
+        if (sourceString.Contains(","))
+            parts = parts.Concat(sourceString.Split(CommandManager.commaSeparator, StringSplitOptions.RemoveEmptyEntries)).ToArray();
+
+        parts.TrimStrings();
+        
         for (var i = 0; i < AxisNames.Length; i++)
             axis.Add(AxisNames[i], 0f);
-        
+
         if (parts.Length == 1 && !parts[0].Any(x => char.IsLetter(x) && x != ',' && x != '.' && !char.IsNumber(x)))
         {
             var part = parts[0];
-
-            if (!float.TryParse(part, out var axisValue))
+            
+            if (!float.TryParse(part, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
             {
                 DictionaryPool<char, float>.Shared.Return(axis);
                 return new(false, null, $"Could not parse axis value", parameter);
             }
-            
+
             for (var i = 0; i < AxisNames.Length; i++)
                 axis[AxisNames[i]] = axisValue;
 
@@ -95,17 +110,18 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             for (var i = 0; i < parts.Length; i++)
             {
                 var part = parts[i];
-
-                if (part?.Length < 2)
-                    continue;
-
+                
                 char? axisName = null;
 
                 if (part.TryGetFirst(x => char.IsLetter(x) && x != ',' && x != '.' && !char.IsNumber(x),
                         out var axisResult))
+                {
                     axisName = axisResult;
+                }
                 else if (i < AxisNames.Length && i < axis.Count)
+                {
                     axisName = AxisNames[i];
+                }
 
                 if (!axisName.HasValue)
                 {
@@ -122,7 +138,7 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
                 var numbers = part.Where(x => x != axisName.Value);
                 var numbersStr = new string(numbers.ToArray());
 
-                if (!float.TryParse(numbersStr, out var axisValue))
+                if (!float.TryParse(part, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
                 {
                     DictionaryPool<char, float>.Shared.Return(axis);
                     return new(false, null, $"Could not parse axis value at position {i} (part: {part})", parameter);

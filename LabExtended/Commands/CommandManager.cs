@@ -35,6 +35,8 @@ namespace LabExtended.Commands;
 public static class CommandManager
 {
     internal static readonly char[] spaceSeparator = [' '];
+    internal static readonly char[] commaSeparator = [','];
+    
     internal static IEnumerator<float>? helperCoroutine;
 
     /// <summary>
