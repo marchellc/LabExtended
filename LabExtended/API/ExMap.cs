@@ -72,6 +72,11 @@ namespace LabExtended.API
         public static List<LockerChamber> Chambers { get; } = new();
 
         /// <summary>
+        /// A dictionary of locker chambers and their parent lockers.
+        /// </summary>
+        public static Dictionary<LockerChamber, Locker> ChamberToLocker { get; } = new();
+
+        /// <summary>
         /// List of spawned waypoints.
         /// </summary>
         public static IEnumerable<WaypointBase> Waypoints => WaypointBase.AllWaypoints.Where(x => x != null);
@@ -508,6 +513,18 @@ namespace LabExtended.API
             return projectile;
         }
 
+        internal static void RegisterChamber(LockerChamber chamber, Locker locker)
+        {
+            if (!Lockers.Contains(locker))
+                Lockers.Add(locker);
+            
+            if (!Chambers.Contains(chamber))
+                Chambers.Add(chamber);
+            
+            if (!ChamberToLocker.ContainsKey(chamber))
+                ChamberToLocker.Add(chamber, locker);
+        }
+
         private static void OnRoundWaiting()
         {
             try
@@ -518,14 +535,6 @@ namespace LabExtended.API
                 
                 Ragdolls.Clear();
                 Pickups.Clear();
-                Lockers.Clear();
-                Chambers.Clear();
-
-                foreach (var locker in UnityEngine.Object.FindObjectsByType<Locker>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-                {
-                    Lockers.Add(locker);
-                    Chambers.AddRange(locker.Chambers);
-                }
             }
             catch (Exception ex)
             {
@@ -545,9 +554,14 @@ namespace LabExtended.API
                 {
                     if (l.netId != identity.netId)
                         return;
-                    
+
                     for (var i = 0; i < l.Chambers.Length; i++)
-                        Chambers.Remove(l.Chambers[i]);
+                    {
+                        var chamber = l.Chambers[i];
+                        
+                        Chambers.Remove(chamber);
+                        ChamberToLocker.Remove(chamber);
+                    }
                 });
                 
                 Lockers.RemoveAll(x => x.netId == identity.netId);
@@ -589,6 +603,29 @@ namespace LabExtended.API
             Pickups.Add(pickup);
         }
 
+        private static void OnGenerationStage(MapGenerationPhase phase)
+        {
+            if (phase is MapGenerationPhase.RoomCoordsRegistrations)
+            {
+                Lockers.Clear();
+                
+                Chambers.Clear();
+                ChamberToLocker.Clear();
+            }
+        }
+
+        private static void OnGenerated()
+        {
+            foreach (var structure in SpawnableStructure.AllInstances)
+            {
+                if (structure == null || structure is not Locker locker)
+                    continue;
+                
+                for (var i = 0; i < locker.Chambers.Length; i++)
+                    RegisterChamber(locker.Chambers[i], locker);
+            }
+        }
+
         [LoaderInitialize(1)]
         private static void OnInit()
         {
@@ -597,10 +634,14 @@ namespace LabExtended.API
 
             ItemPickupBase.OnBeforePickupDestroyed += OnPickupDestroyed;
             ItemPickupBase.OnPickupAdded += OnPickupCreated;
-
+            
             MirrorEvents.Destroying += OnIdentityDestroyed;
 
             InternalEvents.OnRoundWaiting += OnRoundWaiting;
+
+            SeedSynchronizer.OnGenerationFinished += OnGenerated;
+            
+            typeof(SeedSynchronizer).InsertFirst("OnGenerationStage", OnGenerationStage);
         }
     }
 }
