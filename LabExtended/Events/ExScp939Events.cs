@@ -10,23 +10,12 @@ namespace LabExtended.Events;
 /// </summary>
 public static class ExScp939Events
 {
-    /// <inheritdoc cref="Scp939LungingEventArgs"/>
-    public static event Action<Scp939LungingEventArgs>? Lunging;
-    
     /// <inheritdoc cref="Scp939PlacingMimicryEventArgs"/>
     public static event Action<Scp939PlacingMimicryEventArgs>? PlacingMimicry; 
     
     /// <inheritdoc cref="Scp939RemovingMimicryEventArgs"/>
     public static event Action<Scp939RemovingMimicryEventArgs>? RemovingMimicry; 
 
-    /// <summary>
-    /// Invokes the <see cref="Lunging"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnLunging(Scp939LungingEventArgs args)
-        => Lunging.InvokeBooleanEvent(args);
-    
     /// <summary>
     /// Invokes the <see cref="PlacingMimicry"/> event.
     /// </summary>
