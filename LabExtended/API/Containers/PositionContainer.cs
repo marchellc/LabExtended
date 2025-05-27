@@ -249,7 +249,11 @@ namespace LabExtended.API.Containers
         public Vector3 Gravity
         {
             get => Player.Role.GravityController?.Gravity ?? Vector3.zero;
-            set => Player.Role.GravityController!.Gravity = value;
+            set
+            {
+                if (Player?.Role?.GravityController != null)
+                    Player.Role.GravityController.Gravity = value;
+            }
         }
 
         /// <summary>
