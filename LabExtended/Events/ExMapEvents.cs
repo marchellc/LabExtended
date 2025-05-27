@@ -16,8 +16,11 @@ public static class ExMapEvents
     /// <inheritdoc cref="DistributingPickupEventArgs"/>
     public static event Action<DistributingPickupEventArgs>? DistributingPickup; 
     
-    /// <inheritdoc cref="LockerFillingChamberEventArgs"/>
-    public static event Action<LockerFillingChamberEventArgs>? LockerFillingChamber; 
+    /// <inheritdoc cref="LockerSpawningPickupEventArgs"/>
+    public static event Action<LockerSpawningPickupEventArgs>? LockerSpawningPickup;
+
+    /// <inheritdoc cref="LockerSpawnedPickupEventArgs"/>
+    public static event Action<LockerSpawnedPickupEventArgs>? LockerSpawnedPickup; 
     
     /// <inheritdoc cref="PocketDimensionDestroyingItemEventArgs"/>
     public static event Action<PocketDimensionDestroyingItemEventArgs>? PocketDimensionDestroyingItem; 
@@ -58,11 +61,18 @@ public static class ExMapEvents
         => DistributingPickup.InvokeBooleanEvent(args);
     
     /// <summary>
-    /// Executes the <see cref="LockerFillingChamber"/> event.
+    /// Executes the <see cref="LockerSpawningPickup"/> event.
     /// </summary>
     /// <param name="args">The event arguments.</param>
-    public static bool OnLockerFillingChamber(LockerFillingChamberEventArgs args)
-        => LockerFillingChamber.InvokeBooleanEvent(args);
+    public static bool OnLockerSpawningPickup(LockerSpawningPickupEventArgs args)
+        => LockerSpawningPickup.InvokeBooleanEvent(args);
+    
+    /// <summary>
+    /// Executes the <see cref="LockerSpawnedPickup"/> event.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public static void OnLockerSpawnedPickup(LockerSpawnedPickupEventArgs args)
+        => LockerSpawnedPickup.InvokeEvent(args);
     
     /// <summary>
     /// Executes the <see cref="PocketDimensionDestroyingItem"/> event.
