@@ -44,6 +44,11 @@ public static class PlayerUpdateHelper
     /// Gets called once per every frame.
     /// </summary>
     public static event Action? OnUpdate;
+
+    /// <summary>
+    /// Gets called once per every millisecond on a background thread.
+    /// </summary>
+    public static event Func<Task>? OnThreadUpdate;
     
     /// <summary>
     /// Gets an <b>approximate</b> count of registered update methods.
@@ -220,6 +225,16 @@ public static class PlayerUpdateHelper
             shortestUpdate = elapsed;
     }
 
+    private static async Task ThreadUpdateAsync()
+    {
+        while (true)
+        {
+            await Task.Delay(1);
+            
+            OnThreadUpdate?.InvokeSafe();
+        }
+    }
+
     private static void OnWaiting()
     {
         if (isStatsPaused)
@@ -290,5 +305,7 @@ public static class PlayerUpdateHelper
 
             return x;
         });
+
+        Task.Run(ThreadUpdateAsync);
     }
 }
