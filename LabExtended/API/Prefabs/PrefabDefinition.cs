@@ -1,5 +1,5 @@
 ﻿using LabExtended.Extensions;
-
+using MapGeneration.Distributors;
 using Mirror;
 
 using UnityEngine;
@@ -62,6 +62,8 @@ public class PrefabDefinition
     public T Spawn<T>(Action<T> prefabSetup = null) where T : Component
     {
         var instance = CreateInstance();
+        var identity = instance.GetComponent<NetworkIdentity>();
+        
         var component = default(T);
 
         if ((component = instance.GetComponent<T>()) is null
@@ -71,7 +73,9 @@ public class PrefabDefinition
 
         prefabSetup.InvokeSafe(component);
 
+        SetupInstance(identity, identity.transform.position, identity.transform.localScale, identity.transform.rotation);
         SpawnInstance(instance.GetComponent<NetworkIdentity>());
+        
         return component;
     }
 
@@ -95,8 +99,13 @@ public class PrefabDefinition
     /// <param name="position">The position to spawn at.</param>
     /// <param name="scale">The scale to spawn at.</param>
     /// <param name="rotation">The rotation to spawn with.</param>
-    public void SetupInstance(NetworkIdentity identity, Vector3 position, Vector3 scale, Quaternion rotation)
+    public virtual void SetupInstance(NetworkIdentity identity, Vector3 position, Vector3 scale, Quaternion rotation)
     {
+        if (identity.gameObject.TryFindComponent<StructurePositionSync>(out var positionSync))
+        {
+            positionSync.Network_position = positionSync._position = position;
+            positionSync.Network_rotationY = positionSync._rotationY = (sbyte)Mathf.RoundToInt(rotation.eulerAngles.y / StructurePositionSync.ConversionRate);
+        }
     }
 
     /// <summary>
