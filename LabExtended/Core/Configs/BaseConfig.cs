@@ -9,6 +9,9 @@ namespace LabExtended.Core.Configs
         
         [Description("Toggles debug logs of transpilers.")]
         public bool TranspilerDebugEnabled { get; set; }
+        
+        [Description("Toggles debug logs of RoleSelector.")]
+        public bool RoleSelectorDebug { get; set; }
 
         [Description("Toggles true color log formatting.")]
         public bool TrueColorEnabled { get; set; } = true;
