@@ -9,6 +9,9 @@ namespace LabExtended.Core.Configs
     /// </summary>
     public class ApiConfig
     {
+        [Description("File Storage configuration.")]
+        public StorageSection StorageSection { get; set; } = new();
+        
         [Description("Voice chat configuration.")]
         public VoiceSection VoiceSection { get; set; } = new();
         

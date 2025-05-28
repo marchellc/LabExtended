@@ -50,7 +50,7 @@ using CentralAuth;
 using CommandSystem;
 
 using Footprinting;
-
+using LabExtended.API.FileStorage;
 using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 
@@ -631,6 +631,11 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's persistent storage. <i>(persistent until the next server restart)</i>
     /// </summary>
     public PlayerStorage? PersistentStorage { get; internal set; }
+    
+    /// <summary>
+    /// Gets the player's file storage. This WILL be NULL if file storage is disabled!
+    /// </summary>
+    public FileStorageInstance? FileStorage { get; internal set; }
 
     /// <summary>
     /// Gets the player's toggles.
