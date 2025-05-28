@@ -1,11 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.API.Enums;
 
 using LabExtended.Events;
 using LabExtended.Events.Scp079;
-
-using LabExtended.Extensions;
 
 using Mirror;
 
@@ -13,50 +12,54 @@ using PlayerRoles.PlayableScps.Scp079.Pinging;
 
 using RelativePositioning;
 
-namespace LabExtended.Patches.Events.Scp079
+namespace LabExtended.Patches.Events.Scp079;
+
+/// <summary>
+/// Implements the <see cref="ExScp079Events.SpawningPing"/> and <see cref="ExScp079Events.SpawnedPing"/> events.
+/// </summary>
+public static class Scp079SpawningPingPatch
 {
-    public static class Scp079SpawningPingPatch
+    [HarmonyPatch(typeof(Scp079PingAbility), nameof(Scp079PingAbility.ServerProcessCmd))]
+    private static bool Prefix(Scp079PingAbility __instance, NetworkReader reader)
     {
-        [HarmonyPatch(typeof(Scp079PingAbility), nameof(Scp079PingAbility.ServerProcessCmd))]
-        public static bool Prefix(Scp079PingAbility __instance, NetworkReader reader)
+        if (!__instance.IsReady || !__instance.Role.TryGetOwner(out var owner) || __instance.LostSignalHandler.Lost)
+            return false;
+
+        if (!ExPlayer.TryGet(owner, out var player))
+            return false;
+
+        var processorIndex = reader.ReadByte();
+
+        if (processorIndex < Scp079PingAbility.PingProcessors.Length)
         {
-            if (!__instance.IsReady || !__instance.Role.TryGetOwner(out var owner) || __instance.LostSignalHandler.Lost)
+            var processorType = (Scp079PingType)processorIndex;
+            var processorPosition = reader.ReadRelativePosition();
+            var processorNormal = reader.ReadVector3();
+
+            var spawningArgs = new Scp079SpawningPingEventArgs(player, __instance.CastRole, __instance, processorType,
+                processorPosition.Position, __instance._cost);
+
+            if (!ExScp079Events.OnSpawningPing(spawningArgs))
                 return false;
 
-            var player = ExPlayer.Get(owner);
+            __instance._syncProcessorIndex = (byte)spawningArgs.PingType;
+            __instance._syncNormal = processorNormal;
+            
+            if (spawningArgs.Position != processorPosition.Position)
+                __instance._syncPos = new(spawningArgs.Position);
+            else
+                __instance._syncPos = processorPosition;
+            
+            __instance.ServerSendRpc(x => __instance.ServerCheckReceiver(x, __instance._syncPos.Position, __instance._syncProcessorIndex));
 
-            if (player is null)
-                return true;
-
-            __instance._syncProcessorIndex = reader.ReadByte();
-
-            if (__instance._syncProcessorIndex < Scp079PingAbility.PingProcessors.Length)
-            {
-                var processor = Scp079PingAbility.PingProcessors[__instance._syncProcessorIndex];
-
-                var position = reader.ReadRelativePosition();
-                var normal = reader.ReadVector3();
-
-                var ev = new Scp079SpawningPingEventArgs(player, __instance.CastRole, __instance, processor.GetPingType(), position.Position, __instance._cost);
-
-                if (!ExScp079Events.OnSpawningPing(ev))
-                    return false;
-
-                __instance._syncIndex = (byte)ev.PingType;
-                __instance._syncPos = new RelativePosition(ev.Position);
-                __instance._syncNormal = normal;
-
-                __instance.ServerSendRpc(hub => __instance.ServerCheckReceiver(hub, __instance._syncPos.Position, __instance._syncProcessorIndex));
-
-                if (ev.AuxCost > 0f)
-                    __instance.AuxManager.CurrentAux -= ev.AuxCost;
-
-                __instance._rateLimiter.RegisterInput();
-                
-                ExScp079Events.OnSpawnedPing(new(player, __instance.CastRole, __instance, ev.PingType, ev.Position));
-            }
-
-            return false;
+            if (spawningArgs.AuxCost > 0f)
+                __instance.AuxManager.CurrentAux -= spawningArgs.AuxCost;
+            
+            __instance._rateLimiter.RegisterInput();
+            
+            ExScp079Events.OnSpawnedPing(new(player, __instance.CastRole, __instance, spawningArgs.PingType, spawningArgs.Position));
         }
+
+        return false;
     }
 }
