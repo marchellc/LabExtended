@@ -10,6 +10,7 @@ using LabExtended.Core.Pooling.Pools;
 using LabExtended.API;
 using LabExtended.Events;
 using LabExtended.Utilities;
+using LabExtended.Utilities.RoleSelection;
 
 namespace LabExtended.Patches.Events.Round;
 
@@ -23,33 +24,38 @@ public static class AssigningRolesPatch
     /// </summary>
     public static readonly Dictionary<ExPlayer, RoleTypeId> Roles = new();
 
+    /// <summary>
+    /// A list of valid players.
+    /// </summary>
+    public static readonly List<ExPlayer> Players = new();
+
     public static FastEvent<Action> OnPlayersSpawned { get; } =
         FastEvents.DefineEvent<Action>(typeof(RoleAssigner), nameof(RoleAssigner.OnPlayersSpawned));
 
     [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
     private static bool Prefix()
     {
+        var options = RoleSelectorOptions.ModifyHumanHistory | RoleSelectorOptions.ModifyScpTickets;
+
+        if (ConfigFile.ServerConfig.GetBool("allow_scp_overflow", false))
+            options |= RoleSelectorOptions.AllowScpOverflow;
+        
+        Players.Clear();
+        Players.AddRange(ExPlayer.Players.Where(p => p != null && !p.IsUnverified));
+        
         Roles.Clear();
         
-        RoleSelector.GetRolesNonAlloc(Roles, out var hsOverflowMultiplier,
-            ConfigFile.ServerConfig.GetBool("allow_scp_overflow"),
-            true, true, ConfigFile.ServerConfig.GetString("team_respawn_queue", "4014314031441404134041434414"));
+        var result = Roles.SelectRoles(Players, null, options,
+            ConfigFile.ServerConfig.GetString("team_respawn_queue", RoleSelector.DefaultTeamQueue));
 
         if (!ExRoundEvents.OnAssigningRoles(new(Roles)))
             return false;
 
         RoleAssigner._spawned = true;
         RoleAssigner.LateJoinTimer.Restart();
-        
-        if (hsOverflowMultiplier.HasValue)
-        {
-            RoleAssigner.ScpsOverflowing = true;
-            RoleAssigner.ScpOverflowMaxHsMultiplier = hsOverflowMultiplier.Value;
-        }
-        else
-        {
-            RoleAssigner.ScpsOverflowing = false;
-        }
+
+        RoleAssigner.ScpsOverflowing = result.ScpsOverflowing;
+        RoleAssigner.ScpOverflowMaxHsMultiplier = result.ScpOverflowHumeShieldMultiplier;
 
         foreach (var pair in Roles)
         {
