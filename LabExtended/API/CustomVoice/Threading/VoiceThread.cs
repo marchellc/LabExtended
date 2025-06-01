@@ -152,7 +152,7 @@ public class VoiceThread : IDisposable
         
         var newBuffer = new byte[originalData.Length];
         
-        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalLength);
+        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalData.Length);
 
         var newPacket = packetFactory();
 
@@ -197,7 +197,7 @@ public class VoiceThread : IDisposable
         
         var newBuffer = new byte[originalData.Length];
         
-        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalLength);
+        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalData.Length);
 
         var newPacket = packetFactory is null ? new VoiceThreadPacket() : packetFactory();
 
@@ -237,7 +237,7 @@ public class VoiceThread : IDisposable
         
         var newBuffer = new byte[originalData.Length];
         
-        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalLength);
+        Buffer.BlockCopy(originalData, 0, newBuffer, 0, originalData.Length);
 
         var newPacket = new VoiceThreadPacket();
 
@@ -260,7 +260,7 @@ public class VoiceThread : IDisposable
     {
         var newBuffer = new byte[message.Data.Length];
         
-        Buffer.BlockCopy(message.Data, 0, newBuffer, 0, message.DataLength);
+        Buffer.BlockCopy(message.Data, 0, newBuffer, 0, message.Data.Length);
 
         var newPacket = new VoiceThreadPacket();
 
@@ -285,7 +285,7 @@ public class VoiceThread : IDisposable
     {
         var newBuffer = new byte[packet.Data.Length];
         
-        Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Length);
+        Buffer.BlockCopy(packet.Data, 0, newBuffer, 0, packet.Data.Length);
 
         var newMessage = new VoiceMessage(voiceController.Player.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
         
