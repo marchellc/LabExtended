@@ -435,6 +435,7 @@ public static class CommandManager
                 
             Type = ev.CommandType,
             Command = history.CommandData,
+            Overload = history.Overload,
         };
 
         command.PreviousContext = command.Context;

@@ -37,7 +37,7 @@ namespace LabExtended.Patches.Events.Scp939
                 var placingArgs = new Scp939PlacingMimicryEventArgs(scp, new RelativePosition(__instance.CastRole.FpcModule.Position));
 
                 if (!ExScp939Events.OnPlacingMimicry(placingArgs))
-                    
+                    return false;
 
                 __instance._syncMessage = MimicPointController.RpcStateMsg.PlacedByUser;
                 __instance._syncPos = placingArgs.Position;
