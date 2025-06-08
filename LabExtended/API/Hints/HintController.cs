@@ -917,6 +917,8 @@ public static class HintController
             player.Connection.Send(State.Writer.ToArraySegment());
             player.Hints.WasClearedAfterEmpty = false;
         }
+
+        SendNextFrame = false;
     }
 
     [LoaderInitialize(1)]
