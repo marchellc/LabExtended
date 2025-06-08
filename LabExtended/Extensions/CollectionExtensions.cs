@@ -21,7 +21,7 @@ public static class CollectionExtensions
         if (count < 2)
             return items.First();
 
-        return validItems.ElementAt(RandomGen.Instance.GetInt32(0, count - 1));
+        return validItems.ElementAt(RandomGen.Instance.GetInt32(0, count));
     }
 
     public static T[] GetRandomArray<T>(this IEnumerable<T> items, int minCount, Predicate<T> predicate = null)
@@ -37,10 +37,10 @@ public static class CollectionExtensions
 
         for (int i = 0; i < minCount; i++)
         {
-            var index = RandomGen.Instance.GetInt32(0, count - 1);
+            var index = RandomGen.Instance.GetInt32(0, count);
 
-            while (selected.Contains(index) && ExServer.IsRunning)
-                index = RandomGen.Instance.GetInt32(0, count - 1);
+            while (selected.Contains(index))
+                index = RandomGen.Instance.GetInt32(0, count);
 
             selected.Add(index);
             array[i] = items.ElementAt(index);
@@ -63,10 +63,10 @@ public static class CollectionExtensions
 
         for (int i = 0; i < minCount; i++)
         {
-            var index = RandomGen.Instance.GetInt32(0, count - 1);
+            var index = RandomGen.Instance.GetInt32(0, count);
 
-            while (selected.Contains(index) && ExServer.IsRunning)
-                index = RandomGen.Instance.GetInt32(0, count - 1);
+            while (selected.Contains(index))
+                index = RandomGen.Instance.GetInt32(0, count);
 
             selected.Add(index);
             list.Add(items.ElementAt(index));
@@ -89,10 +89,10 @@ public static class CollectionExtensions
 
         for (int i = 0; i < minCount; i++)
         {
-            var index = RandomGen.Instance.GetInt32(0, count - 1);
+            var index = RandomGen.Instance.GetInt32(0, count);
 
-            while (selected.Contains(index) && ExServer.IsRunning)
-                index = RandomGen.Instance.GetInt32(0, count - 1);
+            while (selected.Contains(index))
+                index = RandomGen.Instance.GetInt32(0, count);
 
             selected.Add(index);
             set.Add(items.ElementAt(index));
