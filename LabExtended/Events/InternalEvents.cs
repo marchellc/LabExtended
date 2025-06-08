@@ -40,10 +40,7 @@ namespace LabExtended.Events
         internal static void HandlePlayerVerified(ExPlayer player)
         {
             if (player.IsServer)
-            {
-                OnHostJoined.InvokeSafe(player);
                 return;
-            }
             
             OnPlayerVerified.InvokeSafe(player);
             
@@ -84,6 +81,8 @@ namespace LabExtended.Events
         {
             if (!player.IsServer)
                 OnPlayerJoined.InvokeSafe(player);
+            else
+                OnHostJoined.InvokeSafe(player);
 
             if (!player.IsNpc) 
                 ExPlayerEvents.OnJoined(player);
