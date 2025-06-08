@@ -91,8 +91,8 @@ public class VoiceController : IDisposable
         profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
         PlayerUpdateHelper.OnUpdate += UpdateSpeaking;
-        InternalEvents.OnSpawning += HandleSpawn;
-        
+        PlayerEvents.ChangedRole += HandleRoleChange;
+
         OnJoined.InvokeSafe(this);
     }
 
@@ -277,8 +277,8 @@ public class VoiceController : IDisposable
     public void Dispose()
     {
         PlayerUpdateHelper.OnUpdate -= UpdateSpeaking;
-        InternalEvents.OnSpawning -= HandleSpawn;
-        
+        PlayerEvents.ChangedRole -= HandleRoleChange;
+
         Thread?.Dispose();
         Thread = null;
         
@@ -391,7 +391,7 @@ public class VoiceController : IDisposable
         }
     }
 
-    private void HandleSpawn(PlayerSpawningEventArgs args)
+    private void HandleRoleChange(PlayerChangedRoleEventArgs args)
     {
         if (args.Player is not ExPlayer player)
             return;
@@ -401,7 +401,7 @@ public class VoiceController : IDisposable
         
         foreach (var profile in profiles)
         {
-            if (!profile.Value.OnChangingRole(args.Role.RoleTypeId))
+            if (!profile.Value.EnabledOnRoleChange(args.NewRole.RoleTypeId))
             {
                 if (!profile.Value.IsActive) 
                     continue;
