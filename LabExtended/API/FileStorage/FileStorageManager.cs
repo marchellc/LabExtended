@@ -18,14 +18,20 @@ namespace LabExtended.API.FileStorage;
 public static class FileStorageManager
 {
     private static volatile FileSystemWatcher watcher;
-    private static volatile ConcurrentDictionary<string, FileStorageInstance> instances = new();
+    private static volatile FileStorageInstance serverInstance;
     
+    private static volatile ConcurrentDictionary<string, FileStorageInstance> instances = new();
     internal static volatile ConcurrentDictionary<string, FileStorageComponent> pathToComponent = new();
     
     /// <summary>
     /// Gets called when a player's file storage is loaded.
     /// </summary>
     public static event Action<ExPlayer>? OnLoaded; 
+    
+    /// <summary>
+    /// Gets called when the server's file storage is loaded.
+    /// </summary>
+    public static event Action? OnServerLoaded; 
     
     /// <summary>
     /// Gets the path to the storage directory.
@@ -36,6 +42,11 @@ public static class FileStorageManager
     /// A list of all found component types.
     /// </summary>
     public static HashSet<Type> Components { get; } = new();
+
+    /// <summary>
+    /// Gets the file storage instance targeting the dedicated server player.
+    /// </summary>
+    public static FileStorageInstance Server => serverInstance;
 
     /// <summary>
     /// Gets the path to the storage directory of a specific user ID.
@@ -232,6 +243,9 @@ public static class FileStorageManager
 
                 instances.TryAdd(userId, instance);
             }
+
+            if (string.Equals(userId, "Server@steam", StringComparison.InvariantCulture))
+                serverInstance = instance;
         }
     }
 
@@ -262,6 +276,48 @@ public static class FileStorageManager
             .ContinueWithOnMain(_ => targetComponent.OnReloaded());
     }
 
+    private static void OnHostLeft(ExPlayer player)
+    {
+        if (serverInstance != null)
+        {
+            serverInstance.IsActive = false;
+            serverInstance.OnLeft();
+
+            serverInstance.Player = null;
+        }
+    }
+
+    private static void OnHostJoined(ExPlayer player)
+    {
+        if (serverInstance != null)
+        {
+            serverInstance.Player = player;
+            serverInstance.OnJoined();
+         
+            serverInstance.IsActive = true;
+            
+            instances.TryRemove("Server@steam", out _);
+            instances.TryAdd("Server@steam", serverInstance);
+            
+            OnServerLoaded?.InvokeSafe();
+        }
+        else
+        {
+            serverInstance = new(Path.Combine(DirectoryPath, "Server@steam"));
+            serverInstance.Load();
+
+            serverInstance.Player = player;
+            serverInstance.OnJoined();
+
+            serverInstance.IsActive = true;
+            
+            instances.TryRemove("Server@steam", out _);
+            instances.TryAdd("Server@steam", serverInstance);
+            
+            OnServerLoaded?.InvokeSafe();
+        }
+    }
+
     private static void OnVerified(ExPlayer player)
     {
         if (instances.TryRemove(player.UserId, out var activeInstance))
@@ -280,11 +336,12 @@ public static class FileStorageManager
             var path = GetPlayerDirectory(player.UserId);
             var instance = new FileStorageInstance(path);
 
-            instance.Player = player;
-            instance.IsActive = true;
-            
             instance.Load();
+            
+            instance.Player = player;
             instance.OnJoined();
+            
+            instance.IsActive = true;
         
             player.FileStorage = instance;
         
@@ -344,6 +401,10 @@ public static class FileStorageManager
         LoadWatcher();
         
         InternalEvents.OnPlayerVerified += OnVerified;
+
+        InternalEvents.OnHostJoined += OnHostJoined;
+        InternalEvents.OnHostLeft += OnHostLeft;
+        
         ExPlayerEvents.Leaving += OnLeaving;
     }
 }

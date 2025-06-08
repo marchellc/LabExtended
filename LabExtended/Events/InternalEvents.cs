@@ -29,7 +29,10 @@ namespace LabExtended.Events
 
         internal static event Action<ExPlayer>? OnPlayerVerified; 
         internal static event Action<ExPlayer>? OnPlayerJoined;
-        internal static event Action<ExPlayer>? OnPlayerLeft; 
+        internal static event Action<ExPlayer>? OnPlayerLeft;
+
+        internal static event Action<ExPlayer>? OnHostJoined;
+        internal static event Action<ExPlayer>? OnHostLeft; 
         
         internal static event Action<PlayerChangedRoleEventArgs>? OnRoleChanged;
         internal static event Action<PlayerSpawningEventArgs>? OnSpawning;
@@ -37,7 +40,10 @@ namespace LabExtended.Events
         internal static void HandlePlayerVerified(ExPlayer player)
         {
             if (player.IsServer)
+            {
+                OnHostJoined.InvokeSafe(player);
                 return;
+            }
             
             OnPlayerVerified.InvokeSafe(player);
             
@@ -101,13 +107,20 @@ namespace LabExtended.Events
                     ApiLog.Warn("Round API", $"Lobby Lock disabled - the player who enabled it (&3{player.Nickname}&r &6{player.UserId}&r) left the server.");
                 }
             }
-            
-            OnPlayerLeft.InvokeSafe(player);
 
-            if (player is { IsServer: false, IsNpc: false , IsVerified: true })
-                ApiLog.Info("LabExtended", $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
-            
-            ExPlayerEvents.OnLeft(player);
+            if (player is { IsServer: false, IsNpc: false, IsVerified: true })
+            {
+                ApiLog.Info("LabExtended",
+                    $"Player &3{player.Nickname}&r (&3{player.UserId}&r) &1left&r from &3{player.IpAddress}&r!");
+                
+                OnPlayerLeft.InvokeSafe(player);
+
+                ExPlayerEvents.OnLeft(player);
+            }
+            else if (player.IsServer)
+            {
+                OnHostLeft.InvokeSafe(player);
+            }
         }
 
         private static void HandleSpawning(PlayerSpawningEventArgs args)
