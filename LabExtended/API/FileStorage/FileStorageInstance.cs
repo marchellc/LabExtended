@@ -15,7 +15,8 @@ namespace LabExtended.API.FileStorage;
 public class FileStorageInstance : IDisposable
 {
     private volatile bool isActive = false;
-    private volatile string userId = string.Empty;
+    
+    internal volatile string userId = string.Empty;
 
     /// <summary>
     /// The target player.

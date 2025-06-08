@@ -236,9 +236,13 @@ public static class FileStorageManager
         {
             var userId = Path.GetFileName(directory);
 
+            ApiLog.Debug("File Storage", $"Loading user ID &6{userId}&r");
+            
             if (!instances.TryGetValue(userId, out var instance))
             {
                 instance = new(directory);
+                instance.userId = userId;
+                
                 instance.Load();
 
                 instances.TryAdd(userId, instance);
@@ -246,6 +250,8 @@ public static class FileStorageManager
 
             if (string.Equals(userId, "Server@steam", StringComparison.InvariantCulture))
                 serverInstance = instance;
+            
+            ApiLog.Debug("File Storage", $"Loaded storage for user ID &6{instance.UserId}&r");
         }
     }
 
@@ -269,6 +275,8 @@ public static class FileStorageManager
         if (!pathToComponent.TryGetValue(ev.FullPath, out var targetComponent))
             return;
 
+        ApiLog.Debug("File Storage", $"Component &3{targetComponent.Name}&r file changed (UID: {targetComponent.Storage.UserId}, WriteLock: {targetComponent.writeLock})");
+        
         if (targetComponent.writeLock)
             return;
         
@@ -284,6 +292,8 @@ public static class FileStorageManager
             serverInstance.OnLeft();
 
             serverInstance.Player = null;
+            
+            ApiLog.Debug("File Storage", $"Removed server player storage");
         }
     }
 
@@ -298,6 +308,8 @@ public static class FileStorageManager
             
             instances.TryRemove("Server@steam", out _);
             instances.TryAdd("Server@steam", serverInstance);
+            
+            ApiLog.Debug("File Storage", $"Loaded server player storage");
             
             OnServerLoaded?.InvokeSafe();
         }
@@ -314,6 +326,8 @@ public static class FileStorageManager
             instances.TryRemove("Server@steam", out _);
             instances.TryAdd("Server@steam", serverInstance);
             
+            ApiLog.Debug("File Storage", $"Created server player storage");
+            
             OnServerLoaded?.InvokeSafe();
         }
     }
@@ -328,6 +342,8 @@ public static class FileStorageManager
             activeInstance.OnJoined();
             
             player.FileStorage = activeInstance;
+            
+            ApiLog.Debug("File Storage", $"Loaded active storage instance of player &3{player.Nickname}&r (&6{player.UserId}&r)");
             
             OnLoaded?.InvokeSafe(player);
         }
@@ -344,6 +360,8 @@ public static class FileStorageManager
             instance.IsActive = true;
         
             player.FileStorage = instance;
+            
+            ApiLog.Debug("File Storage", $"Created new storage instance of player &3{player.Nickname}&r (&6{player.UserId}&r)");
         
             OnLoaded?.InvokeSafe(player);
         }
@@ -360,6 +378,8 @@ public static class FileStorageManager
 
             args.Player.FileStorage.Player = null;
             args.Player.FileStorage = null;
+            
+            ApiLog.Debug("File Storage", $"Removed storage instance of player &3{args.Player.Nickname}&r (&6{args.Player.UserId}&r)");
         }
     }
     
@@ -392,6 +412,8 @@ public static class FileStorageManager
                 return;
             
             Components.Add(type);
+            
+            ApiLog.Debug("File Storage", $"Found component &3{type.FullName}&r");
         });
 
         if (Components.Count < 1)

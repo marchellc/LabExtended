@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-
+using LabExtended.Core;
 using Newtonsoft.Json.Linq;
 
 namespace LabExtended.API.FileStorage;
@@ -83,6 +83,8 @@ public abstract class FileStorageComponent
         {
             if (!property.Value.IsDirty)
                 continue;
+            
+            ApiLog.Debug("File Storage", $"&3[{Name}]&r Property &6{property.Key}&r is dirty!");
 
             anyDirty = true;
             break;
