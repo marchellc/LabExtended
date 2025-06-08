@@ -51,13 +51,14 @@ public class VoiceController : IDisposable
     
     /// <summary>
     /// Gets the voice chat processing thread.
+    /// <remarks>Will be NULL if <b>disable_threaded_voice</b> is set to true!</remarks>
     /// </summary>
     public VoiceThread Thread { get; internal set; }
 
     /// <summary>
     /// Whether or not the player is online.
     /// </summary>
-    public bool IsOnline => Player != null && Player;
+    public bool IsOnline => Player != null && Player.IsVerified;
     
     /// <summary>
     /// Whether or not the player is speaking.

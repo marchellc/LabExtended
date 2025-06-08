@@ -28,8 +28,8 @@ public class VoiceThread : IDisposable
 {
     private static volatile float globalPitch = 1f;
     
-    private static volatile ConcurrentQueue<VoiceThreadPacket> inputQueue = new();
-    private static volatile ConcurrentQueue<VoiceThreadPacket> outputQueue = new();
+    private volatile ConcurrentQueue<VoiceThreadPacket> inputQueue = new();
+    private volatile ConcurrentQueue<VoiceThreadPacket> outputQueue = new();
 
     /// <summary>
     /// Gets or sets the global voice pitch.
@@ -95,8 +95,11 @@ public class VoiceThread : IDisposable
         opusEncoder = new OpusEncoder(OpusApplicationType.Voip);
 
         onPacketProcessed = ProcessPitched;
-
+        
         ExServerEvents.Quitting += Dispose;
+        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
+        
+        Task.Run(UpdateInputQueueAsync);
     }
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -105,6 +108,7 @@ public class VoiceThread : IDisposable
         if (isDisposed)
             return;
 
+        PlayerUpdateHelper.OnUpdate -= UpdateOutputQueue;
         ExServerEvents.Quitting -= Dispose;
         
         isDisposed = true;
@@ -119,6 +123,12 @@ public class VoiceThread : IDisposable
         
         opusEncoder?.Dispose();
         opusEncoder = null;
+        
+        inputQueue?.Clear();
+        inputQueue = null;
+        
+        outputQueue?.Clear();
+        outputQueue = null;
     }
     
     /// <summary>
@@ -292,7 +302,7 @@ public class VoiceThread : IDisposable
         voiceController.ProcessMessage(ref newMessage);
     }
 
-    private static void UpdateOutputQueue()
+    private void UpdateOutputQueue()
     {
         try
         {
@@ -315,11 +325,11 @@ public class VoiceThread : IDisposable
         }
     }
 
-    private static async Task UpdateInputQueueAsync()
+    private async Task UpdateInputQueueAsync()
     {
-        while (true)
+        while (!isDisposed)
         {
-            await Task.Delay(50);
+            await Task.Delay(5);
             
             try
             {
@@ -338,24 +348,5 @@ public class VoiceThread : IDisposable
                 ApiLog.Error("Voice Thread Input", ex);
             }
         }
-    }
-
-    private static void OnRestart()
-    {
-        outputQueue.Clear();
-        inputQueue.Clear();
-    }
-
-    [LoaderInitialize(1)]
-    private static void OnInit()
-    {
-        if (ApiLoader.ApiConfig.VoiceSection.DisableThreadedVoice)
-            return;
-        
-        InternalEvents.OnRoundRestart += OnRestart;
-        
-        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
-
-        Task.Run(UpdateInputQueueAsync);
     }
 }
