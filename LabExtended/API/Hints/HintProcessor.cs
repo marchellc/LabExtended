@@ -33,7 +33,8 @@ public static class HintProcessor
         {
             player.Hints.ParseTemp();
 
-            state.Parameters.AddRange(player.Hints.CurrentMessage.Parameters);
+            if (player.Hints.CurrentMessage.Parameters?.Count > 0)
+                state.Parameters.AddRange(player.Hints.CurrentMessage.Parameters);
 
             if (player.Hints.TempData.Count > 0)
             {
@@ -93,17 +94,17 @@ public static class HintProcessor
         if (element.tickNum != state.FrameCounter)
         {
             if (element.ClearBuilderOnUpdate)
-                element.Builder.Clear();
+                element.Builder?.Clear();
             
             element.tickNum = state.FrameCounter;
             element.OnUpdate();
         }
 
         if (element.ClearParameters)
-            element.Parameters.Clear();
+            element.Parameters?.Clear();
 
         if (!element.ClearBuilderOnUpdate)
-            element.Builder.Clear();
+            element.Builder?.Clear();
 
         if (!element.OnDraw(player) || element.Builder.Length < 1)
             return;
@@ -163,7 +164,8 @@ public static class HintProcessor
 
             if (element.Data.Count > 0)
             {
-                state.Parameters.AddRange(element.Parameters);
+                if (element.Parameters?.Count > 0)
+                    state.Parameters.AddRange(element.Parameters);
 
                 HintUtils.AppendMessages(element.Data, element.GetAlignment(player), state.Builder, player.Hints.LeftOffset);
                 
