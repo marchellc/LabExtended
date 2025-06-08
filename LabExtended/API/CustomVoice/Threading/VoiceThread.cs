@@ -333,7 +333,7 @@ public class VoiceThread : IDisposable
             
             try
             {
-                while (inputQueue.TryDequeue(out var packet))
+                while (inputQueue != null && inputQueue.TryDequeue(out var packet))
                 {
                     if (packet.Action is null)
                         continue;
