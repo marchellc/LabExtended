@@ -22,6 +22,13 @@ public static class FileStorageManager
     
     private static volatile ConcurrentDictionary<string, FileStorageInstance> instances = new();
     internal static volatile ConcurrentDictionary<string, FileStorageComponent> pathToComponent = new();
+
+    internal static event Action? CheckDirtiness;
+
+    /// <summary>
+    /// How many milliseconds a component's write watch must have elapsed to not be ignored.
+    /// </summary>
+    public const int WriteWatchIgnore = 100;
     
     /// <summary>
     /// Gets called when a player's file storage is loaded.
@@ -229,7 +236,7 @@ public static class FileStorageManager
         value = target;
         return true;
     }
-    
+
     private static void LoadInstances()
     {
         foreach (var directory in Directory.GetDirectories(DirectoryPath, "*@steam"))
@@ -237,20 +244,17 @@ public static class FileStorageManager
             var userId = Path.GetFileName(directory);
 
             ApiLog.Debug("File Storage", $"Loading user ID &6{userId}&r");
-            
-            if (!instances.TryGetValue(userId, out var instance))
-            {
-                instance = new(directory);
-                instance.userId = userId;
-                
-                instance.Load();
 
-                instances.TryAdd(userId, instance);
-            }
+            var instance = new FileStorageInstance(directory);
+            
+            instance.userId = userId;
+            instance.Load();
+
+            instances.TryAdd(userId, instance);
 
             if (string.Equals(userId, "Server@steam", StringComparison.InvariantCulture))
                 serverInstance = instance;
-            
+
             ApiLog.Debug("File Storage", $"Loaded storage for user ID &6{instance.UserId}&r");
         }
     }
@@ -262,7 +266,7 @@ public static class FileStorageManager
             watcher = new(DirectoryPath)
             {
                 IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.LastWrite
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.Attributes
             };
             
             watcher.Changed += OnChanged;
@@ -275,9 +279,9 @@ public static class FileStorageManager
         if (!pathToComponent.TryGetValue(ev.FullPath, out var targetComponent))
             return;
 
-        ApiLog.Debug("File Storage", $"Component &3{targetComponent.Name}&r file changed (UID: {targetComponent.Storage.UserId}, WriteLock: {targetComponent.writeLock})");
-        
-        if (targetComponent.writeLock)
+        ApiLog.Debug("File Storage", $"Component &3{targetComponent.Name}&r file changed (UID: {targetComponent.Storage.UserId}, WriteWatch: {targetComponent.writeWatch.ElapsedMilliseconds} / {WriteWatchIgnore})");
+
+        if (targetComponent.writeWatch.ElapsedMilliseconds < WriteWatchIgnore)
             return;
         
         Task.Run(() => targetComponent.ReloadFile())
@@ -288,6 +292,8 @@ public static class FileStorageManager
     {
         if (serverInstance != null)
         {
+            serverInstance.userId = "Server@steam";
+            
             serverInstance.IsActive = false;
             serverInstance.OnLeft();
 
@@ -301,13 +307,12 @@ public static class FileStorageManager
     {
         if (serverInstance != null)
         {
+            serverInstance.userId = "Server@steam";
+            
             serverInstance.Player = player;
             serverInstance.OnJoined();
          
             serverInstance.IsActive = true;
-            
-            instances.TryRemove("Server@steam", out _);
-            instances.TryAdd("Server@steam", serverInstance);
             
             ApiLog.Debug("File Storage", $"Loaded server player storage");
             
@@ -315,7 +320,14 @@ public static class FileStorageManager
         }
         else
         {
-            serverInstance = new(Path.Combine(DirectoryPath, "Server@steam"));
+            var path = Path.Combine(DirectoryPath, "Server@steam");
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            
+            serverInstance = new(path);
+            serverInstance.userId = "Server@steam";
+            
             serverInstance.Load();
 
             serverInstance.Player = player;
@@ -323,7 +335,6 @@ public static class FileStorageManager
 
             serverInstance.IsActive = true;
             
-            instances.TryRemove("Server@steam", out _);
             instances.TryAdd("Server@steam", serverInstance);
             
             ApiLog.Debug("File Storage", $"Created server player storage");
@@ -334,9 +345,10 @@ public static class FileStorageManager
 
     private static void OnVerified(ExPlayer player)
     {
-        if (instances.TryRemove(player.UserId, out var activeInstance))
+        if (instances.TryGetValue(player.UserId, out var activeInstance))
         {
             activeInstance.IsActive = true;
+            activeInstance.userId = player.UserId;
             
             activeInstance.Player = player;
             activeInstance.OnJoined();
@@ -352,12 +364,15 @@ public static class FileStorageManager
             var path = GetPlayerDirectory(player.UserId);
             var instance = new FileStorageInstance(path);
 
+            instance.userId = player.UserId;
             instance.Load();
             
             instance.Player = player;
             instance.OnJoined();
             
             instance.IsActive = true;
+            
+            instances.TryAdd(player.UserId, instance);
         
             player.FileStorage = instance;
             
@@ -371,8 +386,6 @@ public static class FileStorageManager
     {
         if (args.Player.FileStorage != null)
         {
-            instances.TryAdd(args.Player.UserId, args.Player.FileStorage);
-            
             args.Player.FileStorage.IsActive = false;
             args.Player.FileStorage.OnLeft();
 
@@ -428,5 +441,24 @@ public static class FileStorageManager
         InternalEvents.OnHostLeft += OnHostLeft;
         
         ExPlayerEvents.Leaving += OnLeaving;
+
+        Task.Run(CheckDirtinessAsync);
+    }
+
+    private static async Task CheckDirtinessAsync()
+    {
+        while (true)
+        {
+            try
+            {
+                await Task.Delay(100);
+                
+                CheckDirtiness?.InvokeSafe();
+            }
+            catch
+            {
+                // ignored
+            }
+        }
     }
 }

@@ -71,7 +71,7 @@ public class FileStorageInstance : IDisposable
     public void Load()
     {
         PlayerUpdateHelper.OnUpdate += Update;
-        PlayerUpdateHelper.OnThreadUpdate += CheckDirty;
+        FileStorageManager.CheckDirtiness += CheckDirty;
 
         foreach (var componentType in FileStorageManager.Components)
         {
@@ -220,11 +220,9 @@ public class FileStorageInstance : IDisposable
 
         if (anyModified)
         {
-            component.writeLock = true;
+            component.writeWatch.Restart();
             
             File.WriteAllText(filePath, component.componentData.ToString(Formatting.Indented));
-
-            component.writeLock = false;
         }
         
         ListPool<string>.Shared.Return(addedProperties);
@@ -295,11 +293,9 @@ public class FileStorageInstance : IDisposable
 
         if (anyChanged)
         {
-            component.writeLock = true;
+            component.writeWatch.Restart();
             
             File.WriteAllText(component.Path, component.componentData.ToString(Formatting.Indented));
-
-            component.writeLock = false;
         }
     }
     
@@ -494,7 +490,7 @@ public class FileStorageInstance : IDisposable
         if (Components != null)
         {
             PlayerUpdateHelper.OnUpdate -= Update;
-            PlayerUpdateHelper.OnThreadUpdate -= CheckDirty;
+            FileStorageManager.CheckDirtiness -= CheckDirty;
 
             foreach (var component in Components)
             {
@@ -562,7 +558,7 @@ public class FileStorageInstance : IDisposable
         }
     }
 
-    private async Task CheckDirty()
+    private void CheckDirty()
     {
         foreach (var component in Components)
         {

@@ -6,6 +6,8 @@ namespace LabExtended.API.FileStorage;
 /// <typeparam name="T"></typeparam>
 public class FileStorageProperty<T> : FileStoragePropertyBase
 {
+    internal volatile object value;
+    
     /// <summary>
     /// Gets called once the value is changed via code.
     /// </summary>
@@ -31,29 +33,43 @@ public class FileStorageProperty<T> : FileStoragePropertyBase
     /// </summary>
     public T? Value
     {
-        get => field;
+        get
+        {
+            if (value is null)
+                return default;
+
+            return (T)value;
+        }
         set
         {
-            var curValue = field;
+            if (!isLoaded)
+            {
+                this.value = value;
+
+                isLoaded = true;
+                return;
+            }
+
+            var curValue = this.value is null ? default(T) : (T)this.value;
             
             if (value is null)
             {
                 if (curValue is null)
                     return;
                 
-                field = default;
+                this.value = null;
 
                 IsDirty = true;
                 
-                Changed?.Invoke(curValue, field);
+                Changed?.Invoke(curValue, default);
                 return;
             }
             
-            field = (T)value;
+            this.value = (T)value;
             
             IsDirty = true;
             
-            Changed?.Invoke(curValue, field);
+            Changed?.Invoke(curValue, value);
         }
     }
 
@@ -63,16 +79,16 @@ public class FileStorageProperty<T> : FileStoragePropertyBase
 
     internal override object NonGenericValue
     {
-        get => Value;
+        get => value;
         set
         {
             if (value is null)
             {
-                Value = default;
+                this.value = null;
                 return;
             }
             
-            Value = (T)value;
+            this.value = (T)value;
         }
     }
     

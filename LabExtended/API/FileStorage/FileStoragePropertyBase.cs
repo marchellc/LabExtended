@@ -8,7 +8,10 @@ namespace LabExtended.API.FileStorage;
 public abstract class FileStoragePropertyBase : IDisposable
 {
     internal volatile JObject propertyObject;
+    
     internal volatile bool isDirty;
+    internal volatile bool isLoaded;
+    
     internal volatile string name;
 
     /// <summary>

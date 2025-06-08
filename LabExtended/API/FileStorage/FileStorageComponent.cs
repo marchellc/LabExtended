@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using LabExtended.Core;
 using Newtonsoft.Json.Linq;
 
@@ -9,8 +10,7 @@ namespace LabExtended.API.FileStorage;
 /// </summary>
 public abstract class FileStorageComponent
 {
-    internal volatile bool writeLock = false;
-    
+    internal volatile Stopwatch writeWatch = new();
     internal volatile ConcurrentDictionary<string, FileStoragePropertyBase> properties = new();
     internal volatile JObject componentData;
     
@@ -84,7 +84,7 @@ public abstract class FileStorageComponent
             if (!property.Value.IsDirty)
                 continue;
             
-            ApiLog.Debug("File Storage", $"&3[{Name}]&r Property &6{property.Key}&r is dirty!");
+            ApiLog.Debug("File Storage", $"&3[{Name} - {Storage.UserId}]&r Property &6{property.Key}&r is dirty!");
 
             anyDirty = true;
             break;
