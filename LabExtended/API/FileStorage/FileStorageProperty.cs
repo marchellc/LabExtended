@@ -7,10 +7,15 @@ namespace LabExtended.API.FileStorage;
 public class FileStorageProperty<T> : FileStoragePropertyBase
 {
     /// <summary>
-    /// Gets called once the value is changed.
+    /// Gets called once the value is changed via code.
     /// </summary>
     public event Action<T?, T?>? Changed;
 
+    /// <summary>
+    /// Gets called once the value is modified via file.
+    /// </summary>
+    public event Action<T?, T?> Modified; 
+    
     /// <summary>
     /// Gets called once the changes are saved.
     /// </summary>
@@ -73,4 +78,7 @@ public class FileStorageProperty<T> : FileStoragePropertyBase
     
     internal override void InvokeSaved()
         => Saved?.Invoke();
+
+    internal override void InvokeModified(object newValue)
+        => Modified?.Invoke(Value, newValue is T t ? t : default);
 }

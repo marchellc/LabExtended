@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using LabExtended.Core.Pooling.Pools;
 
 using Newtonsoft.Json.Linq;
 
@@ -10,6 +9,8 @@ namespace LabExtended.API.FileStorage;
 /// </summary>
 public abstract class FileStorageComponent
 {
+    internal volatile bool writeLock = false;
+    
     internal volatile ConcurrentDictionary<string, FileStoragePropertyBase> properties = new();
     internal volatile JObject componentData;
     
@@ -39,14 +40,32 @@ public abstract class FileStorageComponent
     public abstract void InitProperties();
 
     /// <summary>
-    /// Gets called when the storage is loaded (aka when the player gets verified).
+    /// Gets called when the storage is loaded.
     /// </summary>
     public abstract void OnLoaded();
 
     /// <summary>
-    /// Gets called when the storage gets unloaded (aka before the player leaves).
+    /// Gets called when the storage gets unloaded.
     /// </summary>
     public abstract void OnUnloaded();
+
+    /// <summary>
+    /// Gets called when the target player joins.
+    /// </summary>
+    public abstract void OnJoined();
+
+    /// <summary>
+    /// Gets called when the target player leaves.
+    /// </summary>
+    public abstract void OnLeft();
+
+    /// <summary>
+    /// Gets called when the target file is reloaded (modified by another process).
+    /// </summary>
+    public virtual void OnReloaded()
+    {
+        
+    }
 
     /// <summary>
     /// Gets called once per frame.

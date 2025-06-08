@@ -58,6 +58,18 @@ public class TestFileStorageComponent : FileStorageComponent
         ApiLog.Debug("TestFileStorageComponent", $"[OnUnloaded]");   
     }
 
+    /// <inheritdoc cref="FileStorageComponent.OnLeft"/>
+    public override void OnLeft()
+    {
+        ApiLog.Debug("TestFileStorageComponent", $"[OnLeft]");   
+    }
+
+    /// <inheritdoc cref="FileStorageComponent.OnJoined"/>
+    public override void OnJoined()
+    {
+        ApiLog.Debug("TestFileStorageComponent", $"[OnJoined] {Player.Nickname} ({Player.UserId})");   
+    }
+
     private void OnChanged(int prev, int now)
     {
         if (prev == now)

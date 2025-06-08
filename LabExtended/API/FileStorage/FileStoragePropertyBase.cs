@@ -32,6 +32,8 @@ public abstract class FileStoragePropertyBase : IDisposable
     internal abstract Type GenericType { get; }
 
     internal abstract void InvokeSaved();
+
+    internal abstract void InvokeModified(object newValue);
     
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public virtual void Dispose()

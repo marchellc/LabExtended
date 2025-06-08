@@ -14,10 +14,23 @@ namespace LabExtended.API.FileStorage;
 /// </summary>
 public class FileStorageInstance : IDisposable
 {
+    private volatile bool isActive = false;
+    private volatile string userId = string.Empty;
+
     /// <summary>
     /// The target player.
     /// </summary>
-    public ExPlayer Player { get; }
+    public ExPlayer Player
+    {
+        get;
+        set
+        {
+            field = value;
+            
+            if (value != null && !string.IsNullOrWhiteSpace(value.UserId))
+                userId = value.UserId;
+        }
+    }
     
     /// <summary>
     /// Path to the storage directory.
@@ -25,19 +38,29 @@ public class FileStorageInstance : IDisposable
     public string Path { get; }
 
     /// <summary>
+    /// Gets the target user ID.
+    /// </summary>
+    public string UserId => userId;
+
+    /// <summary>
     /// Gets a list of all component instances.
     /// </summary>
     public ConcurrentDictionary<Type, FileStorageComponent> Components { get; } = new();
 
-    internal FileStorageInstance(ExPlayer player, string path)
+    /// <summary>
+    /// Whether or not the instance is active.
+    /// </summary>
+    public bool IsActive
     {
-        if (player is null)
-            throw new ArgumentNullException(nameof(player));
-        
+        get => isActive;
+        internal set => isActive = value;
+    }
+
+    internal FileStorageInstance(string path)
+    {
         if (string.IsNullOrEmpty(path))
             throw new ArgumentNullException(nameof(path));
-        
-        Player = player;
+
         Path = path;
     }
     
@@ -69,6 +92,9 @@ public class FileStorageInstance : IDisposable
             throw new ArgumentNullException(nameof(filePath));
         
         component.Path = filePath;
+
+        FileStorageManager.pathToComponent.TryRemove(filePath, out _);
+        FileStorageManager.pathToComponent.TryAdd(filePath, component);
 
         if (!File.Exists(filePath))
         {
@@ -145,8 +171,15 @@ public class FileStorageInstance : IDisposable
             if (component.properties.TryGetValue(name, out var property))
             {
                 property.IsDirty = false;
-                property.NonGenericValue = dataToken.ToObject(property.GenericType);
-
+                
+                var newValue = dataToken.ToObject(property.GenericType);
+                
+                if (property.NonGenericValue is null && newValue != null ||
+                    property.NonGenericValue != null && newValue is null ||
+                    (property.NonGenericValue != null && newValue != null && !newValue.Equals(property.NonGenericValue)))
+                    property.InvokeModified(newValue);
+                
+                property.NonGenericValue = newValue;
                 property.propertyObject = propertyObject;
                 
                 addedProperties.Add(name);
@@ -186,7 +219,11 @@ public class FileStorageInstance : IDisposable
 
         if (anyModified)
         {
+            component.writeLock = true;
+            
             File.WriteAllText(filePath, component.componentData.ToString(Formatting.Indented));
+
+            component.writeLock = false;
         }
         
         ListPool<string>.Shared.Return(addedProperties);
@@ -257,7 +294,11 @@ public class FileStorageInstance : IDisposable
 
         if (anyChanged)
         {
+            component.writeLock = true;
+            
             File.WriteAllText(component.Path, component.componentData.ToString(Formatting.Indented));
+
+            component.writeLock = false;
         }
     }
     
@@ -416,6 +457,9 @@ public class FileStorageInstance : IDisposable
         
         try
         {
+            if (activeComponent.Path != null)
+                FileStorageManager.pathToComponent.TryRemove(activeComponent.Path, out _);
+            
             activeComponent.OnUnloaded();
             
             SaveFile(activeComponent);
@@ -455,6 +499,9 @@ public class FileStorageInstance : IDisposable
             {
                 try
                 {
+                    if (component.Value.Path != null)
+                        FileStorageManager.pathToComponent.TryRemove(component.Value.Path, out _);
+                    
                     component.Value.OnUnloaded();
                 }
                 catch (Exception ex)
@@ -464,6 +511,38 @@ public class FileStorageInstance : IDisposable
             }
             
             Components.Clear();
+        }
+    }
+
+    internal void OnJoined()
+    {
+        foreach (var component in Components)
+        {
+            try
+            {
+                component.Value.Player = Player;
+                component.Value.OnJoined();
+            }
+            catch (Exception ex)
+            {
+                ApiLog.Error("File Storage", $"Component &1{component.Key.FullName}&r failed to handle player join!\n{ex}");
+            }
+        }
+    }
+
+    internal void OnLeft()
+    {
+        foreach (var component in Components)
+        {
+            try
+            {
+                component.Value.OnLeft();
+                component.Value.Player = null;
+            }
+            catch (Exception ex)
+            {
+                ApiLog.Error("File Storage", $"Component &1{component.Key.FullName}&r failed to handle player leave!\n{ex}");
+            }
         }
     }
 
