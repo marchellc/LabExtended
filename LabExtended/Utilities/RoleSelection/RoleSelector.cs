@@ -72,8 +72,6 @@ public static class RoleSelector
 
             var team = (Team)teamId;
             
-            ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Loaded team &3{team}&r");
-            
             if (team != Team.SCPs)
                 totalTeamQueue[totalQueueIndex++] = team;
             
@@ -110,11 +108,14 @@ public static class RoleSelector
 
         var selectionContext =
             new RoleSelectorContext(target, source, predicate, options, humanTeamQueue, totalTeamQueue);
-        
-        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting SCP players");
-        
-        ScpRoleSelector.SelectRoles(selectionContext, spawnScpCount);
-        
+
+        if (spawnScpCount > 0)
+        {
+            ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting SCP players");
+
+            ScpRoleSelector.SelectRoles(selectionContext, spawnScpCount);
+        }
+
         ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting human players");
         
         HumanRoleSelector.SelectRoles(selectionContext, humanQueueIndex);
