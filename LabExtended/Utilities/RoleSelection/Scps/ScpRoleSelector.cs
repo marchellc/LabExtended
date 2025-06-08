@@ -1,8 +1,10 @@
+using LabExtended.Core;
+
 using PlayerRoles;
 using PlayerRoles.PlayableScps;
 using PlayerRoles.RoleAssign;
+
 using UnityEngine;
-using Random = System.Random;
 
 namespace LabExtended.Utilities.RoleSelection.Scps;
 
@@ -23,19 +25,31 @@ public static class ScpRoleSelector
         
         if (scpsToSelect < 0)
             throw new ArgumentOutOfRangeException(nameof(scpsToSelect));
+        
+        ApiLog.Debug("Scp Role Selector", $"&3[SelectRoles]&r Selecting {scpsToSelect} SCP roles");
 
         using (var scpContext = new ScpRoleSelectorContext(context))
         {
             scpContext.Roles.Clear();
-            
+
             for (var i = 0; i < scpsToSelect; i++)
-                scpContext.Roles.Add(GetNextRole(context, scpContext));
+            {
+                var nextRole = GetNextRole(context, scpContext);
+                
+                ApiLog.Debug("Scp Role Selector", $"&3[SelectRoles]&r Role {i} = {nextRole}");
+                
+                scpContext.Roles.Add(nextRole);
+            }
             
+            ApiLog.Debug("Scp Role Selector", $"&3[SelectRoles]&r Selecting players for {scpContext.Roles.Count} role(s)");
+
             ScpPlayerSelector.SelectPlayers(context, scpContext, scpsToSelect);
 
             while (scpContext.Roles.Count > 0)
             {
                 var role = scpContext.Roles[0];
+             
+                ApiLog.Debug("Scp Role Selector", $"&3[SelectRoles]&r Assigning role &3{role}&r ({scpContext.Chosen.Count} candidate(s))");
                 
                 scpContext.Roles.RemoveAt(0);
                 
@@ -63,6 +77,8 @@ public static class ScpRoleSelector
 
             scpContext.Chances[player] = rolePreference;
             
+            ApiLog.Debug("Scp Role Selector", $"&3[AssignRole]&r Chance of player &3{player.Nickname}&r (&{player.UserId}&r: {rolePreference} ({num})");
+            
             num = Mathf.Min(rolePreference, num);
         }
         
@@ -77,10 +93,14 @@ public static class ScpRoleSelector
             scpContext.SelectedChances[pair.Key] = chance;
 
             totalChance += chance;
+            
+            ApiLog.Debug("Scp Role Selector", $"&3[AssignRole]&r Total Chance of player &3{pair.Key.Nickname}&r (&6{pair.Key.UserId}&r): {chance} ({totalChance})");
         }
 
         var randomChance = totalChance * UnityEngine.Random.value;
         var weight = 0f;
+        
+        ApiLog.Debug("Scp Role Selector", $"&3[AssignRole]&r Random Chance: {randomChance}");
 
         foreach (var pair in scpContext.SelectedChances)
         {
@@ -91,6 +111,8 @@ public static class ScpRoleSelector
                 scpContext.Chosen.Remove(pair.Key);
                 
                 context.Roles[pair.Key] = scpRole;
+                
+                ApiLog.Debug("Scp Role Selector", $"&3[AssignRole]&r Selected player &3{pair.Key.Nickname}&r (&6{pair.Key.UserId}&r) for role &3{pair.Value}&r");
                 break;
             }
         }

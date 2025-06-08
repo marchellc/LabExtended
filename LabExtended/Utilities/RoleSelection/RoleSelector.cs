@@ -1,8 +1,9 @@
 using LabExtended.API;
-
+using LabExtended.Core;
+using LabExtended.Extensions;
 using LabExtended.Utilities.RoleSelection.Humans;
 using LabExtended.Utilities.RoleSelection.Scps;
-
+using NorthwoodLib.Pools;
 using PlayerRoles;
 using PlayerRoles.RoleAssign;
 
@@ -54,6 +55,12 @@ public static class RoleSelector
 
         var totalQueueIndex = 0;
         var humanQueueIndex = 0;
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting roles for &6{source.Count}&r player(s):\n" +
+                                      $"&3Options&r = &6{options}&r\n" +
+                                      $"&3Queue&r= &6{teamQueue}&r");
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Processing team queue");
 
         for (var i = 0; i < teamQueue.Length; i++)
         {
@@ -65,16 +72,22 @@ public static class RoleSelector
 
             var team = (Team)teamId;
             
+            ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Loaded team &3{team}&r");
+            
             if (team != Team.SCPs)
                 totalTeamQueue[totalQueueIndex++] = team;
             
             humanTeamQueue[humanQueueIndex++] = team;
+            
+            ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Loaded team &3{team}&r (Total=[{totalQueueIndex}/{totalTeamQueue.Length}]; Human=[{humanQueueIndex}/{humanTeamQueue.Length}])");
         }
 
         var spawnableScpCount = ScpSpawner.MaxSpawnableScps;
         var spawnScpCount = 0;
 
         var validPlayerCount = source.Count(predicate);
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Processing SCP overflow (SpawnableScps={spawnableScpCount}; ValidPlayerCount={validPlayerCount})");
 
         for (var i = 0; i < validPlayerCount; i++)
         {
@@ -87,16 +100,32 @@ public static class RoleSelector
                     selectionResult.ScpOverflowHumeShieldMultiplier = 1f + (validPlayerCount - i) * 0.05f;
                     selectionResult.ScpsOverflowing = true;
 
+                    ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r SCPs overflowing: {selectionResult.ScpOverflowHumeShieldMultiplier}");
                     break;
                 }
             }
         }
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r SCP count: {spawnScpCount}");
 
         var selectionContext =
             new RoleSelectorContext(target, source, predicate, options, humanTeamQueue, totalTeamQueue);
         
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting SCP players");
+        
         ScpRoleSelector.SelectRoles(selectionContext, spawnScpCount);
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting human players");
+        
         HumanRoleSelector.SelectRoles(selectionContext, humanQueueIndex);
+        
+        ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selected roles ({target.Count}):\n{StringBuilderPool.Shared.BuildString(x =>
+        {
+            foreach (var role in target)
+            {
+                x.AppendLine($"&3{role.Key.Nickname}&r (&6{role.Key.UserId}&r): &6{role.Value}&r");
+            }
+        })}");
         
         return selectionResult;
     }
