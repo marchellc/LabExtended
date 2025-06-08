@@ -1,6 +1,10 @@
+// #define ENABLE_TEST_STORAGE_COMPONENT
+
 using LabExtended.API.FileStorage;
+
 using LabExtended.Core;
 using LabExtended.Utilities.Generation;
+
 using MEC;
 
 namespace LabExtended.Utilities.Testing.FileStorage;
@@ -31,9 +35,11 @@ public class TestFileStorageComponent : FileStorageComponent
     public override void InitProperties()
     {
         RandomProperty = AddProperty("random", 0);
-        RandomProperty.Changed += OnChanged;
         
-        ApiLog.Debug("TestFileStorageComponent", $"[InitProperties]");   
+        RandomProperty.Changed += OnChanged;
+        RandomProperty.Modified += OnModified;
+        
+        ApiLog.Debug("TestFileStorageComponent", $"[InitProperties - {Storage.UserId}]");   
     }
 
     /// <inheritdoc cref="FileStorageComponent.OnLoaded"/>
@@ -41,27 +47,27 @@ public class TestFileStorageComponent : FileStorageComponent
     {
         RandomProperty.Value = RandomGen.Instance.GetInt32(1, 1000);
         
-        ApiLog.Debug("TestFileStorageComponent", $"[OnLoaded] Random: {RandomProperty.Value} ({RandomProperty.IsDirty})");
+        ApiLog.Debug("TestFileStorageComponent", $"[OnLoaded - {Storage.UserId}] Random: {RandomProperty.Value} ({RandomProperty.IsDirty})");
 
         Timing.CallDelayed(10f, () =>
         {
             RandomProperty.Value = RandomGen.Instance.GetInt32(1, 1000);
 
             ApiLog.Debug("TestFileStorageComponent",
-                $"[OnLoaded-Delayed] Random: {RandomProperty.Value} ({RandomProperty.IsDirty})");
+                $"[OnLoaded-Delayed - {Storage.UserId}] Random: {RandomProperty.Value} ({RandomProperty.IsDirty})");
         });
     }
 
     /// <inheritdoc cref="FileStorageComponent.OnUnloaded"/>
     public override void OnUnloaded()
     {
-        ApiLog.Debug("TestFileStorageComponent", $"[OnUnloaded]");   
+        ApiLog.Debug("TestFileStorageComponent", $"[OnUnloaded - {Storage.UserId}]");   
     }
 
     /// <inheritdoc cref="FileStorageComponent.OnLeft"/>
     public override void OnLeft()
     {
-        ApiLog.Debug("TestFileStorageComponent", $"[OnLeft]");   
+        ApiLog.Debug("TestFileStorageComponent", $"[OnLeft - {Storage.UserId}]");   
     }
 
     /// <inheritdoc cref="FileStorageComponent.OnJoined"/>
@@ -70,11 +76,25 @@ public class TestFileStorageComponent : FileStorageComponent
         ApiLog.Debug("TestFileStorageComponent", $"[OnJoined] {Player.Nickname} ({Player.UserId})");   
     }
 
+    /// <inheritdoc cref="FileStorageComponent.OnReloaded"/>
+    public override void OnReloaded()
+    {
+        ApiLog.Debug("TestFileStorageComponent", $"[OnReloaded - {Storage.UserId}]");   
+    }
+
     private void OnChanged(int prev, int now)
     {
         if (prev == now)
             return;
         
-        ApiLog.Debug("TestFileStorageComponent", $"[OnChanged] {prev} -> {now}");
+        ApiLog.Debug("TestFileStorageComponent", $"[OnChanged - {Storage.UserId}] {prev} -> {now}");
+    }
+
+    private void OnModified(int prev, int now)
+    {
+        if (prev == now)
+            return;
+        
+        ApiLog.Debug("TestFileStorageComponent", $"[OnModified - {Storage.UserId}] {prev} -> {now}");
     }
 }
