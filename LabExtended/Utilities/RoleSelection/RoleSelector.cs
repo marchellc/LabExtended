@@ -73,9 +73,9 @@ public static class RoleSelector
             var team = (Team)teamId;
             
             if (team != Team.SCPs)
-                totalTeamQueue[totalQueueIndex++] = team;
+                humanTeamQueue[humanQueueIndex++] = team;
             
-            humanTeamQueue[humanQueueIndex++] = team;
+            totalTeamQueue[totalQueueIndex++] = team;
             
             ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Loaded team &3{team}&r (Total=[{totalQueueIndex}/{totalTeamQueue.Length}]; Human=[{humanQueueIndex}/{humanTeamQueue.Length}])");
         }
