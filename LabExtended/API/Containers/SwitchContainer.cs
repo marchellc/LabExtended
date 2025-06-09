@@ -269,6 +269,16 @@ namespace LabExtended.API.Containers
         /// </summary>
         public bool CanChangeRoles { get; set; } = true;
 
+        /// <summary>
+        /// Whether or not this player can disarm other players.
+        /// </summary>
+        public bool CanDisarm { get; set; } = true;
+
+        /// <summary>
+        /// Whether or not this player can be disarmed by other players.
+        /// </summary>
+        public bool CanBeDisarmed { get; set; } = true;
+
         #region Voice Switches
         /// <summary>
         /// Gets or sets a value indicating whether or not this player can be heard by anyone.

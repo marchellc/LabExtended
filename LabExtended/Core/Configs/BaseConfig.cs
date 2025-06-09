@@ -1,5 +1,7 @@
 using System.ComponentModel;
 
+using LabExtended.Patches.Functions.Players;
+
 namespace LabExtended.Core.Configs
 {
     public class BaseConfig
@@ -24,6 +26,13 @@ namespace LabExtended.Core.Configs
 
         [Description("Whether or not to disable Lobby Lock when the player who enabled it leaves.")]
         public bool DisableLobbyLockOnLeave { get; set; } = true;
+
+        [Description("The maximum distance between a disarmer and a disarmed player before being automatically uncuffed.")]
+        public float RemoveDisarmRange
+        {
+            get => DisarmValidateEntryPatch.DisarmDistance;
+            set => DisarmValidateEntryPatch.DisarmDistance = value;
+        }
 
         [Description("Sets a list of sources that cannot send debug messages.")]
         public List<string> DisabledDebugSources { get; set; } = new();
