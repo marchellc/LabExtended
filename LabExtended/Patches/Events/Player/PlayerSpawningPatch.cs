@@ -4,6 +4,7 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
+using LabExtended.API.RoleSync;
 using LabExtended.Core;
 using LabExtended.Utilities;
 
@@ -57,6 +58,8 @@ namespace LabExtended.Patches.Events.Player
 
                     __instance.InitializeNewRole(newRole, reason, spawnFlags);
                     __instance._sendNextFrame = true;
+
+                    RoleManager.SendNextFrame = true;
 
                     PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub, curRole?.RoleTypeId ?? RoleTypeId.None, 
                         __instance.CurrentRole, reason, spawnFlags));
