@@ -1,4 +1,4 @@
-﻿using LabExtended.API;
+﻿using LabExtended.Core;
 using LabExtended.Utilities;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
@@ -15,7 +15,7 @@ using UnityEngine;
 #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
-namespace LabExtended.Core.Networking;
+namespace LabExtended.API;
 
 /// <summary>
 /// Helper methods targeting the Mirror library.

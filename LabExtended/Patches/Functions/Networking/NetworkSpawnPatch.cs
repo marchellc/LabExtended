@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Core;
-using LabExtended.Core.Networking;
+using LabExtended.Events;
 using LabExtended.Extensions;
 
 using Mirror;

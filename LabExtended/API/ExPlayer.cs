@@ -11,7 +11,6 @@ using LabExtended.API.Settings.Entries;
 
 using LabExtended.API.Hints.Elements.Personal;
 
-using LabExtended.Core.Networking;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Commands.Attributes;
@@ -50,13 +49,16 @@ using CentralAuth;
 using CommandSystem;
 
 using Footprinting;
+
 using LabExtended.API.FileStorage;
+using LabExtended.API.PositionSync;
+
 using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 
 using UserSettings.ServerSpecific;
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
 
 namespace LabExtended.API;
@@ -693,8 +695,14 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's sent role cache.
     /// </summary>
-    public Dictionary<uint, RoleTypeId>? SentRoles { get; internal set; } =
+    public Dictionary<uint, RoleTypeId> SentRoles { get; internal set; } =
         DictionaryPool<uint, RoleTypeId>.Shared.Rent();
+    
+    /// <summary>
+    /// Gets the player's sent positions cache.
+    /// </summary>
+    public Dictionary<uint, PositionCache> SentPositions { get; internal set; } 
+        = DictionaryPool<uint, PositionCache>.Shared.Rent();
 
     /// <summary>
     /// Gets the currently spectated player.
@@ -1370,6 +1378,12 @@ public class ExPlayer : Player, IDisposable
         {
             DictionaryPool<uint, RoleTypeId>.Shared.Return(SentRoles);
             SentRoles = null;
+        }
+
+        if (SentPositions != null)
+        {
+            DictionaryPool<uint, PositionCache>.Shared.Return(SentPositions);
+            SentPositions = null;
         }
 
         if (settingsIdLookup != null)

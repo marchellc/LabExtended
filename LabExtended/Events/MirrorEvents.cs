@@ -1,13 +1,11 @@
 ﻿using LabExtended.Events.Mirror;
-using LabExtended.Events;
-
 using LabExtended.Extensions;
 
 using Mirror;
 
 #pragma warning disable CS8604 // Possible null reference argument.
 
-namespace LabExtended.Core.Networking;
+namespace LabExtended.Events;
 
 /// <summary>
 /// Contains events relating to the Mirror networking library.

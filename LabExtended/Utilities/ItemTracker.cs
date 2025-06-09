@@ -5,12 +5,11 @@ using InventorySystem.Items.Pickups;
 using LabExtended.API;
 using LabExtended.Attributes;
 
-using LabExtended.Core.Networking;
-
 using LabExtended.Events;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions.Items;
 using LabExtended.Utilities.Firearms;
+
 using Mirror;
 
 namespace LabExtended.Utilities;
