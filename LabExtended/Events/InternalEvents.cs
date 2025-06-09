@@ -177,37 +177,12 @@ namespace LabExtended.Events
             ExRoundEvents.OnEnded();
         }
 
-        private static void HandleVisibility(PlayerValidatedVisibilityEventArgs args)
-        {
-            if (!args.IsVisible)
-                return;
-            
-            if (args.Player is not ExPlayer receiver)
-                return;
-            
-            if (args.Target is not ExPlayer target)
-                return;
-
-            if (target.IsDummy)
-                return;
-
-            if ((ExPlayer.GhostedFlags & target.GhostBit) == target.GhostBit)
-            {
-                args.IsVisible = false;
-                return;
-            }
-
-            if ((target.PersonalGhostFlags & receiver.GhostBit) == receiver.GhostBit)
-                args.IsVisible = false;
-        }
-
         [LoaderInitialize(1)]
         private static void OnInit()
         {
             var plyEvents = typeof(PlayerEvents);
             var srvEvents = typeof(ServerEvents);
             
-            plyEvents.InsertFirst<LabEventHandler<PlayerValidatedVisibilityEventArgs>>(nameof(PlayerEvents.ValidatedVisibility), HandleVisibility);
             plyEvents.InsertFirst<LabEventHandler<PlayerPreAuthenticatingEventArgs>>(nameof(PlayerEvents.PreAuthenticating), HandlePlayerAuth);
             plyEvents.InsertFirst<LabEventHandler<PlayerChangedRoleEventArgs>>(nameof(PlayerEvents.ChangedRole), HandleRoleChange);
             plyEvents.InsertFirst<LabEventHandler<PlayerSpawningEventArgs>>(nameof(PlayerEvents.Spawning), HandleSpawning);
