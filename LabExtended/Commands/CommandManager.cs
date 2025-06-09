@@ -245,10 +245,13 @@ public static class CommandManager
             {
                 if (!ev.CommandFound && likelyCommands?.Count > 0)
                 {
+                    var response = CommandResponseFormatter.FormatLikelyCommands(likelyCommands,
+                        ev.CommandName + " " + string.Join(" ", ev.Arguments));
+                    
                     ev.IsAllowed = false;
-                    ev.WriteError(
-                        CommandResponseFormatter.FormatLikelyCommands(likelyCommands,
-                            ev.CommandName + " " + string.Join(" ", ev.Arguments)), "magenta");
+                    ev.WriteError(response, "magenta");
+
+                    ServerEvents.OnCommandExecuted(new(ev.Sender, ev.CommandType, null, ev.Arguments, false, response));
                 }
 
                 if (likelyCommands != null)
@@ -262,7 +265,13 @@ public static class CommandManager
 
             if (command.Permission != null && !player.HasPermissions(command.Permission))
             {
-                ev.WriteError(CommandResponseFormatter.FormatMissingPermissionsFailure(command.Permission, command.Name, ev.CommandType), "red");
+                var response =
+                    CommandResponseFormatter.FormatMissingPermissionsFailure(command.Permission, command.Name,
+                        ev.CommandType);
+                
+                ev.WriteError(response, "red");
+                
+                ServerEvents.OnCommandExecuted(new(ev.Sender, ev.CommandType, null, ev.Arguments, false, response));
                 
                 ListPool<string>.Shared.Return(args);
                 return;
@@ -276,8 +285,12 @@ public static class CommandManager
             {
                 if (command.DefaultOverload is null)
                 {
-                    ev.WriteError(CommandResponseFormatter.FormatUnknownOverloadFailure(command), "red");
+                    var response = CommandResponseFormatter.FormatUnknownOverloadFailure(command);
+                    
+                    ev.WriteError(response, "red");
 
+                    ServerEvents.OnCommandExecuted(new(ev.Sender, ev.CommandType, null, ev.Arguments, false, response));
+                    
                     ListPool<string>.Shared.Return(args);
                     return;
                 }
@@ -447,6 +460,8 @@ public static class CommandManager
 
     private static void OnExecuted(CommandContext ctx)
     {
+        var isContinued = false;
+        
         if (ctx.WriteResponse(out var continuableCommand))
         {
             ContinuableCommandBase.History[ctx.Sender.NetworkId] = continuableCommand;
@@ -454,26 +469,47 @@ public static class CommandManager
             if (continuableCommand.CommandData.TimeOut.HasValue)
             {
                 continuableCommand.remainingTime = continuableCommand.CommandData.TimeOut.Value;
-
-                if (!continuableCommand.updateAssigned)
-                {
-                    PlayerLoopHelper.AfterLoop += continuableCommand.Update;
-
-                    continuableCommand.updateAssigned = true;
-                    continuableCommand.Reset();
-                }
+                continuableCommand.StartTimer();
             }
+
+            isContinued = true;
+        }
+        else if (continuableCommand != null)
+        {
+            continuableCommand.StopTimer();
         }
 
-        if (!ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && ctx.Instance != null)
+        if (!isContinued && !ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && ctx.Instance != null)
             ctx.Command.DynamicPool.Add(ctx.Instance);
         
         Executed.InvokeSafe(ctx);
 
-        string nameWithOverload = ctx.Command.Name + (string.IsNullOrWhiteSpace(ctx.Overload.Name) ? string.Empty : " " + ctx.Overload.Name);
-        ArraySegment<string> cmdArgs = new([nameWithOverload, .. ctx.Args], 1, ctx.Args.Count);
+        var argsCount = ctx.Args?.Count ?? 0;
+        var argsArray = new string[ctx.Command.Path.Count + 1 + argsCount];
+        var argsIndex = 0;
+        
+        for (var i = 0; i < argsArray.Length; i++)
+        {
+            if (i < ctx.Command.Path.Count)
+            {
+                argsArray[i] = ctx.Command.Path[i];
+                continue;
+            }
+
+            if (i == ctx.Command.Path.Count)
+            {
+                argsArray[i] = ctx.Overload.Name;
+                continue;
+            }
+
+            if (argsCount > 0 && i > ctx.Command.Path.Count)
+                argsArray[i] = ctx.Args[argsIndex++];
+        }
+
+        var argsSegment = argsArray.Segment(1, argsCount);
+        
         ServerEvents.OnCommandExecuted(new(ctx.Sender.ReferenceHub.queryProcessor._sender, ctx.Type, null,
-            cmdArgs, ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
+            argsSegment, ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
 
         if (ctx.Args != null)
             ListPool<string>.Shared.Return(ctx.Args);

@@ -123,7 +123,7 @@ public class CommandData
         SupportsPlayer = type.InheritsType<IPlayerCommand>();
 
         IsContinuable = type.InheritsType<ContinuableCommandBase>();
-        IsStatic = isStatic || IsContinuable;
+        IsStatic = isStatic && !IsContinuable;
         IsHidden = isHidden;
         
         Constructor = FastReflection.ForConstructor(AccessTools.Constructor(type));

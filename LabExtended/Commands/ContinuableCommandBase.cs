@@ -4,7 +4,7 @@ using LabExtended.API;
 using LabExtended.Events;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
-
+using LabExtended.Utilities.Update;
 using NorthwoodLib.Pools;
 
 using UnityEngine;
@@ -19,8 +19,6 @@ namespace LabExtended.Commands;
 public abstract class ContinuableCommandBase : CommandBase
 {
     internal float remainingTime = 0f;
-    
-    internal bool updateAssigned;
     internal bool hasExpired;
     
     /// <summary>
@@ -72,12 +70,21 @@ public abstract class ContinuableCommandBase : CommandBase
         Response = new(true, true, StringBuilderPool.Shared.BuildString(contentBuilder));
     }
 
-    internal void Reset()
+    internal void StartTimer()
     {
         hasExpired = false;
+
+        PlayerUpdateHelper.OnUpdate += Update;
     }
 
-    internal void Update()
+    internal void StopTimer()
+    {
+        hasExpired = true;
+        remainingTime = 0f;
+        PlayerUpdateHelper.OnUpdate -= Update;
+    }
+
+    private void Update()
     {
         if (!hasExpired)
         {
