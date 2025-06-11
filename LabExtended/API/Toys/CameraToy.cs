@@ -42,7 +42,7 @@ public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
         if (Base is null)
             throw new Exception("Could not spawn Scp079CameraToy");
         
-        Camera = Camera.Get(Base._camera);
+        Camera = Camera.Get(Base.Camera);
 
         Base.NetworkPosition = position ?? Vector3.zero;
         Base.NetworkRotation = rotation ?? Quaternion.identity;
@@ -60,7 +60,7 @@ public class CameraToy : AdminToy, IWrapper<Scp079CameraToy>
     internal CameraToy(Scp079CameraToy baseValue) : base(baseValue)
     {
         Base = baseValue;
-        Camera = Camera.Get(baseValue._camera);
+        Camera = Camera.Get(baseValue.Camera);
     }
 
     /// <inheritdoc cref="IWrapper{T}.Base"/>

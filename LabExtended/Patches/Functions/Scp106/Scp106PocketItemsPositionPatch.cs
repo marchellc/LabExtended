@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Functions.Scp106
 
                 var pos = fpcRole.FpcModule.Position;
 
-                if (pos.y >= Scp106PocketItemManager.HeightLimit.x && Scp106PocketItemManager.TryGetRoofPosition(pos, out var roofPos))
+                if (pos.y >= Scp106PocketItemManager..x && Scp106PocketItemManager.TryGetRoofPosition(pos, out var roofPos))
                 {
                     Scp106PocketItemManager.ValidPositionsNonAlloc[count] = roofPos;
 

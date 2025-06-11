@@ -106,9 +106,6 @@ public static class ExPlayerEvents
     /// <inheritdoc cref="PlayerReceivingCandyEventArgs"/>
     public static event Action<PlayerReceivingCandyEventArgs>? ReceivingCandy; 
     
-    /// <inheritdoc cref="PlayerDroppingItemEventArgs"/>
-    public static event Action<PlayerDroppingItemEventArgs>? DroppingItem;
-    
     /// <inheritdoc cref="PlayerThrowingItemEventArgs"/>
     public static event Action<PlayerThrowingItemEventArgs>? ThrowingItem; 
     
@@ -349,14 +346,6 @@ public static class ExPlayerEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnReceivingCandy(PlayerReceivingCandyEventArgs args)
         => ReceivingCandy.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="DroppingItem"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnDroppingItem(PlayerDroppingItemEventArgs args)
-        => DroppingItem.InvokeBooleanEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="ThrowingItem"/> event.

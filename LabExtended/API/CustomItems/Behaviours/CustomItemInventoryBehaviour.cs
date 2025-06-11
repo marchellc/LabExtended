@@ -1,12 +1,12 @@
-﻿using InventorySystem.Items;
-using InventorySystem.Items.Pickups;
+﻿using InventorySystem.Items; 
 using InventorySystem.Items.ToggleableLights;
-using LabApi.Events.Arguments.PlayerEvents;
-using LabApi.Events.Arguments.Scp914Events;
+
+using LabApi.Events.Arguments.PlayerEvents; 
+
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
+
 using UnityEngine;
-using PlayerDroppingItemEventArgs = LabExtended.Events.Player.PlayerDroppingItemEventArgs;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 

@@ -8,6 +8,7 @@ using LabExtended.API.Containers;
 using LabExtended.Utilities;
 
 using PlayerRoles;
+using PlayerRoles.FirstPersonControl;
 using PlayerStatsSystem;
 
 namespace LabExtended.Patches.Functions.Players;
@@ -67,10 +68,15 @@ public static class InstantKillPatch
         
         OnAnyPlayerDied.InvokeEvent(null, __instance._hub, handler);
         OnThisPlayerDied.InvokeEvent(null, handler);
+
+        var role = __instance._hub.roleManager.CurrentRole.RoleTypeId;
+        var position = __instance._hub.transform.position;
+        var rotation = __instance._hub.transform.rotation;
+        var velocity = __instance._hub.GetVelocity();
         
         __instance.KillPlayer(handler);
         
-        PlayerEvents.OnDeath(new(__instance._hub, attacker.ReferenceHub, handler));
+        PlayerEvents.OnDeath(new(__instance._hub, attacker.ReferenceHub, handler, role, position, velocity, rotation));
         return false;
     }
 }

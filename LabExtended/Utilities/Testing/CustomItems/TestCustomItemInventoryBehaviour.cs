@@ -4,8 +4,6 @@ using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.Core;
 using LabExtended.Events.Player;
 
-using PlayerDroppingItemEventArgs = LabExtended.Events.Player.PlayerDroppingItemEventArgs;
-
 namespace LabExtended.Utilities.Testing.CustomItems;
 
 /// <summary>

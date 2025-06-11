@@ -91,6 +91,6 @@ public class PermissionsProperty : KeycardValue
         base.Apply(item, itemSerial);
 
         if (itemSerial != 0)
-            CustomPermsDetail.ServerCustomPermissions[itemSerial] = levels.Permissions;
+            CustomPermsDetail.CustomPermissions[itemSerial] = levels.Permissions;
     }
 }

@@ -3,9 +3,12 @@ using InventorySystem.Items.Pickups;
 
 using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.API.CustomItems.Properties;
+
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Extensions;
+
 using UnityEngine;
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
@@ -202,8 +205,8 @@ public abstract class CustomItemHandler
             PickupProperties.Scale, item.Item.ItemSerial);
         var behaviour = ToPickup(item.Player, pickup, item);
         
-        item.OnDropping(new(item.Player, item.Item, false));
-        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        item.OnDropping(new(item.Player.ReferenceHub, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup, true), behaviour);
         
         item.OnRemoved(behaviour);
         
@@ -225,8 +228,8 @@ public abstract class CustomItemHandler
             item.Player.Rotation, item.Item.ItemSerial);
         var behaviour = ToPickup(item.Player, pickup, item);
         
-        item.OnDropping(new(item.Player, item.Item, false));
-        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        item.OnDropping(new(item.Player.ReferenceHub, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup, false), behaviour);
         
         item.OnRemoved(behaviour);
         
@@ -248,8 +251,8 @@ public abstract class CustomItemHandler
             rotation ?? Quaternion.identity, item.Item.ItemSerial);
         var behaviour = ToPickup(item.Player, pickup, item);
         
-        item.OnDropping(new(item.Player, item.Item, false));
-        item.OnDropped(new(item.Player.ReferenceHub, pickup), behaviour);
+        item.OnDropping(new(item.Player.ReferenceHub, item.Item, false));
+        item.OnDropped(new(item.Player.ReferenceHub, pickup, false), behaviour);
         
         item.OnRemoved(behaviour);
         

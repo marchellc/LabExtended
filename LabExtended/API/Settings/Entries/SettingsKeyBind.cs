@@ -17,6 +17,7 @@ namespace LabExtended.API.Settings.Entries
             
             KeyCode suggestedKey = KeyCode.None,
             bool shouldPreventOnGuiInteraction = true, 
+            bool allowSpectatorTrigger = false,
             string settingHint = null)
             : base(new SSKeybindSetting(
                     SettingsManager.GetIntegerId(customId),
@@ -25,6 +26,8 @@ namespace LabExtended.API.Settings.Entries
                     suggestedKey,
 
                     shouldPreventOnGuiInteraction,
+                    allowSpectatorTrigger,
+                    
                     settingHint),
 
                 customId)
@@ -73,6 +76,12 @@ namespace LabExtended.API.Settings.Entries
             set => Base.PreventInteractionOnGUI = value;
         }
 
+        public bool AllowSpectatorTrigger
+        {
+            get => Base.AllowSpectatorTrigger;
+            set => Base.AllowSpectatorTrigger = value;
+        }
+
         /// <inheritdoc />
         internal override void InternalOnUpdated()
         {
@@ -95,7 +104,8 @@ namespace LabExtended.API.Settings.Entries
         public override string ToString()
             => $"SettingsKeyBind (CustomId={CustomId}; AssignedId={AssignedId}; SuggestedKey={SuggestedKey}; Ply={Player?.UserId ?? "null"})";
 
-        public static SettingsKeyBind Create(string customId, string settingLabel, KeyCode suggestedKey = KeyCode.None, bool shouldPreventOnGuiInteraction = true, string settingHint = null)
+        public static SettingsKeyBind Create(string customId, string settingLabel, KeyCode suggestedKey = KeyCode.None, 
+            bool shouldPreventOnGuiInteraction = true, bool allowSpectatorTrigger = false, string settingHint = null)
         {
             if (string.IsNullOrWhiteSpace(customId))
                 throw new ArgumentNullException(nameof(customId));
@@ -104,7 +114,7 @@ namespace LabExtended.API.Settings.Entries
                 throw new ArgumentNullException(nameof(settingLabel));
 
             var keybindId = SettingsManager.GetIntegerId(customId);
-            var keybind = new SSKeybindSetting(keybindId, settingLabel, suggestedKey, shouldPreventOnGuiInteraction, settingHint);
+            var keybind = new SSKeybindSetting(keybindId, settingLabel, suggestedKey, shouldPreventOnGuiInteraction, allowSpectatorTrigger, settingHint);
 
             return new SettingsKeyBind(keybind, customId);
         }
