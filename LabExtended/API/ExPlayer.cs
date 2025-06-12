@@ -816,24 +816,6 @@ public class ExPlayer : Player, IDisposable
     public SSSUserStatusReport? SettingsReport { get; internal set; }
 
     /// <summary>
-    /// Gets or sets the player's model scale.
-    /// </summary>
-    [CommandPropertyAlias("scale")]
-    public Vector3 Scale
-    {
-        get => ReferenceHub.transform.localScale;
-        set
-        {
-            if (value == ReferenceHub.transform.localScale)
-                return;
-
-            ReferenceHub.transform.localScale = value;
-
-            Players.ForEach(t => MirrorMethods.SendSpawnMessage(Identity, t.Connection));
-        }
-    }
-
-    /// <summary>
     /// Gets or sets icons that will be forced in the player list for this player.
     /// </summary>
     [CommandPropertyAlias("forcedRaIcons")]
@@ -1322,7 +1304,12 @@ public class ExPlayer : Player, IDisposable
     public void Dispose()
     {
         if (host != null && host == this)
+        {
             host = null;
+
+            if (Server.Host != null && Server.Host == this)
+                Server.Host = null;
+        }
 
         GhostedFlags &= ~GhostBit;
 
