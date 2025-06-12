@@ -39,9 +39,6 @@ public static class ExMapEvents
     
     /// <inheritdoc cref="TeslaGateTriggeringEventArgs"/>
     public static event Action<TeslaGateTriggeringEventArgs>? TeslaGateTriggering;
-
-    /// <inheritdoc cref="WarheadChangingLeverEventArgs"/>
-    public static event Action<WarheadChangingLeverEventArgs>? WarheadChangingLever;
     
     /// <inheritdoc cref="PickupCollidedEventArgs"/>
     public static event Action<PickupCollidedEventArgs>? PickupCollided; 
@@ -115,13 +112,6 @@ public static class ExMapEvents
     /// <param name="args">The event arguments.</param>
     public static bool OnTeslaGateTriggering(TeslaGateTriggeringEventArgs args)
         => TeslaGateTriggering.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Executes the <see cref="WarheadChangingLever"/> event.
-    /// </summary>
-    /// <param name="args">The event arguments.</param>
-    public static bool OnWarheadChangingLever(WarheadChangingLeverEventArgs args)
-        => WarheadChangingLever.InvokeBooleanEvent(args);
     
     /// <summary>
     /// Executes the <see cref="PickupCollided"/> event.
