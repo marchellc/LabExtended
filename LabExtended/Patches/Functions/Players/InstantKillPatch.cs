@@ -39,7 +39,7 @@ public static class InstantKillPatch
     {
         if (handler is not AttackerDamageHandler attackerDamageHandler ||
             !ExPlayer.TryGet(attackerDamageHandler.Attacker.Hub, out var attacker)
-            || !attacker.Toggles.HasInstantKill)
+            || !attacker.Toggles.HasInstantKill || (!attacker.Toggles.InstantKillIgnoresGodMode && __instance._hub.characterClassManager.GodMode))
             return true;
 
         if (__instance._hub.roleManager.CurrentRole is IDamageHandlerProcessingRole damageHandlerProcessingRole)

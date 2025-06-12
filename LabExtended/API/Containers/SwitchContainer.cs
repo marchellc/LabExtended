@@ -317,6 +317,11 @@ namespace LabExtended.API.Containers
         /// Gets or sets a value indicating whether or not this player consumes ammo while shooting.
         /// </summary>
         public bool HasUnlimitedAmmo { get; set; }
+        
+        /// <summary>
+        /// Whether or not players with instant kill should also be able to kill players with god mode.
+        /// </summary>
+        public bool InstantKillIgnoresGodMode { get; set; }
 
         /// <summary>
         /// Whether or not this player should receive position messages.
@@ -366,6 +371,7 @@ namespace LabExtended.API.Containers
 
             CanSeeEveryoneAs939 = other.CanSeeEveryoneAs939;
             CanBeRespawned = other.CanBeRespawned;
+            CanBeDisarmed = other.CanBeDisarmed;
             CanBlockRoundEnd = other.CanBlockRoundEnd;
             CanBeScp049Target = other.CanBeScp049Target;
             CanBePocketDimensionItemTarget = other.CanBePocketDimensionItemTarget;
@@ -375,6 +381,7 @@ namespace LabExtended.API.Containers
             CanBeStrangledBy3114 = other.CanBeStrangledBy3114;
             CanHearAmnesticCloudSpawn = other.CanHearAmnesticCloudSpawn;
             CanCountAs079ExpTarget = other.CanCountAs079ExpTarget;
+            CanDisarm = other.CanDisarm;
             CanBeResurrectedBy049 = other.CanBeResurrectedBy049;
             CanBeConsumedByZombies = other.CanBeConsumedByZombies;
             CanUseSenseAs049 = other.CanUseSenseAs049;
@@ -408,6 +415,8 @@ namespace LabExtended.API.Containers
 
             HasInstantKill = other.HasInstantKill;
             HasUnlimitedAmmo = other.HasUnlimitedAmmo;
+
+            InstantKillIgnoresGodMode = other.InstantKillIgnoresGodMode;
 
             ShouldReceiveOwnPosition = other.ShouldReceiveOwnPosition;
             ShouldReceivePositions = other.ShouldReceivePositions;
