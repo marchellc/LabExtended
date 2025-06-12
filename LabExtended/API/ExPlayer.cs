@@ -132,8 +132,6 @@ public class ExPlayer : Player, IDisposable
             
             host = new(hostHub, SwitchContainer.GetNewNpcToggles(true));
 
-            InternalEvents.HandlePlayerJoin(host);
-
             Server.Host = host;
             return host;
         }
