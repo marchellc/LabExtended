@@ -40,7 +40,7 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the loader's game version compatibility.
         /// </summary>
-        public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 1, 0));
+        public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 1, 1));
 
         /// <summary>
         /// Checks for server version compatibility.
