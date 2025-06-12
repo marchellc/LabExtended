@@ -205,7 +205,7 @@ public abstract class CustomItemHandler
             PickupProperties.Scale, item.Item.ItemSerial);
         var behaviour = ToPickup(item.Player, pickup, item);
         
-        item.OnDropping(new(item.Player.ReferenceHub, item.Item, false));
+        item.OnDropping(new(item.Player.ReferenceHub, item.Item, true));
         item.OnDropped(new(item.Player.ReferenceHub, pickup, true), behaviour);
         
         item.OnRemoved(behaviour);
