@@ -161,6 +161,15 @@ public class CommandParameterType
         Parameter = info ?? throw new ArgumentNullException(nameof(info));
         Type = info.ParameterType;
     }
+    
+    /// <summary>
+    /// Creates a new <see cref="CommandParameterType"/> instance.
+    /// </summary>
+    /// <param name="type">The parameter's type.</param>
+    public CommandParameterType(Type type)
+    {
+        Type = type;
+    }
 
     internal CommandParameterType()
     {

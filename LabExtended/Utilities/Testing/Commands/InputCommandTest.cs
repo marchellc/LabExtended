@@ -1,4 +1,4 @@
-// #define ENABLE_TEST_COMMANDS
+#define ENABLE_TEST_COMMANDS
 
 #if ENABLE_TEST_COMMANDS
 using LabExtended.Commands;
@@ -20,6 +20,12 @@ public class InputCommandTest : CommandBase, IServerSideCommand
                 Ok($"First result: {result}; Second result: {resultTwo}");
             });
         });
+    }
+
+    [CommandOverload("integer", "Tests an integer input parsing.")]
+    public void InvokeInt()
+    {
+        Read<int>("Type a number.", num => Ok($"Typed number: {num}"));
     }
 }
 #endif

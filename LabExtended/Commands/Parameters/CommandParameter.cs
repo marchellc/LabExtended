@@ -84,6 +84,29 @@ public class CommandParameter
             Description = parameterAttribute.Description;
     }
 
+    /// <summary>
+    /// Creates a new <see cref="CommandParameter"/> instance.
+    /// </summary>
+    /// <param name="type">The parameter type.</param>
+    /// <param name="name">Parameter name.</param>
+    /// <param name="description">Parameter description.</param>
+    /// <param name="defaultValue">Default value.</param>
+    /// <param name="hasDefault">Is the parameter optional?</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public CommandParameter(Type type, string name, string description, object defaultValue, bool hasDefault)
+    {
+        if (type is null)
+            throw new ArgumentNullException(nameof(type));
+
+        Type = new(type);
+        
+        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Description = description ?? throw new ArgumentNullException(nameof(description));
+        
+        DefaultValue = defaultValue;
+        HasDefault = hasDefault;
+    }
+
     internal CommandParameter()
     {
         Type = new();

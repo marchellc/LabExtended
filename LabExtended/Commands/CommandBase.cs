@@ -6,6 +6,8 @@ using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
 
 using LabExtended.API;
+using LabExtended.Commands.Tokens;
+using LabExtended.Commands.Utilities;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
@@ -136,6 +138,59 @@ public class CommandBase
     /// <param name="onInput">The delegate used as callback.</param>
     public void Read(Action<StringBuilder> contentBuilder, Action<string> onInput)
         => Response = new(true, false, true, onInput, StringBuilderPool.Shared.BuildString(contentBuilder));
+
+    /// <summary>
+    /// Responds to the command with an input request.
+    /// </summary>
+    /// <param name="response">The text to respond with.</param>
+    /// <param name="onInput">The delegate used as callback.</param>
+    /// <typeparam name="T">The type the input string will be parsed to.</typeparam>
+    public void Read<T>(object response, Action<T> onInput)
+    {
+        void OnInput(string result)
+        {
+            var token = StringToken.Instance.NewToken<StringToken>();
+            
+            var list = ListPool<ICommandToken>.Shared.Rent();
+            var argList = ListPool<string>.Shared.Rent();
+            
+            var ctx = new CommandContext();
+            var parameter = new CommandParameter(typeof(T), string.Empty, string.Empty, null, false);
+
+            ctx.Args = argList;
+            ctx.Line = result;
+            ctx.Sender = Sender;
+            ctx.Type = CommandType;
+            ctx.Command = CommandData;
+            ctx.Overload = Overload;
+            
+            token.Value = result;
+            
+            list.Add(token);
+
+            var parsed = parameter.Type.Parser.Parse(list, token, 0, ctx, parameter);
+
+            if (!parsed.Success)
+            {
+                Read($"Could not parse input to '{parameter.Type.Parser.FriendlyAlias}' ({typeof(T).Name}): {parsed.Error}, try again.", OnInput);
+                
+                ListPool<string>.Shared.Return(argList);
+                ListPool<ICommandToken>.Shared.Return(list);
+                
+                token.ReturnToken();
+                return;
+            }
+            
+            onInput?.InvokeSafe((T)parsed.Value);
+            
+            ListPool<string>.Shared.Return(argList);
+            ListPool<ICommandToken>.Shared.Return(list);
+                
+            token.ReturnToken();
+        }
+        
+        Read(response, OnInput);
+    }
 
     /// <summary>
     /// Writes a message into the sender's console.
