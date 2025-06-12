@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+using LabExtended.API.Containers;
 
 using MapGeneration;
 
@@ -9,26 +10,48 @@ using PlayerRoles.PlayableScps.Scp106;
 
 using RelativePositioning;
 
-namespace LabExtended.Patches.Functions.Scp106
+namespace LabExtended.Patches.Functions.Scp106;
+
+/// <summary>
+/// Implements the <see cref="SwitchContainer.CanBePocketDimensionItemTarget"/> toggle.
+/// </summary>
+public static class Scp106PocketItemsPositionPatch
 {
-    public static class Scp106PocketItemsPositionPatch
+    [HarmonyPatch(typeof(Scp106PocketItemManager), nameof(Scp106PocketItemManager.GetRandomValidSpawnPosition))]
+    private static bool Prefix(ref RelativePosition __result)
     {
-        [HarmonyPatch(typeof(Scp106PocketItemManager), nameof(Scp106PocketItemManager.GetRandomValidSpawnPosition))]
-        public static bool Prefix(ref RelativePosition __result)
+        var count = 0;
+
+        foreach (var player in ExPlayer.AllPlayers)
         {
-            var count = 0;
+            if (!player.Toggles.CanBePocketDimensionItemTarget)
+                continue;
 
-            foreach (var player in ExPlayer.AllPlayers)
+            if (!player.Role.Is<IFpcRole>(out var fpcRole))
+                continue;
+
+            var pos = fpcRole.FpcModule.Position;
+
+            if (!Scp106PocketItemManager.IsInPocketDimension(pos) &&
+                Scp106PocketItemManager.TryGetRoofPosition(pos, out var roofPos))
             {
-                if (!player.Toggles.CanBePocketDimensionItemTarget)
-                    continue;
+                Scp106PocketItemManager.ValidPositionsNonAlloc[count] = roofPos;
 
-                if (!player.Role.Is<IFpcRole>(out var fpcRole))
-                    continue;
+                if (++count > 64)
+                    break;
+            }
+        }
 
-                var pos = fpcRole.FpcModule.Position;
-
-                if (pos.y >= Scp106PocketItemManager..x && Scp106PocketItemManager.TryGetRoofPosition(pos, out var roofPos))
+        if (count > 0)
+            __result = new RelativePosition(
+                Scp106PocketItemManager.ValidPositionsNonAlloc[UnityEngine.Random.Range(0, count)]);
+        else
+        {
+            foreach (var room in RoomIdentifier.AllRoomIdentifiers)
+            {
+                if ((room.Zone == FacilityZone.HeavyContainment || room.Zone == FacilityZone.Entrance)
+                    && Scp106PocketItemManager.TryGetRoofPosition(room.transform.position, out var roofPos)
+                    && !Scp106PocketItemManager.IsInPocketDimension(roofPos))
                 {
                     Scp106PocketItemManager.ValidPositionsNonAlloc[count] = roofPos;
 
@@ -37,26 +60,10 @@ namespace LabExtended.Patches.Functions.Scp106
                 }
             }
 
-            if (count > 0)
-                __result = new RelativePosition(Scp106PocketItemManager.ValidPositionsNonAlloc[UnityEngine.Random.Range(0, count)]);
-            else
-            {
-                foreach (var room in RoomIdentifier.AllRoomIdentifiers)
-                {
-                    if ((room.Zone == FacilityZone.HeavyContainment || room.Zone == FacilityZone.Entrance)
-                        && Scp106PocketItemManager.TryGetRoofPosition(room.transform.position, out var roofPos))
-                    {
-                        Scp106PocketItemManager.ValidPositionsNonAlloc[count] = roofPos;
-
-                        if (++count > 64)
-                            break;
-                    }
-                }
-
-                __result = new RelativePosition(Scp106PocketItemManager.ValidPositionsNonAlloc[UnityEngine.Random.Range(0, count)]);
-            }
-
-            return false;
+            __result = new RelativePosition(
+                Scp106PocketItemManager.ValidPositionsNonAlloc[UnityEngine.Random.Range(0, count)]);
         }
+
+        return false;
     }
 }
