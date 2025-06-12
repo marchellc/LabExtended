@@ -1,5 +1,7 @@
 using LabExtended.Core;
 using LabExtended.Attributes;
+using LabExtended.Events;
+using LabExtended.Events.Player;
 using LabExtended.Utilities.Update;
 
 using Mirror;
@@ -32,10 +34,7 @@ public static class RoleManager
         if (receiver is null)
             throw new ArgumentNullException(nameof(receiver));
 
-        if (player.SentRoles is null)
-            return;
-
-        player.SentRoles.Remove(receiver.NetworkId);
+        player.SentRoles?.Remove(receiver.NetworkId);
     }
     
     /// <summary>
@@ -67,7 +66,7 @@ public static class RoleManager
         
         ExPlayer.AllPlayers.ForEach(receiver =>
         {
-            if (receiver?.Role is null || receiver.IsUnverified)
+            if (receiver?.Role is null || receiver.IsUnverified || !receiver.IsPlayer)
                 return;
             
             var role = player.Role.Type;
@@ -83,12 +82,21 @@ public static class RoleManager
             if (!receiver.Role.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
                 role = RoleTypeId.Spectator;
 
+            var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
+
+            if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+                return;
+
+            role = synchronizingArgs.Role;
+
             if (player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) && sentRole == role)
                 return;
 
             player.SentRoles[receiver.NetworkId] = role;
             
             receiver.Connection.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub));
+            
+            ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
         });
     }
 
@@ -110,11 +118,19 @@ public static class RoleManager
             
             if (!player.Toggles.IsVisibleInSpectatorList)
                 role = RoleTypeId.Spectator;
+
+            var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
+
+            if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+                return;
             
-            if (player.SentRoles != null)
-                player.SentRoles[receiver.NetworkId] = role;
+            role = synchronizingArgs.Role;
+            
+            player.SentRoles?[receiver.NetworkId] = role;
             
             new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub).Write(writer);
+            
+            ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
         });
     }
 

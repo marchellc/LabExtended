@@ -127,6 +127,12 @@ public static class ExPlayerEvents
     /// <inheritdoc cref="PlayerChangedFirearmAttachmentsEventArgs"/>
     public static event Action<PlayerChangedFirearmAttachmentsEventArgs>? ChangedAttachments;
 
+    /// <inheritdoc cref="PlayerSynchronizingRoleEventArgs"/>
+    public static event Action<PlayerSynchronizingRoleEventArgs>? SynchronizingRole;
+
+    /// <inheritdoc cref="PlayerSynchronizedRoleEventArgs"/>
+    public static event Action<PlayerSynchronizedRoleEventArgs>? SynchronizedRole; 
+
     /// <inheritdoc cref="PlayerSnakeChangedDirectionEventArgs"/>
     public static event Action<PlayerSnakeChangedDirectionEventArgs>? SnakeChangedDirection;
 
@@ -328,6 +334,21 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnChangedZone(PlayerChangedZoneEventArgs args)
         => ChangedZone.InvokeEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SynchronizingRole"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnSynchronizingRole(PlayerSynchronizingRoleEventArgs args)
+        => SynchronizingRole.InvokeBooleanEvent(args);
+    
+    /// <summary>
+    /// Invokes the <see cref="SynchronizedRole"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnSynchronizedRole(PlayerSynchronizedRoleEventArgs args)
+        => SynchronizedRole.InvokeEvent(args);
     #endregion
     
     #region Handlers - Items
