@@ -33,7 +33,7 @@ internal static class CommandResponseFormatter
     
     internal static bool WriteResponse(this CommandContext ctx, out ContinuableCommandBase continuableCommand)
     {
-        if (ctx.Response.HasValue)
+        if (ctx.Response != null)
         {
             if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
             {
@@ -44,7 +44,7 @@ internal static class CommandResponseFormatter
                 ctx.Sender.SendConsoleMessage(ctx.FormatCommandResponse(), ctx.Response is { IsSuccess: true } ? "green" : "red");
             }
 
-            if (ctx.Response.Value.IsContinuted)
+            if (ctx.Response.IsContinued)
             {
                 continuableCommand = ctx.Instance as ContinuableCommandBase;
                 return continuableCommand != null;
@@ -78,7 +78,7 @@ internal static class CommandResponseFormatter
                 x.Append("] ");
             }
 
-            x.AppendLine(ctx.Response.Value.Content);
+            x.AppendLine(ctx.Response.Content);
         });
     }
 

@@ -52,7 +52,7 @@ using Footprinting;
 
 using LabExtended.API.FileStorage;
 using LabExtended.API.PositionSync;
-
+using LabExtended.Commands.Interfaces;
 using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 
@@ -441,6 +441,8 @@ public class ExPlayer : Player, IDisposable
 
     private UserIdHelper.UserIdInfo? idInfo;
     private string idInfoValue = string.Empty;
+
+    internal ICommandRunner? activeRunner;
 
     internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
     

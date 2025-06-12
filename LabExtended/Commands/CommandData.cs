@@ -3,6 +3,7 @@
 using LabExtended.Commands.Interfaces;
 
 using LabExtended.Core;
+using LabExtended.Core.Pooling;
 using LabExtended.Utilities;
 using LabExtended.Extensions;
 
@@ -40,11 +41,11 @@ public class CommandData
     /// Gets the command's aliases.
     /// </summary>
     public List<string> Aliases { get; }
-    
+
     /// <summary>
     /// Gets the command's instance pool.
     /// </summary>
-    public List<CommandBase> DynamicPool { get; } = new();
+    public InstancePool<CommandBase> Pool { get; }
     
     /// <summary>
     /// Gets the command's overloads.
@@ -135,6 +136,10 @@ public class CommandData
             if (StaticInstance is null)
                 throw new Exception($"Could not construct static instance of {type.FullName}");
         }
+        else
+        {
+            Pool = new();
+        }
     }
 
     /// <summary>
@@ -146,8 +151,8 @@ public class CommandData
         if (IsStatic && StaticInstance != null)
             return StaticInstance;
 
-        if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && DynamicPool.Count > 0)
-            return DynamicPool.RemoveAndTake(0);
+        if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && Pool != null)
+            return Pool.Rent(() => Constructor([]) as CommandBase);
 
         if (Constructor([]) is not CommandBase instance)
             throw new Exception($"Could not construct type {Type.FullName}");

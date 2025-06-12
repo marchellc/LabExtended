@@ -15,6 +15,7 @@ using LabExtended.Commands.Tokens.Parsing;
 using LabExtended.API;
 using LabExtended.Core;
 using LabExtended.Attributes;
+using LabExtended.Commands.Runners;
 using LabExtended.Extensions;
 using LabExtended.Utilities.Unity;
 
@@ -111,11 +112,11 @@ public static class CommandManager
                 if (!method.HasAttribute<CommandOverloadAttribute>(out var commandOverloadAttribute))
                     continue;
 
-                if (method.ReturnType != typeof(void) && method.ReturnType != typeof(IEnumerator<float>))
+                if (method.ReturnType != typeof(void) && method.ReturnType != typeof(IEnumerator<float>) && method.ReturnType != typeof(Task))
                 {
                     ApiLog.Warn("Command Manager", $"Method &3{method.GetMemberName()}&r cannot be used as an overload " +
-                                                   $"because it's return type is not supported (&1{method.ReturnType.FullName}&r)." +
-                                                   $"Command method's should return only &1void&r or an &1IEnumerator<float>&r coroutine.");
+                                                   $"because it's return type is not supported (&1{method.ReturnType.FullName}&r). " +
+                                                   $"Command method's should return only &1void&r, &1IEnumerator<float>&r coroutine or a &1Task&r.");
                     continue;
                 }
 
@@ -173,8 +174,8 @@ public static class CommandManager
                     overload.Value.IsInitialized = true;
                 }
                 
-                if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && !instance.IsStatic)
-                    instance.DynamicPool.Add(commandInstance);
+                if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && !instance.IsStatic && instance.Pool != null)
+                    instance.Pool.Return(commandInstance);
             }
             else
             {
@@ -191,40 +192,6 @@ public static class CommandManager
         return registered;
     }
 
-    /// <summary>
-    /// Attempts to invoke a command.
-    /// </summary>
-    /// <param name="command">The command to invoke.</param>
-    /// <param name="results">Parsing results to copy to buffer.</param>
-    /// <returns>true if the command was successfully invoked</returns>
-    public static bool TryInvokeCommand(CommandBase command, List<CommandParameterParserResult> results)
-    {
-        var buffer = command.Context.Overload.IsEmpty 
-            ? command.Context.Overload.EmptyBuffer 
-            :  CopyBuffer(command.Context, results);
-        
-        try
-        {
-            var result = command.Overload.Method(command, buffer);
-
-            if (result is IEnumerator<float> coroutine)
-                RunCoroutineCommand(command.Context, coroutine);
-            
-            if (!command.Overload.IsEmpty)
-                command.Overload.Buffer.Return(buffer);
-            
-            return true;
-        }
-        catch (Exception ex)
-        {
-            if (!command.Overload.IsEmpty)
-                command.Overload.Buffer.Return(buffer);
-            
-            command.Context.Response = new(false, false, command.Context.FormatExceptionResponse(ex));
-            return false;
-        }
-    }
-
     // Handles custom command execution.
     private static void OnCommand(CommandExecutingEventArgs ev)
     {
@@ -235,13 +202,14 @@ public static class CommandManager
         {       
             if (!ExPlayer.TryGet(ev.Sender, out var player))
                 return;
-            
-            if (HandleContinuable(ev, player, out var line))
+
+            if (player.activeRunner != null && player.activeRunner.ShouldContinue(ev, player))
                 return;
 
+            var line = string.Join(" ", ev.Arguments.Array);
             var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
 
-            if (!TryGetCommand(args, ev.CommandType, out var likelyCommands, out var command))
+            if (!CommandSearch.TryGetCommand(args, ev.CommandType, out var likelyCommands, out var command))
             {
                 if (!ev.CommandFound && likelyCommands?.Count > 0)
                 {
@@ -314,7 +282,7 @@ public static class CommandManager
 
             if (line?.Length > 0 && !CommandTokenParserUtils.TryParse(line, tokens, overload.ParameterCount))
             {
-                context.Response = new(false, false, context.FormatTokenParserFailure());
+                context.Response = new(false, false, false, null, context.FormatTokenParserFailure());
 
                 OnExecuted(context);
                 return;
@@ -325,16 +293,16 @@ public static class CommandManager
 
             if (!parserResult.Success)
             {
-                if (!context.Response.HasValue)
+                if (context.Response is null)
                 {
                     switch (parserResult.Error)
                     {
                         case "MISSING_ARGS":
-                            context.Response = new(false, false, context.FormatMissingArgumentsFailure());
+                            context.Response = new(false, false, false, null, context.FormatMissingArgumentsFailure());
                             break;
                         
                         case "INVALID_ARGS":
-                            context.Response = new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                            context.Response = new(false, false, false, null, context.FormatInvalidArgumentsFailure(parserResults));
                             break;
                     }
                 }
@@ -347,7 +315,7 @@ public static class CommandManager
 
             if (parserResults.Count(r => r.Success) < overload.RequiredParameters)
             {
-                context.Response ??= new(false, false, context.FormatInvalidArgumentsFailure(parserResults));
+                context.Response ??= new(false, false, false, null, context.FormatInvalidArgumentsFailure(parserResults));
                 
                 ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
                 
@@ -359,7 +327,7 @@ public static class CommandManager
 
             if (instance is null)
             {
-                context.Response = new(false, false, "Failed to retrieve command instance!");
+                context.Response = new(false, false, false, null, "Failed to retrieve command instance!");
                 
                 ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
                 
@@ -377,9 +345,15 @@ public static class CommandManager
                 context.Overload.IsInitialized = true;
             }
 
-            TryInvokeCommand(instance, parserResults);
+            var buffer = context.CopyBuffer(parserResults);
+
+            context.Runner = context.Overload.Runner.Create(context);
+            context.Runner.Run(context, buffer);
             
             ListPool<CommandParameterParserResult>.Shared.Return(parserResults);
+            
+            if (!context.Overload.IsEmpty)
+                context.Overload.Buffer.Return(buffer);
             
             OnExecuted(context);
         }
@@ -392,95 +366,24 @@ public static class CommandManager
         }
     }
 
-    private static void RunContinuableCommand(CommandContext ctx, ContinuableCommandBase command)
-    {
-        try
-        {
-            command.OnContinued();
-        }
-        catch (Exception ex)
-        {
-            ApiLog.Error("Command Manager", $"An error occured while handling continuable command &1{ctx.Command.Name}&r:\n" +
-                                            $"{ex.ToColoredString()}");
-
-            ctx.Response = new(false, false, ex.Message);
-        }
-        
-        OnExecuted(ctx);
-    }
-
-    private static void RunCoroutineCommand(CommandContext ctx, IEnumerator<float> coroutine)
-    {
-        ctx.WriteResponse(out _);
-
-        Timing.RunCoroutine(helperCoroutine ??= HelperCoroutine(), Segment.FixedUpdate);
-        return;
-
-        IEnumerator<float> HelperCoroutine()
-        {
-            while (coroutine.MoveNext())
-                yield return coroutine.Current;
-            
-            OnExecuted(ctx);
-        }
-    }
-
-    private static bool HandleContinuable(CommandExecutingEventArgs ev, ExPlayer player, out string line)
-    {
-        line = string.Join(" ", ev.Arguments.Array);
-        
-        if (!ContinuableCommandBase.History.TryGetValue(player.NetworkId, out var history)) 
-            return false;
-        
-        ContinuableCommandBase.History.Remove(player.NetworkId);
-
-        ev.IsAllowed = false;
-
-        var command = history.CommandData.GetInstance() as ContinuableCommandBase;
-        var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
-
-        var context = new CommandContext()
-        {
-            Args = args,
-            Line = line,
-            Sender = player,
-            Instance = command,
-                
-            Type = ev.CommandType,
-            Command = history.CommandData,
-            Overload = history.Overload,
-        };
-
-        command.PreviousContext = command.Context;
-        command.Context = context;
-
-        RunContinuableCommand(context, command);
-        return true;
-    }
-
     private static void OnExecuted(CommandContext ctx)
     {
-        var isContinued = false;
+        if (ctx.Runner is null)
+        {
+            ctx.WriteResponse(out _);
+        }
         
-        if (ctx.WriteResponse(out var continuableCommand))
+        if (ctx.Response.IsInput && ctx.Response.onInput != null)
         {
-            ContinuableCommandBase.History[ctx.Sender.NetworkId] = continuableCommand;
-
-            if (continuableCommand.CommandData.TimeOut.HasValue)
-            {
-                continuableCommand.remainingTime = continuableCommand.CommandData.TimeOut.Value;
-                continuableCommand.StartTimer();
-            }
-
-            isContinued = true;
-        }
-        else if (continuableCommand != null)
-        {
-            continuableCommand.StopTimer();
+            ctx.Sender.activeRunner = InputCommandRunner.Singleton.Create(ctx);
         }
 
-        if (!isContinued && !ctx.Command.IsStatic && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && ctx.Instance != null)
-            ctx.Command.DynamicPool.Add(ctx.Instance);
+        if (!ctx.Command.IsStatic 
+            && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling 
+            && ctx.Instance != null
+            && ctx.Command.Pool != null
+            && (ctx.Runner is null || ctx.Runner.ShouldPool(ctx)))
+            ctx.Command.Pool.Return(ctx.Instance);
         
         Executed.InvokeSafe(ctx);
 
@@ -525,8 +428,11 @@ public static class CommandManager
         ctx.Tokens = null;
     }
 
-    private static object[] CopyBuffer(CommandContext ctx, List<CommandParameterParserResult> results)
+    internal static object[] CopyBuffer(this CommandContext ctx, List<CommandParameterParserResult> results)
     {
+        if (ctx.Overload is null || ctx.Overload.IsEmpty)
+            return ctx.Overload.EmptyBuffer;
+        
         var buffer = ctx.Overload.Buffer.Rent();
 
         for (var i = 0; i < ctx.Overload.ParameterCount; i++)
@@ -535,108 +441,8 @@ public static class CommandManager
         return buffer;
     }
 
-    internal static bool TryGetCommand(List<string> args, CommandType? commandType, out List<CommandData>? likelyCommands, out CommandData? foundCommand)
-    {
-        foundCommand = null;
-        likelyCommands = null;
-        
-        if (args.Count < 1)
-            return false;
-        
-        for (var i = 0; i < Commands.Count; i++)
-        {
-            var command = Commands[i];
-
-            if (commandType is CommandType.Client && !command.SupportsPlayer)
-                continue;
-
-            if (commandType is CommandType.Console && !command.SupportsServer)
-                continue;
-            
-            if (commandType is CommandType.RemoteAdmin && !command.SupportsRemoteAdmin)
-                continue;
-
-            if (args.Count < command.Path.Count)
-            {
-                var count = 0;
-                
-                for (var x = 0; x < command.Path.Count; x++)
-                {
-                    if (x < args.Count && string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
-                    {
-                        count++;
-                        continue;
-                    }
-
-                    if (x + 1 < args.Count && x + 1 >= command.Path.Count
-                        && command.Aliases.Any(alias =>
-                            string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
-                    {
-                        count++;
-                        continue;
-                    }
-                    
-                    break;
-                }
-                
-                if (count > 0)
-                {
-                    likelyCommands ??= ListPool<CommandData>.Shared.Rent();
-
-                    if (!likelyCommands.Contains(command))
-                        likelyCommands.Add(command);
-                }
-            }
-            else
-            {
-                var matched = true;
-                var count = 0;
-
-                for (var x = 0; x < command.Path.Count; x++)
-                {
-                    if (string.Equals(command.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
-                    {
-                        count++;
-                        continue;
-                    }
-
-                    if (x + 1 >= command.Path.Count
-                        && command.Aliases.Any(alias =>
-                            string.Equals(alias, args[x], StringComparison.OrdinalIgnoreCase)))
-                    {
-                        count++;
-                        continue;
-                    }
-
-                    matched = false;
-                    break;
-                }
-
-                if (matched)
-                {
-                    if (likelyCommands != null)
-                        ListPool<CommandData>.Shared.Return(likelyCommands);
-
-                    likelyCommands = null;
-
-                    args.RemoveRange(0, command.Path.Count);
-
-                    foundCommand = command;
-                    return true;
-                }
-
-                if (count > 0)
-                {
-                    likelyCommands ??= ListPool<CommandData>.Shared.Rent();
-
-                    if (!likelyCommands.Contains(command))
-                        likelyCommands.Add(command);
-                }
-            }
-        }
-
-        return false;
-    }
+    internal static void InvokeExecuted(this CommandContext ctx)
+        => Executed?.InvokeSafe(ctx);
 
     [LoaderInitialize(1)]
     private static void OnInit()

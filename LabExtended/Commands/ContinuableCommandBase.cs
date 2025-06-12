@@ -18,14 +18,6 @@ namespace LabExtended.Commands;
 /// </summary>
 public abstract class ContinuableCommandBase : CommandBase
 {
-    internal float remainingTime = 0f;
-    internal bool hasExpired;
-    
-    /// <summary>
-    /// Gets the list of pending continuations.
-    /// </summary>
-    public static Dictionary<uint, ContinuableCommandBase> History { get; } = new();
-    
     /// <summary>
     /// Gets the command's previous context.
     /// </summary>
@@ -34,12 +26,7 @@ public abstract class ContinuableCommandBase : CommandBase
     /// <summary>
     /// The remaining time till timeout (in seconds).
     /// </summary>
-    public float RemainingTime => remainingTime;
-
-    /// <summary>
-    /// Whether or not the command has timed out.
-    /// </summary>
-    public bool HasTimedOut => hasExpired;
+    public float RemainingTime { get; internal set; }
     
     /// <summary>
     /// Gets called once a command is continued.
@@ -50,13 +37,18 @@ public abstract class ContinuableCommandBase : CommandBase
     /// Gets called once the command times out.
     /// </summary>
     public virtual void OnTimedOut() { }
+    
+    /// <summary>
+    /// Gets called once per frame.
+    /// </summary>
+    public virtual void OnUpdate() { }
 
     /// <summary>
     /// Responds to the player with a continuation.
     /// </summary>
     /// <param name="content">The content of the reply.</param>
     public void Continue(object content)
-        => Response = new(true, true, content?.ToString() ?? string.Empty);
+        => Response = new(true, true, false, null, content?.ToString() ?? string.Empty);
 
     /// <summary>
     /// Responds to the player with a continuation.
@@ -67,45 +59,6 @@ public abstract class ContinuableCommandBase : CommandBase
         if (contentBuilder is null)
             throw new ArgumentNullException(nameof(contentBuilder));
 
-        Response = new(true, true, StringBuilderPool.Shared.BuildString(contentBuilder));
+        Response = new(true, true, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
     }
-
-    internal void StartTimer()
-    {
-        hasExpired = false;
-
-        PlayerUpdateHelper.OnUpdate += Update;
-    }
-
-    internal void StopTimer()
-    {
-        hasExpired = true;
-        remainingTime = 0f;
-        PlayerUpdateHelper.OnUpdate -= Update;
-    }
-
-    private void Update()
-    {
-        if (!hasExpired)
-        {
-            remainingTime -= Time.deltaTime;
-
-            if (remainingTime <= 0f)
-            {
-                hasExpired = true;
-                
-                OnTimedOut();
-
-                if (History.TryGetKey(this, out var netId))
-                    History.Remove(netId);
-            }
-        }
-    }
-    
-    private static void OnPlayerLeft(ExPlayer player)
-        => History.Remove(player.NetworkId);
-
-    [LoaderInitialize(1)]
-    private static void OnInit()
-        => InternalEvents.OnPlayerLeft += OnPlayerLeft;
 }

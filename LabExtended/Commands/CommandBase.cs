@@ -83,7 +83,7 @@ public class CommandBase
     /// <param name="content">The message to respond with.</param>
     /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
     public void Respond(object content, bool isSuccess = true)
-        => Response = new(isSuccess, false, content.ToString());
+        => Response = new(isSuccess, false, false, null, content.ToString());
 
     /// <summary>
     /// Responds to the command.
@@ -91,35 +91,51 @@ public class CommandBase
     /// <param name="contentBuilder">Delegate used to build the command's response.</param>
     /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
     public void Respond(Action<StringBuilder> contentBuilder, bool isSuccess = true)
-        => Response = new(isSuccess, false, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(isSuccess, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
     
     /// <summary>
     /// Responds to the command with a success.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
     public void Ok(object content)
-        => Response = new(true, false, content.ToString());
+        => Response = new(true, false, false, null, content.ToString());
     
     /// <summary>
     /// Responds to the command with a success.
     /// </summary>
     /// <param name="contentBuilder">The delegate used to build the command's response.</param>
     public void Ok(Action<StringBuilder> contentBuilder)
-        => Response = new(true, false, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(true, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
     
     /// <summary>
     /// Responds to the command with a failure.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
     public void Fail(object content)
-        => Response = new(false, false, content.ToString());
+        => Response = new(false, false, false, null, content.ToString());
     
     /// <summary>
     /// Responds to the command with a failure.
     /// </summary>
     /// <param name="contentBuilder">The delegate used to build the command's response.</param>
     public void Fail(Action<StringBuilder> contentBuilder)
-        => Response = new(false, false, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(false, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
+
+    /// <summary>
+    /// Responds to the command with an input request.
+    /// </summary>
+    /// <param name="response">The text to respond with.</param>
+    /// <param name="onInput">The delegate used as callback.</param>
+    public void Read(object response, Action<string> onInput)
+        => Response = new(true, false, true, onInput, response?.ToString() ?? "Command requires more input.");
+
+    /// <summary>
+    /// Responds to the command with an input request.
+    /// </summary>
+    /// <param name="contentBuilder">The delegate used to build text to respond with.</param>
+    /// <param name="onInput">The delegate used as callback.</param>
+    public void Read(Action<StringBuilder> contentBuilder, Action<string> onInput)
+        => Response = new(true, false, true, onInput, StringBuilderPool.Shared.BuildString(contentBuilder));
 
     /// <summary>
     /// Writes a message into the sender's console.
