@@ -57,6 +57,9 @@ public static class AssigningRolesPatch
         RoleAssigner.ScpsOverflowing = result.ScpsOverflowing;
         RoleAssigner.ScpOverflowMaxHsMultiplier = result.ScpOverflowHumeShieldMultiplier;
 
+        HumanSpawner._humanQueue = result.HumanTeamQueue;
+        HumanSpawner._queueLength = result.HumanTeamQueueLength;
+
         foreach (var pair in Roles)
         {
             pair.Key.Role.RoundStartRole = pair.Value;
