@@ -263,7 +263,7 @@ public class VoiceThread : IDisposable
         newPacket.OnProcessed = onProcessed;
         newPacket.Pitch = pitchFactor;
         
-        inputQueue.Enqueue(newPacket);
+        inputQueue?.Enqueue(newPacket);
     }
 
     internal void ProcessPitch(ref VoiceMessage message)
@@ -288,7 +288,7 @@ public class VoiceThread : IDisposable
         newPacket.OnProcessed = onPacketProcessed;
         newPacket.Pitch = ActivePitch;
         
-        inputQueue.Enqueue(newPacket);
+        inputQueue?.Enqueue(newPacket);
     }
 
     private void ProcessPitched(VoiceThreadPacket packet)
@@ -299,7 +299,7 @@ public class VoiceThread : IDisposable
 
         var newMessage = new VoiceMessage(voiceController.Player.ReferenceHub, packet.OriginalChannel, newBuffer, packet.Length, false);
         
-        voiceController.ProcessMessage(ref newMessage);
+        voiceController?.ProcessMessage(ref newMessage);
     }
 
     private void UpdateOutputQueue()
@@ -309,7 +309,7 @@ public class VoiceThread : IDisposable
             var maxOutput = ApiLoader.ApiConfig.VoiceSection.MaxThreadOutput;
             var curOutput = 0;
             
-            while (outputQueue.TryDequeue(out var packet))
+            while (outputQueue != null && outputQueue.TryDequeue(out var packet))
             {
                 packet.OnProcessed.InvokeSafe(packet);
 
