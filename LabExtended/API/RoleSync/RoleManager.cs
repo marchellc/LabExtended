@@ -125,8 +125,9 @@ public static class RoleManager
                 return;
             
             role = synchronizingArgs.Role;
-            
-            player.SentRoles?[receiver.NetworkId] = role;
+
+            if (player.SentRoles != null)
+                player.SentRoles[receiver.NetworkId] = role;
             
             new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub).Write(writer);
             
