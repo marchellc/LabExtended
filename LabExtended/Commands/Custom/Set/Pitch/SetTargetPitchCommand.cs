@@ -7,7 +7,7 @@ public partial class SetTargetCommand
 {
     [CommandOverload("pitch", "Sets the voice pitch of a specific player.")]
     public void PitchTarget(
-        [CommandParameter("Value", "The new pitch value (1 is default).")] float value,
+        [CommandParameter("Value", "The new pitch value (1 is default).")] int value,
         [CommandParameter("Target", "The target player (defaults to you).")] ExPlayer? target = null)
     {
         var player = target ?? Sender;
