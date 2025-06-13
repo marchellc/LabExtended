@@ -1,4 +1,7 @@
-﻿namespace LabExtended.API.CustomVoice.Threading.Pitch;
+﻿using VoiceChat.Codec;
+using VoiceChat.Codec.Enums;
+
+namespace LabExtended.API.CustomVoice.Threading.Pitch;
 
 public class VoicePitchAction : IVoiceThreadAction, IDisposable
 {
@@ -16,15 +19,18 @@ public class VoicePitchAction : IVoiceThreadAction, IDisposable
     private long gRover;
     private long gInit;
 
+    private OpusDecoder decoder = new();
+    private OpusEncoder encoder = new(OpusApplicationType.Voip);
+    
     public void Modify(ref VoiceThreadPacket packet)
     {
         var data = new float[48000];
         
-        packet.Decoder.Decode(packet.Data, packet.Length, data);
+        decoder.Decode(packet.Data, packet.Length, data);
 
         PitchShift(packet.Pitch, 480U, 48000, data);
 
-        packet.Length = packet.Encoder.Encode(data, packet.Data, 480);
+        packet.Length = encoder.Encode(data, packet.Data, 480);
     }
 
     public void Dispose()
@@ -43,6 +49,12 @@ public class VoicePitchAction : IVoiceThreadAction, IDisposable
 
         gSynFreq = null;
         gSynMagn = null;
+        
+        decoder?.Dispose();
+        decoder = null;
+        
+        encoder?.Dispose();
+        encoder = null;
 
         gRover = 0;
         gInit = 0;
