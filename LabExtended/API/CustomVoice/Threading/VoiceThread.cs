@@ -26,7 +26,7 @@ namespace LabExtended.API.CustomVoice.Threading;
 /// </summary>
 public class VoiceThread : IDisposable
 {
-    private static volatile int globalPitch = 1;
+    private static volatile float globalPitch = 1f;
     
     private volatile ConcurrentQueue<VoiceThreadPacket> inputQueue = new();
     private volatile ConcurrentQueue<VoiceThreadPacket> outputQueue = new();
@@ -34,14 +34,14 @@ public class VoiceThread : IDisposable
     /// <summary>
     /// Gets or sets the global voice pitch.
     /// </summary>
-    public static int GlobalPitch
+    public static float GlobalPitch
     {
         get => globalPitch;
         set => globalPitch = value;
     }
 
     private volatile bool isDisposed = false;
-    private volatile int instancePitch = 1;
+    private volatile float instancePitch = 1f;
     
     private volatile VoiceController voiceController;
     private volatile VoicePitchAction voicePitchAction;
@@ -54,7 +54,7 @@ public class VoiceThread : IDisposable
     /// <summary>
     /// Gets or sets the pitch applied to this player.
     /// </summary>
-    public int InstancePitch
+    public float InstancePitch
     {
         get => instancePitch;
         set => instancePitch = value;
@@ -63,11 +63,11 @@ public class VoiceThread : IDisposable
     /// <summary>
     /// Gets the currently active voice pitch.
     /// </summary>
-    public int ActivePitch
+    public float ActivePitch
     {
         get
         {
-            if (globalPitch != 1)
+            if (globalPitch != 1f)
                 return globalPitch;
             
             return instancePitch;

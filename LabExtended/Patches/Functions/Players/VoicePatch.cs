@@ -16,7 +16,6 @@ using HarmonyLib;
 
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
-using LabExtended.API.CustomVoice.Threading;
 
 namespace LabExtended.Patches.Functions.Players
 {
@@ -45,7 +44,7 @@ namespace LabExtended.Patches.Functions.Players
             if (!sendingArgs.IsAllowed)
                 return false;
 
-            if (speaker.Voice.Thread is { IsDisposed: false } && (speaker.Voice.Thread.InstancePitch != 1 || VoiceThread.GlobalPitch != 1))
+            if (speaker.Voice.Thread is { IsDisposed: false })
             {
                 speaker.Voice.Thread.ProcessPitch(ref msg);
             }

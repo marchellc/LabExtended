@@ -896,9 +896,9 @@ public class ExPlayer : Player, IDisposable
     /// Gets or sets this player's current voice pitch.
     /// </summary>
     [CommandPropertyAlias("voicePitch")]
-    public int VoicePitch
+    public float VoicePitch
     {
-        get => Voice?.Thread?.InstancePitch ?? 1;
+        get => Voice?.Thread?.InstancePitch ?? 1f;
         set => Voice!.Thread!.InstancePitch = value;
     }
 
