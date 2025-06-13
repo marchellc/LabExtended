@@ -7,7 +7,7 @@ public partial class SetTargetsCommand
 {
     [CommandOverload("pitch", "Sets the voice pitch of a list of players.")]
     public void PitchTarget(
-        [CommandParameter("Value", "The new pitch value (1 is default).")] int value,
+        [CommandParameter("Value", "The new pitch value (1 is default).")] float value,
         [CommandParameter("Targets", "The target players.")] List<ExPlayer> targets)
     {
         targets.ForEach(p => p.VoicePitch = value);
