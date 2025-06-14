@@ -111,7 +111,7 @@ public static class ScpRoleSelector
                 continue;
             }
 
-            var spawnChance = Mathf.Max((ScpSpawner.SpawnableScps[i] as ISpawnableScp).GetSpawnChance(scpContext.Roles), 0f);
+            var spawnChance = Mathf.Max((scpRole as ISpawnableScp).GetSpawnChance(scpContext.Roles), 0f);
             
             totalWeight += spawnChance;
             

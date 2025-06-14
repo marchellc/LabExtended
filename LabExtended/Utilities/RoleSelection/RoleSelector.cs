@@ -100,11 +100,7 @@ public static class RoleSelector
             new RoleSelectorContext(target, source, predicate, options, humanTeamQueue, totalTeamQueue);
 
         if (spawnScpCount > 0)
-        {
-            ApiLog.Debug("Role Selector", $"&3[SelectRoles]&r Selecting SCP players");
-
             ScpRoleSelector.SelectRoles(selectionContext, spawnScpCount);
-        }
 
         HumanRoleSelector.SelectRoles(selectionContext, humanQueueIndex);
         return selectionResult;
