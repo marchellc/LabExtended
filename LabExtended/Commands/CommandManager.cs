@@ -280,6 +280,8 @@ public static class CommandManager
 
             context.Type = ev.CommandType;
 
+            context.argsSegment = ev.Arguments;
+
             if (line?.Length > 0 && !CommandTokenParserUtils.TryParse(line, tokens, overload.ParameterCount))
             {
                 context.Response = new(false, false, false, null, context.FormatTokenParserFailure());
@@ -363,20 +365,18 @@ public static class CommandManager
 
             ev.IsAllowed = false;
             ev.Sender.Respond(ex.Message, false);
+            
+            ServerEvents.OnCommandExecuted(new(ev.Sender, ev.CommandType, ev.Command, ev.Arguments, false, ex.Message));
         }
     }
 
     private static void OnExecuted(CommandContext ctx)
     {
         if (ctx.Runner is null)
-        {
             ctx.WriteResponse(out _);
-        }
         
         if (ctx.Response.IsInput && ctx.Response.onInput != null)
-        {
             ctx.Sender.activeRunner = InputCommandRunner.Singleton.Create(ctx);
-        }
 
         if (!ctx.Command.IsStatic 
             && ApiLoader.ApiConfig.CommandSection.AllowInstancePooling 
@@ -386,33 +386,9 @@ public static class CommandManager
             ctx.Command.Pool.Return(ctx.Instance);
         
         Executed.InvokeSafe(ctx);
-
-        var argsCount = ctx.Args?.Count ?? 0;
-        var argsArray = new string[ctx.Command.Path.Count + 1 + argsCount];
-        var argsIndex = 0;
-        
-        for (var i = 0; i < argsArray.Length; i++)
-        {
-            if (i < ctx.Command.Path.Count)
-            {
-                argsArray[i] = ctx.Command.Path[i];
-                continue;
-            }
-
-            if (i == ctx.Command.Path.Count)
-            {
-                argsArray[i] = ctx.Overload.Name;
-                continue;
-            }
-
-            if (argsCount > 0 && i > ctx.Command.Path.Count)
-                argsArray[i] = ctx.Args[argsIndex++];
-        }
-
-        var argsSegment = argsArray.Segment(1, argsCount);
         
         ServerEvents.OnCommandExecuted(new(ctx.Sender.ReferenceHub.queryProcessor._sender, ctx.Type, null,
-            argsSegment, ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
+            ctx.argsSegment, ctx.Response?.IsSuccess ?? false, ctx.Response?.Content ?? string.Empty));
 
         if (ctx.Args != null)
             ListPool<string>.Shared.Return(ctx.Args);

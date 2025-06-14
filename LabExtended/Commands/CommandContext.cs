@@ -14,6 +14,8 @@ namespace LabExtended.Commands;
 /// </summary>
 public class CommandContext
 {
+    internal ArraySegment<string> argsSegment;
+    
     private volatile ExPlayer sender;
     
     private volatile CommandBase instance;
