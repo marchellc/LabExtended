@@ -18,7 +18,7 @@ public static class DisarmValidateEntryPatch
     /// <summary>
     /// Gets or sets the maximum distance (squared) at which a disarmed player will be uncuffed.
     /// </summary>
-    public static float DisarmDistance { get; set; } = DisarmedPlayers.AutoDisarmDistanceSquared;
+    public static float DisarmDistanceSquared { get; set; } = DisarmedPlayers.AutoDisarmDistanceSquared;
 
     /// <summary>
     /// Gets called when a disarmed entry is being validated. The first argument is the disarming player and the second argument is the disarmed player.
@@ -55,8 +55,8 @@ public static class DisarmValidateEntryPatch
             return false;
         }
 
-        if (DisarmDistance > 0f && (disarmer.Position.Position - disarmedPlayer.Position.Position).sqrMagnitude >
-            DisarmDistance)
+        if (DisarmDistanceSquared > 0f && (disarmer.Position.Position - disarmedPlayer.Position.Position).sqrMagnitude >
+            DisarmDistanceSquared)
         {
             __result = false;
             return false;
