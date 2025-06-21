@@ -1,4 +1,4 @@
-#define ENABLE_TEST_COMMANDS
+// #define ENABLE_TEST_COMMANDS
 
 #if ENABLE_TEST_COMMANDS
 using LabExtended.Commands;
