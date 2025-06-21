@@ -250,7 +250,26 @@ public class ExPlayer : Player, IDisposable
     /// <param name="userId">The user ID to find.</param>
     /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
     public static ExPlayer? GetByUserId(string userId)
-        => AllPlayers.FirstOrDefault(p => p?.UserId == userId || p?.ClearUserId == userId);
+    {
+        if (string.IsNullOrEmpty(userId))
+            return null;
+
+        for (var i = 0; i < Players.Count; i++)
+        {
+            var player = Players[i];
+
+            if (!string.IsNullOrWhiteSpace(player.UserId))
+            {
+                if (string.Equals(player.UserId, userId, StringComparison.InvariantCulture))
+                    return player;
+
+                if (string.Equals(player.ClearUserId, userId, StringComparison.InvariantCulture))
+                    return player;
+            }
+        }
+        
+        return null;
+    }
 
     /// <summary>
     /// Gets an <see cref="ExPlayer"/> instance by a user ID, player ID, network ID, IP or name.
