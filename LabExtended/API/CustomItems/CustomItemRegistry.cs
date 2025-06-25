@@ -1,4 +1,5 @@
 ﻿using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Arguments.Scp914Events;
 using LabApi.Events.Handlers;
 
 using LabExtended.API.CustomItems.Behaviours;
@@ -297,6 +298,141 @@ public static class CustomItemRegistry
     private static void OnCollided(PickupCollidedEventArgs args)
         => CustomItemUtils.ForEachPickupBehaviour(args.Pickup.Info.Serial, pickup => pickup.OnCollided(args));
 
+    private static void OnDisarming(PlayerCuffingEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDisarming(args));
+        }
+    }
+
+    private static void OnDisarmed(PlayerCuffedEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDisarmed(args));
+        }
+    }
+
+    private static void OnEscaping(PlayerEscapingEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnEscaping(args));
+        }
+    }
+
+    private static void OnEscaped(PlayerEscapedEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnEscaped(args));
+        }
+    }
+
+    private static void OnHurting(PlayerHurtingEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnHurting(args));
+        }
+    }
+
+    private static void OnHurt(PlayerHurtEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnHurt(args));
+        }
+    }
+
+    private static void OnDying(PlayerDyingEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDying(args));
+        }
+    }
+
+    private static void OnDied(PlayerDeathEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDied(args));
+        }
+    }
+
+    private static void OnChangingRole(PlayerChangingRoleEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnChangingRole(args));
+        }
+    }
+
+    private static void OnChangedRole(PlayerChangedRoleEventArgs args)
+    {
+        if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
+        {
+            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnChangedRole(args));
+        }
+    }
+    
+    private static void OnUpgradingItem(Scp914ProcessingInventoryItemEventArgs args)
+        => CustomItemUtils.ForEachInventoryBehaviour(args.Item.Serial, item => item.OnUpgrading(args));
+
+    private static void OnUpgradingPickup(Scp914ProcessingPickupEventArgs args)
+        => CustomItemUtils.ForEachPickupBehaviour(args.Pickup.Serial, item => item.OnUpgrading(args));
+
+    private static void OnUpgradedItem(Scp914ProcessedInventoryItemEventArgs args)
+    {
+        if (args.Item?.Base != null)
+        {
+            var behaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
+
+            CustomItemUtils.GetInventoryBehavioursNonAlloc(args.Item.Serial, behaviours);
+
+            for (var i = 0; i < behaviours.Count; i++)
+            {
+                var behaviour = behaviours[i];
+
+                behaviour.Item = args.Item.Base;
+                behaviour.IsSelected = args.Item.IsEquipped;
+
+                if (args.Item.CurrentOwner is ExPlayer owner)
+                    behaviour.Player = owner;
+
+                behaviour.OnUpgraded(args);
+            }
+
+            ListPool<CustomItemInventoryBehaviour>.Shared.Return(behaviours);
+        }
+    }
+
+    private static void OnUpgradedPickup(Scp914ProcessedPickupEventArgs args)
+    {
+        if (args.Pickup?.Base != null)
+        {
+            var behaviours = ListPool<CustomItemPickupBehaviour>.Shared.Rent();
+            
+            CustomItemUtils.GetPickupBehavioursNonAlloc(args.Pickup.Serial, behaviours);
+
+            for (var i = 0; i < behaviours.Count; i++)
+            {
+                var behaviour = behaviours[i];
+                
+                behaviour.Pickup = args.Pickup.Base;
+                
+                if (args.Pickup.LastOwner is ExPlayer player)
+                    behaviour.Player = player;
+                
+                behaviour.OnUpgraded(args);
+            }
+            
+            ListPool<CustomItemPickupBehaviour>.Shared.Return(behaviours);
+        }
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
@@ -310,8 +446,29 @@ public static class CustomItemRegistry
         
         PlayerEvents.FlippingCoin += OnFlippingCoin;
         PlayerEvents.FlippedCoin += OnFlippedCoin;
+
+        PlayerEvents.Cuffing += OnDisarming;
+        PlayerEvents.Cuffed += OnDisarmed;
+        
+        PlayerEvents.Escaping += OnEscaping;
+        PlayerEvents.Escaped += OnEscaped;
+
+        PlayerEvents.Hurting += OnHurting;
+        PlayerEvents.Hurt += OnHurt;
+
+        PlayerEvents.Dying += OnDying;
+        PlayerEvents.Death += OnDied;
+
+        PlayerEvents.ChangingRole += OnChangingRole;
+        PlayerEvents.ChangedRole += OnChangedRole;
         
         ExMapEvents.PickupCollided += OnCollided;
+
+        Scp914Events.ProcessingInventoryItem += OnUpgradingItem;
+        Scp914Events.ProcessedInventoryItem += OnUpgradedItem;
+
+        Scp914Events.ProcessingPickup += OnUpgradingPickup;
+        Scp914Events.ProcessedPickup += OnUpgradedPickup;
         
         TypeExtensions.ForEachLoadedType(type =>
         {

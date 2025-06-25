@@ -1,6 +1,7 @@
 ﻿using InventorySystem.Items.Pickups;
 
 using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Arguments.Scp914Events;
 using LabExtended.Events.Map;
 using PlayerThrowingItemEventArgs = LabExtended.Events.Player.PlayerThrowingItemEventArgs;
 
@@ -59,4 +60,16 @@ public class CustomItemPickupBehaviour : CustomItemBehaviour
     /// </summary>
     /// <param name="args">The event arguments</param>
     public virtual void OnCollided(PickupCollidedEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called before the pickup is upgraded in SCP-914.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnUpgrading(Scp914ProcessingPickupEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called once a pickup gets upgraded by SCP-914.
+    /// </summary>
+    /// <param name="args"></param>
+    public virtual void OnUpgraded(Scp914ProcessedPickupEventArgs args) { }
 }

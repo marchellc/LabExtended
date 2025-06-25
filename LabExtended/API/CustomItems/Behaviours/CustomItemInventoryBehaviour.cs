@@ -1,8 +1,8 @@
 ﻿using InventorySystem.Items; 
 using InventorySystem.Items.ToggleableLights;
 
-using LabApi.Events.Arguments.PlayerEvents; 
-
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Arguments.Scp914Events;
 using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
@@ -197,4 +197,76 @@ public class CustomItemInventoryBehaviour : CustomItemBehaviour
     /// </summary>
     /// <param name="args">The event arguments.</param>
     public virtual void OnFlippedCoin(PlayerFlippedCoinEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called before the item gets upgraded in SCP-914.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnUpgrading(Scp914ProcessingInventoryItemEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called once the item is upgraded by SCP-914.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnUpgraded(Scp914ProcessedInventoryItemEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when a player starts disarming a player.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnDisarming(PlayerCuffingEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called after a player disarms another player.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnDisarmed(PlayerCuffedEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner starts escaping.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnEscaping(PlayerEscapingEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner succesfully escapes.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnEscaped(PlayerEscapedEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner receives damage (before the damage is applied).
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnHurting(PlayerHurtingEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner receives damage.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnHurt(PlayerHurtEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner receives mortal damage (before the player is set to spectator).
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnDying(PlayerDyingEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called when the item's owner dies.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnDied(PlayerDeathEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called before the item's owner changes role.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnChangingRole(PlayerChangingRoleEventArgs args) { }
+    
+    /// <summary>
+    /// Gets called after the item's owner role is changed.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public virtual void OnChangedRole(PlayerChangedRoleEventArgs args) { }
 }

@@ -383,6 +383,106 @@ public static class CustomItemUtils
     }
     
     /// <summary>
+    /// Executes a delegate for each inventory behaviour of each item in a list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="predicate">The filtering predicate.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachInventoryBehaviour<TBehaviour>(this IEnumerable<ItemBase> items, Predicate<TBehaviour> predicate, Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
+                {
+                    if (inventoryBehaviour is not TBehaviour behaviour)
+                        continue;
+                    
+                    if (!predicate(behaviour))
+                        continue;
+
+                    action(behaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each inventory behaviour of each item in a list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachInventoryBehaviour<TBehaviour>(this IEnumerable<ItemBase> items, Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
+                {
+                    if (inventoryBehaviour is not TBehaviour behaviour)
+                        continue;
+
+                    action(behaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each inventory behaviour of each item in a list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="predicate">The search predicate.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachInventoryBehaviour(this IEnumerable<ItemBase> items, Predicate<CustomItemInventoryBehaviour> predicate, Action<CustomItemInventoryBehaviour> action)
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour)
+                    && predicate(inventoryBehaviour))
+                {
+                    action(inventoryBehaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each inventory behaviour of each item in a list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachInventoryBehaviour(this IEnumerable<ItemBase> items, Action<CustomItemInventoryBehaviour> action)
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
+                {
+                    action(inventoryBehaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
     /// Executes a delegate for each inventory behaviour for a specific item serial.
     /// </summary>
     /// <param name="itemSerial">The item serial.</param>
@@ -454,6 +554,106 @@ public static class CustomItemUtils
             if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
             {
                 action(pickupBehaviour);
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each pickup behaviour for a specific in an item list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachPickupBehaviour(this IEnumerable<ItemPickupBase> items, Action<CustomItemPickupBehaviour> action)
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.pickupItems.TryGetValue(item.Info.Serial, out var pickupBehaviour))
+                {
+                    action(pickupBehaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each pickup behaviour for a specific in an item list.
+    /// </summary>
+    /// <param name="items">The item list.</param>
+    /// <param name="predicate">The search predicate.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachPickupBehaviour(this IEnumerable<ItemPickupBase> items, Predicate<CustomItemPickupBehaviour> predicate, Action<CustomItemPickupBehaviour> action)
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var item in items)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.pickupItems.TryGetValue(item.Info.Serial, out var pickupBehaviour)
+                    && predicate(pickupBehaviour))
+                {
+                    action(pickupBehaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each pickup behaviour in a list of pickups.
+    /// </summary>
+    /// <param name="pickups">The pickup list.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachPickupBehaviour<TBehaviour>(this IEnumerable<ItemPickupBase> pickups, Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var pickup in pickups)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.pickupItems.TryGetValue(pickup.Info.Serial, out var pickupBehaviour))
+                {
+                    if (pickupBehaviour is not TBehaviour behaviour)
+                        continue;
+
+                    action(behaviour);
+                }
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Executes a delegate for each pickup behaviour in a list of pickups.
+    /// </summary>
+    /// <param name="pickups">The pickup list.</param>
+    /// <param name="predicate">The search predicate.</param>
+    /// <param name="action">The delegate to invoke.</param>
+    public static void ForEachPickupBehaviour<TBehaviour>(this IEnumerable<ItemPickupBase> pickups, Predicate<TBehaviour> predicate, Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
+    {
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
+
+        foreach (var pickup in pickups)
+        {
+            foreach (var pair in CustomItemRegistry.Handlers)
+            {
+                if (pair.Value.pickupItems.TryGetValue(pickup.Info.Serial, out var pickupBehaviour))
+                {
+                    if (pickupBehaviour is not TBehaviour behaviour)
+                        continue;
+                    
+                    if (!predicate(behaviour))
+                        continue;
+
+                    action(behaviour);
+                }
             }
         }
     }
