@@ -1,11 +1,6 @@
-﻿using LabExtended.API.Toys;
-
-using NorthwoodLib.Pools;
-
+﻿using NorthwoodLib.Pools;
 using LabExtended.Utilities;
-
 using UnityEngine;
-
 using Color = System.Drawing.Color;
 
 namespace LabExtended.API.Images.Conversion;
@@ -41,6 +36,7 @@ public static class ToyStringImageConvertor
     /// </summary>
     public static char Character { get; set; } = '█';
     
+    // TODO: Optimize the string conversion - aka lets not have a different collection item for each row.
     /// <summary>
     /// Assigns text toy data to each image frame.
     /// </summary>
@@ -51,26 +47,26 @@ public static class ToyStringImageConvertor
         if (file is null)
             throw new ArgumentNullException(nameof(file));
 
-        file.toyDisplaySize = new(file.Height, file.Width);
-        
         var builder = StringBuilderPool.Shared.Rent();
 
         Color? last = null;
+        
+        file.toyDisplaySize = new(file.Height, file.Width);
         
         for (var index = 0; index < file.Frames.Count; index++)
         {
             var frame = file.Frames[index];
             
-            builder.Clear();
-            
-            builder.Append("<size=");
-            builder.Append(file.toyStringImageData.CharacterSize);
-            builder.Append("%><line-height=");
-            builder.Append(file.toyStringImageData.CharacterHeight);
-            builder.Append("%>");
-
             for (var x = 0; x < frame.Pixels.Count; x++)
             {
+                builder.Clear();
+                
+                builder.Append("<size=");
+                builder.Append(file.toyStringImageData.CharacterSize);
+                builder.Append("%><line-height=");
+                builder.Append(file.toyStringImageData.CharacterHeight);
+                builder.Append("%>");
+
                 var pixels = frame.Pixels[x];
 
                 for (var y = 0; y < pixels.Count; y++)
@@ -82,19 +78,29 @@ public static class ToyStringImageConvertor
                         builder.Append("<color=");
                         builder.Append(pixel.Color.ToShortHex());
                         builder.Append(">");
-
+                        
                         last = pixel.Color;
                     }
 
                     builder.Append(Character);
                 }
 
-                builder.AppendLine();
+                builder.Append("</color>");
+
+                frame.toyFrameData.Add(builder.ToString());
+            }
+            
+            builder.Clear();
+
+            for (var i = 0; i < file.Height; i++)
+            {
+                builder.Append("{");
+                builder.Append(i);
+                builder.Append("}");
+                builder.Append("\\n");
             }
 
-            builder.Append("</color>");
-            
-            TextToy.SplitStringNonAlloc(builder.ToString(), frame.toyFrameData, out frame.toyFrameFormat);
+            frame.toyFrameFormat = builder.ToString();
         }
         
         StringBuilderPool.Shared.Return(builder);
