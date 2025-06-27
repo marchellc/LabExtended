@@ -102,7 +102,7 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 
         Arguments.Clear();
         
-        if (value.Length > MirrorMethods.MaxStringLength)
+        if (value.Length > 65534)
         {
             SplitStringNonAlloc(value, Arguments, out var format);
             
@@ -259,7 +259,7 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 
         for (var i = 0; i < value.Length; i++)
         {
-            if (valueBuilder.Length + 1 >= MirrorMethods.MaxStringLength)
+            if (valueBuilder.Length + 1 >= 65534)
             {
                 AppendFormat();
                 
