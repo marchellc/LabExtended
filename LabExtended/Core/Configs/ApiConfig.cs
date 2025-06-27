@@ -17,12 +17,12 @@ namespace LabExtended.Core.Configs
         
         [Description("Command System configuration.")]
         public CommandSection CommandSection { get; set; } = new();
+        
+        [Description("Image API configuration.")]
+        public ImageSection ImageSection { get; set; } = new();
 
         [Description("Hint system configuration.")]
         public HintSection HintSection { get; set; } = new();
-
-        [Description("Player data synchronization configuration.")]
-        public SynchronizationSection SynchronizationSection { get; set; } = new();
 
         [Description("Patching options.")] 
         public PatchSection PatchSection { get; set; } = new();

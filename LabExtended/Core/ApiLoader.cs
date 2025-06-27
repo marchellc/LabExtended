@@ -1,12 +1,11 @@
-﻿using Serialization;
-
-using System.Reflection;
+﻿using System.Reflection;
 
 using CommandSystem.Commands.Shared;
 
 using LabApi.Loader;
 using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
+using LabApi.Loader.Features.Yaml;
 
 using LabExtended.Events;
 using LabExtended.Commands;
@@ -86,12 +85,12 @@ namespace LabExtended.Core
         /// <summary>
         /// Gets the YAML-serialized string of <see cref="BaseConfig"/>.
         /// </summary>
-        public static string SerializedBaseConfig => YamlParser.Serializer.Serialize(BaseConfig ??= new());
+        public static string SerializedBaseConfig => YamlConfigParser.Serializer.Serialize(BaseConfig ??= new());
         
         /// <summary>
         /// Gets the YAML-serialized string of <see cref="ApiConfig"/>.
         /// </summary>
-        public static string SerializedApiConfig => YamlParser.Serializer.Serialize(ApiConfig ??= new());
+        public static string SerializedApiConfig => YamlConfigParser.Serializer.Serialize(ApiConfig ??= new());
         
         /// <summary>
         /// Gets the loader's name.
@@ -143,12 +142,12 @@ namespace LabExtended.Core
                 if (!File.Exists(BaseConfigPath))
                     File.WriteAllText(BaseConfigPath, SerializedBaseConfig);
                 else
-                    BaseConfig = YamlParser.Deserializer.Deserialize<BaseConfig>(File.ReadAllText(BaseConfigPath));
+                    BaseConfig = YamlConfigParser.Deserializer.Deserialize<BaseConfig>(File.ReadAllText(BaseConfigPath));
 
                 if (!File.Exists(ApiConfigPath))
                     File.WriteAllText(ApiConfigPath, SerializedApiConfig);
                 else
-                    ApiConfig = YamlParser.Deserializer.Deserialize<ApiConfig>(File.ReadAllText(ApiConfigPath));
+                    ApiConfig = YamlConfigParser.Deserializer.Deserialize<ApiConfig>(File.ReadAllText(ApiConfigPath));
 
                 ApiLog.IsTrueColorEnabled = BaseConfig?.TrueColorEnabled ?? true;
                 ApiPatcher.TranspilerDebug = BaseConfig?.TranspilerDebugEnabled ?? false;
