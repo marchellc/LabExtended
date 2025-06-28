@@ -10,12 +10,11 @@ public class ImageSection
     /// <summary>
     /// Gets or sets custom image spawn points.
     /// </summary>
-    public Dictionary<string, List<SpawnableImage>> SpawnImages { get; set; } = new()
+    public List<SpawnableImage> SpawnImages { get; set; } = new()
     {
-        ["example"] = new()
+        new()
         {
-            new(),
-            new()
+            Name = "example"
         }
     };
 }
