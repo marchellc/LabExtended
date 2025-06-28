@@ -23,11 +23,6 @@ namespace LabExtended.API;
 public static class MirrorMethods
 {
     /// <summary>
-    /// Gets the maximum length of a string.
-    /// </summary>
-    public const int MaxStringLength = 65534;
-    
-    /// <summary>
     /// Gets full names of all RPCs.
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
