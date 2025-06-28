@@ -87,13 +87,8 @@ public static class ImageSpawner
             if (spawnablePair.Key == "example")
                 continue;
             
-            if (SpawnedImages.TryGetValue(spawnablePair.Key, out var spawnedList))
-            {
-                if (spawnedList.Count > 0)
-                {
-                    continue;
-                }
-            }
+            if (SpawnedImages.TryGetValue(spawnablePair.Key, out var spawnedList) && spawnedList.Count > 0)
+                continue;
 
             if (spawnedList is null)
                 SpawnedImages.Add(spawnablePair.Key, spawnedList = new());
@@ -123,7 +118,8 @@ public static class ImageSpawner
                 
                 var imageToSpawn = spawnableImage.Chances.GetRandomWeighted(p => p.Value);
 
-                if (!string.IsNullOrEmpty(imageToSpawn.Key) && ImageLoader.TryGet(imageToSpawn.Key, out var image))
+                if (!string.IsNullOrEmpty(imageToSpawn.Key) && !string.Equals("none", imageToSpawn.Key, StringComparison.InvariantCultureIgnoreCase) 
+                                                            && ImageLoader.TryGet(imageToSpawn.Key, out var image))
                 {
                     var toy = image.SpawnImage(spawnableImage.Position.Vector, spawnableImage.Rotation.Quaternion);
 

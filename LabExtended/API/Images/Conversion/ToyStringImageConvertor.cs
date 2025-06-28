@@ -1,5 +1,5 @@
-﻿using LabExtended.API.Toys;
-using LabExtended.Extensions;
+﻿using LabExtended.Extensions;
+
 using NorthwoodLib.Pools;
 
 using LabExtended.Utilities;
@@ -34,6 +34,11 @@ public static class ToyStringImageConvertor
         /// The text toy scale.
         /// </summary>
         public Vector3 Scale;
+
+        /// <summary>
+        /// The text toy display size.
+        /// </summary>
+        public Vector2 Display;
     }
     
     /// <summary>
@@ -50,8 +55,6 @@ public static class ToyStringImageConvertor
     {
         if (file is null)
             throw new ArgumentNullException(nameof(file));
-
-        file.toyDisplaySize = new(file.Height, file.Width);
         
         var builder = StringBuilderPool.Shared.Rent();
 
@@ -133,8 +136,15 @@ public static class ToyStringImageConvertor
         scale.x = reader.ReadSingle();
         scale.y = reader.ReadSingle();
         scale.z = reader.ReadSingle();
-        
+
         target.toyStringImageData.Scale = scale;
+
+        var display = new Vector2();
+
+        display.x = reader.ReadSingle();
+        display.y = reader.ReadSingle();
+
+        target.toyStringImageData.Display = display;
     }
 
     /// <summary>
@@ -156,7 +166,7 @@ public static class ToyStringImageConvertor
         builder.AppendLine($"CharacterHeight = {file.toyStringImageData.CharacterHeight}");
 
         builder.AppendLine($"Name = {file.Name} ({file.Extension})");
-        builder.AppendLine($"DisplaySize = {file.toyDisplaySize.ToPreciseString()}");
+        builder.AppendLine($"DisplaySize = {file.toyStringImageData.Display.ToPreciseString()}");
         builder.AppendLine($"FrameCount = {file.Frames.Count}");
         builder.AppendLine($"IsAnimated = {file.IsAnimated}");
 

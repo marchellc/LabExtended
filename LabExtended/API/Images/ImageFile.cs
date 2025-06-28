@@ -12,7 +12,6 @@ namespace LabExtended.API.Images;
 /// </summary>
 public class ImageFile : IDisposable
 {
-    internal Vector2 toyDisplaySize;
     internal ToyStringImageConvertor.ToyStringImageData toyStringImageData = new();
     
     /// <summary>

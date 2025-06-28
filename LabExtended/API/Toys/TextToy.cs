@@ -1,7 +1,8 @@
-﻿using LabExtended.API.Images;
+﻿using System.Text;
+using LabExtended.API.Images;
 using LabExtended.API.Prefabs;
 using LabExtended.API.Interfaces;
-
+using LabExtended.Extensions;
 using LabExtended.Images.Playback;
 
 using Mirror;
@@ -102,19 +103,29 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 
         Arguments.Clear();
         
-        if (value.Length > 65534)
+        if (Encoding.UTF8.GetByteCount(value) > MirrorMethods.MaxStringLength)
         {
-            SplitStringNonAlloc(value, Arguments, out var format);
-            
+            value.SplitByLengthUtf8(MirrorMethods.MaxStringLength, Arguments);
+
             if (setFormat)
-                Format = format;
+            {
+                Format = StringBuilderPool.Shared.BuildString(x =>
+                {
+                    for (var i = 0; i < Arguments.Count; i++)
+                    {
+                        x.Append('{');
+                        x.Append(i);
+                        x.Append('}');
+                    }
+                });
+            }
         }
         else
         {
-            Format = SingleStringFormat;
+            Arguments.Add(value);
             
             if (setFormat)
-                Arguments.Add(value);
+                Format = SingleStringFormat;
         }
     }
 
@@ -205,8 +216,8 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
             return;
         }
 
-        if (Size != frame.File.toyDisplaySize)
-            Size = frame.File.toyDisplaySize;
+        if (Size != frame.File.toyStringImageData.Display)
+            Size = frame.File.toyStringImageData.Display;
 
         if (Scale != frame.File.toyStringImageData.Scale)
             Scale = frame.File.toyStringImageData.Scale;
@@ -226,53 +237,5 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
             PlaybackDisplay.Dispose();
             PlaybackDisplay = null;
         }
-    }
-
-    /// <summary>
-    /// Splits a string into a target string collection.
-    /// </summary>
-    /// <param name="value">The string to split.</param>
-    /// <param name="target">The target collection.</param>
-    /// <param name="format">Generated text toy string format.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void SplitStringNonAlloc(string value, ICollection<string> target, out string format)
-    {
-        if (string.IsNullOrEmpty(value))
-            throw new ArgumentNullException(nameof(value));
-
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        var valueBuilder = StringBuilderPool.Shared.Rent();
-        
-        var formatBuilder = StringBuilderPool.Shared.Rent();
-        var formatCount = target.Count;
-
-        void AppendFormat()
-        {
-            formatBuilder.Append('{');
-            formatBuilder.Append(formatCount);
-            formatBuilder.Append('}');
-
-            formatCount++;
-        }
-
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (valueBuilder.Length + 1 >= 65534)
-            {
-                AppendFormat();
-                
-                target.Add(valueBuilder.ToString());
-                
-                valueBuilder.Clear();
-            }
-            
-            valueBuilder.Append(value[i]);
-        }
-
-        format = StringBuilderPool.Shared.ToStringReturn(formatBuilder);
-        
-        StringBuilderPool.Shared.Return(valueBuilder);
     }
 }
