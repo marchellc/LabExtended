@@ -1,3 +1,4 @@
+using LabExtended.API.Images.Configs;
 using LabExtended.API.Toys;
 
 using LabExtended.Attributes;
@@ -6,6 +7,7 @@ using LabExtended.Core;
 using LabExtended.Core.Configs.Sections;
 
 using LabExtended.Events;
+using LabExtended.Extensions;
 using LabExtended.Images.Playback;
 using LabExtended.Utilities;
 
@@ -20,6 +22,13 @@ namespace LabExtended.API.Images;
 /// </summary>
 public static class ImageSpawner
 {
+    private static Dictionary<string, float> roundStartFix = new();
+    
+    /// <summary>
+    /// Gets called once an image is spawned.
+    /// </summary>
+    public static event Action<string, SpawnableImage, TextToy>? Spawned; 
+    
     /// <summary>
     /// Gets the image API config.
     /// </summary>
@@ -28,7 +37,7 @@ public static class ImageSpawner
     /// <summary>
     /// Gets a list of all spawned images.
     /// </summary>
-    public static List<TextToy> SpawnedImages { get; } = new();
+    public static Dictionary<string, List<KeyValuePair<SpawnableImage, TextToy>>> SpawnedImages { get; } = new();
 
     /// <summary>
     /// Spawns a text toy with a specified image and starts playing it.
@@ -57,11 +66,14 @@ public static class ImageSpawner
 
     private static void OnStopped()
     {
-        foreach (var spawnedImage in SpawnedImages)
+        foreach (var spawnedList in SpawnedImages)
         {
-            if (spawnedImage?.Base != null)
+            foreach (var spawnedImage in spawnedList.Value)
             {
-                NetworkServer.Destroy(spawnedImage.GameObject);
+                if (spawnedImage.Value?.Base != null)
+                {
+                    NetworkServer.Destroy(spawnedImage.Value.GameObject);
+                }
             }
         }
         
@@ -70,33 +82,58 @@ public static class ImageSpawner
     
     private static void OnStarted()
     {
-        foreach (var spawnableImage in Config.SpawnImages)
+        foreach (var spawnablePair in Config.SpawnImages)
         {
-            try
+            if (spawnablePair.Key == "example")
+                continue;
+            
+            if (SpawnedImages.TryGetValue(spawnablePair.Key, out var spawnedList))
             {
-                if (string.Equals(spawnableImage.Name, "example"))
-                    continue;
-                
-                if (spawnableImage.Chance == 0f)
-                    continue;
-
-                if (spawnableImage.Chance != 100f && !WeightUtils.GetBool(spawnableImage.Chance, false))
-                    continue;
-
-                if (!ImageLoader.TryGet(spawnableImage.Name, out var image))
+                if (spawnedList.Count > 0)
                 {
-                    ApiLog.Warn("Image Spawner", $"Attempted to spawn image &3{spawnableImage.Name}&r, but it was not loaded.");
                     continue;
                 }
-
-                var toy = image.SpawnImage(spawnableImage.Position.Vector, spawnableImage.Rotation.Quaternion);
-
-                if (toy?.Base != null)
-                    SpawnedImages.Add(toy);
             }
-            catch (Exception ex)
+
+            if (spawnedList is null)
+                SpawnedImages.Add(spawnablePair.Key, spawnedList = new());
+
+            foreach (var spawnableImage in spawnablePair.Value)
             {
-                ApiLog.Error("Image Spawner", $"Could not spawn image &3{spawnableImage.Name}&r:\n{ex}");
+                if (spawnableImage.Chances.Count == 0)
+                    continue;
+
+                if (spawnableImage.Chances.All(p => p.Key.StartsWith("example")))
+                    continue;
+
+                roundStartFix.Clear();
+
+                foreach (var pair in spawnableImage.Chances)
+                {
+                    if (ImageLoader.LoadedImages.ContainsKey(pair.Key))
+                    {
+                        roundStartFix.Add(pair.Key, pair.Value);
+                    }
+                }
+
+                spawnableImage.Chances.Clear();
+
+                foreach (var pair in roundStartFix)
+                    spawnableImage.Chances.Add(pair.Key, pair.Value);
+                
+                var imageToSpawn = spawnableImage.Chances.GetRandomWeighted(p => p.Value);
+
+                if (!string.IsNullOrEmpty(imageToSpawn.Key) && ImageLoader.TryGet(imageToSpawn.Key, out var image))
+                {
+                    var toy = image.SpawnImage(spawnableImage.Position.Vector, spawnableImage.Rotation.Quaternion);
+
+                    if (toy?.Base != null)
+                    {
+                        spawnedList.Add(new(spawnableImage, toy));
+
+                        Spawned?.InvokeSafe(spawnablePair.Key, spawnableImage, toy);
+                    }
+                }
             }
         }
     }

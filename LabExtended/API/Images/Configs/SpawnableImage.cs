@@ -1,7 +1,5 @@
 using LabExtended.Core.Configs.Objects;
 
-using UnityEngine;
-
 namespace LabExtended.API.Images.Configs;
 
 /// <summary>
@@ -9,16 +7,6 @@ namespace LabExtended.API.Images.Configs;
 /// </summary>
 public class SpawnableImage
 {
-    /// <summary>
-    /// Gets or sets the image spawn chance.
-    /// </summary>
-    public float Chance { get; set; } = 0f;
-
-    /// <summary>
-    /// Gets or sets the name of the image.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
-
     /// <summary>
     /// Gets or sets the spawn position.
     /// </summary>
@@ -38,5 +26,14 @@ public class SpawnableImage
         Y = 0f,
         Z = 0f,
         W = 0f
+    };
+
+    /// <summary>
+    /// Gets or sets the image chances.
+    /// </summary>
+    public Dictionary<string, float> Chances { get; set; } = new()
+    {
+        ["example"] = 0f,
+        ["example_two"] = 0f
     };
 }
