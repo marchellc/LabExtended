@@ -102,6 +102,8 @@ public class ImageFile : IDisposable
         
         IsDisposed = true;
         
+        ImageLoader.OnUnloaded(this);
+        
         if (Frames != null)
         {
             Frames.ForEach(f => f.Dispose());

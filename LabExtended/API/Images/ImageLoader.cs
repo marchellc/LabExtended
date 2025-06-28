@@ -7,7 +7,7 @@ using NorthwoodLib.Pools;
 using System.Drawing;
 
 using LabExtended.API.Images.Conversion;
-using LabExtended.Core.Pooling.Pools;
+using LabExtended.Extensions;
 
 namespace LabExtended.API.Images;
 
@@ -17,6 +17,16 @@ namespace LabExtended.API.Images;
 public static class ImageLoader
 {
     private static FileSystemWatcher watcher;
+
+    /// <summary>
+    /// Gets called when an image is loaded.
+    /// </summary>
+    public static event Action<ImageFile>? Loaded;
+
+    /// <summary>
+    /// Gets called when an image is unloaded.
+    /// </summary>
+    public static event Action<ImageFile>? Unloaded; 
     
     /// <summary>
     /// Gets a list of all loaded images.
@@ -28,6 +38,34 @@ public static class ImageLoader
     /// </summary>
     public static string Directory { get; } = Path.Combine(ApiLoader.DirectoryPath, "Images");
 
+    /// <summary>
+    /// Reloads the specified image.
+    /// </summary>
+    /// <param name="name">The name of the image.</param>
+    /// <returns>true if the image was reloaded</returns>
+    public static bool Reload(string name)
+    {
+        if (string.IsNullOrEmpty(name))
+            throw new ArgumentNullException(nameof(name));
+        
+        if (LoadedImages.TryGetValue(name, out var file))
+            file.Dispose();
+        
+        LoadedImages.Remove(name);
+
+        var path = Path.Combine(Directory, name);
+
+        if (!File.Exists(path))
+            return false;
+        
+        file = ReadFile(File.ReadAllBytes(path));
+        
+        LoadedImages.Add(name, file);
+        
+        Loaded?.InvokeSafe(file);
+        return true;
+    }
+    
     /// <summary>
     /// Gets an image by it's file name.
     /// </summary>
@@ -80,7 +118,7 @@ public static class ImageLoader
                     File = image
                 };
 
-                if (i - 1 > 0)
+                if (i - 1 >= 0)
                 {
                     frame.PreviousFrame = image.Frames[i - 1];
                     frame.PreviousFrame.NextFrame = frame;
@@ -100,7 +138,7 @@ public static class ImageLoader
                             Frame = frame
                         };
 
-                        if (x - 1 > 0)
+                        if (x - 1 >= 0)
                         {
                             pixel.PreviousPixel = pixels[x - 1];
                             pixel.PreviousPixel.NextPixel = pixel;
@@ -129,6 +167,9 @@ public static class ImageLoader
         return image;
     }
 
+    internal static void OnUnloaded(ImageFile file)
+        => Unloaded?.InvokeSafe(file);
+
     private static void OnCreated(object _, FileSystemEventArgs ev)
     {
         if (!string.IsNullOrEmpty(Path.GetExtension(ev.FullPath)))
@@ -141,8 +182,10 @@ public static class ImageLoader
 
         LoadedImages.Remove(name);
         
-        Task.Run(() =>
+        Task.Run(async () =>
         {
+            await Task.Delay(2000);
+            
             try
             {
 
@@ -159,32 +202,42 @@ public static class ImageLoader
                 LoadedImages.Add(name, image);
 
                 ApiLog.Debug("Image Loader", $"Loaded image &6{image.Name}&r");
+                return image;
             }
             catch (Exception ex)
             {
                 ApiLog.Error("Image Loader",
                     $"Failed while trying to load image file &3{Path.GetFileName(ev.FullPath)}&r:\n{ex}");
+                return null;
+            }
+        }).ContinueWithOnMain(task =>
+        {
+            if (task.Result != null)
+            {
+                Loaded?.InvokeSafe(task.Result);
             }
         });
     }
 
     private static void OnDeleted(object _, FileSystemEventArgs ev)
     {
-        var images = DictionaryPool<string, ImageFile>.Shared.Rent(LoadedImages);
+        var removedImages = ListPool<string>.Shared.Rent();
 
         try
         {
-            foreach (var image in images)
+            foreach (var image in LoadedImages)
             {
                 if (image.Value.Path == ev.FullPath)
                 {
                     image.Value.Dispose();
                     
-                    ApiLog.Debug("Image Loader", $"Removed image &6{image.Value.Name}&r");
+                    removedImages.Add(image.Key);
                     
-                    LoadedImages.Remove(image.Key);
+                    ApiLog.Debug("Image Loader", $"Removed image &6{image.Value.Name}&r");
                 }
             }
+
+            removedImages.ForEach(name => LoadedImages.Remove(name));
         }
         catch (Exception ex)
         {
@@ -192,7 +245,7 @@ public static class ImageLoader
                 $"Failed while trying to un-load image file &3{Path.GetFileName(ev.FullPath)}&r:\n{ex}");
         }
         
-        DictionaryPool<string, ImageFile>.Shared.Return(images);
+        ListPool<string>.Shared.Return(removedImages);
     }
 
     [LoaderInitialize(1)]
@@ -230,6 +283,9 @@ public static class ImageLoader
             }
         }).ContinueWithOnMain(_ =>
         {
+            foreach (var pair in LoadedImages)
+                Loaded?.InvokeSafe(pair.Value);
+            
             watcher = new(Directory);
             
             watcher.Created += OnCreated;
