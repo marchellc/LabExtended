@@ -105,13 +105,12 @@ namespace LabExtended.Extensions
 
             for (var i = 0; i < str.Length; i++)
             {
-                var c = str[i];
-                
-                builder.Append(c);
+                builder.Append(str[i]);
 
                 if (builder.Length >= maxLength)
                 {
                     target.Add(builder.ToString());
+                    
                     builder.Clear();
                 }
             }
