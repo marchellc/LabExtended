@@ -84,7 +84,9 @@ public static class ImageConversion
 
             var toyStringSize = ConsoleArgs.GetValueOrDefault("textToySize", int.Parse, 33);
             var toyStringHeight = ConsoleArgs.GetValueOrDefault("textToyHeight", int.Parse, 75);
-            var toyScale = ConsoleArgs.GetValueOrDefault("textToyScale", ParseVector, Vector3.One);
+            
+            var toyScale = ConsoleArgs.GetValueOrDefault("textToyScale", ParseVector3, Vector3.One);
+            var toyDisplay = ConsoleArgs.GetValueOrDefault("textToyDisplay", ParseVector2, Vector2.Zero);
             
             if (sourceImage.IsAnimated())
             {
@@ -112,6 +114,12 @@ public static class ImageConversion
                 CommonLog.Debug("Conversion", $"Converting static image '{name}' ({resolutionHeight}x{resolutionWidth})");
                 
                 sourceFrames.Add(new(sourceImage, new Size(resolutionWidth, resolutionHeight)));
+            }
+
+            if (toyDisplay == Vector2.Zero)
+            {
+                toyDisplay.X = resolutionWidth;
+                toyDisplay.Y = resolutionHeight;
             }
             
             using (var stream = new MemoryStream())
@@ -150,6 +158,9 @@ public static class ImageConversion
                 writer.Write(toyScale.X);
                 writer.Write(toyScale.Y);
                 writer.Write(toyScale.Z);
+                
+                writer.Write(toyDisplay.X);
+                writer.Write(toyDisplay.Y);
 
                 File.WriteAllBytes(outputPath, stream.ToArray());
             }
@@ -161,8 +172,44 @@ public static class ImageConversion
             CommonLog.Error("Conversion", $"An error occured while attempting to convert file '{Path.GetFileName(inputPath)}':\n{ex}");
         }
     }
+    
+    private static Vector2 ParseVector2(string str)
+    {
+        if (string.IsNullOrEmpty(str))
+            return Vector2.One;
 
-    private static Vector3 ParseVector(string str)
+        if (!str.TrySplit(',', true, null, out var parts))
+        {
+            CommonLog.Warn("Conversion", $"Could not parse input vector string '{str}'");
+            return Vector2.One;
+        }
+
+        if (parts.Length > 0)
+        {
+            if (!float.TryParse(parts[0], NumberFormatInfo.InvariantInfo, out var x))
+            {
+                CommonLog.Warn("Conversion", $"Could not parse vector X axis ('{parts[0]}')");
+                return Vector2.One;
+            }
+            
+            if (parts.Length > 1)
+            {
+                if (!float.TryParse(parts[1], NumberFormatInfo.InvariantInfo, out var y))
+                {
+                    CommonLog.Warn("Conversion", $"Could not parse vector Y axis ('{parts[1]}')");
+                    return Vector2.One;
+                }
+                
+                return new Vector2(x, y);
+            }
+
+            return new Vector2(x, 1f);
+        }
+        
+        return Vector2.One;
+    }
+
+    private static Vector3 ParseVector3(string str)
     {
         if (string.IsNullOrEmpty(str))
             return Vector3.One;
