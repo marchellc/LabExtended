@@ -9,6 +9,16 @@ namespace LabExtended.Core.Configs.Objects;
 /// </summary>
 public class YamlQuaternion
 {
+    /// <summary>
+    /// Gets a NEW instance of a <see cref="Quaternion.identity"/>.
+    /// </summary>
+    public static YamlQuaternion IdentityNew => new(Quaternion.identity);
+
+    /// <summary>
+    /// Gets the singleton instance of a <see cref="Quaternion.identity"/>.
+    /// </summary>
+    public static YamlQuaternion IdentitySingleton { get; } = new(Quaternion.identity);
+    
     private Quaternion? cachedQuart;
     
     /// <summary>
@@ -46,4 +56,34 @@ public class YamlQuaternion
             return cachedQuart.Value;
         }
     }
+
+    /// <summary>
+    /// Creates a new <see cref="YamlQuaternion"/> instance.
+    /// </summary>
+    public YamlQuaternion()
+    {
+        
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="YamlQuaternion"/> instance.
+    /// </summary>
+    /// <param name="quaternion">The quaternion.</param>
+    public YamlQuaternion(Quaternion quaternion)
+    {
+        X = quaternion.x;
+        Y = quaternion.y;
+        Z = quaternion.z;
+        W = quaternion.w;
+
+        cachedQuart = quaternion;
+    }
+    
+    /// <summary>
+    /// Converts a <see cref="YamlQuaternion"/> to a <see cref="UnityEngine.Quaternion"/>.
+    /// </summary>
+    /// <param name="quaternion">The instance to convert.</param>
+    /// <returns>The converted quaternion.</returns>
+    public static implicit operator Quaternion(YamlQuaternion quaternion)
+        => quaternion.Quaternion;
 }

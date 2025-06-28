@@ -41,4 +41,46 @@ public class YamlVector3
             return cachedVector.Value;
         }
     }
+
+    /// <summary>
+    /// Creates a new <see cref="YamlVector3"/> instance.
+    /// </summary>
+    public YamlVector3()
+    {
+        
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="YamlVector3"/> instance.
+    /// </summary>
+    /// <param name="vector">The source Vector3.</param>
+    public YamlVector3(Vector3 vector)
+    {
+        X = vector.x;
+        Y = vector.y;
+        Z = vector.z;
+
+        cachedVector = vector;
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="YamlVector3"/> instance.
+    /// </summary>
+    /// <param name="x">The X coordinate.</param>
+    /// <param name="y">The Y coordinate.</param>
+    /// <param name="z">The Z coordinate.</param>
+    public YamlVector3(float x, float y = 0f, float z = 0f)
+    {
+        X = x;
+        Y = y;
+        Z = z;
+    }
+
+    /// <summary>
+    /// Converts a <see cref="YamlVector3"/> instance to a <see cref="Vector3"/>.
+    /// </summary>
+    /// <param name="vector">The instance to convert.</param>
+    /// <returns>The converted Vector3.</returns>
+    public static implicit operator Vector3(YamlVector3 vector)
+        => vector.Vector;
 }
