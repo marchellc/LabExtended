@@ -1,5 +1,5 @@
 ﻿using LabExtended.API.Toys;
-
+using LabExtended.Extensions;
 using NorthwoodLib.Pools;
 
 using LabExtended.Utilities;
@@ -91,10 +91,22 @@ public static class ToyStringImageConvertor
 
                 builder.AppendLine();
             }
+            
+            frame.toyFrameData ??= new();
 
             builder.Append("</color>");
+            builder.ToString().SplitByLengthUtf8(MirrorMethods.MaxStringLength, frame.toyFrameData);
+
+            builder.Clear();
+
+            for (var x = 0; x < frame.toyFrameData.Count; x++)
+            {
+                builder.Append('{');
+                builder.Append(x);
+                builder.Append('}');
+            }
             
-            TextToy.SplitStringNonAlloc(builder.ToString(), frame.toyFrameData, out frame.toyFrameFormat);
+            frame.toyFrameFormat = builder.ToString();
         }
         
         StringBuilderPool.Shared.Return(builder);

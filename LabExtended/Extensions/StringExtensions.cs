@@ -10,6 +10,8 @@ namespace LabExtended.Extensions
     {
         public const char LogAnsiColorEscapeChar = (char)27;
 
+        public static UTF8Encoding Utf8 { get; } = new(false, true);
+        
         public static readonly Regex NewLineRegex = new Regex("r\n|\r|\n", RegexOptions.Compiled);
 
         public static readonly Regex PascalCaseRegex = new Regex("([a-z,0-9](?=[A-Z])|[A-Z](?=[A-Z][a-z]))", RegexOptions.Compiled);
@@ -92,27 +94,67 @@ namespace LabExtended.Extensions
         {
             var list = new List<string>(Mathf.CeilToInt(str.Length / maxLength));
             
-            SplitByLengthNonAlloc(str, maxLength, list);
+            SplitByLength(str, maxLength, list);
             return list;
         }
 
-        public static void SplitByLengthNonAlloc(this string str, int maxLength, ICollection<string> target)
+        public static void SplitByLength(this string str, int maxLength, ICollection<string> target)
         {
             if (maxLength <= 0)
                 throw new ArgumentOutOfRangeException(nameof(maxLength));
-            
-            var builder = StringBuilderPool.Shared.Rent();
 
-            for (var i = 0; i < str.Length; i++)
+            if (target is null)
+                throw new ArgumentNullException(nameof(target));
+
+            while (str.Length > maxLength)
             {
-                builder.Append(str[i]);
+                var otherStr = str.Substring(0, maxLength);
 
-                if (builder.Length >= maxLength)
+                str = str.Remove(0, maxLength);
+                
+                target.Add(otherStr);
+            }
+            
+            target.Add(str);
+        }
+        
+        public static void SplitByLengthUtf8(this string str, int maxLength, ICollection<string> target)
+        {
+            if (maxLength <= 0)
+                throw new ArgumentOutOfRangeException(nameof(maxLength));
+
+            if (target is null)
+                throw new ArgumentNullException(nameof(target));
+
+            if (string.IsNullOrEmpty(str))
+                return;
+
+            var utf8 = Encoding.UTF8;
+            
+            var start = 0;
+            var length = str.Length;
+
+            while (start < length)
+            {
+                var end = start;
+                var byteCount = 0;
+
+                while (end < length)
                 {
-                    target.Add(builder.ToString());
-                    
-                    builder.Clear();
+                    var charSize = utf8.GetByteCount(new char[] { str[end] });
+
+                    if (byteCount + charSize > maxLength)
+                        break;
+
+                    byteCount += charSize;
+                    end++;
                 }
+
+                var chunk = str.Substring(start, end - start);
+                
+                target.Add(chunk);
+                
+                start = end;
             }
         }
 
