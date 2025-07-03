@@ -1,6 +1,6 @@
 ﻿using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
-
+using LabApi.Features.Wrappers;
 using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.API.CustomItems.Properties;
 
@@ -114,6 +114,48 @@ public abstract class CustomItemHandler
         inventoryItems = null;
         pickupItems = null;
     }
+
+    /// <summary>
+    /// Checks if this handler owns a specific custom item.
+    /// </summary>
+    /// <param name="itemSerial">The target item serial.</param>
+    /// <returns>true if the specified serial is owned by this custom item</returns>
+    public bool IsItem(ushort itemSerial)
+        => CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var behaviour)
+           && behaviour.Handler != null
+           && behaviour.Handler == this;
+
+    /// <summary>
+    /// Checks if this handler owns a specific custom item.
+    /// </summary>
+    /// <param name="item">The target item.</param>
+    /// <returns>true if the specified item is owned by this custom item</returns>
+    public bool IsItem(Item item)
+        => item?.Base != null && IsItem(item.Serial);
+
+    /// <summary>
+    /// Checks if this handler owns a specific custom item.
+    /// </summary>
+    /// <param name="item">The target item.</param>
+    /// <returns>true if the specified item is owned by this custom item</returns>
+    public bool IsItem(ItemBase item)
+        => item != null && IsItem(item.ItemSerial);
+
+    /// <summary>
+    /// Checks if this handler owns a specific custom item pickup.
+    /// </summary>
+    /// <param name="pickup">The target pickup.</param>
+    /// <returns>true if the specified pickup is owned by this custom item</returns>
+    public bool IsItem(Pickup pickup)
+        => pickup?.Base != null && IsItem(pickup.Serial);
+    
+    /// <summary>
+    /// Checks if this handler owns a specific custom item pickup.
+    /// </summary>
+    /// <param name="pickup">The target pickup.</param>
+    /// <returns>true if the specified pickup is owned by this custom item</returns>
+    public bool IsItem(ItemPickupBase pickup)
+        => pickup != null && IsItem(pickup.Info.Serial);
     
     /// <summary>
     /// Gets called once per frame (if the handler is registered).
