@@ -37,29 +37,29 @@ public class CustomItemBehaviour
     /// Destroys this behaviour instance.
     /// <param name="destroyItem">Whether or not to destroy the base item / pickup too.</param>
     /// </summary>
-    public void Destroy(bool destroyItem = false)
+    public virtual void Destroy(bool destroyItem = false)
     {
         if (Handler != null)
         {
             if (this is CustomItemInventoryBehaviour inventoryBehaviour)
             {
+                Handler.DestroyItem(inventoryBehaviour, true);
+                
                 if (destroyItem && inventoryBehaviour.Item != null)
                 {
                     inventoryBehaviour.Item.DestroyItem();
                     inventoryBehaviour.Item = null;
                 }
-                
-                Handler.DestroyItem(inventoryBehaviour);
             }
             else if (this is CustomItemPickupBehaviour pickupBehaviour)
             {
+                Handler.DestroyPickup(pickupBehaviour, true);
+                
                 if (destroyItem && pickupBehaviour.Pickup != null)
                 {
                     pickupBehaviour.Pickup.DestroySelf();
                     pickupBehaviour.Pickup = null;
                 }
-                
-                Handler.DestroyPickup(pickupBehaviour);
             }
         }
     }

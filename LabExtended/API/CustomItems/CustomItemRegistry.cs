@@ -197,16 +197,16 @@ public static class CustomItemRegistry
     
     private static void OnUpdate()
     {
-        foreach (var handler in Handlers)
+        foreach (var behaviour in Behaviours)
         {
             try
             {
-                handler.Value.Update();
+                behaviour.Value.OnUpdate();
             }
             catch (Exception ex)
             {
-                ApiLog.Error("Custom Item Registry", $"Could not update handler &3{handler.Key.Name}&r " +
-                                                     $"(&6{handler.Value.Id}&r - &6{handler.Value.Name}&r):\n{ex}");
+                ApiLog.Error("Custom Item Registry", $"Could not update behaviour for serial &3{behaviour.Key}&r " +
+                                                     $"(&6{behaviour.Value?.Handler?.Id ?? -1}&r - &6{behaviour.Value?.Handler?.Name ?? "(null)"}&r):\n{ex}");
             }
         }
     }
@@ -223,9 +223,9 @@ public static class CustomItemRegistry
             var behaviour = behaviours[index];
             
             if (behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
-                inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour);
+                inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour, false);
             else if (behaviour is CustomItemPickupBehaviour pickupBehaviour)
-                pickupBehaviour.Handler.DestroyPickup(pickupBehaviour);
+                pickupBehaviour.Handler.DestroyPickup(pickupBehaviour, false);
         }
 
         ListPool<CustomItemBehaviour>.Shared.Return(behaviours);

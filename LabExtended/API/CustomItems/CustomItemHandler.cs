@@ -27,19 +27,6 @@ public abstract class CustomItemHandler
 
     private Func<CustomItemInventoryBehaviour?>? InventoryFactory;
     private Func<CustomItemPickupBehaviour?>? PickupFactory;
-
-    internal Dictionary<ushort, CustomItemInventoryBehaviour>? inventoryItems;
-    internal Dictionary<ushort, CustomItemPickupBehaviour>? pickupItems;
-    
-    /// <summary>
-    /// Gets a dictionary of all active inventory items.
-    /// </summary>
-    public IReadOnlyDictionary<ushort, CustomItemInventoryBehaviour>? InventoryItems => inventoryItems;
-    
-    /// <summary>
-    /// Gets a dictionary of all active pickup items.
-    /// </summary>
-    public IReadOnlyDictionary<ushort, CustomItemPickupBehaviour>? PickupItems => pickupItems;
     
     /// <summary>
     /// Gets the custom item's ID.
@@ -81,9 +68,6 @@ public abstract class CustomItemHandler
     /// </summary>
     public virtual void OnRegistered()
     {
-        inventoryItems = DictionaryPool<ushort, CustomItemInventoryBehaviour>.Shared.Rent();
-        pickupItems = DictionaryPool<ushort, CustomItemPickupBehaviour>.Shared.Rent();
-
         InventoryPool = new();
         PickupPool = new();
 
@@ -96,12 +80,6 @@ public abstract class CustomItemHandler
     /// </summary>
     public virtual void OnUnregistered()
     {
-        if (inventoryItems != null)
-            DictionaryPool<ushort, CustomItemInventoryBehaviour>.Shared.Return(inventoryItems);
-
-        if (pickupItems != null)
-            DictionaryPool<ushort, CustomItemPickupBehaviour>.Shared.Return(pickupItems);
-        
         InventoryPool?.Dispose();
         InventoryPool = null;
         
@@ -110,9 +88,6 @@ public abstract class CustomItemHandler
         
         InventoryFactory = null;
         PickupFactory = null;
-
-        inventoryItems = null;
-        pickupItems = null;
     }
 
     /// <summary>
@@ -252,7 +227,7 @@ public abstract class CustomItemHandler
         
         item.OnRemoved(behaviour);
         
-        DestroyItem(item);
+        DestroyItem(item, false);
         
         item.Item?.DestroyItem();
         return behaviour;
@@ -275,7 +250,7 @@ public abstract class CustomItemHandler
         
         item.OnRemoved(behaviour);
         
-        DestroyItem(item);
+        DestroyItem(item, false);
         
         item.Item?.DestroyItem();
         return behaviour;
@@ -298,19 +273,16 @@ public abstract class CustomItemHandler
         
         item.OnRemoved(behaviour);
         
-        DestroyItem(item);
+        DestroyItem(item, false);
         
         item.Item?.DestroyItem();
         return behaviour;
     }
 
-    internal void DestroyItem(CustomItemInventoryBehaviour item)
+    internal void DestroyItem(CustomItemInventoryBehaviour item, bool removeKey)
     {
-        if (CustomItemRegistry.Behaviours.TryGetValue(item.Item.ItemSerial, out var behaviour)
-            && behaviour == item)
+        if (removeKey)
             CustomItemRegistry.Behaviours.Remove(item.Item.ItemSerial);
-        
-        inventoryItems.Remove(item.Item.ItemSerial);
 
         item.IsEnabled = false;
         item.OnDisabled();
@@ -320,13 +292,10 @@ public abstract class CustomItemHandler
         InventoryPool.Return(item);
     }
 
-    internal void DestroyPickup(CustomItemPickupBehaviour pickup)
+    internal void DestroyPickup(CustomItemPickupBehaviour pickup, bool removeKey)
     {
-        if (CustomItemRegistry.Behaviours.TryGetValue(pickup.Pickup.Info.Serial, out var behaviour)
-            && behaviour == pickup)
+        if (removeKey)
             CustomItemRegistry.Behaviours.Remove(pickup.Pickup.Info.Serial);
-        
-        pickupItems.Remove(pickup.Pickup.Info.Serial);
 
         pickup.IsEnabled = false;
         pickup.OnDisabled();
@@ -355,8 +324,6 @@ public abstract class CustomItemHandler
         pickupBehaviour.IsEnabled = true;
         
         pickupBehaviour.OnSpawned(item);
-        
-        pickupItems[pickup.Info.Serial] = pickupBehaviour;
 
         CustomItemRegistry.Behaviours[pickup.Info.Serial] = pickupBehaviour;
         return pickupBehaviour;
@@ -381,8 +348,6 @@ public abstract class CustomItemHandler
         inventoryBehaviour.IsEnabled = true;
         
         inventoryBehaviour.OnAdded(pickup);
-        
-        inventoryItems[item.ItemSerial] = inventoryBehaviour;
 
         CustomItemRegistry.Behaviours[item.ItemSerial] = inventoryBehaviour;
         return inventoryBehaviour;
@@ -396,26 +361,5 @@ public abstract class CustomItemHandler
     internal virtual void InternalInitializePickup(CustomItemPickupBehaviour pickup, CustomItemInventoryBehaviour? item)
     {
         
-    }
-
-    internal void Update()
-    {
-        OnUpdate();
-        
-        foreach (var inventoryItem in inventoryItems)
-        {
-            if (!inventoryItem.Value.IsEnabled)
-                continue;
-            
-            inventoryItem.Value.OnUpdate();
-        }
-
-        foreach (var pickupItem in pickupItems)
-        {
-            if (!pickupItem.Value.IsEnabled)
-                continue;
-            
-            pickupItem.Value.OnUpdate();
-        }
     }
 }

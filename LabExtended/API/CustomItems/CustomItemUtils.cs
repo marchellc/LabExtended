@@ -139,20 +139,12 @@ public static class CustomItemUtils
         if (CustomWeight.TryGetValue(type, out var customWeight))
             defaultWeight = customWeight;
 
-        var countWeight = 0f;
-        var anyCustom = false;
-        
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.InventoryProperties.Weight.HasValue
-                && handler.Value.inventoryItems.ContainsKey(itemSerial))
-            {
-                countWeight += handler.Value.InventoryProperties.Weight.Value;
-                anyCustom = true;
-            }
-        }
-        
-        return anyCustom ? countWeight : defaultWeight;
+        if (!CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var behaviour) 
+            || behaviour is not CustomItemInventoryBehaviour inventoryBehaviour
+            || !inventoryBehaviour.Handler.InventoryProperties.Weight.HasValue)
+            return defaultWeight;
+
+        return inventoryBehaviour.Handler.InventoryProperties.Weight.Value;
     }
     
     /// <summary>
@@ -226,7 +218,7 @@ public static class CustomItemUtils
             inventoryBehaviour.OnDropped(args, pickupBehaviour);
             inventoryBehaviour.OnRemoved(pickupBehaviour);
 
-            inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour);
+            inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour, false);
             return pickupBehaviour;
         }
 
@@ -241,7 +233,7 @@ public static class CustomItemUtils
             var inventoryBehaviour = pickupBehaviour.Handler.ToItem(player, item, pickupBehaviour);
 
             pickupBehaviour.OnPickedUp(args, inventoryBehaviour);
-            pickupBehaviour.Handler.DestroyPickup(pickupBehaviour);
+            pickupBehaviour.Handler.DestroyPickup(pickupBehaviour, false);
         }
     }
 }
