@@ -36,45 +36,35 @@ public static class PickUpArmorPatch
 
         PlayerEvents.OnPickingUpArmor(pickingUpArgs);
 
-        var customItems = ListPool<CustomItemPickupBehaviour>.Shared.Rent();
+        var pickupBehaviour =
+            CustomItemUtils.GetBehaviour<CustomItemPickupBehaviour>(__instance.TargetPickup.Info.Serial);
+
+        if (pickupBehaviour != null)
+        {
+            var pickingUpItemArgs = new PlayerPickingUpItemEventArgs(player.ReferenceHub, __instance.TargetPickup);
+            
+            pickupBehaviour.OnPickingUp(pickingUpItemArgs);
+
+            if (!pickingUpItemArgs.IsAllowed)
+                return false;
+        }
         
         if (!pickingUpArgs.IsAllowed)
             return false;
-        
-        CustomItemUtils.GetPickupBehavioursNonAlloc(__instance.TargetPickup.Info.Serial, customItems);
 
-        if (customItems.Count > 0)
-        {
-            var pickingUpItemArgs = new PlayerPickingUpItemEventArgs(__instance.Hub, __instance.TargetPickup);
-
-            customItems.ForEach(ci => ci.OnPickingUp(pickingUpItemArgs));
-
-            if (!pickingUpItemArgs.IsAllowed)
-            {
-                ListPool<CustomItemPickupBehaviour>.Shared.Return(customItems);
-                return false;
-            }
-        }
-
-        var targetItem = CustomItemUtils.SelectPickupBehaviour(customItems);
+        var itemType = pickupBehaviour.GetCustomValue(pb => pb.Handler.InventoryProperties.Type,
+            type => type != ItemType.None, __instance.TargetItemType);
+        var item = __instance.Hub.inventory.ServerAddItem(itemType,
+            ItemAddReason.PickedUp, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
 
         if (__instance._currentArmor != null)
             __instance.Hub.inventory.ServerDropItem(__instance._currentArmor.ItemSerial);
 
-        ItemBase? item = null;
-
-        if (targetItem != null)
-            item = __instance.Hub.inventory.ServerAddItem(targetItem.Handler.InventoryProperties.Type,
-                ItemAddReason.PickedUp, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
-        else
-            item = __instance.Hub.inventory.ServerAddItem(__instance.TargetPickup.Info.ItemId,
-                ItemAddReason.PickedUp, __instance.TargetPickup.Info.Serial, __instance.TargetPickup);
-
         BodyArmorUtils.SetPlayerDirty(__instance.Hub);
 
         var pickedUpItemArgs = new PlayerPickedUpItemEventArgs(__instance.Hub, item);
-
-        CustomItemUtils.ProcessPickedUp(customItems, item, player, pickedUpItemArgs);
+        
+        pickupBehaviour.ProcessPickedUp(item, player, pickedUpItemArgs);
         
         if (__instance.TargetPickup.TryGetTracker(out var tracker))
             tracker.SetItem(item, player);
@@ -85,8 +75,6 @@ public static class PickUpArmorPatch
             PlayerEvents.OnPickedUpItem(pickedUpItemArgs);
                 
         __instance.TargetPickup.DestroySelf();
-        
-        ListPool<CustomItemPickupBehaviour>.Shared.Return(customItems);
         return false;
     }
 }

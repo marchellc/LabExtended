@@ -16,8 +16,6 @@ using LabExtended.Extensions;
 using LabExtended.Events;
 using LabExtended.Events.Player;
 
-using NorthwoodLib.Pools;
-
 namespace LabExtended.Patches.Functions.Items
 {
     public static class SwitchItemPatch
@@ -58,14 +56,17 @@ namespace LabExtended.Patches.Functions.Items
                 ItemTracker? curTracker = curItem?.GetTracker();
                 ItemTracker? newTracker = newItem?.GetTracker();
 
-                var currentBehaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
-                var newBehaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
+                CustomItemInventoryBehaviour? curBehaviour =
+                    (curItem != null &&
+                     CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(curItem.ItemSerial, out var b))
+                        ? b
+                        : null;
 
-                if (curItem != null)
-                    CustomItemUtils.GetInventoryBehavioursNonAlloc(curItem.ItemSerial, currentBehaviours);
-
-                if (newItem != null)
-                    CustomItemUtils.GetInventoryBehavioursNonAlloc(newItem.ItemSerial, newBehaviours);
+                CustomItemInventoryBehaviour? newBehaviour =
+                    (newItem != null &&
+                     CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(newItem.ItemSerial, out var n))
+                        ? n
+                        : null;
 
                 if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null &&
                     __instance.CurInstance == player.Inventory.Snake.Keycard)
@@ -81,26 +82,15 @@ namespace LabExtended.Patches.Functions.Items
                     __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
                     if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
-                    {
-                        ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                        ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
-
                         return false;
-                    }
 
                     if (itemSerial == 0)
                     {
-                        for (var i = 0; i < currentBehaviours.Count; i++)
-                            currentBehaviours[i].OnUnselecting(switchingArgs);
+                        curBehaviour?.OnUnselecting(switchingArgs);
 
                         if (!switchingArgs.IsAllowed)
-                        {
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
-
                             return false;
-                        }
-
+                        
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
 
@@ -111,38 +101,24 @@ namespace LabExtended.Patches.Functions.Items
 
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
 
-                        for (var i = 0; i < currentBehaviours.Count; i++)
+                        if (curBehaviour != null)
                         {
-                            var behaviour = currentBehaviours[i];
-
-                            behaviour.IsSelected = false;
-                            behaviour.OnUnselected(selectedArgs);
+                            curBehaviour.IsSelected = false;
+                            curBehaviour.OnUnselected(selectedArgs);
                         }
                     }
                     else
                     {
-                        for (var i = 0; i < currentBehaviours.Count; i++)
-                            currentBehaviours[i].OnUnselecting(switchingArgs);
+                        curBehaviour?.OnUnselecting(switchingArgs);
 
                         if (!switchingArgs.IsAllowed)
-                        {
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
-
                             return false;
-                        }
-
-                        for (var i = 0; i < newBehaviours.Count; i++)
-                            newBehaviours[i].OnSelecting(switchingArgs);
+                        
+                        newBehaviour?.OnSelecting(switchingArgs);
 
                         if (!switchingArgs.IsAllowed)
-                        {
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                            ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
-
                             return false;
-                        }
-
+                        
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
 
@@ -154,35 +130,25 @@ namespace LabExtended.Patches.Functions.Items
 
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
 
-                        for (var i = 0; i < currentBehaviours.Count; i++)
+                        if (curBehaviour != null)
                         {
-                            var behaviour = currentBehaviours[i];
-
-                            behaviour.IsSelected = false;
-                            behaviour.OnUnselected(selectedArgs);
+                            curBehaviour.IsSelected = false;
+                            curBehaviour.OnUnselected(selectedArgs);
                         }
 
-                        for (var i = 0; i < newBehaviours.Count; i++)
+                        if (newBehaviour != null)
                         {
-                            var behaviour = newBehaviours[i];
-
-                            behaviour.IsSelected = true;
-                            behaviour.OnSelected(selectedArgs);
+                            newBehaviour.IsSelected = true;
+                            newBehaviour.OnSelected(selectedArgs);
                         }
                     }
                 }
                 else if (!flag)
                 {
-                    for (var i = 0; i < currentBehaviours.Count; i++)
-                        currentBehaviours[i].OnUnselecting(switchingArgs);
+                    curBehaviour?.OnUnselecting(switchingArgs);
 
                     if (!switchingArgs.IsAllowed)
-                    {
-                        ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                        ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
-
                         return false;
-                    }
                     
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
@@ -193,18 +159,13 @@ namespace LabExtended.Patches.Functions.Items
                         newItem?.ItemId ?? ItemIdentifier.None);
 
                     ExPlayerEvents.OnSelectedItem(selectedArgs);
-                    
-                    for (var i = 0; i < currentBehaviours.Count; i++)
-                    {
-                        var behaviour = currentBehaviours[i];
 
-                        behaviour.IsSelected = false;
-                        behaviour.OnUnselected(selectedArgs);
+                    if (curBehaviour != null)
+                    {
+                        curBehaviour.IsSelected = false;
+                        curBehaviour.OnUnselected(selectedArgs);
                     }
                 }
-
-                ListPool<CustomItemInventoryBehaviour>.Shared.Return(currentBehaviours);
-                ListPool<CustomItemInventoryBehaviour>.Shared.Return(newBehaviours);
                 
                 return false;
             }

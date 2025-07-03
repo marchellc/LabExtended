@@ -1,5 +1,6 @@
 ﻿using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.Scp914Events;
+
 using LabApi.Events.Handlers;
 
 using LabExtended.API.CustomItems.Behaviours;
@@ -26,6 +27,11 @@ public static class CustomItemRegistry
     /// Gets the list of registered Custom Items.
     /// </summary>
     public static Dictionary<Type, CustomItemHandler> Handlers { get; } = new();
+
+    /// <summary>
+    /// Gets the list of active Custom Item behaviours.
+    /// </summary>
+    public static Dictionary<ushort, CustomItemBehaviour> Behaviours { get; } = new();
 
     /// <summary>
     /// Attempts to get a handler by it's ID.
@@ -209,100 +215,96 @@ public static class CustomItemRegistry
     {
         var behaviours = ListPool<CustomItemBehaviour>.Shared.Rent();
         
-        foreach (var handler in Handlers)
-        {
-            behaviours.Clear();
+        foreach (var pair in Behaviours)
+            behaviours.Add(pair.Value);
 
-            foreach (var invBehaviour in handler.Value.inventoryItems)
-                behaviours.Add(invBehaviour.Value);
-            
-            foreach (var pickupBehaviour in handler.Value.pickupItems)
-                behaviours.Add(pickupBehaviour.Value);
-        }
-        
-        behaviours.ForEach(x =>
+        for (var index = 0; index < behaviours.Count; index++)
         {
-            if (x is CustomItemInventoryBehaviour inventoryBehaviour)
-            {
-                x.Handler.DestroyItem(inventoryBehaviour);
-                return;
-            }
+            var behaviour = behaviours[index];
             
-            x.Handler.DestroyPickup((CustomItemPickupBehaviour)x);
-        });
-        
+            if (behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour);
+            else if (behaviour is CustomItemPickupBehaviour pickupBehaviour)
+                pickupBehaviour.Handler.DestroyPickup(pickupBehaviour);
+        }
+
         ListPool<CustomItemBehaviour>.Shared.Return(behaviours);
+        
+        Behaviours.Clear();
     }
     
     private static void OnLeaving(ExPlayer player)
     {
-        var behaviours = ListPool<CustomItemBehaviour>.Shared.Rent();
+        var inventoryBehaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
+        var pickupBehaviours = ListPool<CustomItemPickupBehaviour>.Shared.Rent();
         
-        foreach (var handler in Handlers)
+        foreach (var behaviour in Behaviours)
         {
-            behaviours.Clear();
-
-            foreach (var invBehaviour in handler.Value.inventoryItems)
+            if (behaviour.Value is CustomItemInventoryBehaviour inventoryBehaviour)
             {
-                if (invBehaviour.Value.Player is null || invBehaviour.Value.Player != player)
-                    continue;
-                
-                behaviours.Add(invBehaviour.Value);
+                if (inventoryBehaviour.Player != null && inventoryBehaviour.Player == player)
+                {
+                    inventoryBehaviours.Add(inventoryBehaviour);
+                }
             }
-
-            foreach (var pickupBehaviour in handler.Value.pickupItems)
+            else if (behaviour.Value is CustomItemPickupBehaviour pickupBehaviour)
             {
-                if (pickupBehaviour.Value.Player is null || pickupBehaviour.Value.Player != player)
-                    continue;
-                
-                behaviours.Add(pickupBehaviour.Value);
+                if (pickupBehaviour.Player != null && pickupBehaviour.Player == player)
+                {
+                    pickupBehaviours.Add(pickupBehaviour);
+                }
             }
         }
-        
-        behaviours.ForEach(x =>
+
+        for (var i = 0; i < inventoryBehaviours.Count; i++)
         {
-            if (x is CustomItemInventoryBehaviour inventoryBehaviour)
-            {
-                if (inventoryBehaviour.Handler.InventoryProperties.DropOnOwnerLeave)
-                {
-                    inventoryBehaviour.Drop();
-                    return;
-                }
-                
+            var inventoryBehaviour = inventoryBehaviours[i];
+
+            if (inventoryBehaviour.Handler.InventoryProperties.DropOnOwnerLeave)
+                inventoryBehaviour.Drop();
+            else
                 inventoryBehaviour.Destroy(true);
-            }
-            else if (x is CustomItemPickupBehaviour pickupBehaviour)
-            {
-                if (pickupBehaviour.Handler.PickupProperties.DestroyOnOwnerLeave)
-                {
-                    pickupBehaviour.Destroy(true);
-                }
-            }
-        });
+        }
+
+        for (var i = 0; i < pickupBehaviours.Count; i++)
+        {
+            var pickupBehaviour = pickupBehaviours[i];
+            
+            if (pickupBehaviour.Handler.PickupProperties.DestroyOnOwnerLeave)
+                pickupBehaviour.Destroy(true);
+        }
         
-        ListPool<CustomItemBehaviour>.Shared.Return(behaviours);
+        ListPool<CustomItemPickupBehaviour>.Shared.Return(pickupBehaviours);
+        ListPool<CustomItemInventoryBehaviour>.Shared.Return(inventoryBehaviours);
     }
 
     private static void OnTogglingFlashlight(PlayerTogglingFlashlightEventArgs args)
-        => CustomItemUtils.ForEachInventoryBehaviour(args.LightItem.Serial, item => item.OnTogglingLight(args));
+        => CustomItemUtils.ProcessEvent<CustomItemInventoryBehaviour>(args.LightItem.Serial, item => item.OnTogglingLight(args));
 
     private static void OnToggledFlashlight(PlayerToggledFlashlightEventArgs args)
-        => CustomItemUtils.ForEachInventoryBehaviour(args.LightItem.Serial, item => item.OnToggledLight(args));
+        => CustomItemUtils.ProcessEvent<CustomItemInventoryBehaviour>(args.LightItem.Serial, item => item.OnToggledLight(args));
 
     private static void OnFlippingCoin(PlayerFlippingCoinEventArgs args)
-        => CustomItemUtils.ForEachInventoryBehaviour(args.CoinItem.Serial, item => item.OnFlippingCoin(args));
+        => CustomItemUtils.ProcessEvent<CustomItemInventoryBehaviour>(args.CoinItem.Serial, item => item.OnFlippingCoin(args));
 
     private static void OnFlippedCoin(PlayerFlippedCoinEventArgs args)
-        => CustomItemUtils.ForEachInventoryBehaviour(args.CoinItem.Serial, item => item.OnFlippedCoin(args));
+        => CustomItemUtils.ProcessEvent<CustomItemInventoryBehaviour>(args.CoinItem.Serial, item => item.OnFlippedCoin(args));
 
     private static void OnCollided(PickupCollidedEventArgs args)
-        => CustomItemUtils.ForEachPickupBehaviour(args.Pickup.Info.Serial, pickup => pickup.OnCollided(args));
+        => CustomItemUtils.ProcessEvent<CustomItemPickupBehaviour>(args.Pickup.Info.Serial, pickup => pickup.OnCollided(args));
 
     private static void OnDisarming(PlayerCuffingEventArgs args)
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDisarming(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnDisarming(args);
+                }    
+            }
         }
     }
 
@@ -310,7 +312,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDisarmed(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnDisarmed(args);
+                }    
+            }
         }
     }
 
@@ -318,7 +327,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnEscaping(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnEscaping(args);
+                }    
+            }
         }
     }
 
@@ -326,7 +342,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnEscaped(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnEscaped(args);
+                }    
+            }
         }
     }
 
@@ -334,7 +357,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnHurting(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnHurting(args);
+                }    
+            }
         }
     }
 
@@ -342,7 +372,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnHurt(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnHurt(args);
+                }    
+            }
         }
     }
 
@@ -350,7 +387,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDying(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnDying(args);
+                }    
+            }
         }
     }
 
@@ -358,7 +402,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnDied(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnDied(args);
+                }    
+            }
         }
     }
 
@@ -366,7 +417,14 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnChangingRole(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnChangingRole(args);
+                }    
+            }
         }
     }
 
@@ -374,62 +432,50 @@ public static class CustomItemRegistry
     {
         if (args.Player is ExPlayer player && player.Inventory.ItemCount > 0)
         {
-            player.Inventory.Items.ForEachInventoryBehaviour(item => item.OnChangedRole(args));
+            foreach (var item in player.Inventory.Items)
+            {
+                if (Behaviours.TryGetValue(item.ItemSerial, out var behaviour)
+                    && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
+                {
+                    inventoryBehaviour.OnChangedRole(args);
+                }    
+            }
         }
     }
     
     private static void OnUpgradingItem(Scp914ProcessingInventoryItemEventArgs args)
-        => CustomItemUtils.ForEachInventoryBehaviour(args.Item.Serial, item => item.OnUpgrading(args));
+        => CustomItemUtils.ProcessEvent<CustomItemInventoryBehaviour>(args.Item.Serial, item => item.OnUpgrading(args));
 
     private static void OnUpgradingPickup(Scp914ProcessingPickupEventArgs args)
-        => CustomItemUtils.ForEachPickupBehaviour(args.Pickup.Serial, item => item.OnUpgrading(args));
+        => CustomItemUtils.ProcessEvent<CustomItemPickupBehaviour>(args.Pickup.Serial, item => item.OnUpgrading(args));
 
     private static void OnUpgradedItem(Scp914ProcessedInventoryItemEventArgs args)
     {
-        if (args.Item?.Base != null)
+        if (args.Item?.Base != null
+            && Behaviours.TryGetValue(args.Item.Serial, out var behaviour)
+            && behaviour is CustomItemInventoryBehaviour inventoryBehaviour)
         {
-            var behaviours = ListPool<CustomItemInventoryBehaviour>.Shared.Rent();
+            inventoryBehaviour.Item = args.Item.Base;
+            inventoryBehaviour.IsSelected = args.Item.IsEquipped;
 
-            CustomItemUtils.GetInventoryBehavioursNonAlloc(args.Item.Serial, behaviours);
+            if (args.Item.CurrentOwner is ExPlayer owner)
+                inventoryBehaviour.Player = owner;
 
-            for (var i = 0; i < behaviours.Count; i++)
-            {
-                var behaviour = behaviours[i];
-
-                behaviour.Item = args.Item.Base;
-                behaviour.IsSelected = args.Item.IsEquipped;
-
-                if (args.Item.CurrentOwner is ExPlayer owner)
-                    behaviour.Player = owner;
-
-                behaviour.OnUpgraded(args);
-            }
-
-            ListPool<CustomItemInventoryBehaviour>.Shared.Return(behaviours);
+            inventoryBehaviour.OnUpgraded(args);
         }
     }
 
     private static void OnUpgradedPickup(Scp914ProcessedPickupEventArgs args)
     {
-        if (args.Pickup?.Base != null)
+        if (args.Pickup?.Base != null
+            && CustomItemUtils.TryGetBehaviour<CustomItemPickupBehaviour>(args.Pickup.Serial, out var behaviour))
         {
-            var behaviours = ListPool<CustomItemPickupBehaviour>.Shared.Rent();
-            
-            CustomItemUtils.GetPickupBehavioursNonAlloc(args.Pickup.Serial, behaviours);
+            behaviour.Pickup = args.Pickup.Base;
 
-            for (var i = 0; i < behaviours.Count; i++)
-            {
-                var behaviour = behaviours[i];
-                
-                behaviour.Pickup = args.Pickup.Base;
-                
-                if (args.Pickup.LastOwner is ExPlayer player)
-                    behaviour.Player = player;
-                
-                behaviour.OnUpgraded(args);
-            }
-            
-            ListPool<CustomItemPickupBehaviour>.Shared.Return(behaviours);
+            if (args.Pickup.LastOwner is ExPlayer player)
+                behaviour.Player = player;
+
+            behaviour.OnUpgraded(args);
         }
     }
 

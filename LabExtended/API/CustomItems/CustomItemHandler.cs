@@ -264,6 +264,10 @@ public abstract class CustomItemHandler
 
     internal void DestroyItem(CustomItemInventoryBehaviour item)
     {
+        if (CustomItemRegistry.Behaviours.TryGetValue(item.Item.ItemSerial, out var behaviour)
+            && behaviour == item)
+            CustomItemRegistry.Behaviours.Remove(item.Item.ItemSerial);
+        
         inventoryItems.Remove(item.Item.ItemSerial);
 
         item.IsEnabled = false;
@@ -276,6 +280,10 @@ public abstract class CustomItemHandler
 
     internal void DestroyPickup(CustomItemPickupBehaviour pickup)
     {
+        if (CustomItemRegistry.Behaviours.TryGetValue(pickup.Pickup.Info.Serial, out var behaviour)
+            && behaviour == pickup)
+            CustomItemRegistry.Behaviours.Remove(pickup.Pickup.Info.Serial);
+        
         pickupItems.Remove(pickup.Pickup.Info.Serial);
 
         pickup.IsEnabled = false;
@@ -307,6 +315,8 @@ public abstract class CustomItemHandler
         pickupBehaviour.OnSpawned(item);
         
         pickupItems[pickup.Info.Serial] = pickupBehaviour;
+
+        CustomItemRegistry.Behaviours[pickup.Info.Serial] = pickupBehaviour;
         return pickupBehaviour;
     }
 
@@ -331,6 +341,8 @@ public abstract class CustomItemHandler
         inventoryBehaviour.OnAdded(pickup);
         
         inventoryItems[item.ItemSerial] = inventoryBehaviour;
+
+        CustomItemRegistry.Behaviours[item.ItemSerial] = inventoryBehaviour;
         return inventoryBehaviour;
     }
 

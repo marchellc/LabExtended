@@ -17,17 +17,7 @@ public static class MultiBarrelHitregFirePatch
     [HarmonyPatch(typeof(MultiBarrelHitscan), nameof(MultiBarrelHitscan.Fire))]
     private static bool Prefix(MultiBarrelHitscan __instance)
     {
-        var firearms = ListPool<CustomFirearmInventoryBehaviour>.Shared.Rent();
-        
-        CustomItemUtils.GetInventoryBehavioursNonAlloc(__instance.Firearm.ItemSerial, firearms);
-
-        if (firearms.Count == 0)
-        {
-            ListPool<CustomFirearmInventoryBehaviour>.Shared.Return(firearms);
-            return true;
-        }
-        
-        firearms.ForEach(firearm => firearm.InternalMultiBarrelFire(__instance));
-        return false;
+        return !CustomItemUtils.ProcessEvent<CustomFirearmInventoryBehaviour>(__instance.Firearm.ItemSerial,
+            firearm => firearm.InternalMultiBarrelFire(__instance));
     }
 }

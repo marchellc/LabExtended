@@ -22,8 +22,6 @@ namespace LabExtended.API.Images;
 /// </summary>
 public static class ImageSpawner
 {
-    private static Dictionary<string, float> roundStartFix = new();
-    
     /// <summary>
     /// Gets called once an image is spawned.
     /// </summary>
@@ -100,21 +98,6 @@ public static class ImageSpawner
 
                 if (spawnableImage.Chances.All(p => p.Key.StartsWith("example")))
                     continue;
-
-                roundStartFix.Clear();
-
-                foreach (var pair in spawnableImage.Chances)
-                {
-                    if (ImageLoader.LoadedImages.ContainsKey(pair.Key))
-                    {
-                        roundStartFix.Add(pair.Key, pair.Value);
-                    }
-                }
-
-                spawnableImage.Chances.Clear();
-
-                foreach (var pair in roundStartFix)
-                    spawnableImage.Chances.Add(pair.Key, pair.Value);
                 
                 var imageToSpawn = spawnableImage.Chances.GetRandomWeighted(p => p.Value);
 

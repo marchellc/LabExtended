@@ -115,7 +115,7 @@ public class CustomItemsCommand : CommandBase, IServerSideCommand
     {
         if (InventoryExtensions.ServerTryGetItemWithSerial(itemSerial, out var item))
         {
-            CustomItemUtils.ForEachInventoryBehaviour(item.ItemSerial, behaviour => behaviour.Destroy(false));
+            CustomItemUtils.ProcessEvent<CustomItemBehaviour>(item.ItemSerial, behaviour => behaviour.Destroy(false));
             
             item.DestroyItem();
 
@@ -123,7 +123,7 @@ public class CustomItemsCommand : CommandBase, IServerSideCommand
         }
         else if (ExMap.Pickups.TryGetFirst(x => x.Info.Serial == itemSerial, out var pickup))
         {
-            CustomItemUtils.ForEachPickupBehaviour(pickup.Info.Serial, behaviour => behaviour.Destroy(false));
+            CustomItemUtils.ProcessEvent<CustomItemBehaviour>(pickup.Info.Serial, behaviour => behaviour.Destroy(false));
             
             pickup.DestroySelf();
 
@@ -158,18 +158,16 @@ public class CustomItemsCommand : CommandBase, IServerSideCommand
         {
             if (item == null)
                 continue;
-            
-            CustomItemUtils.ForEachInventoryBehaviour(item.ItemSerial, behaviour =>
+
+            if (CustomItemUtils.TryGetBehaviour<CustomItemBehaviour>(item.ItemSerial, out var behaviour)
+                && behaviour.Handler != null)
             {
-                if (behaviour.Handler is null)
-                    return;
-                
                 if (!items.TryGetValue(behaviour.Handler, out var list))
                     items.Add(behaviour.Handler, list = ListPool<CustomItemBehaviour>.Shared.Rent());
                 
                 if (!list.Contains(behaviour))
                     list.Add(behaviour);
-            });
+            }
         }
 
         foreach (var pickup in ExMap.Pickups)
@@ -177,17 +175,15 @@ public class CustomItemsCommand : CommandBase, IServerSideCommand
             if (pickup == null)
                 continue;
             
-            CustomItemUtils.ForEachPickupBehaviour(pickup.Info.Serial, behaviour =>
+            if (CustomItemUtils.TryGetBehaviour<CustomItemBehaviour>(pickup.Info.Serial, out var behaviour)
+                && behaviour.Handler != null)
             {
-                if (behaviour.Handler is null)
-                    return;
-                
                 if (!items.TryGetValue(behaviour.Handler, out var list))
                     items.Add(behaviour.Handler, list = ListPool<CustomItemBehaviour>.Shared.Rent());
                 
                 if (!list.Contains(behaviour))
                     list.Add(behaviour);
-            });
+            }
         }
         
         Ok(x =>

@@ -2,7 +2,9 @@
 using InventorySystem.Items.Pickups;
 
 using LabApi.Events.Arguments.PlayerEvents;
+
 using LabExtended.API.CustomItems.Behaviours;
+using LabExtended.Extensions;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -17,853 +19,112 @@ public static class CustomItemUtils
     /// Gets a dictionary of custom item weights per item type.
     /// </summary>
     public static Dictionary<ItemType, float> CustomWeight { get; } = new();
-    
+
     /// <summary>
-    /// Gets all pickup behaviours that target a specific item serial.
+    /// Gets the behaviour of a specific item serial (or null).
     /// </summary>
     /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetPickupBehavioursNonAlloc<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, ICollection<TBehaviour> target)
-        where TBehaviour : CustomItemPickupBehaviour
+    /// <typeparam name="TBehaviour">The behaviour type.</typeparam>
+    /// <returns>The item behaviour (or null).</returns>
+    public static TBehaviour? GetBehaviour<TBehaviour>(ushort itemSerial) where TBehaviour : CustomItemBehaviour
     {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
+        if (TryGetBehaviour<TBehaviour>(itemSerial, out var behaviour))
+            return behaviour;
 
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && pickupBehaviour is TBehaviour castBehaviour
-                && predicate(castBehaviour))
-            {
-                target.Add(castBehaviour);
-            }
-        }
+        return null;
     }
     
     /// <summary>
-    /// Gets all pickup behaviours that target a specific item serial.
+    /// Attempts to find a behaviour of a specific type targeting an item serial.
     /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetPickupBehavioursNonAlloc<TBehaviour>(ushort itemSerial, ICollection<TBehaviour> target)
-        where TBehaviour : CustomItemPickupBehaviour
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && pickupBehaviour is TBehaviour castBehaviour)
-            {
-                target.Add(castBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all pickup behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetPickupBehavioursNonAlloc(ushort itemSerial, ICollection<CustomItemPickupBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                target.Add(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all pickup behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetPickupBehavioursNonAlloc(ushort itemSerial, Predicate<CustomItemPickupBehaviour> predicate, 
-        ICollection<CustomItemPickupBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && predicate(pickupBehaviour))
-            {
-                target.Add(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all inventory behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetInventoryBehavioursNonAlloc<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, ICollection<TBehaviour> target)
-        where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && inventoryBehaviour is TBehaviour castBehaviour
-                && predicate(castBehaviour))
-            {
-                target.Add(castBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all inventory behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetInventoryBehavioursNonAlloc<TBehaviour>(ushort itemSerial, ICollection<TBehaviour> target)
-        where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && inventoryBehaviour is TBehaviour castBehaviour)
-            {
-                target.Add(castBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all inventory behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetInventoryBehavioursNonAlloc(ushort itemSerial, ICollection<CustomItemInventoryBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                target.Add(inventoryBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all inventory behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetInventoryBehavioursNonAlloc(ushort itemSerial, Predicate<CustomItemInventoryBehaviour> predicate, 
-        ICollection<CustomItemInventoryBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && predicate(inventoryBehaviour))
-            {
-                target.Add(inventoryBehaviour);
-            }
-        }
-    }
-    
-        /// <summary>
-    /// Gets all behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetBehavioursNonAlloc<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, ICollection<TBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-        
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && inventoryBehaviour is TBehaviour castInventoryBehaviour
-                && predicate(castInventoryBehaviour))
-            {
-                target.Add(castInventoryBehaviour);
-            }
-
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && pickupBehaviour is TBehaviour castPickupBehaviour
-                && predicate(castPickupBehaviour))
-            {
-                target.Add(castPickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetBehavioursNonAlloc<TBehaviour>(ushort itemSerial, ICollection<TBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && inventoryBehaviour is TBehaviour castInventoryBehaviour)
-            {
-                target.Add(castInventoryBehaviour);
-            }
-
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && pickupBehaviour is TBehaviour castPickupBehaviour)
-            {
-                target.Add(castPickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetBehavioursNonAlloc(ushort itemSerial, Predicate<CustomItemBehaviour> predicate, 
-        ICollection<CustomItemBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour)
-                && predicate(inventoryBehaviour))
-            {
-                target.Add(inventoryBehaviour);
-            }
-
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour)
-                && predicate(pickupBehaviour))
-            {
-                target.Add(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Gets all behaviours that target a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetBehavioursNonAlloc(ushort itemSerial, ICollection<CustomItemBehaviour> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                target.Add(inventoryBehaviour);
-            }
-
-            if (handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                target.Add(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Fills a collection with all handlers that have behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="target">The target collection.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void GetHandlersNonAlloc(ushort itemSerial, ICollection<CustomItemHandler> target)
-    {
-        if (target is null)
-            throw new ArgumentNullException(nameof(target));
-
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.ContainsKey(itemSerial)
-                || handler.Value.pickupItems.ContainsKey(itemSerial))
-                target.Add(handler.Value);
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour(ushort itemSerial, Action<CustomItemInventoryBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                action(inventoryBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour<TBehaviour>(ushort itemSerial, Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                if (inventoryBehaviour is not TBehaviour behaviour)
-                    continue;
-                
-                action(behaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour of each item in a list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="predicate">The filtering predicate.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour<TBehaviour>(this IEnumerable<ItemBase> items, Predicate<TBehaviour> predicate, Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
-                {
-                    if (inventoryBehaviour is not TBehaviour behaviour)
-                        continue;
-                    
-                    if (!predicate(behaviour))
-                        continue;
-
-                    action(behaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour of each item in a list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour<TBehaviour>(this IEnumerable<ItemBase> items, Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
-                {
-                    if (inventoryBehaviour is not TBehaviour behaviour)
-                        continue;
-
-                    action(behaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour of each item in a list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="predicate">The search predicate.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour(this IEnumerable<ItemBase> items, Predicate<CustomItemInventoryBehaviour> predicate, Action<CustomItemInventoryBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour)
-                    && predicate(inventoryBehaviour))
-                {
-                    action(inventoryBehaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour of each item in a list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour(this IEnumerable<ItemBase> items, Action<CustomItemInventoryBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.inventoryItems.TryGetValue(item.ItemSerial, out var inventoryBehaviour))
-                {
-                    action(inventoryBehaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour(ushort itemSerial, Predicate<CustomItemInventoryBehaviour> predicate, 
-        Action<CustomItemInventoryBehaviour> action)
-    {
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-        
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                if (!predicate(inventoryBehaviour))
-                    continue;
-                
-                action(inventoryBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each inventory behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachInventoryBehaviour<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, 
-        Action<TBehaviour> action) where TBehaviour : CustomItemInventoryBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                if (inventoryBehaviour is not TBehaviour behaviour)
-                    continue;
-                
-                if (!predicate(behaviour))
-                    continue;
-                
-                action(behaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour(ushort itemSerial, Action<CustomItemPickupBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                action(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific in an item list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour(this IEnumerable<ItemPickupBase> items, Action<CustomItemPickupBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.pickupItems.TryGetValue(item.Info.Serial, out var pickupBehaviour))
-                {
-                    action(pickupBehaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific in an item list.
-    /// </summary>
-    /// <param name="items">The item list.</param>
-    /// <param name="predicate">The search predicate.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour(this IEnumerable<ItemPickupBase> items, Predicate<CustomItemPickupBehaviour> predicate, Action<CustomItemPickupBehaviour> action)
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var item in items)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.pickupItems.TryGetValue(item.Info.Serial, out var pickupBehaviour)
-                    && predicate(pickupBehaviour))
-                {
-                    action(pickupBehaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour in a list of pickups.
-    /// </summary>
-    /// <param name="pickups">The pickup list.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour<TBehaviour>(this IEnumerable<ItemPickupBase> pickups, Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var pickup in pickups)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.pickupItems.TryGetValue(pickup.Info.Serial, out var pickupBehaviour))
-                {
-                    if (pickupBehaviour is not TBehaviour behaviour)
-                        continue;
-
-                    action(behaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour in a list of pickups.
-    /// </summary>
-    /// <param name="pickups">The pickup list.</param>
-    /// <param name="predicate">The search predicate.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour<TBehaviour>(this IEnumerable<ItemPickupBase> pickups, Predicate<TBehaviour> predicate, Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        foreach (var pickup in pickups)
-        {
-            foreach (var pair in CustomItemRegistry.Handlers)
-            {
-                if (pair.Value.pickupItems.TryGetValue(pickup.Info.Serial, out var pickupBehaviour))
-                {
-                    if (pickupBehaviour is not TBehaviour behaviour)
-                        continue;
-                    
-                    if (!predicate(behaviour))
-                        continue;
-
-                    action(behaviour);
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour<TBehaviour>(ushort itemSerial, Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                if (pickupBehaviour is not TBehaviour behaviour)
-                    continue;
-                
-                action(behaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour(ushort itemSerial, Predicate<CustomItemPickupBehaviour> predicate, 
-        Action<CustomItemPickupBehaviour> action)
-    {
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-        
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                if (!predicate(pickupBehaviour))
-                    continue;
-                
-                action(pickupBehaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Executes a delegate for each pickup behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial.</param>
-    /// <param name="predicate">The predicate used to filter behaviours.</param>
-    /// <param name="action">The delegate to invoke.</param>
-    public static void ForEachPickupBehaviour<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, 
-        Action<TBehaviour> action) where TBehaviour : CustomItemPickupBehaviour
-    {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
-
-        if (predicate is null)
-            throw new ArgumentNullException(nameof(predicate));
-        
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                if (pickupBehaviour is not TBehaviour behaviour)
-                    continue;
-                
-                if (!predicate(behaviour))
-                    continue;
-                
-                action(behaviour);
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Attempts to get an inventory behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <typeparam name="TBehaviour">The type to cast the behaviour instance to.</typeparam>
-    /// <returns>true if the behaviour instance was found</returns>
-    public static bool TryGetInventoryBehaviour<TBehaviour>(ushort itemSerial, out TBehaviour? behaviour)
-        where TBehaviour : CustomItemInventoryBehaviour
+    /// <param name="itemSerial">The targeted item serial.</param>
+    /// <param name="behaviour">The found behaviour.</param>
+    /// <typeparam name="TBehaviour">The type of behaviour.</typeparam>
+    /// <returns>true if the behaviour was found</returns>
+    public static bool TryGetBehaviour<TBehaviour>(ushort itemSerial, out TBehaviour behaviour) where TBehaviour : CustomItemBehaviour
     {
         behaviour = null;
         
-        if (!TryGetInventoryBehaviour(itemSerial, out var behaviourObject)
-            || behaviourObject is not TBehaviour castBehaviour)
+        if (!CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var active))
             return false;
-        
-        behaviour = castBehaviour;
+
+        if (active is not TBehaviour target)
+            return false;
+
+        behaviour = target;
         return true;
     }
     
     /// <summary>
-    /// Attempts to get a pickup behaviour for a specific item serial.
+    /// Attempts to find a behaviour of a specific type targeting an item serial matching a predicate.
     /// </summary>
-    /// <param name="itemSerial">The item serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <typeparam name="TBehaviour">The type to cast the behaviour instance to.</typeparam>
-    /// <returns>true if the behaviour instance was found</returns>
-    public static bool TryGetPickupBehaviour<TBehaviour>(ushort itemSerial, out TBehaviour? behaviour)
-        where TBehaviour : CustomItemPickupBehaviour
+    /// <param name="itemSerial">The targeted item serial.</param>
+    /// <param name="predicate">The predicate to match.</param>
+    /// <param name="behaviour">The found behaviour.</param>
+    /// <typeparam name="TBehaviour">The type of behaviour.</typeparam>
+    /// <returns>true if the behaviour was found</returns>
+    public static bool TryGetBehaviour<TBehaviour>(ushort itemSerial, Predicate<TBehaviour> predicate, out TBehaviour behaviour) where TBehaviour : CustomItemBehaviour
     {
+        if (predicate is null)
+            throw new ArgumentNullException(nameof(predicate));
+        
         behaviour = null;
         
-        if (!TryGetPickupBehaviour(itemSerial, out var behaviourObject)
-            || behaviourObject is not TBehaviour castBehaviour)
+        if (!CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var active))
             return false;
-        
-        behaviour = castBehaviour;
+
+        if (active is not TBehaviour target)
+            return false;
+
+        behaviour = target;
         return true;
     }
     
     /// <summary>
-    /// Attempts to get an inventory behaviour for a specific item serial.
+    /// Gets all custom item behaviours matching a predicate.
     /// </summary>
-    /// <param name="itemSerial">The item's serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <returns>true if the behaviour instance was resolved</returns>
-    public static bool TryGetInventoryBehaviour(ushort itemSerial, out CustomItemInventoryBehaviour? behaviour)
-    {
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                behaviour = inventoryBehaviour;
-                return true;
-            }
-        }
-
-        behaviour = null;
-        return false;
-    }
-    
-    /// <summary>
-    /// Attempts to get a pickup behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item's serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <returns>true if the behaviour instance was resolved</returns>
-    public static bool TryGetPickupBehaviour(ushort itemSerial, out CustomItemPickupBehaviour? behaviour)
-    {
-        foreach (var pair in CustomItemRegistry.Handlers)
-        {
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                behaviour = pickupBehaviour;
-                return true;
-            }
-        }
-
-        behaviour = null;
-        return false;
-    }
-    
-    /// <summary>
-    /// Attempts to get a behaviour for a specific item serial.
-    /// </summary>
-    /// <param name="itemSerial">The item serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <typeparam name="TBehaviour">The type to cast the behaviour instance to.</typeparam>
-    /// <returns>true if the behaviour instance was found</returns>
-    public static bool TryGetBehaviour<TBehaviour>(ushort itemSerial, out TBehaviour? behaviour)
+    /// <param name="predicate">The predicate used to filter behaviours.</param>
+    /// <param name="collection">The target collection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void GetBehavioursNonAlloc<TBehaviour>(Predicate<TBehaviour> predicate, ICollection<TBehaviour> collection)
         where TBehaviour : CustomItemBehaviour
     {
-        behaviour = null;
+        if (collection is null)
+            throw new ArgumentNullException(nameof(collection));
         
-        if (!TryGetBehaviour(itemSerial, out var behaviourObject)
-            || behaviourObject is not TBehaviour castBehaviour)
-            return false;
-        
-        behaviour = castBehaviour;
-        return true;
+        if (predicate is null)
+            throw new ArgumentNullException(nameof(predicate));
+
+        foreach (var behaviour in CustomItemRegistry.Behaviours)
+        {
+            if (behaviour.Value is not TBehaviour target)
+                continue;
+            
+            if (!predicate(target))
+                continue;
+            
+            collection.Add(target);
+        }
     }
     
     /// <summary>
-    /// Attempts to get a behaviour for a specific item serial.
+    /// Fills a collection with all handlers that match a predicate.
     /// </summary>
-    /// <param name="itemSerial">The item serial number.</param>
-    /// <param name="behaviour">The resolved behaviour instance.</param>
-    /// <returns>true if the behaviour was found</returns>
-    public static bool TryGetBehaviour(ushort itemSerial, out CustomItemBehaviour? behaviour)
+    /// <param name="predicate">The predicate to match.</param>
+    /// <param name="target">The target collection.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static void GetHandlersNonAlloc(Predicate<CustomItemHandler> predicate, ICollection<CustomItemHandler> target)
     {
-        foreach (var pair in CustomItemRegistry.Handlers)
+        if (target is null)
+            throw new ArgumentNullException(nameof(target));
+
+        foreach (var handler in CustomItemRegistry.Handlers)
         {
-            if (pair.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour))
-            {
-                behaviour = inventoryBehaviour;
-                return true;
-            }
-
-            if (pair.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour))
-            {
-                behaviour = pickupBehaviour;
-                return true;
-            }
+            if (!predicate(handler.Value))
+                continue;
+            
+            target.Add((handler.Value));
         }
-
-        behaviour = null;
-        return false;
     }
     
     /// <summary>
@@ -905,21 +166,12 @@ public static class CustomItemUtils
     {
         if (CustomWeight.TryGetValue(type, out var customWeight))
             defaultWeight = customWeight;
-        
-        var countWeight = 0f;
-        var anyCustom = false;
-        
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.PickupProperties.Weight.HasValue
-                && handler.Value.pickupItems.ContainsKey(itemSerial))
-            {
-                countWeight += handler.Value.PickupProperties.Weight.Value;
-                anyCustom = true;
-            }
-        }
-        
-        return anyCustom ? countWeight : defaultWeight;
+
+        if (!CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var behaviour)
+            || behaviour is not CustomItemPickupBehaviour pickupBehaviour)
+            return defaultWeight;
+
+        return pickupBehaviour.Handler.PickupProperties.Weight ?? defaultWeight;
     }
 
     /// <summary>
@@ -928,71 +180,68 @@ public static class CustomItemUtils
     /// <param name="itemSerial">The item's serial number.</param>
     /// <returns>true if the given serial belongs to a custom item</returns>
     public static bool IsCustomItem(ushort itemSerial)
-    {
-        foreach (var handler in CustomItemRegistry.Handlers)
-        {
-            if (handler.Value.inventoryItems.ContainsKey(itemSerial)
-                || handler.Value.pickupItems.ContainsKey(itemSerial))
-                return true;
-        }
+        => CustomItemRegistry.Behaviours.ContainsKey(itemSerial);
 
-        return false;
-    }
-    
     /// <summary>
     /// Whether or not a specific item serial is a custom item.
     /// </summary>
     /// <param name="itemSerial">The item's serial number.</param>
     /// <returns>true if the given serial belongs to a custom item</returns>
     public static bool IsCustomItem<TBehaviour>(ushort itemSerial) where TBehaviour : CustomItemBehaviour
+        => CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var behaviour) && behaviour is TBehaviour;
+
+    internal static TValue GetCustomValue<TValue, TBehaviour>(this TBehaviour behaviour,
+        Func<TBehaviour, TValue> selector, Func<TValue, bool> validator, TValue defaultValue)
     {
-        foreach (var handler in CustomItemRegistry.Handlers)
+        if (behaviour == null)
+            return defaultValue;
+        
+        var customValue = selector(behaviour);
+        
+        if (!validator(customValue))
+            return defaultValue;
+        
+        return customValue;
+    }
+
+    internal static bool ProcessEvent<TBehaviour>(ushort itemSerial, Action<TBehaviour> action)
+    {
+        if (CustomItemRegistry.Behaviours.TryGetValue(itemSerial, out var behaviour)
+            && behaviour is TBehaviour result)
         {
-            if (handler.Value.inventoryItems.TryGetValue(itemSerial, out var inventoryBehaviour) && inventoryBehaviour is TBehaviour
-                || handler.Value.pickupItems.TryGetValue(itemSerial, out var pickupBehaviour) && pickupBehaviour is TBehaviour)
-                return true;
+            action.InvokeSafe(result);
+            return true;
         }
 
         return false;
     }
 
-    internal static CustomItemInventoryBehaviour SelectItemBehaviour(List<CustomItemInventoryBehaviour> itemBehaviours)
-        => itemBehaviours.FirstOrDefault(x =>
-            x.Handler != null && x.Handler.PickupProperties != null &&
-            x.Handler.PickupProperties.Type != ItemType.None);
-    
-    internal static CustomItemPickupBehaviour SelectPickupBehaviour(List<CustomItemPickupBehaviour> behaviours)
-        => behaviours.FirstOrDefault(x =>
-            x.Handler != null && x.Handler.InventoryProperties != null &&
-            x.Handler.InventoryProperties.Type != ItemType.None);
-
-    internal static void ProcessDropped(List<CustomItemInventoryBehaviour> inventoryBehaviours, ItemPickupBase pickup, ExPlayer player,
-        PlayerDroppedItemEventArgs args, List<CustomItemPickupBehaviour>? newPickups = null)
+    internal static CustomItemPickupBehaviour ProcessDropped(this CustomItemInventoryBehaviour inventoryBehaviour, ItemPickupBase pickup, ExPlayer player,
+        PlayerDroppedItemEventArgs args)
     {
-        for (var i = 0; i < inventoryBehaviours.Count; i++)
+        if (inventoryBehaviour != null)
         {
-            var behaviour = inventoryBehaviours[i];
-            var behaviourPickup = behaviour.Handler.ToPickup(player, pickup, behaviour);
+            var pickupBehaviour = inventoryBehaviour.Handler.ToPickup(player, pickup, inventoryBehaviour);
 
-            behaviour.OnDropped(args, behaviourPickup);
-            behaviour.OnRemoved(behaviourPickup);
-            
-            behaviour.Handler.DestroyItem(behaviour);
-            
-            newPickups?.Add(behaviourPickup);
+            inventoryBehaviour.OnDropped(args, pickupBehaviour);
+            inventoryBehaviour.OnRemoved(pickupBehaviour);
+
+            inventoryBehaviour.Handler.DestroyItem(inventoryBehaviour);
+            return pickupBehaviour;
         }
+
+        return null;
     }
 
-    internal static void ProcessPickedUp(List<CustomItemPickupBehaviour> pickupBehaviours, ItemBase item, ExPlayer player,
+    internal static void ProcessPickedUp(this CustomItemPickupBehaviour pickupBehaviour, ItemBase item, ExPlayer player,
         PlayerPickedUpItemEventArgs args)
     {
-        for (var i = 0; i < pickupBehaviours.Count; i++)
+        if (pickupBehaviour != null)
         {
-            var behaviour = pickupBehaviours[i];
-            var behaviourItem = behaviour.Handler.ToItem(player, item, behaviour);
+            var inventoryBehaviour = pickupBehaviour.Handler.ToItem(player, item, pickupBehaviour);
 
-            behaviour.OnPickedUp(args, behaviourItem);
-            behaviour.Handler.DestroyPickup(behaviour);
+            pickupBehaviour.OnPickedUp(args, inventoryBehaviour);
+            pickupBehaviour.Handler.DestroyPickup(pickupBehaviour);
         }
     }
 }
