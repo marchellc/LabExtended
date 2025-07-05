@@ -1,5 +1,8 @@
-﻿using LabExtended.Attributes;
+﻿using System.Reflection;
+
+using LabExtended.Attributes;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 
 using PlayerRoles;
 
@@ -124,17 +127,20 @@ public class CustomPlayerEffect
     
     internal virtual bool OnRoleChanged(RoleTypeId newRole) => RoleChanged(newRole);
 
-    [LoaderInitialize(20)]
+    private static void OnDiscovered(Type type)
+    {
+        if (!type.InheritsType<CustomPlayerEffect>()
+            || type == typeof(CustomTickingEffect)
+            || type == typeof(CustomDurationEffect)
+            || type.GetCustomAttribute<LoaderIgnoreAttribute>() != null)
+            return;
+
+        Effects.Add(type);
+    }
+
+    [LoaderInitialize(1)]
     private static void OnInit()
     {
-        TypeExtensions.ForEachLoadedType(type =>
-        {
-            if (!type.InheritsType<CustomPlayerEffect>()
-                || type == typeof(CustomTickingEffect)
-                || type == typeof(CustomDurationEffect))
-                return;
-
-            Effects.Add(type);
-        });
+        ReflectionUtils.Discovered += OnDiscovered;
     }
 }

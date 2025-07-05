@@ -395,6 +395,22 @@ public static class FileStorageManager
             ApiLog.Debug("File Storage", $"Removed storage instance of player &3{args.Player.Nickname}&r (&6{args.Player.UserId}&r)");
         }
     }
+
+    private static void OnDiscovered(Type type)
+    {
+        if (!type.IsSubclassOf(typeof(FileStorageComponent)))
+            return;
+
+        if (type.HasAttribute<LoaderIgnoreAttribute>())
+            return;
+        
+        if (type == typeof(TestFileStorageComponent) && !TestFileStorageComponent.IsEnabled)
+            return;
+            
+        Components.Add(type);
+            
+        ApiLog.Debug("File Storage", $"Found component &3{type.FullName}&r");
+    }
     
     [LoaderInitialize(1)]
     private static void OnInit()
@@ -415,22 +431,8 @@ public static class FileStorageManager
         
         if (!Directory.Exists(DirectoryPath))
             Directory.CreateDirectory(DirectoryPath);
-        
-        TypeExtensions.ForEachLoadedType(type =>
-        {
-            if (!type.IsSubclassOf(typeof(FileStorageComponent)))
-                return;
 
-            if (type == typeof(TestFileStorageComponent) && !TestFileStorageComponent.IsEnabled)
-                return;
-            
-            Components.Add(type);
-            
-            ApiLog.Debug("File Storage", $"Found component &3{type.FullName}&r");
-        });
-
-        if (Components.Count < 1)
-            return;
+        ReflectionUtils.Discovered += OnDiscovered;
         
         LoadInstances();
         LoadWatcher();

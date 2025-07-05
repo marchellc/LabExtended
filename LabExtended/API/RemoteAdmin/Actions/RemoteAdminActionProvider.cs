@@ -1,5 +1,6 @@
 ﻿using LabExtended.Attributes;
 using LabExtended.Extensions;
+using LabExtended.Utilities;
 using NetworkManagerUtils.Dummies;
 
 using NorthwoodLib.Pools;
@@ -189,15 +190,19 @@ public class RemoteAdminActionProvider : IDisposable, IRootDummyActionProvider
         Modules = null;
     }
 
+    private static void OnDiscovered(Type type)
+    {
+        if (!typeof(RemoteAdminActionModule).IsAssignableFrom(type) 
+            || type == typeof(RemoteAdminActionModule)
+            || type.HasAttribute<LoaderIgnoreAttribute>())
+            return;
+
+        ModuleTypes.Add(type);
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        TypeExtensions.ForEachLoadedType(type =>
-        {
-            if (!typeof(RemoteAdminActionModule).IsAssignableFrom(type) || type == typeof(RemoteAdminActionModule))
-                return;
-
-            ModuleTypes.Add(type);
-        });
+        ReflectionUtils.Discovered += OnDiscovered;
     }
 }

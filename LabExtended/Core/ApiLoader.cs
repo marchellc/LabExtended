@@ -13,6 +13,7 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Core.Configs;
+using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
@@ -177,7 +178,7 @@ namespace LabExtended.Core
         // This method is invoked by the LogPatch when LabAPI logs it's "enabling all plugins" line.
         private static void LogPoint()
         {
-            ApiLog.Info("LabExtended", $"LabAPI has finished loading, registering plugin hooks.");
+            ApiLog.Info("LabExtended", "LabAPI has finished loading, registering plugin hooks.");
 
             ExServerEvents.Logging -= LogHandler;
 
@@ -235,8 +236,10 @@ namespace LabExtended.Core
             Assembly.InvokeStaticMethods(
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0, 
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+            
+            ReflectionUtils.Load();
 
-            ApiLog.Info("LabExtended", $"Loading finished!");
+            ApiLog.Info("LabExtended", "Loading finished!");
         }
         
         // This method is invoked by the loader.
@@ -244,7 +247,7 @@ namespace LabExtended.Core
         {
             ApiLog.Info("LabExtended", $"Loading version &1{ApiVersion.Version}&r ..");
 
-            DirectoryPath = Loader.GetConfigDirectory(false).FullName;
+            DirectoryPath = Loader.GetConfigDirectory(Path.GetDirectoryName(Path.GetDirectoryName(Loader.FilePath)) == "global").FullName;
 
             BaseConfigPath = Path.Combine(DirectoryPath, "config.yml");
             ApiConfigPath = Path.Combine(DirectoryPath, "api_config.yml");
@@ -275,7 +278,7 @@ namespace LabExtended.Core
                 x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
                 x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
             
-            ApiLog.Info("LabExtended", $"Waiting for LabAPI ..");
+            ApiLog.Info("LabExtended", "Waiting for LabAPI ..");
         }
 
         private static void LogHandler(string logMessage)

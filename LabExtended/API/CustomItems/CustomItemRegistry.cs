@@ -1,4 +1,5 @@
-﻿using LabApi.Events.Arguments.PlayerEvents;
+﻿using System.Reflection;
+using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.Scp914Events;
 
 using LabApi.Events.Handlers;
@@ -10,7 +11,7 @@ using LabExtended.Events;
 using LabExtended.Attributes;
 using LabExtended.Events.Map;
 using LabExtended.Extensions;
-
+using LabExtended.Utilities;
 using LabExtended.Utilities.Testing.CustomItems;
 using LabExtended.Utilities.Update;
 
@@ -479,6 +480,20 @@ public static class CustomItemRegistry
         }
     }
 
+    private static void OnDiscovered(Type type)
+    {
+        if (!typeof(CustomItemHandler).IsAssignableFrom(type))
+            return;
+
+        if (type.GetCustomAttribute<LoaderIgnoreAttribute>() != null)
+            return;
+
+        if (type == typeof(TestCustomItemHandler) && !TestCustomItemHandler.IsEnabled)
+            return;
+
+        Register(type);
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
@@ -515,16 +530,7 @@ public static class CustomItemRegistry
 
         Scp914Events.ProcessingPickup += OnUpgradingPickup;
         Scp914Events.ProcessedPickup += OnUpgradedPickup;
-        
-        TypeExtensions.ForEachLoadedType(type =>
-        {
-            if (!typeof(CustomItemHandler).IsAssignableFrom(type))
-                return;
 
-            if (type == typeof(TestCustomItemHandler) && !TestCustomItemHandler.IsEnabled)
-                return;
-
-            Register(type);
-        });
+        ReflectionUtils.Discovered += OnDiscovered;
     }
 }
