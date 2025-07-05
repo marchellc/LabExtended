@@ -5,6 +5,7 @@ using LabExtended.Extensions;
 using LabExtended.Attributes;
 
 using LabExtended.Core.Pooling;
+using LabExtended.Events;
 using LabExtended.Utilities.Update;
 
 using Mirror;
@@ -22,6 +23,8 @@ namespace LabExtended.API.Audio;
 /// </summary>
 public static class AudioManager
 {
+    private static bool playersGenerated;
+    
     private static FileSystemWatcher watcher;
 
     private static InstancePool<AudioPlayer> playerPool = new();
@@ -362,6 +365,36 @@ public static class AudioManager
 
     private static void OnFileModified(object _, FileSystemEventArgs ev)
         => OnFileAdded(_, ev);
+
+    private static void OnWaiting()
+    {
+        for (byte i = 0; i < ReservedIdOffset; i++)
+        {
+            var speaker = SpeakerFactory();
+            
+            speaker.ControllerId = i;
+            speakerPool.Return(speaker);
+            
+            if (!playersGenerated)
+            {
+                var player = PlayerFactory();
+
+                Update += player.Update;
+
+                for (byte x = 0; x < ReservedIdOffset; x++)
+                    player.Sources.Add(x);
+                
+                playerPool.Return(player);
+            }
+        }
+
+        playersGenerated = true;
+    }
+
+    private static void OnRestart()
+    {
+        speakerPool.Pool.Clear();
+    }
     
     [LoaderInitialize(1)]
     private static void OnInit()
@@ -385,23 +418,10 @@ public static class AudioManager
         
         PlayerUpdateHelper.OnUpdate += OnUpdate;
 
+        InternalEvents.OnRoundWaiting += OnWaiting;
+        InternalEvents.OnRoundRestart += OnRestart;
+
         playerPool = new();
         speakerPool = new();
-
-        for (byte i = 0; i < ReservedIdOffset; i++)
-        {
-            var speaker = SpeakerFactory();
-            var player = PlayerFactory();
-
-            speaker.ControllerId = i;
-
-            Update += player.Update;
-
-            for (byte x = 0; x < ReservedIdOffset; x++)
-                player.Sources.Add(x);
-            
-            speakerPool.Return(speaker);
-            playerPool.Return(player);
-        }
     }
 }
