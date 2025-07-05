@@ -127,6 +127,16 @@ public static class CollectionExtensions
     #endregion
 
     #region Collection Extensions
+
+    public static bool AddUnique<T>(this IList<T> list, T item)
+    {
+        if (list.Contains(item))
+            return false;
+        
+        list.Add(item);
+        return true;
+    }
+    
     public static T RemoveAndTake<T>(this IList<T> list, int index)
     {
         var value = list[index];
