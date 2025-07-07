@@ -49,7 +49,7 @@ public class TestFileStorageComponent : FileStorageComponent
         
         ApiLog.Debug("TestFileStorageComponent", $"[OnLoaded - {Storage.UserId}] Random: {RandomProperty.Value} ({RandomProperty.IsDirty})");
 
-        Timing.CallDelayed(10f, () =>
+        MEC.Timing.CallDelayed(10f, () =>
         {
             RandomProperty.Value = RandomGen.Instance.GetInt32(1, 1000);
 
