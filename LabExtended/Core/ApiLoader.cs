@@ -247,7 +247,7 @@ namespace LabExtended.Core
         {
             ApiLog.Info("LabExtended", $"Loading version &1{ApiVersion.Version}&r ..");
 
-            DirectoryPath = Loader.GetConfigDirectory(Path.GetDirectoryName(Path.GetDirectoryName(Loader.FilePath)) == "global").FullName;
+            DirectoryPath = Loader.GetConfigDirectory(StartupArgs.Args.Any(x => x.Contains("LabExGlobal"))).FullName;
 
             BaseConfigPath = Path.Combine(DirectoryPath, "config.yml");
             ApiConfigPath = Path.Combine(DirectoryPath, "api_config.yml");
