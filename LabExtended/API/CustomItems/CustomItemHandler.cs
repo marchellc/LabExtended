@@ -3,7 +3,7 @@ using InventorySystem.Items.Pickups;
 using LabApi.Features.Wrappers;
 using LabExtended.API.CustomItems.Behaviours;
 using LabExtended.API.CustomItems.Properties;
-
+using LabExtended.Attributes;
 using LabExtended.Core.Pooling;
 using LabExtended.Core.Pooling.Pools;
 
@@ -20,6 +20,7 @@ namespace LabExtended.API.CustomItems;
 /// <summary>
 /// Represents an instance of a Custom Item
 /// </summary>
+[LoaderIgnore]
 public abstract class CustomItemHandler
 {
     private InstancePool<CustomItemInventoryBehaviour>? InventoryPool;

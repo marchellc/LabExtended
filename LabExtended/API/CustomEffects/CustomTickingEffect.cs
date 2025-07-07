@@ -1,4 +1,5 @@
-﻿using LabExtended.Utilities.Update;
+﻿using LabExtended.Attributes;
+using LabExtended.Utilities.Update;
 
 using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace LabExtended.API.CustomEffects;
 /// <summary>
 /// A subtype of CustomEffect which adds ticking abilities.
 /// </summary>
+[LoaderIgnore]
 public class CustomTickingEffect : CustomPlayerEffect
 {
     private float delayTime = 0f;

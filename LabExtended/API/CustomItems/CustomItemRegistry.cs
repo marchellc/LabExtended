@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using HarmonyLib;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.Scp914Events;
 
@@ -22,6 +23,7 @@ namespace LabExtended.API.CustomItems;
 /// <summary>
 /// Handles registration of Custom Items.
 /// </summary>
+[LoaderIgnore]
 public static class CustomItemRegistry
 {
     /// <summary>
@@ -489,6 +491,11 @@ public static class CustomItemRegistry
             return;
 
         if (type == typeof(TestCustomItemHandler) && !TestCustomItemHandler.IsEnabled)
+            return;
+        
+        var constructor = AccessTools.DeclaredConstructor(type);
+
+        if (constructor is null)
             return;
 
         Register(type);

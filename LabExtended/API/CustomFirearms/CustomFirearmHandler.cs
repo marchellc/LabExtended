@@ -3,7 +3,7 @@ using LabExtended.API.CustomFirearms.Properties;
 
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomItems.Behaviours;
-
+using LabExtended.Attributes;
 using LabExtended.Utilities.Firearms;
 
 #pragma warning disable CS8603 // Possible null reference return.
@@ -13,6 +13,7 @@ namespace LabExtended.API.CustomFirearms;
 /// <summary>
 /// Manages a Custom Firearm item.
 /// </summary>
+[LoaderIgnore]
 public abstract class CustomFirearmHandler : CustomItemHandler
 {
     /// <summary>

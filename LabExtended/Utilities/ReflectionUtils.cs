@@ -33,14 +33,21 @@ public static class ReflectionUtils
             
             foreach (var type in ev.LoadedAssembly.GetTypes())
             {
-                Discovered?.InvokeSafe(type);
+                try
+                {
+                    Discovered?.Invoke(type);
+                }
+                catch
+                {
+                    // ignored
+                }
 
                 Types.AddUnique(type);
             }
         }
-        catch (Exception ex)
+        catch
         {
-            ApiLog.Error("Reflection Utils", $"Error while processing types in assembly &3{ev.LoadedAssembly.FullName}&r:\n{ex}");
+            // ignored
         }
     }
     
@@ -56,20 +63,27 @@ public static class ReflectionUtils
                     
                     foreach (var type in assembly.GetTypes())
                     {
-                        Discovered?.InvokeSafe(type);
+                        try
+                        {
+                            Discovered?.Invoke(type);
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
 
                         Types.AddUnique(type);
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    ApiLog.Error("Reflection Utils", $"Error while processing types in assembly &3{assembly.FullName}&r:\n{ex}");
+                    // ignored
                 }
             }
         }
-        catch (Exception ex)
+        catch
         {
-            ApiLog.Error("Reflection Utils", $"Error while processing assemblies:\n{ex}");
+            // ignored
         }
 
         AppDomain.CurrentDomain.AssemblyLoad += OnLoaded;

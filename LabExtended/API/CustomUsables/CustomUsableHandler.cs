@@ -5,12 +5,14 @@ using LabExtended.API.CustomItems.Behaviours;
 
 using LabExtended.API.CustomUsables.Behaviours;
 using LabExtended.API.CustomUsables.Properties;
+using LabExtended.Attributes;
 
 namespace LabExtended.API.CustomUsables;
 
 /// <summary>
 /// Custom Item handler targeting usable items.
 /// </summary>
+[LoaderIgnore]
 public abstract class CustomUsableHandler : CustomItemHandler
 {
     /// <inheritdoc cref="CustomItemHandler.InventoryProperties"/>

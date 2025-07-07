@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-
+using HarmonyLib;
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -11,6 +11,7 @@ namespace LabExtended.API.CustomEffects;
 /// <summary>
 /// Represents a custom player effect.
 /// </summary>
+[LoaderIgnore]
 public class CustomPlayerEffect
 {
     /// <summary>
@@ -133,6 +134,9 @@ public class CustomPlayerEffect
             || type == typeof(CustomTickingEffect)
             || type == typeof(CustomDurationEffect)
             || type.GetCustomAttribute<LoaderIgnoreAttribute>() != null)
+            return;
+
+        if (AccessTools.DeclaredConstructor(type) == null)
             return;
 
         Effects.Add(type);

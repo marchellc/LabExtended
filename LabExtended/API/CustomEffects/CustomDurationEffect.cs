@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using LabExtended.Attributes;
+using UnityEngine;
 
 namespace LabExtended.API.CustomEffects;
 
 /// <summary>
 /// A subtype of UpdatingCustomEffect which adds a duration property.
 /// </summary>
+[LoaderIgnore]
 public abstract class CustomDurationEffect : CustomTickingEffect
 {
     /// <summary>
