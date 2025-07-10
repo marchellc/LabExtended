@@ -136,6 +136,14 @@ public static class CollectionExtensions
         list.Add(item);
         return true;
     }
+
+    public static bool RemoveIfUnique<T>(this IList<T> list, T item)
+    {
+        if (list.Count(x => x.Equals(item)) == 1)
+            return list.Remove(item);
+
+        return false;
+    }
     
     public static T RemoveAndTake<T>(this IList<T> list, int index)
     {
