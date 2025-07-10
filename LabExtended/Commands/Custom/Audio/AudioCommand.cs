@@ -14,8 +14,7 @@ public class AudioCommand : CommandBase, IServerSideCommand
 {
     [CommandOverload("create", "Creates a new audio handler.")]
     public void Create(
-        [CommandParameter("Name", "Name of the audio handler.")]
-        string name)
+        [CommandParameter("Name", "Name of the audio handler.")] string name)
     {
         if (AudioManager.TryGetHandler(name, out _))
         {
@@ -30,8 +29,7 @@ public class AudioCommand : CommandBase, IServerSideCommand
 
     [CommandOverload("destroy", "Destroys a specific audio handler.")]
     public void Destroy(
-        [CommandParameter("Name", "Name of the audio handler.")]
-        string name)
+        [CommandParameter("Name", "Name of the audio handler.")] string name)
     {
         if (!AudioManager.TryGetHandler(name, out var handler))
         {
@@ -64,12 +62,9 @@ public class AudioCommand : CommandBase, IServerSideCommand
 
     [CommandOverload("add", "Add a speaker to a created audio handler.")]
     public void Add(
-        [CommandParameter("Name", "Name of the audio handler.")]
-        string name,
-        [CommandParameter("Speaker", "Name of the speaker to add.")]
-        string speaker,
-        [CommandParameter("ID", "Controller ID of the speaker.")]
-        byte id)
+        [CommandParameter("Name", "Name of the audio handler.")] string name,
+        [CommandParameter("Speaker", "Name of the speaker to add.")] string speaker,
+        [CommandParameter("ID", "Controller ID of the speaker.")] byte id)
     {
         if (!AudioManager.TryGetHandler(name, out var handler))
         {
@@ -77,7 +72,7 @@ public class AudioCommand : CommandBase, IServerSideCommand
             return;
         }
 
-        if (handler.EnsureSpeaker(speaker, id))
+        if (!handler.EnsureSpeaker(speaker, id))
         {
             Ok($"Speaker '{speaker}' exists in handler '{handler.Name}'");
             return;
@@ -88,10 +83,8 @@ public class AudioCommand : CommandBase, IServerSideCommand
 
     [CommandOverload("remove", "Removes a speaker from a created audio handler.")]
     public void Remove(
-        [CommandParameter("Name", "Name of the audio handler.")]
-        string name,
-        [CommandParameter("Speaker", "Name of the speaker to remove.")]
-        string speaker)
+        [CommandParameter("Name", "Name of the audio handler.")] string name,
+        [CommandParameter("Speaker", "Name of the speaker to remove.")] string speaker)
     {
         if (!AudioManager.TryGetHandler(name, out var handler))
         {
@@ -110,8 +103,7 @@ public class AudioCommand : CommandBase, IServerSideCommand
 
     [CommandOverload("speakers", "Lists all speakers in an audio handler.")]
     public void Speakers(
-        [CommandParameter("Name", "Name of the audio handler.")]
-        string name)
+        [CommandParameter("Name", "Name of the audio handler.")] string name)
     {
         if (!AudioManager.TryGetHandler(name, out var handler))
         {

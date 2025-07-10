@@ -14,7 +14,7 @@ public partial class ViewCommand
 {
     [CommandOverload("objects", "Lists all spawned network objects.")]
     public void ListObjects(
-        [CommandParameter("Type", "Name of the object's type (use \"*\" to show all objects).")] string objectType)
+        [CommandParameter("Type", "Name of the object's type (use \"*\" to show all objects).")] string objectType = "*")
     {
         Ok(x =>
         {
