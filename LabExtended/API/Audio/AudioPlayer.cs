@@ -175,7 +175,7 @@ public class AudioPlayer : IDisposable
     /// <param name="clip">The audio clip to play.</param>
     /// <param name="overrideCurrent">Whether or not to stop the currently played clip.</param>
     /// <exception cref="ArgumentNullException"></exception>
-    public void Play(KeyValuePair<string, byte[]> clip, bool overrideCurrent = false)
+    public bool Play(KeyValuePair<string, byte[]> clip, bool overrideCurrent = false)
     {
         if (clip.Value is null)
             throw new ArgumentNullException(nameof(clip));
@@ -186,17 +186,18 @@ public class AudioPlayer : IDisposable
             {
                 NextClip = clip;
                 ShouldStop = true;
+
+                return true;
             }
-            else
-            {
-                ClipQueue.Enqueue(clip);
-            }
+
+            ClipQueue.Enqueue(clip);
+            return false;
         }
-        else
-        {
-            CurrentClip = clip;
-            PlaybackHandle = Timing.RunCoroutine(PlaybackCoroutine());
-        }
+
+        CurrentClip = clip;
+
+        PlaybackHandle = Timing.RunCoroutine(PlaybackCoroutine());
+        return true;
     }
 
     /// <summary>

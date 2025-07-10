@@ -79,6 +79,59 @@ public class AudioHandler
             }
         }
     }
+    
+    /// <summary>
+    /// Plays the specific audio clip on the specified transform.
+    /// </summary>
+    /// <param name="clip">The audio clip to play.</param>
+    /// <param name="target">The parent transform to play the clip at.</param>
+    /// <param name="localPosition">The position of the speaker relevant to the target parent.</param>
+    /// <param name="localRotation">The rotation of the speaker relevant to the target parent.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public void PlayOn(KeyValuePair<string, byte[]> clip, NetworkIdentity target, Vector3? localPosition = null, Quaternion? localRotation = null)
+    {
+        if (clip.Value is null)
+            throw new ArgumentNullException(nameof(clip));
+
+        if (target?.gameObject == null)
+            throw new ArgumentNullException(nameof(target));
+        
+        if (Player is null)
+            throw new Exception("Attempted to play on a disposed or incorrectly setup audio handler.");
+
+        foreach (var speaker in Speakers)
+        {
+            speaker.Value.Parent = target;
+
+            if (localPosition.HasValue)
+                speaker.Value.Position = localPosition.Value;
+            
+            if (localRotation.HasValue)
+                speaker.Value.Rotation = localRotation.Value;
+        }
+
+        Player.Play(clip, true);
+    }
+    
+    /// <summary>
+    /// Plays the specific audio clip at the specified position.
+    /// </summary>
+    /// <param name="clip">The audio clip to play.</param>
+    /// <param name="position">The position to play the clip at.</param>
+    /// <exception cref="ArgumentNullException"></exception>
+    public void PlayAt(KeyValuePair<string, byte[]> clip, Vector3 position)
+    {
+        if (clip.Value is null)
+            throw new ArgumentNullException(nameof(clip));
+
+        if (Player is null)
+            throw new Exception("Attempted to play on a disposed or incorrectly setup audio handler.");
+
+        foreach (var speaker in Speakers)
+            speaker.Value.Position = position;
+        
+        Player.Play(clip, true);
+    }
 
     /// <summary>
     /// Adds a new audio player to the group.
@@ -86,9 +139,6 @@ public class AudioHandler
     /// <returns>true if the audio player was added</returns>
     public bool AddPlayer()
     {
-        if (string.Equals(Name, "default"))
-            return false;
-        
         if (Player != null && !Player.IsDisposed)
             return false;
 

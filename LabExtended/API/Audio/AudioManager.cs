@@ -1,18 +1,9 @@
-using LabExtended.API.Toys;
-
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Attributes;
-
-using LabExtended.Core.Pooling;
-using LabExtended.Events;
 using LabExtended.Utilities.Update;
 
-using Mirror;
-
 using NVorbis;
-
-using UnityEngine;
 
 using VoiceChat;
 
@@ -23,12 +14,7 @@ namespace LabExtended.API.Audio;
 /// </summary>
 public static class AudioManager
 {
-    private static bool playersGenerated;
-    
     private static FileSystemWatcher watcher;
-
-    private static InstancePool<AudioPlayer> playerPool = new();
-    private static InstancePool<SpeakerToy> speakerPool = new();
 
     /// <summary>
     /// Gets the offset of reserved speaker IDs. Funny things could happen if a plugin ignores this.
@@ -69,94 +55,6 @@ public static class AudioManager
     /// Gets a list of all loaded audio clips.
     /// </summary>
     public static List<KeyValuePair<string, byte[]>> Clips { get; } = new();
-
-    /// <summary>
-    /// Plays the specific audio clip on the specified transform.
-    /// </summary>
-    /// <param name="clip">The audio clip to play.</param>
-    /// <param name="target">The parent transform to play the clip at.</param>
-    /// <param name="receiveFilter">The predicate used to filter which player receives the audio.</param>
-    /// <param name="speakerSetup">The delegate used to setup the speaker.</param>
-    /// <param name="onFinished">The delegate to invoke once the playback is finished.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void PlayOn(this KeyValuePair<string, byte[]> clip, NetworkIdentity target,
-        Predicate<ExPlayer>? receiveFilter = null, Action<SpeakerToy>? speakerSetup = null, Action? onFinished = null)
-    {
-        if (clip.Value is null)
-            throw new ArgumentNullException(nameof(clip));
-
-        var player = playerPool.Rent(PlayerFactory);
-        var speaker = speakerPool.Rent(SpeakerFactory);
-
-        speaker.Parent = target;
-        speakerSetup?.InvokeSafe(speaker);
-
-        if (receiveFilter != null)
-            player.ReceiveFilter = (_, targetPlayer) => receiveFilter(targetPlayer);
-
-        var finishedHandler = default(Action<AudioPlayer>);
-
-        finishedHandler = new(targetPlayer =>
-        {
-            if (targetPlayer == player)
-            {
-                onFinished?.InvokeSafe();
-
-                AudioPlayer.Stopped -= finishedHandler;
-                
-                playerPool.Return(player);
-                speakerPool.Return(speaker);
-            }
-        });
-
-        AudioPlayer.Stopped += finishedHandler;
-        
-        player.Play(clip, true);
-    }
-
-    /// <summary>
-    /// Plays the specific audio clip at the specified position.
-    /// </summary>
-    /// <param name="clip">The audio clip to play.</param>
-    /// <param name="position">The position to play the clip at.</param>
-    /// <param name="receiveFilter">The predicate used to filter which player receives the audio.</param>
-    /// <param name="speakerSetup">The delegate used to setup the speaker.</param>
-    /// <param name="onFinished">The delegate to invoke once the playback is finished.</param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static void PlayAt(this KeyValuePair<string, byte[]> clip, Vector3 position, Predicate<ExPlayer>? receiveFilter = null,
-        Action<SpeakerToy>? speakerSetup = null, Action? onFinished = null)
-    {
-        if (clip.Value is null)
-            throw new ArgumentNullException(nameof(clip));
-
-        var player = playerPool.Rent(PlayerFactory);
-        var speaker = speakerPool.Rent(SpeakerFactory);
-
-        speaker.Position = position;
-        speakerSetup?.InvokeSafe(speaker);
-
-        if (receiveFilter != null)
-            player.ReceiveFilter = (_, targetPlayer) => receiveFilter(targetPlayer);
-
-        var finishedHandler = default(Action<AudioPlayer>);
-
-        finishedHandler = new(targetPlayer =>
-        {
-            if (targetPlayer == player)
-            {
-                onFinished?.InvokeSafe();
-
-                AudioPlayer.Stopped -= finishedHandler;
-                
-                playerPool.Return(player);
-                speakerPool.Return(speaker);
-            }
-        });
-
-        AudioPlayer.Stopped += finishedHandler;
-        
-        player.Play(clip, true);
-    }
 
     /// <summary>
     /// Gets a loaded audio clip.
@@ -324,12 +222,6 @@ public static class AudioManager
         Update?.InvokeSafe();
     }
 
-    private static AudioPlayer PlayerFactory()
-        => new();
-
-    private static SpeakerToy SpeakerFactory()
-        => new();
-
     private static void OnFileDeleted(object _, FileSystemEventArgs ev)
     {
         var name = Path.GetFileNameWithoutExtension(ev.FullPath);
@@ -365,41 +257,11 @@ public static class AudioManager
 
     private static void OnFileModified(object _, FileSystemEventArgs ev)
         => OnFileAdded(_, ev);
-
-    private static void OnWaiting()
-    {
-        for (byte i = 0; i < ReservedIdOffset; i++)
-        {
-            var speaker = SpeakerFactory();
-            
-            speaker.ControllerId = i;
-            speakerPool.Return(speaker);
-            
-            if (!playersGenerated)
-            {
-                var player = PlayerFactory();
-
-                Update += player.Update;
-
-                for (byte x = 0; x < ReservedIdOffset; x++)
-                    player.Sources.Add(x);
-                
-                playerPool.Return(player);
-            }
-        }
-
-        playersGenerated = true;
-    }
-
-    private static void OnRestart()
-    {
-        speakerPool.Pool.Clear();
-    }
     
     [LoaderInitialize(1)]
     private static void OnInit()
     {
-        ClipDirectory = Path.Combine(ApiLoader.DirectoryPath, "Audio Clips");
+        ClipDirectory = Path.Combine(ApiLoader.DirectoryPath, "Audio");
 
         if (!Directory.Exists(ClipDirectory))
             Directory.CreateDirectory(ClipDirectory);
@@ -417,11 +279,5 @@ public static class AudioManager
         watcher.EnableRaisingEvents = true;
         
         PlayerUpdateHelper.OnUpdate += OnUpdate;
-
-        InternalEvents.OnRoundWaiting += OnWaiting;
-        InternalEvents.OnRoundRestart += OnRestart;
-
-        playerPool = new();
-        speakerPool = new();
     }
 }
