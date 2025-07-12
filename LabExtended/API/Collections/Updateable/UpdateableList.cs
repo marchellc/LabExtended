@@ -8,11 +8,11 @@ using UnityEngine;
 namespace LabExtended.API.Collections.Updateable;
 
 /// <summary>
-/// Represents a list of updateable objects. Wraps around <see cref="UnsafeList{T}"/>.
+/// Represents a list of updateable elements. Wraps around <see cref="UnsafeList{T}"/>.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
 public class UpdateableList<T> : UnsafeList<T>, IDisposable 
-    where T : UpdateableObject
+    where T : IUpdateableElement
 {
     private float remainingInterval = 0.1f;
     private float deltaInterval = 0f;
@@ -28,9 +28,9 @@ public class UpdateableList<T> : UnsafeList<T>, IDisposable
     public event Action<float>? Updated;
 
     /// <summary>
-    /// Gets called once an object update is called.
+    /// Gets called once an element's update is called.
     /// </summary>
-    public event Action<T, float>? ObjectUpdated; 
+    public event Action<T, float>? ElementUpdated; 
 
     /// <summary>
     /// Initializes the list.
@@ -75,9 +75,9 @@ public class UpdateableList<T> : UnsafeList<T>, IDisposable
 
                 if (obj != null)
                 {
-                    obj.OnUpdate(deltaInterval);
+                    obj.OnUpdate(this, deltaInterval);
                     
-                    ObjectUpdated?.InvokeSafe(obj, deltaInterval);
+                    ElementUpdated?.InvokeSafe(obj, deltaInterval);
                 }
             }
         }
