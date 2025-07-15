@@ -462,8 +462,6 @@ public class ExPlayer : Player, IDisposable
     private string idInfoValue = string.Empty;
 
     internal ICommandRunner? activeRunner;
-
-    internal Dictionary<Type, CustomRoleInstance> customRoles = DictionaryPool<Type, CustomRoleInstance>.Shared.Rent();
     
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
     internal Dictionary<string, SettingsEntry>? settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
@@ -1408,12 +1406,6 @@ public class ExPlayer : Player, IDisposable
         {
             DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
             settingsMenuLookup = null;
-        }
-
-        if (customRoles != null)
-        {
-            DictionaryPool<Type, CustomRoleInstance>.Shared.Return(customRoles);
-            customRoles = null;
         }
 
         if (removeNextFrame != null)

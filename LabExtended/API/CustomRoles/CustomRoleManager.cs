@@ -99,14 +99,10 @@ public static class CustomRoleManager
         {
             activeRoles.ForEach(role =>
             {
-                role.Owner?.customRoles?.Remove(type);
+                if (role.Owner != null)
+                    role.Owner.Role.CustomRole = null;
                 
-                if (role.IsActive)
-                {
-                    role.IsActive = false;
-                    role.OnDisabled();
-                }
-                
+                role.OnDisabled();
                 role.Dispose();
             });
             
@@ -124,9 +120,9 @@ public static class CustomRoleManager
     /// <typeparam name="T">The type of the role to enable.</typeparam>
     /// <returns>true if the role was successfully enabled.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool EnableCustomRole<T>(this ExPlayer player, bool useSpawnPoint = true) where T : CustomRoleInstance
+    public static bool SetCustomRole<T>(this ExPlayer player, bool useSpawnPoint = true) where T : CustomRoleInstance
     {
-        return EnableCustomRole(player, typeof(T), useSpawnPoint);
+        return SetCustomRole(player, typeof(T), useSpawnPoint);
     }
     
     /// <summary>
@@ -137,7 +133,7 @@ public static class CustomRoleManager
     /// <param name="useSpawnPoint">Whether or not to use spawn point.</param>
     /// <returns>true if the role was successfully enabled.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool EnableCustomRole(this ExPlayer player, Type roleType, bool useSpawnPoint = true)
+    public static bool SetCustomRole(this ExPlayer player, Type roleType, bool useSpawnPoint = true)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
@@ -145,188 +141,58 @@ public static class CustomRoleManager
         if (roleType is null)
             throw new ArgumentNullException(nameof(roleType));
 
-        if (!player.customRoles.TryGetValue(roleType, out var role))
-            return false;
+        if (player.Role.CustomRole != null)
+            throw new ArgumentException($"Player {player.UserId} already has an active custom role", nameof(player));
 
-        if (role.IsActive)
-            return false;
+        if (!RegisteredRoles.TryGetValue(roleType, out var roleData))
+            throw new ArgumentException($"Role {roleType.FullName} was not registered", nameof(roleType));
+
+        if (Activator.CreateInstance(roleData.Type) is not CustomRoleInstance roleInstance)
+            throw new Exception($"Could not instantiate Custom Role {roleData.Type.FullName}");
+
+        roleInstance.Owner = player;
+        roleInstance.CustomData = roleData;
         
         if (!ActiveRoles.TryGetValue(roleType, out var activeRoles))
             ActiveRoles.Add(roleType, activeRoles = new());
+        
+        if (!activeRoles.Contains(roleInstance))
+            activeRoles.Add(roleInstance);
             
-        if (!activeRoles.Contains(role))
-            activeRoles.Add(role);
+        player.Role.CustomRole = roleInstance;
+        
+        SetToRole(player, roleInstance, useSpawnPoint);
             
-        SetToRole(player, role, useSpawnPoint);
-            
-        role.OnEnabled();
-        role.IsActive = true;
-
+        roleInstance.OnEnabled();
         return true;
-    }
-
-    /// <summary>
-    /// Disables a custom role for a player.
-    /// </summary>
-    /// <param name="player">The player to disable the custom role of.</param>
-    /// <param name="setToSpectator">Whether or not to set the player's role to spectator if the custom role is active.</param>
-    /// <typeparam name="T">The type of the custom role to disable.</typeparam>
-    /// <returns>true if the custom role was successfully disabled.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static bool DisableCustomRole<T>(this ExPlayer player, bool setToSpectator = false) where T : CustomRoleInstance
-    {
-        return DisableCustomRole(player, typeof(T), setToSpectator);
     }
     
     /// <summary>
     /// Disables a custom role for a player.
     /// </summary>
     /// <param name="player">The player to disable the custom role of.</param>
-    /// <param name="roleType">The type of the custom role to disable.</param>
     /// <param name="setToSpectator">Whether or not to set the player's role to spectator if the custom role is active.</param>
     /// <returns>true if the custom role was successfully disabled.</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool DisableCustomRole(this ExPlayer player, Type roleType, bool setToSpectator = false)
+    public static bool DisableCustomRole(this ExPlayer player, bool setToSpectator = false)
     {
         if (player is null)
             throw new ArgumentNullException(nameof(player));
-        
-        if (roleType is null)
-            throw new ArgumentNullException(nameof(roleType));
-        
-        if (!player.customRoles.TryGetValue(roleType, out var role))
-            return false;
 
-        if (!role.IsActive) 
+        if (player.Role.CustomRole is null)
             return false;
         
-        if (ActiveRoles.TryGetValue(roleType, out var activeRoles))
-            activeRoles.Remove(role);
-            
-        role.IsActive = false;
-        role.OnDisabled();
+        if (ActiveRoles.TryGetValue(player.Role.CustomRole.GetType(), out var activeRoles))
+            activeRoles.Remove(player.Role.CustomRole);
+        
+        player.Role.CustomRole.OnDisabled();
             
         if (setToSpectator)
             player.Role.Set(RoleTypeId.Spectator);
 
+        player.Role.CustomRole = null;
         return true;
 
-    }
-
-    /// <summary>
-    /// Adds a custom role to a specific player.
-    /// </summary>
-    /// <param name="player">The player to add the role to.</param>
-    /// <param name="enableRole">Whether or not to enable the role as well.</param>
-    /// <param name="useSpawnPoint">Whether or not to use spawn point.</param>
-    /// <typeparam name="T">The type of the role to add.</typeparam>
-    /// <returns>The instantiated custom role instance.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="ArgumentException"></exception>
-    public static T AddCustomRole<T>(this ExPlayer player, bool enableRole = false, bool useSpawnPoint = true) where T : CustomRoleInstance
-    {
-        return (T)AddCustomRole(player, typeof(T), enableRole, useSpawnPoint);
-    }
-
-    /// <summary>
-    /// Adds a custom role to a specific player.
-    /// </summary>
-    /// <param name="player">The player to add the role to.</param>
-    /// <param name="roleType">The type of the role to add.</param>
-    /// <param name="enableRole">Whether or not to enable the role as well.</param>
-    /// <param name="useSpawnPoint">Whether or not to use spawn point.</param>
-    /// <returns>The instantiated custom role instance.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    /// <exception cref="ArgumentException"></exception>
-    public static CustomRoleInstance AddCustomRole(this ExPlayer player, Type roleType, bool enableRole = false, bool useSpawnPoint = true)
-    {
-        if (player is null)
-            throw new ArgumentNullException(nameof(player));
-        
-        if (roleType is null)
-            throw new ArgumentNullException(nameof(roleType));
-        
-        if (!RegisteredRoles.TryGetValue(roleType, out var customRoleData))
-            throw new ArgumentException($"Role type {roleType} is not registered.", nameof(roleType));
-        
-        if (player.customRoles.ContainsKey(roleType))
-            throw new ArgumentException($"Role type {roleType} is already added to player.", nameof(roleType));
-        
-        if (Activator.CreateInstance(roleType) is not CustomRoleInstance customRoleInstance)
-            throw new ArgumentException($"Role type {roleType} is not a custom role instance.", nameof(roleType));
-
-        customRoleInstance.CustomData = customRoleData;
-        customRoleInstance.Owner = player;
-        
-        customRoleInstance.InvokeInstantiated();
-        
-        player.customRoles.Add(roleType, customRoleInstance);
-
-        if (enableRole)
-        {
-            if (!ActiveRoles.TryGetValue(roleType, out var activeRoles))
-                ActiveRoles.Add(roleType, activeRoles = new());
-            
-            activeRoles.Add(customRoleInstance);
-            
-            SetToRole(player, customRoleInstance, useSpawnPoint);
-            
-            customRoleInstance.OnEnabled();
-            customRoleInstance.IsActive = true;
-        }
-
-        return customRoleInstance;
-    }
-
-    /// <summary>
-    /// Removes a custom role from a player.
-    /// </summary>
-    /// <param name="player">The player to remove the custom role from.</param>
-    /// <param name="setToSpectator">Whether or not to set the player's role to spectator if the custom role is active.</param>
-    /// <typeparam name="T">The type of the custom role to remove.</typeparam>
-    /// <returns>true if the custom role was successfully removed.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static bool RemoveCustomRole<T>(this ExPlayer player, bool setToSpectator = false) where T : CustomRoleInstance
-    {
-        return RemoveCustomRole(player, typeof(T), setToSpectator);
-    }
-
-    /// <summary>
-    /// Removes a custom role from a player.
-    /// </summary>
-    /// <param name="player">The player to remove the custom role from.</param>
-    /// <param name="roleType">The type of the custom role to remove.</param>
-    /// <param name="setToSpectator">Whether or not to set the player's role to spectator if the custom role is active.</param>
-    /// <returns>true if the custom role was successfully removed.</returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    public static bool RemoveCustomRole(this ExPlayer player, Type roleType, bool setToSpectator = false)
-    {
-        if (player is null)
-            throw new ArgumentNullException(nameof(player));
-        
-        if (roleType is null)
-            throw new ArgumentNullException(nameof(roleType));
-        
-        if (!player.customRoles.TryGetValue(roleType, out var role))
-            return false;
-
-        if (role.IsActive)
-        {
-            role.IsActive = false;
-            role.OnDisabled();
-            
-            if (setToSpectator)
-                player.Role.Set(RoleTypeId.Spectator);
-        }
-        
-        role.Dispose();
-        
-        player.customRoles.Remove(roleType);
-        
-        if (ActiveRoles.TryGetValue(roleType, out var activeRoles))
-            activeRoles.Remove(role);
-
-        return true;
     }
 
     /// <summary>
@@ -373,7 +239,7 @@ public static class CustomRoleManager
     /// <param name="predicate">An optional predicate.</param>
     /// <exception cref="ArgumentNullException"></exception>
     public static void ForEachActiveCustomRole(Action<CustomRoleInstance> action, Func<CustomRoleInstance, bool>? predicate = null)
-        => ForEachCustomRole(action, role => role.IsActive && (predicate is null || predicate(role)));
+        => ForEachCustomRole(action, role => (predicate is null || predicate(role)));
     
     /// <summary>
     /// Executes the specified delegate on each active custom role instance.
@@ -383,7 +249,7 @@ public static class CustomRoleManager
     /// <typeparam name="T">Type of the custom role.</typeparam>
     /// <exception cref="ArgumentNullException"></exception>
     public static void ForEachActiveCustomRole<T>(Action<T> action, Func<T, bool>? predicate = null) where T : CustomRoleInstance
-        => ForEachCustomRole(action, role => role.IsActive && (predicate is null || predicate(role)));
+        => ForEachCustomRole(action, role => (predicate is null || predicate(role)));
     
     /// <summary>
     /// Executes the specified delegate on each custom role instance.
@@ -488,7 +354,10 @@ public static class CustomRoleManager
         if (roleType is null)
             throw new ArgumentNullException(nameof(roleType));
 
-        return player.customRoles.TryGetValue(roleType, out var role) && role.IsActive;
+        if (player.Role.CustomRole is null)
+            return false;
+
+        return player.Role.CustomRole.GetType() == roleType;
     }
     
     /// <summary>
@@ -507,13 +376,13 @@ public static class CustomRoleManager
         if (roleType is null)
             throw new ArgumentNullException(nameof(roleType));
 
-        if (!player.customRoles.TryGetValue(roleType, out var role) || !role.IsActive)
+        if (player.Role.CustomRole is null || player.Role.CustomRole.GetType() != roleType)
         {
             roleInstance = null;
             return false;
         }
-
-        roleInstance = role;
+        
+        roleInstance = player.Role.CustomRole;
         return true;
     }
 
@@ -583,24 +452,15 @@ public static class CustomRoleManager
 
     private static void OnPlayerLeft(ExPlayer? player)
     {
-        if (player == null || !player) 
+        if (player?.ReferenceHub == null || player.Role.CustomRole is null)
             return;
-        
-        player.customRoles.ForEach(p =>
-        {
-            if (ActiveRoles.TryGetValue(p.Key, out var activeRoles))
-                activeRoles.Remove(p.Value);
 
-            if (p.Value.IsActive)
-            {
-                p.Value.IsActive = false;
-                p.Value.OnDisabled();
-            }
-                
-            p.Value.Dispose();
-        });
-            
-        player.customRoles.Clear();
+        if (ActiveRoles.TryGetValue(player.Role.CustomRole.GetType(), out var activeRoles))
+            activeRoles.Remove(player.Role.CustomRole);
+
+        player.Role.CustomRole.OnDisabled();
+        player.Role.CustomRole.Dispose();
+        player.Role.CustomRole = null;
     }
 
     [LoaderInitialize(1)]

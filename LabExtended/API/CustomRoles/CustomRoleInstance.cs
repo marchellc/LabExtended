@@ -8,11 +8,6 @@ namespace LabExtended.API.CustomRoles;
 public class CustomRoleInstance : IDisposable
 {
     /// <summary>
-    /// Gets a value indicating whether or not this custom role is active.
-    /// </summary>
-    public bool IsActive { get; internal set; }
-    
-    /// <summary>
     /// Gets the role's owner.
     /// </summary>
     public ExPlayer? Owner { get; internal set; }
@@ -59,7 +54,7 @@ public class CustomRoleInstance : IDisposable
 
     private void InvokeUpdate()
     {
-        if (!IsActive || !Owner)
+        if (Owner?.ReferenceHub == null)
             return;
         
         OnUpdate();
