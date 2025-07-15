@@ -39,7 +39,7 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
     public override string? FriendlyAlias => Parser.FriendlyAlias;
 
     /// <inheritdoc cref="CommandParameterParser.AcceptsToken"/>
-    public override bool AcceptsToken(ICommandToken token) => token is PropertyToken or CollectionToken;
+    public override bool AcceptsToken(ICommandToken token) => token is PropertyToken or CollectionToken or StringToken;
 
     /// <summary>
     /// Creates a new instance of targeted collection.
@@ -69,8 +69,24 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
             return new(true, result, null, parameter);
         }
         
-        if (token is not CollectionToken collectionToken)
-            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+        CollectionToken? collectionToken = null;
+
+        if (token is StringToken stringToken)
+        {
+            collectionToken = CollectionToken.Instance.NewToken<CollectionToken>();
+            collectionToken.Values.AddRange(stringToken.Value.Split([','],  StringSplitOptions.RemoveEmptyEntries));
+        }
+        else
+        {
+            if (token is CollectionToken collectionTokenTwo)
+            {
+                collectionToken = collectionTokenTwo;
+            }
+            else
+            {
+                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+            }
+        }
 
         if (IsStringList)
             return new(true, collectionToken.Values, null, parameter);
@@ -79,13 +95,13 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
         var collection = CreateCollection(collectionToken.Values.Count);
 
         var index = 0;
-        var stringToken = StringToken.Instance.NewToken<StringToken>();
+        var newStringToken = StringToken.Instance.NewToken<StringToken>();
         
         foreach (var stringElement in collectionToken.Values)
         {
-            stringToken.Value = stringElement;
+            newStringToken.Value = stringElement;
             
-            var elementResult = Parser.Parse(tokens, stringToken, -1, context, parameter);
+            var elementResult = Parser.Parse(tokens, newStringToken, -1, context, parameter);
 
             if (!elementResult.Success)
                 return new(false, null, $"Could not parse element at position {index}: {elementResult.Error}", 
@@ -94,7 +110,7 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
             AddToCollection(collection, elementResult.Value, ref collectionState);
         }
         
-        stringToken.ReturnToken();
+        newStringToken.ReturnToken();
         return new(true, collection, null, parameter);
     }
 }
