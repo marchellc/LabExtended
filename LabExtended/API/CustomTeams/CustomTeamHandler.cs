@@ -15,7 +15,7 @@ namespace LabExtended.API.CustomTeams;
 /// <summary>
 /// Handles custom teams.
 /// </summary>
-public abstract class CustomTeamHandler<TInstance> : Internal_CustomTeamHandlerBase
+public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
     where TInstance : CustomTeamInstance
 {
     private int idClock = 0;

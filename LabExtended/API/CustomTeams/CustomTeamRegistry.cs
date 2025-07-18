@@ -12,7 +12,7 @@ public static class CustomTeamRegistry
     /// <summary>
     /// Gets a list of all registered handlers.
     /// </summary>
-    public static Dictionary<Type, object> RegisteredHandlers { get; } = new();
+    public static Dictionary<Type, CustomTeamHandlerBase> RegisteredHandlers { get; } = new();
 
     /// <summary>
     /// Attempts to find a registered handler.
@@ -20,7 +20,7 @@ public static class CustomTeamRegistry
     /// <param name="handler">The found handler.</param>
     /// <typeparam name="THandler">The type of handler to find.</typeparam>
     /// <returns>true if the handler was found</returns>
-    public static bool TryGet<THandler>(out THandler handler) where THandler : Internal_CustomTeamHandlerBase
+    public static bool TryGet<THandler>(out THandler handler) where THandler : CustomTeamHandlerBase
     {
         if (RegisteredHandlers.TryGetValue(typeof(THandler), out var result))
         {
@@ -37,7 +37,7 @@ public static class CustomTeamRegistry
     /// </summary>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="Exception"></exception>
-    public static THandler Register<THandler>() where THandler : Internal_CustomTeamHandlerBase
+    public static THandler Register<THandler>() where THandler : CustomTeamHandlerBase
         => (THandler)Register(typeof(THandler));
     
     /// <summary>
@@ -54,7 +54,7 @@ public static class CustomTeamRegistry
         if (RegisteredHandlers.TryGetValue(type, out var active))
             return active;
 
-        if (Activator.CreateInstance(type) is not Internal_CustomTeamHandlerBase handler)
+        if (Activator.CreateInstance(type) is not CustomTeamHandlerBase handler)
             throw new Exception($"Type {type.FullName} could not be instantiated as a CustomTeamHandler");
         
         RegisteredHandlers.Add(type, handler);

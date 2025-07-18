@@ -78,7 +78,7 @@ public abstract class CustomTeamInstance
         if (!AlivePlayers.Contains(player) && !OriginalPlayers.Contains(player))
             return false;
 
-        var handler = (Internal_CustomTeamHandlerBase)Handler;
+        var handler = (CustomTeamHandlerBase)Handler;
         
         AlivePlayers.Remove(player);
         OriginalPlayers.Remove(player);
@@ -125,7 +125,7 @@ public abstract class CustomTeamInstance
             !player.Role.CustomTeam.RemoveMember(player, null))
             throw new Exception($"Player {player.UserId} is already a part of another team and could not be removed!");
 
-        var handler = (Internal_CustomTeamHandlerBase)Handler;
+        var handler = (CustomTeamHandlerBase)Handler;
 
         if (OriginalPlayers.Contains(player) && (AlivePlayers.Contains(player) || !reviveIfDead))
             return false;

@@ -9,7 +9,7 @@ namespace LabExtended.API.CustomTeams.Internal;
 /// <summary>
 /// Base class for <see cref="CustomTeamHandler{TInstance}"/>, exists to provide internal methods.
 /// </summary>
-public abstract class Internal_CustomTeamHandlerBase
+public abstract class CustomTeamHandlerBase
 {
     /// <summary>
     /// Gets the team's name.
@@ -47,7 +47,7 @@ public abstract class Internal_CustomTeamHandlerBase
             
             if (player.Role.CustomTeam.AlivePlayers.Count == 0)
             {
-                if (player.Role.CustomTeam.Handler is Internal_CustomTeamHandlerBase internalCustomTeamHandler)
+                if (player.Role.CustomTeam.Handler is CustomTeamHandlerBase internalCustomTeamHandler)
                     internalCustomTeamHandler.Internal_RemoveInstance(player.Role.CustomTeam.Id);
 
                 player.Role.CustomTeam.OnDestroy();
@@ -75,7 +75,7 @@ public abstract class Internal_CustomTeamHandlerBase
                 if (player.Role.CustomTeam?.Handler != null)
                 {
                     if (player.Role.CustomTeam.Handler == attacker.Role.CustomTeam.Handler &&
-                        player.Role.CustomTeam.Handler is Internal_CustomTeamHandlerBase handler &&
+                        player.Role.CustomTeam.Handler is CustomTeamHandlerBase handler &&
                         !handler.CanDamage(attacker, player))
                     {
                         args.IsAllowed = false;
@@ -192,7 +192,7 @@ public abstract class Internal_CustomTeamHandlerBase
                 if (player.Role.CustomTeam?.Handler != null)
                 {
                     if (player.Role.CustomTeam.Handler == attacker.Role.CustomTeam.Handler &&
-                        player.Role.CustomTeam.Handler is Internal_CustomTeamHandlerBase handler &&
+                        player.Role.CustomTeam.Handler is CustomTeamHandlerBase handler &&
                         !handler.CanDamage(attacker, player))
                     {
                         args.IsAllowed = false;
@@ -234,7 +234,7 @@ public abstract class Internal_CustomTeamHandlerBase
 
         if (player.Role.CustomTeam != null)
         {
-            if (player.Role.CustomTeam.Handler is Internal_CustomTeamHandlerBase handler && !string.IsNullOrWhiteSpace(handler?.Name))
+            if (player.Role.CustomTeam.Handler is CustomTeamHandlerBase handler && !string.IsNullOrWhiteSpace(handler?.Name))
             {
                 player.CustomInfo = string.Empty;
                 player.InfoArea &= ~PlayerInfoArea.CustomInfo;
@@ -245,7 +245,7 @@ public abstract class Internal_CustomTeamHandlerBase
 
             if (player.Role.CustomTeam.AlivePlayers.Count == 0)
             {
-                if (player.Role.CustomTeam.Handler is Internal_CustomTeamHandlerBase internalCustomTeamHandler)
+                if (player.Role.CustomTeam.Handler is CustomTeamHandlerBase internalCustomTeamHandler)
                     internalCustomTeamHandler.Internal_RemoveInstance(player.Role.CustomTeam.Id);
 
                 player.Role.CustomTeam.OnDestroy();
