@@ -15,7 +15,8 @@ namespace LabExtended.API.CustomTeams;
 /// A generic version of <see cref="CustomTeamInstance"/>.
 /// </summary>
 /// <typeparam name="THandler">The type of the parent team handler.</typeparam>
-public class CustomTeamInstance<THandler> : CustomTeamInstance
+public class CustomTeamInstance<THandler> : CustomTeamInstance 
+    where THandler : CustomTeamHandlerBase
 {
     /// <summary>
     /// Gets the parent team handler cast to <see cref="THandler"/>.
@@ -42,16 +43,16 @@ public abstract class CustomTeamInstance
     /// Gets the amounts of seconds passed since the team spawned.
     /// </summary>
     public float PassedTime => UnityEngine.Time.realtimeSinceStartup - SpawnTime;
+    
+    /// <summary>
+    /// Whether or not this wave was spawned by the timer.
+    /// </summary>
+    public bool IsByTimer { get; internal set; }
 
     /// <summary>
     /// Gets the parent team handler.
     /// </summary>
-    public object Handler { get; internal set; }
-
-    /// <summary>
-    /// Gets the spawn point bounds which were used when spawning this instance.
-    /// </summary>
-    public Bounds? SpawnBounds { get; internal set; }
+    public CustomTeamHandlerBase Handler { get; internal set; }
 
     /// <summary>
     /// Gets a list of players spawned in this instance - contains only players which are still alive.
@@ -129,21 +130,23 @@ public abstract class CustomTeamInstance
 
         if (OriginalPlayers.Contains(player) && (AlivePlayers.Contains(player) || !reviveIfDead))
             return false;
+
+        var position = Handler.SelectPosition(player);
         
         player.Role.CustomTeam = this;
 
         if (role is RoleTypeId roleType)
         {
             player.Role.Set(roleType, RoleChangeReason.Respawn,
-                (!keepPosition && !SpawnBounds.HasValue) ? RoleSpawnFlags.All : RoleSpawnFlags.AssignInventory);
+                (!keepPosition && !position.HasValue) ? RoleSpawnFlags.All : RoleSpawnFlags.AssignInventory);
         }
         else if (role is CustomRoleData customRoleData)
         {
-            player.SetCustomRole(customRoleData.Type, !keepPosition && !SpawnBounds.HasValue);
+            player.SetCustomRole(customRoleData.Type, !keepPosition && !position.HasValue);
         }
 
-        if (!keepPosition && SpawnBounds.HasValue)
-            player.Position.Position = SpawnBounds.Value.GetRandom(false);
+        if (!keepPosition && position.HasValue)
+            player.Position.Position = position.Value;
 
         if (!string.IsNullOrWhiteSpace(handler.Name))
         {

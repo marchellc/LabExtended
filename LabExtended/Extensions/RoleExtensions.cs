@@ -6,6 +6,7 @@ using LabExtended.Core;
 using PlayerRoles;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.Thirdperson;
+using UnityEngine;
 
 namespace LabExtended.Extensions
 {
@@ -22,6 +23,28 @@ namespace LabExtended.Extensions
             Names = PlayerRoleLoader.AllRoles.ToDictionary(
                 keyPair => keyPair.Key,
                 valuePair => valuePair.Value.RoleName ?? valuePair.Value.RoleTypeId.ToString().SpaceByUpperCase());
+        }
+
+        public static (Vector3 position, float horizontalRotation) GetSpawnPosition(this RoleTypeId role)
+        {
+            if (!role.TryGetSpawnPosition(out var position, out var horizontalRotation))
+                throw new Exception($"Could not get spawnpoint for role {role}");
+
+            return (position, horizontalRotation);
+        }
+
+        public static bool TryGetSpawnPosition(this RoleTypeId role, out Vector3 position, out float horizontalRotation)
+        {
+            position = default;
+            horizontalRotation = 0f;
+            
+            if (!role.TryGetPrefab(out var prefab))
+                return false;
+
+            if (prefab is not IFpcRole fpcRole || fpcRole.SpawnpointHandler is null)
+                return false;
+            
+            return fpcRole.SpawnpointHandler.TryGetSpawnpoint(out position, out horizontalRotation);
         }
 
         public static bool TryGetPrefab(this RoleTypeId roleType, out PlayerRoleBase prefab)
