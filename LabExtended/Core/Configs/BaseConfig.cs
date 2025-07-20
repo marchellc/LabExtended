@@ -1,6 +1,7 @@
 using System.ComponentModel;
 
 using LabExtended.Patches.Functions.Players;
+using LabExtended.Utilities;
 
 namespace LabExtended.Core.Configs
 {
@@ -33,6 +34,13 @@ namespace LabExtended.Core.Configs
             get => DisarmValidateEntryPatch.DisarmDistance;
             set => DisarmValidateEntryPatch.DisarmDistance = value;
         }
+
+        [Description("A list of named positions plugins can use to spawn objects consistently across map seeds.")]
+        public Dictionary<string, MapUtilities.NamedPosition> Positions { get; set; } = new()
+        {
+            ["example"] = new(),
+            ["example2"] = new(),
+        };
 
         [Description("Sets a list of sources that cannot send debug messages.")]
         public List<string> DisabledDebugSources { get; set; } = new();
