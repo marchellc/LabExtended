@@ -2,6 +2,9 @@
 
 namespace LabExtended.Extensions;
 
+/// <summary>
+/// Extensions targeting the Unity Engine runtime.
+/// </summary>
 public static class UnityExtensions
 {
     /// <summary>
@@ -24,9 +27,23 @@ public static class UnityExtensions
         return point;
     }
 
+    /// <summary>
+    /// Attempts to find a component in a game object, ignoring it's hierarchy.
+    /// </summary>
+    /// <param name="gameObject">The target game object.</param>
+    /// <typeparam name="T">The component type.</typeparam>
+    /// <returns>The found component (or null).</returns>
     public static T FindComponent<T>(this GameObject gameObject)
-        => TryFindComponent<T>(gameObject, out var component) ? component : default;
+        => TryFindComponent<T>(gameObject, out var component) ? component : default!;
 
+    /// <summary>
+    /// Attempts to find a component in a game object, ignoring it's hierarchy.
+    /// </summary>
+    /// <param name="gameObject">The target game object.</param>
+    /// <param name="component">The found component.</param>
+    /// <typeparam name="T">The component type.</typeparam>
+    /// <returns>true if the component was found</returns>
+    /// <exception cref="ArgumentNullException"></exception>
     public static bool TryFindComponent<T>(this GameObject gameObject, out T component)
     {
         if (gameObject is null || !gameObject)
@@ -40,14 +57,21 @@ public static class UnityExtensions
         return true;
     }
 
+    /// <summary>
+    /// Attempts to find a component in a raycast's collider.
+    /// </summary>
+    /// <param name="hit">The target raycast hit.</param>
+    /// <param name="component">The found component.</param>
+    /// <typeparam name="T">The component type.</typeparam>
+    /// <returns>true if the component was found</returns>
     public static bool TryFindComponent<T>(this RaycastHit hit, out T component)
     {
         if (hit.collider == null || hit.transform?.root?.gameObject == null)
         {
-            component = default;
+            component = default!;
             return false;
         }
 
-        return hit.transform.root.gameObject.TryFindComponent<T>(out component);
+        return hit.transform.root.gameObject.TryFindComponent(out component);
     }
 }
