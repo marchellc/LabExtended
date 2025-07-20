@@ -113,7 +113,7 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
                 
                 char? axisName = null;
 
-                if (part.TryGetFirst(x => char.IsLetter(x) && x != ',' && x != '.' && !char.IsNumber(x),
+                if (part.TryGetFirst(x => char.IsLetter(x) && x != ',' && x != '.' && x != '-' && !char.IsNumber(x),
                         out var axisResult))
                 {
                     axisName = axisResult;
@@ -138,7 +138,7 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
                 var numbers = part.Where(x => x != axisName.Value);
                 var numbersStr = new string(numbers.ToArray());
 
-                if (!float.TryParse(part, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
+                if (!float.TryParse(numbersStr, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
                 {
                     DictionaryPool<char, float>.Shared.Return(axis);
                     return new(false, null, $"Could not parse axis value at position {i} (part: {part})", parameter);
