@@ -67,13 +67,15 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
         WaveTimer?.Dispose();
     }
 
-    internal override void Internal_RemoveInstance(int id)
+    /// <summary>
+    /// Despawns all active instances.
+    /// </summary>
+    /// <param name="playerRole">The role to set alive players to.</param>
+    public override void DespawnAll(RoleTypeId playerRole = RoleTypeId.Spectator)
     {
-        if (Instances.TryGetValue(id, out var instance))
+        while (Instances.Count > 0)
         {
-            Instances.Remove(id);
-            
-            OnDespawned(instance);
+            Despawn(Instances.First().Value, playerRole);
         }
     }
 
@@ -102,6 +104,20 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
             player.Role.Set(playerRole);
         }
 
+        for (var i = 0; i < instance.OriginalPlayers.Count; i++)
+        {
+            var player = instance.OriginalPlayers[i];
+
+            if (player?.ReferenceHub != null)
+            {
+                if (!string.IsNullOrWhiteSpace(Name))
+                {
+                    player.CustomInfo = string.Empty;
+                    player.InfoArea &= ~PlayerInfoArea.CustomInfo;
+                }
+            }
+        }
+
         instance.AlivePlayers.Clear();
         instance.OriginalPlayers.Clear();
 
@@ -117,11 +133,12 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
     /// </summary>
     /// <param name="maxPlayerCount">The maximum amount of players to spawn.</param>
     /// <param name="throwIfNotEnoughPlayers">Whether or not to throw an exception if there aren't enough players to match <paramref name="maxPlayerCount"/></param>
-    /// <param name="additionalChecks">Delegate used to check potential players, called after <see cref="IsSpawnable"/>.</param>
+    /// <param name="assignInventory">Whether or not to assign inventory to players with game roles, has no effect on players with custom roles.</param>
+    /// <param name="additionalChecks">Delegate used to check potential players, called after <see cref="CustomTeamHandlerBase.IsSpawnable"/>.</param>
     /// <returns>The spawned team instance (if spawned, null if there weren't enough players).</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="Exception"></exception>
-    public TInstance? Spawn(int maxPlayerCount, bool throwIfNotEnoughPlayers = false, Predicate<ExPlayer>? additionalChecks = null)
+    public TInstance? Spawn(int maxPlayerCount, bool throwIfNotEnoughPlayers = false, bool assignInventory = true, Predicate<ExPlayer>? additionalChecks = null)
     {
         if (maxPlayerCount < 1)
             throw new ArgumentOutOfRangeException(nameof(maxPlayerCount));
@@ -153,7 +170,7 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
             return null;
         }
 
-        var instance = Spawn(spawnablePlayers);
+        var instance = Spawn(spawnablePlayers, assignInventory);
         
         ListPool<ExPlayer>.Shared.Return(spawnablePlayers);
         return instance;
@@ -163,8 +180,9 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
     /// Spawns a new team instance.
     /// </summary>
     /// <param name="players">The list of players to spawn.</param>
+    /// <param name="assignInventory">Whether or not to assign inventory to players with game roles, has no effect on players with custom roles.</param>
     /// <returns>The spawned team instance (if spawned, null if there weren't enough players).</returns>
-    public TInstance? Spawn(IList<ExPlayer> players)
+    public TInstance? Spawn(IList<ExPlayer> players, bool assignInventory = true)
     {
         if (players is null)
             throw new ArgumentNullException(nameof(players));
@@ -199,8 +217,12 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
             if (pair.Value is RoleTypeId roleType)
             {
                 pair.Key.Role.Set(roleType, RoleChangeReason.Respawn, spawnPosition.HasValue 
-                                                        ? RoleSpawnFlags.AssignInventory
-                                                        : RoleSpawnFlags.All);
+                                                        ? (assignInventory 
+                                                            ? RoleSpawnFlags.AssignInventory
+                                                            : RoleSpawnFlags.None)
+                                                        : (assignInventory 
+                                                            ? RoleSpawnFlags.AssignInventory
+                                                            : RoleSpawnFlags.UseSpawnpoint));
             }
             else if (pair.Value is CustomRoleData customRoleData)
             {
@@ -212,7 +234,7 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
 
             if (!string.IsNullOrWhiteSpace(Name))
             {
-                pair.Key.CustomInfo = Name;
+                pair.Key.CustomInfo = Name!;
 
                 if ((pair.Key.InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
                     pair.Key.InfoArea |= PlayerInfoArea.CustomInfo;
@@ -232,5 +254,36 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandlerBase
         
         teamInstance.OnSpawned();
         return teamInstance;
+    }
+    
+    internal override void Internal_RemoveInstance(int id)
+    {
+        if (Instances.TryGetValue(id, out var instance))
+        {
+            Instances.Remove(id);
+            
+            OnDespawned(instance);
+        }
+    }
+
+    internal override bool Internal_DespawnInstance(int id)
+    {
+        if (Instances.TryGetValue(id, out var instance))
+        {
+            Despawn(instance);
+            return true;
+        }
+
+        return false;
+    }
+
+    internal override IEnumerable<CustomTeamInstance> Internal_GetInstances()
+    {
+        return Instances.Values;
+    }
+
+    internal override CustomTeamInstance Internal_SpawnInstance(int playerCount)
+    {
+        return Spawn(playerCount)!;
     }
 }

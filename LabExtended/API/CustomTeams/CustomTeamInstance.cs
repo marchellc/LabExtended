@@ -42,7 +42,7 @@ public abstract class CustomTeamInstance
     /// <summary>
     /// Gets the amounts of seconds passed since the team spawned.
     /// </summary>
-    public float PassedTime => UnityEngine.Time.realtimeSinceStartup - SpawnTime;
+    public float PassedTime => Time.realtimeSinceStartup - SpawnTime;
     
     /// <summary>
     /// Whether or not this wave was spawned by the timer.

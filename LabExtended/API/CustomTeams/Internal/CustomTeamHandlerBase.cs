@@ -61,8 +61,21 @@ public abstract class CustomTeamHandlerBase
     /// <param name="target">The player being attacked.</param>
     /// <returns>true if the friendly fire should be allowed</returns>
     public virtual bool CanDamage(ExPlayer attacker, ExPlayer target) => true;
+
+    /// <summary>
+    /// Despawns all active instances.
+    /// </summary>
+    /// <param name="playerRole">The role to set alive players to.</param>
+    public abstract void DespawnAll(RoleTypeId playerRole = RoleTypeId.Spectator);
+    
+    // I realize that this way of doings things may be a bit stupid, but it works.
     
     internal abstract void Internal_RemoveInstance(int id);
+    internal abstract bool Internal_DespawnInstance(int id);
+
+    internal abstract IEnumerable<CustomTeamInstance> Internal_GetInstances();
+
+    internal abstract CustomTeamInstance Internal_SpawnInstance(int playerCount);
 
     private static void Internal_OnLeft(ExPlayer player)
     {
