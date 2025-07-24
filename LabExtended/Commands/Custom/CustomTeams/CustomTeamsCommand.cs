@@ -24,9 +24,11 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         
         Ok(x =>
         {
+            x.AppendLine();
+            
             foreach (var pair in CustomTeamRegistry.RegisteredHandlers)
             {
-                x.AppendLine($"- {pair.Key}: {pair.Value.Name ?? "(null)"}");
+                x.AppendLine($"- {pair.Key.Name}: {pair.Value.Name ?? "(null)"}");
             }
         });
     }
@@ -51,6 +53,8 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         
         Ok(x =>
         {
+            x.AppendLine();
+            
             foreach (var instance in instances)
             {
                 x.AppendLine($"- {instance.Id}: Remaining players: {instance.AlivePlayers.Count} (spawned {Mathf.CeilToInt(instance.PassedTime)} seconds ago)");
@@ -85,6 +89,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         
         Ok(x =>
         {
+            x.AppendLine();
             x.AppendLine($"ID: {instance.Id}");
             x.AppendLine($"Spawned At: {DateTime.Now.ToLocalTime().Subtract(TimeSpan.FromSeconds(instance.PassedTime)).ToString("HH:mm:ss zz")}");
             x.AppendLine($"Active For: {Mathf.CeilToInt(instance.PassedTime)} seconds");
