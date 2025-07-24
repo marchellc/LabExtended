@@ -118,4 +118,71 @@ public static class MapUtilities
         worldPosition = room.transform.TransformPoint(position.Position.Vector);
         return true;
     }
+    
+    /// <summary>
+    /// Attempts to find a world-space position by it's name.
+    /// </summary>
+    /// <param name="positionName">The name of the position.</param>
+    /// <param name="angle">An angle to apply to the resulting rotation.</param>
+    /// <param name="worldPosition">The converted world-space position.</param>
+    /// <param name="rotation">The resulting rotation.</param>
+    /// <returns>true if the position and it's corresponding room were found</returns>
+    public static bool TryGet(string positionName, float? angle, out Vector3 worldPosition, out Quaternion rotation)
+    {
+        if (!TryGet(positionName, out NamedPosition position))
+        {
+            rotation = default;
+            worldPosition = default;
+            
+            return false;
+        }
+
+        if (!RoomUtils.TryFindRoom(position.RoomName, position.RoomZone, position.RoomShape, out var room))
+        {
+            rotation = default;
+            worldPosition = default;
+            
+            return false;
+        }
+
+        rotation = Quaternion.Euler(0f, room.transform.rotation.eulerAngles.y + angle ?? 0f, 0f);
+        worldPosition = room.transform.TransformPoint(position.Position.Vector);
+        
+        return true;
+    }
+    
+    /// <summary>
+    /// Attempts to find a world-space position by it's name.
+    /// </summary>
+    /// <param name="positionName">The name of the position.</param>
+    /// <param name="angle">An angle to apply to the resulting rotation.</param>
+    /// <param name="room">The room that the position is targeting.</param>
+    /// <param name="worldPosition">The converted world-space position.</param>
+    /// <param name="rotation">The resulting rotation.</param>
+    /// <returns>true if the position and it's corresponding room were found</returns>
+    public static bool TryGet(string positionName, float? angle, out RoomIdentifier room, out Vector3 worldPosition, out Quaternion rotation)
+    {
+        if (!TryGet(positionName, out NamedPosition position))
+        {
+            room = null!;
+            
+            rotation = default;
+            worldPosition = default;
+            
+            return false;
+        }
+
+        if (!RoomUtils.TryFindRoom(position.RoomName, position.RoomZone, position.RoomShape, out room))
+        {
+            rotation = default;
+            worldPosition = default;
+            
+            return false;
+        }
+
+        rotation = Quaternion.Euler(0f, room.transform.rotation.eulerAngles.y + angle ?? 0f, 0f);
+        worldPosition = room.transform.TransformPoint(position.Position.Vector);
+        
+        return true;
+    }
 }

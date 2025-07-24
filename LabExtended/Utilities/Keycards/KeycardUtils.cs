@@ -1,11 +1,16 @@
-﻿using InventorySystem.Items;
+﻿using CentralAuth;
+
+using InventorySystem.Items;
 using InventorySystem.Items.Keycards;
+
 using LabExtended.API;
-using LabExtended.Core.Pooling.Pools;
 using LabExtended.Extensions;
 
-using Mirror;
+using LabExtended.Core.Pooling.Pools;
+
 using UnityEngine;
+
+using Utils.Networking;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -194,11 +199,11 @@ public static class KeycardUtils
         
         KeycardDetailSynchronizer.Database[keycard.Info.Serial] = data;
         
-        NetworkServer.SendToAll(new KeycardDetailSynchronizer.DetailsSyncMsg
+        new KeycardDetailSynchronizer.DetailsSyncMsg
         {
             Serial = keycard.Info.Serial,
             Payload = data
-        });
+        }.SendToHubsConditionally(x => x.Mode is ClientInstanceMode.ReadyClient);
     }
     
     /// <summary>
@@ -221,11 +226,11 @@ public static class KeycardUtils
         
         KeycardDetailSynchronizer.Database[keycard.ItemSerial] = data;
         
-        NetworkServer.SendToAll(new KeycardDetailSynchronizer.DetailsSyncMsg
+        new KeycardDetailSynchronizer.DetailsSyncMsg
         {
             Serial = keycard.ItemSerial,
             Payload = data
-        });
+        }.SendToHubsConditionally(x => x.Mode is ClientInstanceMode.ReadyClient);
     }
     
     /// <summary>
@@ -250,7 +255,7 @@ public static class KeycardUtils
             return true;
         }
         
-        detail = null;
+        detail = null!;
         return false;
     }
 }
