@@ -1,8 +1,6 @@
 using LabApi.Events.Arguments.PlayerEvents;
 
 using LabExtended.API.CustomRoles;
-using LabExtended.API.CustomTeams.Internal;
-
 using LabExtended.Extensions;
 
 using PlayerRoles;
@@ -16,7 +14,7 @@ namespace LabExtended.API.CustomTeams;
 /// </summary>
 /// <typeparam name="THandler">The type of the parent team handler.</typeparam>
 public class CustomTeamInstance<THandler> : CustomTeamInstance 
-    where THandler : CustomTeamHandlerBase
+    where THandler : CustomTeamHandler
 {
     /// <summary>
     /// Gets the parent team handler cast to <see cref="THandler"/>.
@@ -52,7 +50,7 @@ public abstract class CustomTeamInstance
     /// <summary>
     /// Gets the parent team handler.
     /// </summary>
-    public CustomTeamHandlerBase Handler { get; internal set; }
+    public CustomTeamHandler Handler { get; internal set; }
 
     /// <summary>
     /// Gets a list of players spawned in this instance - contains only players which are still alive.
@@ -78,8 +76,6 @@ public abstract class CustomTeamInstance
 
         if (!AlivePlayers.Contains(player) && !OriginalPlayers.Contains(player))
             return false;
-
-        var handler = (CustomTeamHandlerBase)Handler;
         
         AlivePlayers.Remove(player);
         OriginalPlayers.Remove(player);
@@ -91,7 +87,7 @@ public abstract class CustomTeamInstance
         if (setRole.HasValue)
             player.Role.Set(setRole.Value);
 
-        if (!string.IsNullOrEmpty(handler.Name))
+        if (!string.IsNullOrEmpty(Handler.Name))
         {
             player.CustomInfo = string.Empty;
             player.InfoArea &= ~PlayerInfoArea.CustomInfo;
@@ -126,8 +122,6 @@ public abstract class CustomTeamInstance
             !player.Role.CustomTeam.RemoveMember(player, null))
             throw new Exception($"Player {player.UserId} is already a part of another team and could not be removed!");
 
-        var handler = (CustomTeamHandlerBase)Handler;
-
         if (OriginalPlayers.Contains(player) && (AlivePlayers.Contains(player) || !reviveIfDead))
             return false;
 
@@ -148,9 +142,9 @@ public abstract class CustomTeamInstance
         if (!keepPosition && position.HasValue)
             player.Position.Position = position.Value;
 
-        if (!string.IsNullOrWhiteSpace(handler.Name))
+        if (!string.IsNullOrWhiteSpace(Handler.Name))
         {
-            player.CustomInfo = handler.Name;
+            player.CustomInfo = Handler.Name;
 
             if ((player.InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
                 player.InfoArea |= PlayerInfoArea.CustomInfo;

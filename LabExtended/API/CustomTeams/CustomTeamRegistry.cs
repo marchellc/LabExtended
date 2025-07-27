@@ -1,7 +1,5 @@
 using HarmonyLib;
 
-using LabExtended.API.CustomTeams.Internal;
-
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
@@ -18,7 +16,7 @@ public static class CustomTeamRegistry
     /// <summary>
     /// Gets a list of all registered handlers.
     /// </summary>
-    public static Dictionary<Type, CustomTeamHandlerBase> RegisteredHandlers { get; } = new();
+    public static Dictionary<Type, CustomTeamHandler> RegisteredHandlers { get; } = new();
 
     /// <summary>
     /// Attempts to find a custom team handler by it's type name.
@@ -27,7 +25,7 @@ public static class CustomTeamRegistry
     /// <param name="teamHandler">The found team handler.</param>
     /// <typeparam name="THandler">Handler type</typeparam>
     /// <returns>true if the handler was found</returns>
-    public static bool TryGet<THandler>(string name, out THandler teamHandler) where THandler : CustomTeamHandlerBase
+    public static bool TryGet<THandler>(string name, out THandler teamHandler) where THandler : CustomTeamHandler
     {
         if (string.IsNullOrEmpty(name))
         {
@@ -58,7 +56,7 @@ public static class CustomTeamRegistry
     /// <param name="handler">The found handler.</param>
     /// <typeparam name="THandler">The type of handler to find.</typeparam>
     /// <returns>true if the handler was found</returns>
-    public static bool TryGet<THandler>(out THandler handler) where THandler : CustomTeamHandlerBase
+    public static bool TryGet<THandler>(out THandler handler) where THandler : CustomTeamHandler
     {
         if (RegisteredHandlers.TryGetValue(typeof(THandler), out var result))
         {
@@ -75,7 +73,7 @@ public static class CustomTeamRegistry
     /// </summary>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="Exception"></exception>
-    public static THandler Register<THandler>() where THandler : CustomTeamHandlerBase
+    public static THandler Register<THandler>() where THandler : CustomTeamHandler
         => (THandler)Register(typeof(THandler));
     
     /// <summary>
@@ -84,7 +82,7 @@ public static class CustomTeamRegistry
     /// <param name="type">The type to register.</param>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="Exception"></exception>
-    public static CustomTeamHandlerBase Register(Type type)
+    public static CustomTeamHandler Register(Type type)
     {
         if (type is null)
             throw new ArgumentNullException(nameof(type));
@@ -92,7 +90,7 @@ public static class CustomTeamRegistry
         if (RegisteredHandlers.TryGetValue(type, out var active))
             return active;
 
-        if (Activator.CreateInstance(type) is not CustomTeamHandlerBase handler)
+        if (Activator.CreateInstance(type) is not CustomTeamHandler handler)
             throw new Exception($"Type {type.FullName} could not be instantiated as a CustomTeamHandler");
         
         RegisteredHandlers.Add(type, handler);
@@ -106,7 +104,7 @@ public static class CustomTeamRegistry
         if (type.HasAttribute<LoaderIgnoreAttribute>())
             return;
         
-        if (!type.InheritsType<CustomTeamHandlerBase>() || type == typeof(CustomTeamHandlerBase))
+        if (!type.InheritsType<CustomTeamHandler>() || type == typeof(CustomTeamHandler))
             return;
 
         if (AccessTools.Constructor(type) is null)

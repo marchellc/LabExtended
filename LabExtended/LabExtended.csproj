@@ -98,4 +98,8 @@
       <Compile Remove="Patches\Events\PlayerSpawningPatch.cs" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="API\CustomTeams\Internal\" />
+    </ItemGroup>
+
 </Project>

@@ -1,5 +1,4 @@
 using LabExtended.API.CustomTeams;
-using LabExtended.API.CustomTeams.Internal;
 
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
@@ -37,7 +36,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
     public void Waves(
         [CommandParameter("Name", "Name of the team.")] string name)
     {
-        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandlerBase handler))
+        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandler handler))
         {
             Fail($"Could not find custom team '{name}'");
             return;
@@ -67,7 +66,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         [CommandParameter("Name", "Name of the team.")] string name,
         [CommandParameter("ID", "ID of the wave.")] int id)
     {
-        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandlerBase handler))
+        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandler handler))
         {
             Fail($"Could not find custom team '{name}'");
             return;
@@ -119,16 +118,15 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
 
     [CommandOverload("spawn", "Spawns a new wave of a custom team.")]
     public void Spawn(
-        [CommandParameter("Name", "Name of the team to spawn.")] string name,
-        [CommandParameter("Players", "The maximum amount of players to spawn.")] int players)
+        [CommandParameter("Name", "Name of the team to spawn.")] string name)
     {
-        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandlerBase handler))
+        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandler handler))
         {
             Fail($"Could not find custom team '{name}'");
             return;
         }
 
-        var instance = handler.Internal_SpawnInstance(players);
+        var instance = handler.Internal_SpawnInstance(-1, -1);
 
         if (instance is null)
         {
@@ -144,7 +142,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         [CommandParameter("Name", "Name of the team to despawn.")] string name,
         [CommandParameter("ID", "ID of the instance to despawn (or * for all).")] string id)
     {
-        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandlerBase handler))
+        if (!CustomTeamRegistry.TryGet(name, out CustomTeamHandler handler))
         {
             Fail($"Could not find custom team '{name}'");
             return;
