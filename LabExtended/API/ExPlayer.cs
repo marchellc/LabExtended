@@ -1,10 +1,10 @@
 ﻿using LabExtended.API.Enums;
 using LabExtended.API.Hints;
-using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Containers;
-
-using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomVoice;
+using LabExtended.API.RemoteAdmin;
+using LabExtended.API.FileStorage;
+using LabExtended.API.PositionSync;
 
 using LabExtended.API.Settings.Menus;
 using LabExtended.API.Settings.Entries;
@@ -14,6 +14,7 @@ using LabExtended.API.Hints.Elements.Personal;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Commands.Attributes;
+using LabExtended.Commands.Interfaces;
 
 using LabExtended.Events;
 using LabExtended.Utilities;
@@ -50,10 +51,8 @@ using CommandSystem;
 
 using Footprinting;
 
-using LabExtended.API.FileStorage;
-using LabExtended.API.PositionSync;
-using LabExtended.Commands.Interfaces;
 using NetworkManagerUtils.Dummies;
+
 using NorthwoodLib.Pools;
 
 using UserSettings.ServerSpecific;
@@ -111,13 +110,13 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets or sets ghosted player flags.
     /// </summary>
-    public static int GhostedFlags { get; set; } = 0;
+    public static int GhostedFlags { get; set; } 
 
     /// <summary>
     /// Gets the host player.
     /// </summary>
     [CommandPropertyAlias("host")]
-    public new static ExPlayer? Host
+    public new static ExPlayer Host
     {
         get
         {
@@ -185,7 +184,7 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     /// <param name="peer">The <see cref="NetPeer"/> instance to get a player of.</param>
     /// <returns>The <see cref="ExPlayer"/> instance if found, otherwise <see langword="null"/>.</returns>
-    public static ExPlayer Get(NetPeer peer)
+    public static ExPlayer? Get(NetPeer peer)
         => Players.FirstOrDefault(p => p.Peer != null && p.Peer == peer);
 
     /// <summary>
@@ -321,8 +320,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="hub">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(ReferenceHub hub, out ExPlayer? player)
-        => (player = Get(hub)) != null;
+    public static bool TryGet(ReferenceHub hub, out ExPlayer player)
+        => (player = Get(hub)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="GameObject"/>.
@@ -330,8 +329,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="obj">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(GameObject obj, out ExPlayer? player)
-        => (player = Get(obj)) != null;
+    public static bool TryGet(GameObject obj, out ExPlayer player)
+        => (player = Get(obj)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkIdentity"/>.
@@ -339,8 +338,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="identity">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(NetworkIdentity identity, out ExPlayer? player)
-        => (player = Get(identity)) != null;
+    public static bool TryGet(NetworkIdentity identity, out ExPlayer player)
+        => (player = Get(identity)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="NetworkConnection"/>.
@@ -348,8 +347,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="conn">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(NetworkConnection conn, out ExPlayer? player)
-        => (player = Get(conn)) != null;
+    public static bool TryGet(NetworkConnection conn, out ExPlayer player)
+        => (player = Get(conn)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="Collider"/>.
@@ -357,8 +356,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="collider">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(Collider collider, out ExPlayer? player)
-        => (player = Get(collider)) != null;
+    public static bool TryGet(Collider collider, out ExPlayer player)
+        => (player = Get(collider)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a <see cref="ICommandSender"/>.
@@ -366,8 +365,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="sender">The instance to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(ICommandSender sender, out ExPlayer? player)
-        => (player = Get(sender)) != null;
+    public static bool TryGet(ICommandSender sender, out ExPlayer player)
+        => (player = Get(sender)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a player ID.
@@ -375,8 +374,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="playerId">The player ID to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(int playerId, out ExPlayer? player)
-        => (player = Get(playerId)) != null;
+    public static bool TryGet(int playerId, out ExPlayer player)
+        => (player = Get(playerId)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a connection ID.
@@ -384,8 +383,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="connectionId">The connection ID to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGetByConnectionId(int connectionId, out ExPlayer? player)
-        => (player = GetByConnectionId(connectionId)) != null;
+    public static bool TryGetByConnectionId(int connectionId, out ExPlayer player)
+        => (player = GetByConnectionId(connectionId)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a network ID.
@@ -393,8 +392,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="networkId">The network ID to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(uint networkId, out ExPlayer? player)
-        => (player = Get(networkId)) != null;
+    public static bool TryGet(uint networkId, out ExPlayer player)
+        => (player = Get(networkId)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by a user ID.
@@ -402,8 +401,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="userId">The network ID to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGetByUserId(string userId, out ExPlayer? player)
-        => (player = GetByUserId(userId)) != null;
+    public static bool TryGetByUserId(string userId, out ExPlayer player)
+        => (player = GetByUserId(userId)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
@@ -412,8 +411,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <param name="minScore">Name match precision.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(string value, double minScore, out ExPlayer? player)
-        => (player = Get(value, minScore)) != null;
+    public static bool TryGet(string value, double minScore, out ExPlayer player)
+        => (player = Get(value, minScore)!) != null;
 
     /// <summary>
     /// Tries to get an <see cref="ExPlayer"/> instance by their name, user ID, IP, network ID, player ID or connection ID.
@@ -421,8 +420,8 @@ public class ExPlayer : Player, IDisposable
     /// <param name="value">The value to find.</param>
     /// <param name="player">The instance if found, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if the <see cref="ExPlayer"/> instance was found, otherwise <see langword="null"/>.</returns>
-    public static bool TryGet(string value, out ExPlayer? player)
-        => (player = Get(value)) != null;
+    public static bool TryGet(string value, out ExPlayer player)
+        => (player = Get(value)!) != null;
 
     /// <summary>
     /// Gets a list of all players that match the predicate.
@@ -455,7 +454,6 @@ public class ExPlayer : Player, IDisposable
     /// <returns>A list of all matching players.</returns>
     public static IEnumerable<ExPlayer> Get(RoleTypeId role)
         => Get(n => n.Role.Type == role);
-
     #endregion
 
     private UserIdHelper.UserIdInfo? idInfo;
@@ -619,12 +617,12 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's effect container.
     /// </summary>
-    public EffectContainer? Effects { get; internal set; }
+    public EffectContainer Effects { get; internal set; }
 
     /// <summary>
     /// Gets the player's inventory container.
     /// </summary>
-    public new InventoryContainer? Inventory { get; internal set; }
+    public new InventoryContainer Inventory { get; internal set; }
 
     /// <summary>
     /// Gets the player's subroutine container.
@@ -634,22 +632,22 @@ public class ExPlayer : Player, IDisposable
     /// <summary>
     /// Gets the player's voice chat controller.
     /// </summary>
-    public VoiceController? Voice { get; internal set; }
+    public VoiceController Voice { get; internal set; }
 
     /// <summary>
     /// Gets the player's Remote Admin controller.
     /// </summary>
-    public RemoteAdminController? RemoteAdmin { get; internal set; }
+    public RemoteAdminController RemoteAdmin { get; internal set; }
 
     /// <summary>
     /// Gets the player's temporary storage.
     /// </summary>
-    public PlayerStorage? TemporaryStorage { get; internal set; }
+    public PlayerStorage TemporaryStorage { get; internal set; }
 
     /// <summary>
     /// Gets the player's persistent storage. <i>(persistent until the next server restart)</i>
     /// </summary>
-    public PlayerStorage? PersistentStorage { get; internal set; }
+    public PlayerStorage PersistentStorage { get; internal set; }
     
     /// <summary>
     /// Gets the player's file storage. This WILL be NULL if file storage is disabled!
@@ -695,13 +693,13 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's network identity.
     /// </summary>
     [CommandPropertyAlias("networkIdentity")]
-    public NetworkIdentity? Identity => ReferenceHub?.connectionToClient?.identity;
+    public NetworkIdentity Identity => ReferenceHub?.connectionToClient?.identity!;
 
     /// <summary>
     /// Gets the player's client connection.
     /// </summary>
     [CommandPropertyAlias("networkConnection")]
-    public NetworkConnectionToClient? ClientConnection => ReferenceHub?.connectionToClient;
+    public NetworkConnectionToClient ClientConnection => ReferenceHub?.connectionToClient!;
 
     /// <summary>
     /// Gets a list of personal hint elements.
@@ -725,7 +723,7 @@ public class ExPlayer : Player, IDisposable
     /// Gets the currently spectated player.
     /// </summary>
     [CommandPropertyAlias("spectatedPlayer")]
-    public ExPlayer SpectatedPlayer => Players.FirstOrDefault(p => p.IsSpectatedBy(this));
+    public ExPlayer? SpectatedPlayer => Players.FirstOrDefault(p => p.IsSpectatedBy(this));
 
     /// <summary>
     /// Gets or sets the player that this player was disarmed by.
@@ -876,16 +874,6 @@ public class ExPlayer : Player, IDisposable
     public ClientInstanceMode InstanceMode => ReferenceHub?.Mode ?? ClientInstanceMode.Unverified;
 
     /// <summary>
-    /// Gets or sets the player's enabled info area flags.
-    /// </summary>
-    [CommandPropertyAlias("infoArea")]
-    public PlayerInfoArea InfoArea
-    {
-        get => ReferenceHub.nicknameSync.Network_playerInfoToShow;
-        set => ReferenceHub.nicknameSync.Network_playerInfoToShow = value;
-    }
-
-    /// <summary>
     /// Gets or sets the player's Remote Admin permissions.
     /// </summary>
     [CommandPropertyAlias("permissions")]
@@ -967,13 +955,31 @@ public class ExPlayer : Player, IDisposable
     /// Whether the player is connected.
     /// </summary>
     [CommandPropertyAlias("isOnline")]
-    public new bool IsOnline => Peer != null ? ConnectionState is ConnectionState.Connected : GameObject != null;
+    public new bool IsOnline
+    {
+        get
+        {
+            if (ReferenceHub == null)
+                return false;
+
+            if (Peer != null && Peer.ConnectionState != ConnectionState.Connected)
+                return false;
+
+            return true;
+        }
+    }
 
     /// <summary>
     /// Whether the player is disconnected.
     /// </summary>
     [CommandPropertyAlias("isOffline")]
-    public new bool IsOffline => Peer != null ? ConnectionState != ConnectionState.Connected : GameObject is null;
+    public new bool IsOffline => !IsOnline;
+
+    /// <summary>
+    /// Whether or not the player is online and verified as a player.
+    /// </summary>
+    [CommandPropertyAlias(("isOnlineAndVerified"))]
+    public bool IsOnlineAndVerified => IsOnline && IsVerified;
 
     /// <summary>
     /// Whether the player is the server player.
@@ -1070,6 +1076,12 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     [CommandPropertyAlias("hasStaffChatAccess")]
     public bool HasStaffChatAccess => ReferenceHub.serverRoles.AdminChatPerms;
+
+    /// <summary>
+    /// Whether or not the player can be respawned.
+    /// </summary>
+    [CommandPropertyAlias("canBeRespawned")]
+    public bool CanBeRespawned => ReferenceHub != null && RoleBase is SpectatorRole spectatorRole && spectatorRole.ReadyToRespawn;
 
     /// <summary>
     /// Gets the player's ISO 3166-1 alpha-2 country code (empty string for NPCs).
@@ -1217,7 +1229,7 @@ public class ExPlayer : Player, IDisposable
         => ReferenceHub.characterClassManager.TargetChangeCmdBinding(key, command);
 
     /// <summary>
-    /// Whether or not the target player is invisible to ther player.
+    /// Whether or not the target player is invisible to the player.
     /// </summary>
     /// <param name="otherPlayer">The player to check.</param>
     /// <returns><see langword="true"/> if the this player is invisible to the targeted player.</returns>
@@ -1355,19 +1367,19 @@ public class ExPlayer : Player, IDisposable
             ObjectPool<HintCache>.Shared.Return(Hints);
 
         Effects?.Dispose();
-        Effects = null;
+        Effects = null!;
 
         Inventory?.Dispose();
-        Inventory = null;
+        Inventory = null!;
 
         RemoteAdmin?.Dispose();
-        RemoteAdmin = null;
+        RemoteAdmin = null!;
 
         Voice?.Dispose();
-        Voice = null;
+        Voice = null!;
 
         TemporaryStorage?.Dispose();
-        TemporaryStorage = null;
+        TemporaryStorage = null!;
 
         if (PersistentStorage != null)
         {
@@ -1375,19 +1387,19 @@ public class ExPlayer : Player, IDisposable
                 PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
 
             PersistentStorage.LeaveTime = DateTime.Now;
-            PersistentStorage = null;
+            PersistentStorage = null!;
         }
 
         if (SentRoles != null)
         {
             DictionaryPool<uint, RoleTypeId>.Shared.Return(SentRoles);
-            SentRoles = null;
+            SentRoles = null!;
         }
 
         if (SentPositions != null)
         {
             DictionaryPool<uint, PositionCache>.Shared.Return(SentPositions);
-            SentPositions = null;
+            SentPositions = null!;
         }
 
         if (settingsIdLookup != null)
@@ -1411,7 +1423,7 @@ public class ExPlayer : Player, IDisposable
         if (removeNextFrame != null)
         {
             ListPool<HintElement>.Shared.Return(removeNextFrame);
-            removeNextFrame = null;
+            removeNextFrame = null!;
         }
         
         if (HintElements != null)
@@ -1424,7 +1436,7 @@ public class ExPlayer : Player, IDisposable
 
             HashSetPool<PersonalHintElement>.Shared.Return(HintElements);
 
-            HintElements = null;
+            HintElements = null!;
         }
     }
 
