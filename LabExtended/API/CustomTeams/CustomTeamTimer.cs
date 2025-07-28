@@ -241,14 +241,16 @@ public abstract class CustomTeamTimer<TInstance> : IDisposable
         
         ListPool<ExPlayer>.Shared.Return(players);
 
-        if (instance is null)
-            return WaveFailureReason.Unknown;
+        if (instance.SpawnFail.HasValue)
+            return instance.SpawnFail.Value is CustomTeamSpawnFail.NotEnoughPlayers
+                ? WaveFailureReason.PlayerCountNotMet
+                : WaveFailureReason.Unknown;
 
-        instance.IsByTimer = true;
+        instance.SpawnedWave.IsByTimer = true;
         
-        SpawnedWaves.Add(instance);
+        SpawnedWaves.Add(instance.SpawnedWave);
         
-        OnSpawned(instance);
+        OnSpawned(instance.SpawnedWave);
         return WaveFailureReason.None;
     }
 }

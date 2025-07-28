@@ -1,4 +1,3 @@
-using LabExtended.API.CustomRoles;
 using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
@@ -133,13 +132,11 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandler
     /// </summary>
     /// <param name="minPlayerCount">The minimum amount of players required to spawn.</param>
     /// <param name="maxPlayerCount">The maximum amount of players allowed to spawn.</param>
-    /// <param name="assignInventory">Whether or not to assign inventory to players with game roles, has no effect on players with custom roles.</param>
     /// <param name="additionalChecks">Delegate used to check potential players, called after <see cref="CustomTeamHandler.IsSpawnable"/>.</param>
     /// <returns>The spawned team instance (if spawned, null if there weren't enough players).</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     /// <exception cref="Exception"></exception>
-    public TInstance? Spawn(int minPlayerCount, int maxPlayerCount, bool assignInventory = true,
-        Predicate<ExPlayer>? additionalChecks = null)
+    public CustomTeamSpawnResult<TInstance> Spawn(int minPlayerCount, int maxPlayerCount, Predicate<ExPlayer>? additionalChecks = null)
     {
         var spawnablePlayers = ListPool<ExPlayer>.Shared.Rent();
 
@@ -162,19 +159,14 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandler
             spawnablePlayers.Add(player);
         }
 
-        if (minPlayerCount > 0 && spawnablePlayers.Count < minPlayerCount)
+        if ((minPlayerCount > 0 && spawnablePlayers.Count < minPlayerCount)
+            || spawnablePlayers.Count < 1)
         {
             ListPool<ExPlayer>.Shared.Return(spawnablePlayers);
-            return null;
+            return new(null, CustomTeamSpawnFail.NotEnoughPlayers);
         }
 
-        if (spawnablePlayers.Count == 0)
-        {
-            ListPool<ExPlayer>.Shared.Return(spawnablePlayers);
-            return null;
-        }
-
-        var instance = Spawn(spawnablePlayers, assignInventory);
+        var instance = Spawn(spawnablePlayers);
 
         ListPool<ExPlayer>.Shared.Return(spawnablePlayers);
         return instance;
@@ -184,80 +176,46 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandler
     /// Spawns a new team instance.
     /// </summary>
     /// <param name="players">The list of players to spawn.</param>
-    /// <param name="assignInventory">Whether or not to assign inventory to players with game roles, has no effect on players with custom roles.</param>
     /// <returns>The spawned team instance (if spawned, null if there weren't enough players).</returns>
-    public TInstance? Spawn(IList<ExPlayer> players, bool assignInventory = true)
+    public CustomTeamSpawnResult<TInstance> Spawn(IEnumerable<ExPlayer> players)
     {
         if (players is null)
             throw new ArgumentNullException(nameof(players));
 
+        if (players.Count() < 1)
+            return new(null, CustomTeamSpawnFail.NotEnoughPlayers);
+
         if (Activator.CreateInstance(Type) is not TInstance teamInstance)
             throw new Exception($"Could not instantiate {typeof(TInstance).Name}");
-
-        var selectedRoles = DictionaryPool<ExPlayer, object>.Shared.Rent();
-
-        for (var i = 0; i < players.Count; i++)
-        {
-            var player = players[i];
-            var role = SelectRole(player, selectedRoles);
-            
-            if (role is null)
-                continue;
-
-            if (role is RoleTypeId || role is CustomRoleData)
-                selectedRoles[player] = role;
-            else
-                throw new Exception($"Unknown return type from SelectRole(): {role.GetType().FullName}");
-        }
-
+        
         teamInstance.Id = idClock++;
         teamInstance.Handler = this;
         teamInstance.SpawnTime = Time.realtimeSinceStartup;
+        
+        var selectedRoles = DictionaryPool<ExPlayer, RoleTypeId>.Shared.Rent();
 
-        foreach (var pair in selectedRoles)
+        foreach (var player in players)
         {
-            var spawnPosition = SelectPosition(pair.Key);
+            var role = SelectRole(player, selectedRoles);
+
+            selectedRoles[player] = role;
             
-            if (pair.Value is RoleTypeId roleType)
-            {
-                pair.Key.Role.Set(roleType, RoleChangeReason.Respawn, spawnPosition.HasValue 
-                                                        ? (assignInventory 
-                                                            ? RoleSpawnFlags.AssignInventory
-                                                            : RoleSpawnFlags.None)
-                                                        : (assignInventory 
-                                                            ? RoleSpawnFlags.AssignInventory
-                                                            : RoleSpawnFlags.UseSpawnpoint));
-            }
-            else if (pair.Value is CustomRoleData customRoleData)
-            {
-                pair.Key.SetCustomRole(customRoleData.Type, !spawnPosition.HasValue);
-            }
+            teamInstance.SpawnPlayer(player, role);
 
-            if (spawnPosition.HasValue)
-                pair.Key.Position.Position = spawnPosition.Value;
+            teamInstance.AlivePlayers.Add(player);
+            teamInstance.OriginalPlayers.Add(player);
 
-            if (!string.IsNullOrWhiteSpace(Name))
-            {
-                pair.Key.CustomInfo = Name!;
-
-                if ((pair.Key.InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
-                    pair.Key.InfoArea |= PlayerInfoArea.CustomInfo;
-            }
-
-            teamInstance.AlivePlayers.Add(pair.Key);
-            teamInstance.OriginalPlayers.Add(pair.Key);
-
-            pair.Key.Role.CustomTeam = teamInstance;
+            player.Role.CustomTeam = teamInstance;
         }
         
-        DictionaryPool<ExPlayer, object>.Shared.Return(selectedRoles);
+        DictionaryPool<ExPlayer, RoleTypeId>.Shared.Return(selectedRoles);
 
         Instances[teamInstance.Id] = teamInstance;
         
         OnSpawned(teamInstance);
         
         teamInstance.OnSpawned();
-        return teamInstance;
+        return new(teamInstance, null);
     }
     
     internal override void Internal_RemoveInstance(int id)
@@ -288,6 +246,6 @@ public abstract class CustomTeamHandler<TInstance> : CustomTeamHandler
 
     internal override CustomTeamInstance Internal_SpawnInstance(int minPlayerCount, int maxPlayerCount)
     {
-        return Spawn(minPlayerCount, maxPlayerCount)!;
+        return Spawn(minPlayerCount, maxPlayerCount).SpawnedWave!;
     }
 }

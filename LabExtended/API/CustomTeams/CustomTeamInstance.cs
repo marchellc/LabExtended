@@ -1,6 +1,5 @@
 using LabApi.Events.Arguments.PlayerEvents;
 
-using LabExtended.API.CustomRoles;
 using LabExtended.Extensions;
 
 using PlayerRoles;
@@ -13,7 +12,7 @@ namespace LabExtended.API.CustomTeams;
 /// A generic version of <see cref="CustomTeamInstance"/>.
 /// </summary>
 /// <typeparam name="THandler">The type of the parent team handler.</typeparam>
-public class CustomTeamInstance<THandler> : CustomTeamInstance 
+public abstract class CustomTeamInstance<THandler> : CustomTeamInstance 
     where THandler : CustomTeamHandler
 {
     /// <summary>
@@ -101,22 +100,14 @@ public abstract class CustomTeamInstance
     /// </summary>
     /// <param name="player">The player to add to the team.</param>
     /// <param name="role">The role to set for the player.</param>
-    /// <param name="keepPosition">Whether or not to keep the player's current position.</param>
     /// <param name="reviveIfDead">Whether or not to revive the player if they were part of the initial spawn and died.</param>
     /// <returns>true if the player was added</returns>
     /// <exception cref="ArgumentNullException"></exception>
     /// <exception cref="ArgumentException"></exception>
-    public bool AddMember(ExPlayer player, object role, bool keepPosition = false, bool reviveIfDead = false)
+    public bool AddMember(ExPlayer player, RoleTypeId role, bool reviveIfDead = false)
     {
-        if (role is null)
-            throw new ArgumentNullException(nameof(role));
-
         if (player?.ReferenceHub == null)
             throw new ArgumentNullException(nameof(player));
-
-        if (role is not RoleTypeId && role is not CustomRoleData)
-            throw new ArgumentException("You can use a RoleTypeId enum or a CustomRoleData instance only.",
-                nameof(role));
 
         if (player.Role.CustomTeam != null && player.Role.CustomTeam.Id != Id &&
             !player.Role.CustomTeam.RemoveMember(player, null))
@@ -124,27 +115,14 @@ public abstract class CustomTeamInstance
 
         if (OriginalPlayers.Contains(player) && (AlivePlayers.Contains(player) || !reviveIfDead))
             return false;
-
-        var position = Handler.SelectPosition(player);
         
         player.Role.CustomTeam = this;
-
-        if (role is RoleTypeId roleType)
-        {
-            player.Role.Set(roleType, RoleChangeReason.Respawn,
-                (!keepPosition && !position.HasValue) ? RoleSpawnFlags.All : RoleSpawnFlags.AssignInventory);
-        }
-        else if (role is CustomRoleData customRoleData)
-        {
-            player.SetCustomRole(customRoleData.Type, !keepPosition && !position.HasValue);
-        }
-
-        if (!keepPosition && position.HasValue)
-            player.Position.Position = position.Value;
+        
+        SpawnPlayer(player, role);
 
         if (!string.IsNullOrWhiteSpace(Handler.Name))
         {
-            player.CustomInfo = Handler.Name;
+            player.CustomInfo = Handler.Name!;
 
             if ((player.InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
                 player.InfoArea |= PlayerInfoArea.CustomInfo;
@@ -170,6 +148,13 @@ public abstract class CustomTeamInstance
         
         return onlyAlive ? AlivePlayers.Contains(player) : OriginalPlayers.Contains(player);
     }
+
+    /// <summary>
+    /// Used to spawn a player.
+    /// </summary>
+    /// <param name="player"></param>
+    /// <param name="role"></param>
+    public abstract void SpawnPlayer(ExPlayer player, RoleTypeId role);
     
     /// <summary>
     /// Gets called once the instance is spawned.

@@ -21,13 +21,6 @@ public abstract class CustomTeamHandler
     /// Gets the team's name.
     /// </summary>
     public abstract string? Name { get; }
-
-    /// <summary>
-    /// Selects a spawn position for a player.
-    /// </summary>
-    /// <param name="player">The player to select the position for.</param>
-    /// <returns>the selected position (or null to use a random position from the player's role)</returns>
-    public abstract Vector3? SelectPosition(ExPlayer player);
     
     /// <summary>
     /// Selects a player's role.
@@ -35,7 +28,7 @@ public abstract class CustomTeamHandler
     /// <param name="player">The player to select the role for.</param>
     /// <param name="selectedRoles">A list of already selected roles (values are the respective roles, can be of type <see cref="CustomRoleData"/> or <see cref="RoleTypeId"/>).</param>
     /// <returns>The selected role to spawn as, can return <see cref="CustomRoleData"/> to spawn as a custom role or <see cref="RoleTypeId"/> to spawn as a base-game role (or null to exclude the player from the spawn).</returns>
-    public abstract object SelectRole(ExPlayer player, Dictionary<ExPlayer, object> selectedRoles);
+    public abstract RoleTypeId SelectRole(ExPlayer player, Dictionary<ExPlayer, RoleTypeId> selectedRoles);
     
     /// <summary>
     /// Checks if a specific player is spawnable to be included in the next team.
