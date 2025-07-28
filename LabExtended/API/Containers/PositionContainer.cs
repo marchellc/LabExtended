@@ -291,12 +291,6 @@ namespace LabExtended.API.Containers
         /// <param name="position">The position to set.</param>
         public void Set(Vector3 position)
         {
-            if (Player is { IsDummy: true, Role.Motor: not null })
-            {
-                Player.Role.Motor.ReceivedPosition = new(position);
-                return;
-            }
-            
             Player.ReferenceHub.TryOverridePosition(position);
         }
 
