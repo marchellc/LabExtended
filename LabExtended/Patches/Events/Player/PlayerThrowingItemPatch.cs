@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 
-using InventorySystem; 
+using InventorySystem;
 
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
@@ -64,25 +64,34 @@ public static class PlayerThrowingItemPatch
             type => type != ItemType.None, item.ItemTypeId);
         var pickupScale = inventoryBehaviour.GetCustomValue(ib => ib.Handler.PickupProperties.Scale,
             scale => scale != Vector3.zero, Vector3.one);
-        var pickup = ExMap.SpawnItem(pickupType, player.Position, pickupScale, player.Rotation, itemSerial);
+        
+        CustomItemPickupBehaviour? pickupBehaviour = null;
+
+        var pickup = pickupType != item.ItemTypeId || pickupScale != Vector3.one
+            ? ExMap.SpawnItem(pickupType, player.Position, pickupScale, player.Rotation, itemSerial)
+            : player.ReferenceHub.inventory.ServerDropItem(itemSerial);
 
         __instance.SendItemsNextFrame = true;
 
         tryThrow = droppingArgs.Throw;
-
-        player.Inventory.droppedItems.Add(pickup);
-
-        tracker.SetPickup(pickup, player);
         
         var droppedArgs = new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup, tryThrow);
 
         PlayerEvents.OnDroppedItem(droppedArgs);
+
+        if (pickup != null)
+        {
+            player.Inventory!.droppedItems!.Add(pickup);
+            
+            tracker.SetPickup(pickup, player);
+            
+            pickupBehaviour = inventoryBehaviour.ProcessDropped(pickup, player, droppedArgs);
+        }
         
-        var pickupBehaviour = inventoryBehaviour.ProcessDropped(pickup, player, droppedArgs);
+        if (item != null)
+            item.DestroyItem();
 
-        item.DestroyItem();
-
-        if (player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
+        if (pickup != null && player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
         {
             var throwingArgs =
                 new LabApi.Events.Arguments.PlayerEvents.PlayerThrowingItemEventArgs(player.ReferenceHub, pickup,
@@ -100,12 +109,9 @@ public static class PlayerThrowingItemPatch
             velocity = velocity / 3f + __instance._hub.PlayerCameraReference.forward * 6f *
                 (Mathf.Clamp01(Mathf.InverseLerp(7f, 0.1f, rigidbody.mass)) + 0.3f);
 
-            velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) *
-                         (float)((!(velocity.x < 0f)) ? 1 : (-1));
-            velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) *
-                         (float)((!(velocity.y < 0f)) ? 1 : (-1));
-            velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) *
-                         (float)((!(velocity.z < 0f)) ? 1 : (-1));
+            velocity.x = Mathf.Max(Mathf.Abs(velocity.x), Mathf.Abs(velocity.x)) * (float)((!(velocity.x < 0f)) ? 1 : (-1));
+            velocity.y = Mathf.Max(Mathf.Abs(velocity.y), Mathf.Abs(velocity.y)) * (float)((!(velocity.y < 0f)) ? 1 : (-1));
+            velocity.z = Mathf.Max(Mathf.Abs(velocity.z), Mathf.Abs(velocity.z)) * (float)((!(velocity.z < 0f)) ? 1 : (-1));
 
             var throwingEv = new PlayerThrowingItemEventArgs(player, droppingArgs.Item, Pickup.Get(pickup), rigidbody,
                 __instance._hub.PlayerCameraReference.position, velocity, angular);
