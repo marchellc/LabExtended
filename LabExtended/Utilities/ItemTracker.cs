@@ -1,7 +1,8 @@
 ﻿using InventorySystem.Items;
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Pickups;
-
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.Attributes;
 
@@ -247,11 +248,32 @@ public class ItemTracker : IDisposable
         Trackers.Clear();
     }
 
+    private static void OnPickedUpItem(PlayerPickedUpItemEventArgs args)
+    {
+        if (args.Item.Base.TryGetTracker(out var tracker))
+        {
+            tracker.SetItem(args.Item.Base, args.Player as ExPlayer);
+        }
+    }
+
+    private static void OnPickedUpArmor(PlayerPickedUpArmorEventArgs args)
+    {
+        if (args.BodyArmorItem?.Base != null && args.BodyArmorItem.Base.TryGetTracker(out var tracker))
+        {
+            tracker.SetItem(args.BodyArmorItem.Base, args.Player as ExPlayer);
+        }
+    }
+
     [LoaderInitialize(1)]
     private static void OnInit()
     {
         MirrorEvents.Spawning += OnSpawned;
+        
         CreateItemPatch.Created += OnCreated;
+        
         InternalEvents.OnRoundRestart += OnRestart;
+
+        PlayerEvents.PickedUpItem += OnPickedUpItem;
+        PlayerEvents.PickedUpArmor += OnPickedUpArmor;
     }
 }

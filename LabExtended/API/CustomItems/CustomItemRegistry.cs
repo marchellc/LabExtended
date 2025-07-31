@@ -1,10 +1,13 @@
 ﻿using System.Reflection;
 using HarmonyLib;
+using InventorySystem;
+using InventorySystem.Items;
+using InventorySystem.Items.Armor;
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.Scp914Events;
 
 using LabApi.Events.Handlers;
-
+using LabApi.Features.Wrappers;
 using LabExtended.API.CustomItems.Behaviours;
 
 using LabExtended.Core;
@@ -482,6 +485,77 @@ public static class CustomItemRegistry
         }
     }
 
+    private static void OnPickingUpArmor(PlayerPickingUpArmorEventArgs args)
+    {
+        if (!args.IsAllowed || args.BodyArmorPickup?.Base == null)
+            return;
+        
+        if (args.Player is not ExPlayer player)
+            return;
+
+        if (!CustomItemUtils.TryGetBehaviour<CustomItemPickupBehaviour>(args.BodyArmorPickup.Serial, out var behaviour))
+            return;
+        
+        behaviour.OnPickingUp(new(player.ReferenceHub, args.BodyArmorPickup.Base));
+
+        if (!args.IsAllowed)
+            return;
+
+        if (player.ReferenceHub.inventory.TryGetBodyArmor(out var currentArmor))
+            player.ReferenceHub.inventory.ServerDropItem(currentArmor.ItemSerial);
+
+        args.IsAllowed = false;
+        
+        var itemType = behaviour.GetCustomValue(pb => pb.Handler!.InventoryProperties!.Type, type => type != ItemType.None, args.BodyArmorPickup.Type);
+        var item = player.ReferenceHub.inventory.ServerAddItem(itemType, ItemAddReason.PickedUp, args.BodyArmorPickup.Serial, args.BodyArmorPickup.Base);
+
+        BodyArmorUtils.SetPlayerDirty(player.ReferenceHub);
+        
+        var pickedUpArgs = new PlayerPickedUpItemEventArgs(player.ReferenceHub, item);
+        
+        behaviour.ProcessPickedUp(item, player, pickedUpArgs);
+        
+        args.BodyArmorPickup.Base.DestroySelf();
+
+        if (item is BodyArmor bodyArmor)
+        {
+            PlayerEvents.OnPickedUpArmor(new(player.ReferenceHub, bodyArmor));
+            return;
+        }
+
+        PlayerEvents.OnPickedUpItem(pickedUpArgs);
+    }
+
+    private static void OnPickingUpItem(PlayerPickingUpItemEventArgs args)
+    {
+        if (!args.IsAllowed)
+            return;
+        
+        if (args.Player is not ExPlayer player)
+            return;
+
+        if (!CustomItemUtils.TryGetBehaviour<CustomItemPickupBehaviour>(args.Pickup.Serial, out var behaviour))
+            return;
+        
+        behaviour.OnPickingUp(args);
+
+        if (!args.IsAllowed)
+            return;
+
+        args.IsAllowed = false;
+        
+        var itemType = behaviour.GetCustomValue(pb => pb.Handler.InventoryProperties.Type, type => type != ItemType.None, args.Pickup.Type);
+        var item = player.ReferenceHub.inventory.ServerAddItem(itemType, ItemAddReason.PickedUp, args.Pickup.Serial, args.Pickup.Base);
+
+        var pickedUpArgs = new PlayerPickedUpItemEventArgs(player.ReferenceHub, item);
+        
+        behaviour.ProcessPickedUp(item, player, pickedUpArgs);
+        
+        args.Pickup.Base.DestroySelf();
+
+        PlayerEvents.OnPickedUpItem(pickedUpArgs);
+    }
+
     private static void OnDiscovered(Type type)
     {
         if (!typeof(CustomItemHandler).IsAssignableFrom(type))
@@ -529,6 +603,9 @@ public static class CustomItemRegistry
 
         PlayerEvents.ChangingRole += OnChangingRole;
         PlayerEvents.ChangedRole += OnChangedRole;
+        
+        PlayerEvents.PickingUpItem += OnPickingUpItem;
+        PlayerEvents.PickingUpArmor += OnPickingUpArmor;
         
         ExMapEvents.PickupCollided += OnCollided;
 
