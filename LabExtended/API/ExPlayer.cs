@@ -1331,6 +1331,20 @@ public class ExPlayer : Player, IDisposable
     public void Send<T>(T message, int channel = 0) where T : struct, NetworkMessage
         => (ClientConnection ?? Connection)?.Send(message, channel);
 
+    /// <summary>
+    /// Formats the player's data into a string for command responses ('{Nickname} ({UserId})')
+    /// </summary>
+    /// <returns>The formatted string.</returns>
+    public string ToCommandString()
+        => $"'{Nickname} ({UserId})'";
+
+    /// <summary>
+    /// Formats the player's data into a string for log output ({Nickname} ({UserId}))
+    /// </summary>
+    /// <returns>The formatted string.</returns>
+    public string ToLogString()
+        => $"&3{Nickname}&r &6({UserId})&r";
+    
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
