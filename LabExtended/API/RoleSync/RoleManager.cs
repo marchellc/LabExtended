@@ -47,7 +47,8 @@ public static class RoleManager
         if (roleToSend is RoleTypeId.None)
             return;
             
-        player.SentRoles?[receiver.NetworkId] = roleToSend;
+        if (player.SentRoles != null)
+            player.SentRoles[receiver.NetworkId] = roleToSend;
             
         receiver.Send(new RoleSyncInfo(player.ReferenceHub, roleToSend, receiver.ReferenceHub));
             
@@ -117,7 +118,8 @@ public static class RoleManager
             if (role is RoleTypeId.None)
                 return;
             
-            player.SentRoles?[receiver.NetworkId] = role;
+            if (player.SentRoles != null)
+                player.SentRoles[receiver.NetworkId] = role;
             
             new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub).Write(writer);
             
