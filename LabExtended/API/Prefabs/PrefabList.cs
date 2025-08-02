@@ -384,6 +384,16 @@ public static class PrefabList
     public static PrefabDefinition Text { get; } = new("TextToy");
     
     /// <summary>
+    /// Gets the prefab of the waypoint toy.
+    /// </summary>
+    public static PrefabDefinition Waypoint { get; } = new("WaypointToy");
+
+    /// <summary>
+    /// Gets the prefab of <see cref="AdminToys.SpawnableCullingParent"/>
+    /// </summary>
+    public static PrefabDefinition CullingParent { get; } = new("SpawnableCullingParent");
+    
+    /// <summary>
     /// Gets the prefab of the SCP-079 camera toy (Entrance Zone w/ arm version).
     /// </summary>
     public static PrefabDefinition EzArmCamera { get; } = new("EzArmCameraToy");
