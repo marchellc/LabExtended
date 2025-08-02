@@ -38,17 +38,17 @@ public class RemoteAdminController : IDisposable
     /// <summary>
     /// The prefix for the dummy icon.
     /// </summary>
-    public const string DummyIconPrefix = "";
+    public const string DummyIconPrefix = "[<color=#fcba03>\ud83d\udcbb</color>] ";
 
     /// <summary>
     /// The prefix for the muted icon.
     /// </summary>
-    public const string MutedIconPrefix = "";
+    public const string MutedIconPrefix = "<link=RA_Muted><color=white>[</color>\ud83d\udd07<color=white>]</color></link> ";
 
     /// <summary>
     /// The prefix for the Overwatch icon.
     /// </summary>
-    public const string OverwatchIconPrefix = "";
+    public const string OverwatchIconPrefix = "<link=RA_OverwatchEnabled><color=white>[</color><color=#03f8fc>\uf06e</color><color=white>]</color></link> ";
 
     private static readonly UniqueStringGenerator objectIdGenerator = new(10, false);
     private static readonly UniqueInt32Generator listIdGenerator = new(6000, 11000);
