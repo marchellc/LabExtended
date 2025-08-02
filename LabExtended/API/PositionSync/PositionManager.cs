@@ -1,3 +1,5 @@
+using LabExtended.API.Collections.Unsafe;
+using LabExtended.API.RoleSync;
 using LabExtended.Core;
 using LabExtended.Attributes;
 using LabExtended.Utilities.Update;
@@ -24,7 +26,7 @@ public static class PositionManager
     private static float time = FpcServerPositionDistributor.SendRate;
     
     private static NetworkWriter writer = new();
-    private static List<ExPlayer> players = new(byte.MaxValue);
+    private static UnsafeList<ExPlayer> positionPlayers = new(byte.MaxValue);
     
     /// <summary>
     /// Whether or not to force-send next frame.
@@ -105,7 +107,7 @@ public static class PositionManager
         if (receiver?.SentPositions is null || receiver.IsUnverified || !receiver.Toggles.ShouldReceivePositions)
             return;
         
-        players.Clear();
+        positionPlayers.Clear();
         
         ExPlayer.AllPlayers.ForEach(player =>
         {
@@ -121,10 +123,10 @@ public static class PositionManager
             if (player.RoleBase is not IFpcRole)
                 return;
             
-            players.Add(player);
+            positionPlayers.Add(player);
         });
 
-        if (players.Count < 1)
+        if (positionPlayers.Count < 1)
             return;
         
         var isGhosted = (ExPlayer.GhostedFlags & receiver.GhostBit) == receiver.GhostBit;
@@ -133,65 +135,83 @@ public static class PositionManager
         writer.Reset();
         
         writer.WriteMessageId<FpcPositionMessage>();
-        writer.WriteUShort((ushort)players.Count);
+        writer.WriteUShort((ushort)positionPlayers.Count);
         
-        players.ForEach(player =>
+        positionPlayers.ForEach(player =>
         {
-            var role = player.RoleBase as IFpcRole;
-            var module = role.FpcModule;
-            var mouse = module.MouseLook;
-
-            var invisible = (isCustomVisibilityRole &&
-                             !customVisibilityRole.VisibilityController.ValidateVisibility(player.ReferenceHub))
-                || isGhosted
-                || (player.PersonalGhostFlags & receiver.GhostBit) == receiver.GhostBit;
-
-            var cache = receiver.SentPositions.GetOrAdd(player.NetworkId, () => new());
-
-            var writePosition = false;
-            var writeLook = false;
-
-            var position = invisible 
-                ? FpcMotor.InvisiblePosition 
-                : player.Transform.position;
-
-            if (player.Position.FakedList.HasGlobalValue)
-                position = player.Position.FakedList.GlobalValue;
-            else if (player.Position.FakedList.TryGetValue(player, out var fakePosition))
-                position = fakePosition;
-
-            var relative = new RelativePosition(position);
-
-            if (cache.IsDirty || cache.Position != relative)
-                writePosition = true;
-            
-            mouse.GetSyncValues(relative.WaypointId, out var syncH, out var syncV);
-
-            if (cache.IsDirty || cache.LookHorizontal != syncH || cache.LookVertical != syncV)
-                writeLook = true;
-
-            cache.LookHorizontal = syncH;
-            cache.LookVertical = syncV;
-            
-            cache.Position = relative;
-
-            cache.IsDirty = false;
-            
-            Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3,
-                out var b4, out var b5, out var b6, out var b7, out var b8);
-            
-            writer.WriteRecyclablePlayerId(player.ReferenceHub.Network_playerId);
-            writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, writeLook, writePosition, module.IsGrounded));
-
-            if (writePosition)
+            if (player.SentPositions != null
+                && player.IsOnlineAndVerified
+                && player.Toggles.ShouldSendPosition
+                && (player.NetworkId != receiver.NetworkId || player.Toggles.ShouldReceiveOwnPosition)
+                && player.RoleBase is IFpcRole role)
             {
-                writer.WriteRelativePosition(relative);
+                var module = role.FpcModule;
+                var mouse = module.MouseLook;
+
+                var invisible = (isCustomVisibilityRole &&
+                                 !customVisibilityRole.VisibilityController.ValidateVisibility(player.ReferenceHub))
+                                || isGhosted
+                                || (player.PersonalGhostFlags & receiver.GhostBit) == receiver.GhostBit;
+
+                var cache = receiver.SentPositions.GetOrAdd(player.NetworkId, () => new());
+
+                var writePosition = false;
+                var writeLook = false;
+
+                var position = invisible
+                    ? FpcMotor.InvisiblePosition
+                    : player.Transform.position;
+
+                if (player.Position.FakedList.HasGlobalValue)
+                    position = player.Position.FakedList.GlobalValue;
+                else if (player.Position.FakedList.TryGetValue(player, out var fakePosition))
+                    position = fakePosition;
+
+                var relative = new RelativePosition(position);
+
+                if (cache.IsDirty || cache.Position != relative)
+                    writePosition = true;
+
+                mouse.GetSyncValues(relative.WaypointId, out var syncH, out var syncV);
+
+                if (cache.IsDirty || cache.LookHorizontal != syncH || cache.LookVertical != syncV)
+                    writeLook = true;
+
+                cache.LookHorizontal = syncH;
+                cache.LookVertical = syncV;
+
+                cache.Position = relative;
+
+                cache.IsDirty = false;
+
+                Misc.ByteToBools((byte)module.SyncMovementState, out var b1, out var b2, out var b3,
+                    out var b4, out var b5, out var b6, out var b7, out var b8);
+
+                writer.WriteRecyclablePlayerId(player.ReferenceHub.Network_playerId);
+                writer.WriteByte(Misc.BoolsToByte(b1, b1, b3, b4, b5, writeLook, writePosition, module.IsGrounded));
+
+                if (writePosition)
+                {
+                    writer.WriteRelativePosition(relative);
+                }
+
+                if (writeLook)
+                {
+                    writer.WriteUShort(syncH);
+                    writer.WriteUShort(syncV);
+                }
+
+                var roleToSend = RoleManager.Internal_GetCurrentRole(player, receiver, player.Role, invisible);
+
+                if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) || sentRole != roleToSend)
+                    RoleManager.Internal_ProcessPlayer(player, receiver, roleToSend, invisible);
             }
-
-            if (writeLook)
+            else
             {
-                writer.WriteUShort(syncH);
-                writer.WriteUShort(syncV);
+                var roleToSend = RoleManager.Internal_GetCurrentRole(player, receiver, player.Role);
+
+                if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) || sentRole != roleToSend)
+                    RoleManager.Internal_ProcessPlayer(player, receiver, roleToSend);
             }
         });
         

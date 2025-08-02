@@ -1,12 +1,14 @@
-using LabExtended.Core;
-using LabExtended.Attributes;
 using LabExtended.Events;
 using LabExtended.Events.Player;
-using LabExtended.Utilities.Update;
 
 using Mirror;
 
 using PlayerRoles;
+using PlayerRoles.Visibility;
+using PlayerRoles.PlayableScps.Scp079;
+using PlayerRoles.FirstPersonControl.NetworkMessages;
+
+using UnityEngine;
 
 namespace LabExtended.API.RoleSync;
 
@@ -15,11 +17,6 @@ namespace LabExtended.API.RoleSync;
 /// </summary>
 public static class RoleManager
 {
-    /// <summary>
-    /// Whether or not roles should be sent next frame.
-    /// </summary>
-    public static bool SendNextFrame { get; set; }
-    
     /// <summary>
     /// Sets the player's role as dirty for a specific player.
     /// </summary>
@@ -36,108 +33,95 @@ public static class RoleManager
 
         player.SentRoles?.Remove(receiver.NetworkId);
     }
-    
-    /// <summary>
-    /// Sends all roles.
-    /// </summary>
-    public static void SendRoles()
-    {
-        if (SendNextFrame)
-        {
-            try
-            {
-                ExPlayer.AllPlayers.ForEach(ProcessPlayer);
-            }
-            catch (Exception ex)
-            {
-                ApiLog.Error("Role Manager", $"Could not send roles!\n{ex}");
-            }
-        }
 
-        SendNextFrame = false;
-    }
-
-    private static void ProcessPlayer(ExPlayer? player)
+    internal static void Internal_ProcessPlayer(ExPlayer player, ExPlayer receiver, RoleTypeId? roleOverride = null, bool? isGhosted = null)
     {
         if (player?.Role is null || player?.SentRoles is null || player.IsUnverified)
             return;
 
-        var isObfuscated = player.Role.Is<IObfuscatedRole>(out var obfuscatedRole);
-        
-        ExPlayer.AllPlayers.ForEach(receiver =>
-        {
-            if (receiver?.Role is null || receiver.IsUnverified || !receiver.IsPlayer)
-                return;
+        if (receiver?.Role is null || receiver.IsUnverified || !receiver.IsPlayer)
+            return;
+
+        var roleToSend = roleOverride ?? Internal_GetCurrentRole(player, receiver, player.Role, isGhosted);
+
+        if (roleToSend is RoleTypeId.None)
+            return;
             
-            var role = player.Role.Type;
-
-            if (isObfuscated)
-                role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
-
-            if (player.Role.FakedList.HasGlobalValue)
-                role = player.Role.FakedList.GlobalValue;
-            else if (player.Role.FakedList.TryGetValue(receiver, out var fakedRole))
-                role = fakedRole;
-
-            if (!receiver.Role.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
-                role = RoleTypeId.Spectator;
-
-            var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
-
-            if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
-                return;
-
-            role = synchronizingArgs.Role;
-
-            if (player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) && sentRole == role)
-                return;
-
-            player.SentRoles[receiver.NetworkId] = role;
+        player.SentRoles?[receiver.NetworkId] = roleToSend;
             
-            receiver.Connection.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub));
+        receiver.Send(new RoleSyncInfo(player.ReferenceHub, roleToSend, receiver.ReferenceHub));
             
-            ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
-        });
+        ExPlayerEvents.OnSynchronizedRole(new(player, receiver, roleToSend));
     }
 
-    internal static void ProcessJoin(ExPlayer receiver, NetworkWriter writer)
+    internal static RoleTypeId Internal_GetCurrentRole(ExPlayer player, ExPlayer receiver, RoleTypeId role, bool? isGhosted = null)
+    {
+        var isInvisible = isGhosted ?? false;
+        var gameplayDataPerms = receiver.HasPermission(PlayerPermissions.GameplayData);
+        
+        if (player.Role.Is<IObfuscatedRole>(out var obfuscatedRole))
+            role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
+        
+        if (!isGhosted.HasValue && receiver.Role.Is<ICustomVisibilityRole>(out var customVisibilityRole))
+            isInvisible = !customVisibilityRole.VisibilityController.ValidateVisibility(player.ReferenceHub);
+        
+        var maxDistance = player.Team is Team.SCPs
+            ? FpcServerPositionDistributor.SCPVisibilityDistance
+            : FpcServerPositionDistributor.HumanVisibilityDistance;
+        
+        var curDistance = receiver.Role.Is<Scp079Role>(out var scp079Role)
+            ? Vector3.Distance(scp079Role.CameraPosition, player.Position)
+            : Vector3.Distance(receiver.Position, player.Position);
+
+        var isWithinDistance = curDistance <= maxDistance;
+
+        if (role.GetTeam() is not Team.SCPs && !player.ReferenceHub.IsCommunicatingGlobally())
+        {
+            if (role != RoleTypeId.Spectator && (isInvisible || (!isWithinDistance && !gameplayDataPerms)))
+                role = RoleTypeId.Spectator;
+
+            // Some interesting way of confusing cheaters
+            if (role is RoleTypeId.Spectator && FpcServerPositionDistributor.IsDistributionActive(role))
+                role = RoleTypeId.Overwatch;
+        }
+
+        if (player.Role.FakedList.HasGlobalValue)
+            role = player.Role.FakedList.GlobalValue;
+        else if (player.Role.FakedList.TryGetValue(receiver, out var fakedRole))
+            role = fakedRole;
+            
+        if (!receiver.Role.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
+            role = RoleTypeId.Spectator;
+        
+        var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
+
+        if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+            return RoleTypeId.None;
+
+        return synchronizingArgs.Role;
+    }
+
+    internal static void Internal_SendRole(ExPlayer player, RoleTypeId role)
+    {
+        ExPlayer.AllPlayers.ForEach(receiver => Internal_ProcessPlayer(player, receiver, role));
+    }
+
+    internal static void Internal_ProcessJoin(ExPlayer receiver, NetworkWriter writer)
     {
         writer.WriteUShort((ushort)ExPlayer.AllPlayers.Count);
 
         ExPlayer.AllPlayers.ForEach(player =>
         {
-            var role = player.Role.Type;
+            var role = Internal_GetCurrentRole(player, receiver, player.Role);
 
-            if (player.Role.Is<IObfuscatedRole>(out var obfuscatedRole))
-                role = obfuscatedRole.GetRoleForUser(receiver.ReferenceHub);
-            
-            if (player.Role.FakedList.HasGlobalValue)
-                role = player.Role.FakedList.GlobalValue;
-            else if (player.Role.FakedList.TryGetValue(receiver, out var fakedRole))
-                role = fakedRole;
-            
-            if (!player.Toggles.IsVisibleInSpectatorList)
-                role = RoleTypeId.Spectator;
-
-            var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
-
-            if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+            if (role is RoleTypeId.None)
                 return;
             
-            role = synchronizingArgs.Role;
-
-            if (player.SentRoles != null)
-                player.SentRoles[receiver.NetworkId] = role;
+            player.SentRoles?[receiver.NetworkId] = role;
             
             new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub).Write(writer);
             
             ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
         });
-    }
-
-    [LoaderInitialize(1)]
-    private static void OnInit()
-    {
-        PlayerUpdateHelper.OnUpdate += SendRoles;
     }
 }
