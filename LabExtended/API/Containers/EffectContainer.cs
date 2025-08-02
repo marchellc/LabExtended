@@ -171,6 +171,11 @@ public class EffectContainer : IDisposable
     public Exhausted Exhausted { get; private set; }
     
     /// <summary>
+    /// Gets the player's Fade effect.
+    /// </summary>
+    public Fade Fade { get; private set; }
+    
+    /// <summary>
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public Flashed Flashed { get; private set; }
@@ -179,6 +184,11 @@ public class EffectContainer : IDisposable
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public FogControl FogControl { get; private set; }
+    
+    /// <summary>
+    /// Gets the player's Lightweight effect.
+    /// </summary>
+    public Lightweight Lightweight { get; private set; }
 
     /// <summary>
     /// Gets the player's AmnesiaVision effect.
@@ -194,6 +204,11 @@ public class EffectContainer : IDisposable
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public Hypothermia Hypothermia { get; private set; }
+    
+    /// <summary>
+    /// Gets the player's HeavyFooted effect.
+    /// </summary>
+    public HeavyFooted HeavyFooted { get; private set; }
 
     /// <summary>
     /// Gets the player's AmnesiaVision effect.
@@ -249,6 +264,11 @@ public class EffectContainer : IDisposable
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public Scp1344 Scp1344 { get; private set; }
+    
+    /// <summary>
+    /// Gets the player's SCP-1576 effect.
+    /// </summary>
+    public Scp1576 Scp1576 { get; private set; }
     
     /// <summary>
     /// Gets the player's AmnesiaVision effect.
@@ -328,6 +348,67 @@ public class EffectContainer : IDisposable
     {
         get => SoundtrackMute.IsEnabled;
         set => SoundtrackMute.IsEnabled = value;
+    }
+
+    /// <summary>
+    /// Whether or not the player has jumping disabled by the <see cref="HeavyFooted"/> effect.
+    /// </summary>
+    public bool HasJumpingDisabled
+    {
+        get => HeavyFooted.Intensity >= 100;
+        set => HeavyFooted.Intensity = value ? (byte)100 : (byte)0;
+    }
+
+    /// <summary>
+    /// Gets or sets the intensity of the player's Lightweight effect.
+    /// </summary>
+    public byte LightweightIntensity
+    {
+        get => Lightweight.Intensity;
+        set => Lightweight.Intensity = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the intensity of the player's HeavyFooted effect.
+    /// </summary>
+    public byte HeavyFootedIntensity
+    {
+        get => HeavyFooted.Intensity;
+        set => HeavyFooted.Intensity = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the player's jump intensity - allows values from -100 to 255.
+    /// <remarks>Values below zero decrease the player's jump strength (completely disabled by -100) while values above zero add 1% to the player's jump intensity (doubled at 100).</remarks>
+    /// </summary>
+    public int JumpIntensity
+    {
+        get
+        {
+            return Lightweight.Intensity - HeavyFooted.Intensity;
+        }
+        set
+        {
+            if (value > 0)
+            {
+                HeavyFooted.Intensity = 0;
+                Lightweight.Intensity = (byte)Mathf.Clamp(0, value, 255);
+            }
+            else
+            {
+                Lightweight.Intensity = 0;
+                HeavyFooted.Intensity = (byte)Mathf.Clamp(0, -value, 255);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the current intensity of the player's Fade effect.
+    /// </summary>
+    public byte FadeIntensity
+    {
+        get => Fade.Intensity;
+        set => Fade.Intensity = value;
     }
 
     /// <summary>
