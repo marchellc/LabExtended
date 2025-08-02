@@ -49,7 +49,7 @@ public class CapybaraToy : AdminToy, IWrapper<AdminToys.CapybaraToy>
     /// </summary>
     public bool CollisionsEnabled
     {
-        get => Base._collisionsEnabled;
-        set => Base.CollisionsEnabled = value;
+        get => Base.CollisionsEnabled;
+        set => Base.NetworkCollisionsEnabled = value;
     }
 }

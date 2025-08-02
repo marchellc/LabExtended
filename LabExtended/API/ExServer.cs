@@ -1,10 +1,11 @@
 ﻿using GameCore;
 
 using LabExtended.Core;
-using LabExtended.Attributes;
-using LabExtended.Commands.Attributes;
 using LabExtended.Events;
-using LabExtended.Utilities.Update;
+using LabExtended.Attributes;
+
+using LabExtended.Commands.Attributes;
+
 using MEC;
 
 using Mirror;
@@ -19,6 +20,9 @@ using UnityEngine.SceneManagement;
 
 namespace LabExtended.API;
 
+/// <summary>
+/// Contains methods and properties related to server configuration and management.
+/// </summary>
 [CommandPropertyAlias("server")]
 public static class ExServer
 {
@@ -167,7 +171,7 @@ public static class ExServer
     public static bool IsWhitelistEnabled
     {
         get => ServerConsole.WhiteListEnabled;
-        set => ServerConsole.WhiteListEnabled = true;
+        set => ServerConsole.WhiteListEnabled = value;
     }
 
     /// <summary>

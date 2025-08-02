@@ -4,17 +4,11 @@ using GameCore;
 
 using LabExtended.Core;
 using LabExtended.Events;
-using LabExtended.Extensions;
 using LabExtended.Attributes;
 using LabExtended.API.Enums;
 using LabExtended.Commands.Attributes;
 
 using LightContainmentZoneDecontamination;
-
-using NorthwoodLib.Pools;
-
-using PlayerRoles;
-using PlayerRoles.RoleAssign;
 
 using RoundRestarting;
 
@@ -215,8 +209,8 @@ namespace LabExtended.API
         [CommandPropertyAlias("decontaminationStatus")]
         public static DecontaminationController.DecontaminationStatus DecontaminationStatus
         {
-            get => DecontaminationController.Singleton?.NetworkDecontaminationOverride ?? DecontaminationController.DecontaminationStatus.None;
-            set => DecontaminationController.Singleton!.NetworkDecontaminationOverride = value;
+            get => DecontaminationController.Singleton?.DecontaminationOverride ?? DecontaminationController.DecontaminationStatus.None;
+            set => DecontaminationController.Singleton!.DecontaminationOverride = value;
         }
 
         /// <summary>
