@@ -40,9 +40,6 @@ public static class ExPlayerEvents
     /// <inheritdoc cref="PlayerClosedRemoteAdminEventArgs"/>
     public static event Action<PlayerClosedRemoteAdminEventArgs>? ClosedRemoteAdmin; 
     
-    /// <inheritdoc cref="PlayerReceivingRemoteAdminRequest"/>
-    public static event Action<PlayerReceivingRemoteAdminRequest>? ReceivingRemoteAdminRequest; 
-    
     /// <inheritdoc cref="PlayerTogglingLobbyLockEventArgs"/>
     public static event Action<PlayerTogglingLobbyLockEventArgs>? TogglingLobbyLock; 
     
@@ -91,12 +88,6 @@ public static class ExPlayerEvents
     
     /// <inheritdoc cref="PlayerInteractingToyAbortedEventArgs"/>
     public static event Action<PlayerInteractingToyAbortedEventArgs>? InteractingToyAborted; 
-    
-    /// <inheritdoc cref="PlayerChangedRoomEventArgs"/>
-    public static event Action<PlayerChangedRoomEventArgs>? ChangedRoom;
-    
-    /// <inheritdoc cref="PlayerChangedZoneEventArgs"/>
-    public static event Action<PlayerChangedZoneEventArgs>? ChangedZone; 
     #endregion
     
     #region Items
@@ -196,14 +187,6 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnClosedRemoteAdmin(PlayerClosedRemoteAdminEventArgs args)
         => ClosedRemoteAdmin.InvokeEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="ReceivingRemoteAdminRequest"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnReceivingRemoteAdminRequest(PlayerReceivingRemoteAdminRequest args)
-        => ReceivingRemoteAdminRequest.InvokeBooleanEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="TogglingLobbyLock"/> event.
@@ -320,20 +303,6 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnInteractingToyAborted(PlayerInteractingToyAbortedEventArgs args)
         => InteractingToyAborted.InvokeEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="ChangedRoom"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    public static void OnChangedRoom(PlayerChangedRoomEventArgs args)
-        => ChangedRoom.InvokeEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="ChangedZone"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    public static void OnChangedZone(PlayerChangedZoneEventArgs args)
-        => ChangedZone.InvokeEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="SynchronizingRole"/> event.
