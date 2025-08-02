@@ -8,18 +8,23 @@ using LabExtended.API;
 using LabExtended.API.Toys;
 
 using LabExtended.Events;
+using LabExtended.Events.Player;
+
 using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Events.Player;
 
+/// <summary>
+/// Implements the <see cref="PlayerSearchedToyEventArgs"/> event.
+/// </summary>
 public static class PlayerSearchedToyPatch
 {    
-    public static FastEvent<Action<ReferenceHub>> OnSearched { get; } =
+    private static FastEvent<Action<ReferenceHub>> OnSearched { get; } =
         FastEvents.DefineEvent<Action<ReferenceHub>>
             (typeof(InvisibleInteractableToy), nameof(InvisibleInteractableToy.OnSearched));
     
     [HarmonyPatch(typeof(InvisibleInteractableToy.InteractableToySearchCompletor), nameof(InvisibleInteractableToy.InteractableToySearchCompletor.Complete))]
-    public static bool Prefix(InvisibleInteractableToy.InteractableToySearchCompletor __instance)
+    private static bool Prefix(InvisibleInteractableToy.InteractableToySearchCompletor __instance)
     {
         OnSearched.InvokeEvent(__instance._target, __instance.Hub);
         

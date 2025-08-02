@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+
 using LabExtended.Events;
+using LabExtended.Events.Player;
 
 using MapGeneration;
 
@@ -13,10 +15,13 @@ using UnityEngine;
 
 namespace LabExtended.Patches.Events.Player;
 
+/// <summary>
+/// Implements the <see cref="PlayerChangedRoomEventArgs"/> and <see cref="PlayerChangedZoneEventArgs"/> events.
+/// </summary>
 public static class PlayerChangedRoomPatch
 {
     [HarmonyPatch(typeof(CurrentRoomPlayerCache), nameof(CurrentRoomPlayerCache.ValidateCache))]
-    public static bool Prefix(CurrentRoomPlayerCache __instance)
+    private static bool Prefix(CurrentRoomPlayerCache __instance)
     {
         if (RoundRestart.IsRoundRestarting)
             return false;
@@ -33,13 +38,13 @@ public static class PlayerChangedRoomPatch
 
         if (room != null)
         {
-            if (__instance._lastDetected is null || __instance._lastDetected != room)
-                ExPlayerEvents.OnChangedRoom(new(ExPlayer.Get(__instance._roleManager.Hub), room,
-                    __instance._lastDetected));
+            ExPlayer? targetPlayer = null;
+            
+            if ((__instance._lastDetected is null || __instance._lastDetected != room) && ExPlayer.TryGet(__instance._roleManager.Hub, out targetPlayer))
+                ExPlayerEvents.OnChangedRoom(new(targetPlayer, room, __instance._lastDetected));
 
-            if ((__instance._lastDetected?.Zone ?? FacilityZone.None) != room.Zone)
-                ExPlayerEvents.OnChangedZone(new(ExPlayer.Get(__instance._roleManager.Hub),
-                    (__instance._lastDetected?.Zone ?? FacilityZone.None), room.Zone));
+            if ((__instance._lastDetected?.Zone ?? FacilityZone.None) != room.Zone && (targetPlayer != null && ExPlayer.TryGet(__instance._roleManager.Hub, out targetPlayer)))
+                ExPlayerEvents.OnChangedZone(new(targetPlayer, (__instance._lastDetected?.Zone ?? FacilityZone.None), room.Zone));
             
             __instance._lastDetected = room;
             __instance._lastValid = true;

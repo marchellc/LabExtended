@@ -11,26 +11,28 @@ using PlayerRoles.FirstPersonControl.NetworkMessages;
 
 using UnityEngine;
 
-namespace LabExtended.Patches.Events.Player
+namespace LabExtended.Patches.Events.Player;
+
+/// <summary>
+/// Implements the <see cref="PlayerOverridingPositionEventArgs"/> event.
+/// </summary>
+public static class PlayerOverridingPositionPatch
 {
-    public static class PlayerOverridingPositionPatch
+    [HarmonyPatch(typeof(FirstPersonMovementModule), nameof(FirstPersonMovementModule.ServerOverridePosition))]
+    private static bool Prefix(FirstPersonMovementModule __instance, Vector3 position)
     {
-        [HarmonyPatch(typeof(FirstPersonMovementModule), nameof(FirstPersonMovementModule.ServerOverridePosition))]
-        public static bool Prefix(FirstPersonMovementModule __instance, Vector3 position)
-        {
-            if (!ExPlayer.TryGet(__instance.Hub, out var player))
-                return false;
-
-            var overridingArgs = new PlayerOverridingPositionEventArgs(player, __instance.Position, position);
-
-            if (!ExPlayerEvents.OnOverridingPosition(overridingArgs))
-                return false;
-
-            __instance.Position = overridingArgs.NewPosition;
-            __instance.Hub.connectionToClient.Send(new FpcPositionOverrideMessage(overridingArgs.NewPosition));
-            __instance.OnServerPositionOverwritten.InvokeSafe();
-
+        if (!ExPlayer.TryGet(__instance.Hub, out var player))
             return false;
-        }
+
+        var overridingArgs = new PlayerOverridingPositionEventArgs(player, __instance.Position, position);
+
+        if (!ExPlayerEvents.OnOverridingPosition(overridingArgs))
+            return false;
+
+        __instance.Position = overridingArgs.NewPosition;
+        __instance.Hub.connectionToClient.Send(new FpcPositionOverrideMessage(overridingArgs.NewPosition));
+        __instance.OnServerPositionOverwritten.InvokeSafe();
+
+        return false;
     }
 }

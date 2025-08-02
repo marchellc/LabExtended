@@ -21,7 +21,7 @@ namespace LabExtended.Patches.Events.Player;
 public static class PlayerShootingFirearmPatches
 {
     [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerAppendPrescan))]
-    public static bool HitscanPrefix(HitscanHitregModuleBase __instance, Ray targetRay, HitscanResult toAppend)
+    private static bool HitscanPrefix(HitscanHitregModuleBase __instance, Ray targetRay, HitscanResult toAppend)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
@@ -57,7 +57,7 @@ public static class PlayerShootingFirearmPatches
     }
 
     [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerApplyDestructibleDamage))]
-    public static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, DestructibleHitPair target, HitscanResult result)
+    private static bool HitscanProcessTargetHitPrefix(HitscanHitregModuleBase __instance, DestructibleHitPair target, HitscanResult result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
@@ -77,7 +77,7 @@ public static class PlayerShootingFirearmPatches
             result.RegisterDamage(hitboxIdentity, damage, handler);
 
             ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, target.Destructible, target.Ray, target.Hit,
-                args.TargetDamage, result, args.TargetPlayer));
+                args.TargetDamage, result, args.TargetPlayer!));
             return false;
         }
 
@@ -87,14 +87,14 @@ public static class PlayerShootingFirearmPatches
         result.RegisterDamage(target.Destructible, damage, handler);
         
         ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, target.Destructible, target.Ray, target.Hit,
-            args.TargetDamage, result, args.TargetPlayer));
+            args.TargetDamage, result, args.TargetPlayer!));
         
         __instance.ServerPlayImpactEffects(target.Raycast, damage > 0f);
         return false;
     }
 
     [HarmonyPatch(typeof(HitscanHitregModuleBase), nameof(HitscanHitregModuleBase.ServerApplyObstacleDamage))]
-    public static bool HitscanProcessObstacleHitPrefix(DisruptorHitregModule __instance, HitRayPair hitInfo, HitscanResult result)
+    private static bool HitscanProcessObstacleHitPrefix(DisruptorHitregModule __instance, HitRayPair hitInfo, HitscanResult result)
     {
         if (!ExPlayer.TryGet(__instance.Firearm.Owner, out var player))
             return false;
@@ -108,7 +108,7 @@ public static class PlayerShootingFirearmPatches
         __instance.ServerPlayImpactEffects(hitInfo, false);
 
         ExPlayerEvents.OnShotFirearm(new(player, __instance.Firearm, null, hitInfo.Ray, hitInfo.Hit, 0f, result,
-            args.TargetPlayer));
+            args.TargetPlayer!));
         return false;
     }
 }

@@ -10,7 +10,6 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabExtended.API;
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Utilities.Transpilers;
 
 namespace LabExtended.Patches.Events.Player;
 

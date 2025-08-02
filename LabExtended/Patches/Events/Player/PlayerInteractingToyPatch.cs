@@ -8,18 +8,23 @@ using LabExtended.API;
 using LabExtended.API.Toys;
 
 using LabExtended.Events;
+using LabExtended.Events.Player;
+
 using LabExtended.Utilities;
 
 namespace LabExtended.Patches.Events.Player;
 
+/// <summary>
+/// Implements the <see cref="PlayerInteractingToyEventArgs"/> event.
+/// </summary>
 public static class PlayerInteractingToyPatch
 {
-    public static FastEvent<Action<ReferenceHub>> OnInteracted { get; } =
+    private static FastEvent<Action<ReferenceHub>> OnInteracted { get; } =
         FastEvents.DefineEvent<Action<ReferenceHub>>(typeof(InvisibleInteractableToy),
             nameof(InvisibleInteractableToy.OnInteracted));
     
     [HarmonyPatch(typeof(InvisibleInteractableToy), nameof(InvisibleInteractableToy.ServerInteract))]
-    public static bool Prefix(InvisibleInteractableToy __instance, ReferenceHub ply)
+    private static bool Prefix(InvisibleInteractableToy __instance, ReferenceHub ply)
     {
         if (!ExPlayer.TryGet(ply, out var player))
             return false;

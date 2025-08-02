@@ -1,5 +1,7 @@
 ﻿using AdminToys;
+
 using HarmonyLib;
+
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
@@ -13,14 +15,17 @@ using PlayerSearchingToyEventArgs = LabExtended.Events.Player.PlayerSearchingToy
 
 namespace LabExtended.Patches.Events.Player;
 
+/// <summary>
+/// Implements the <see cref="PlayerSearchingToyEventArgs"/> event.
+/// </summary>
 public static class PlayerSearchingToyPatch
 {
-    public static FastEvent<Action<ReferenceHub>> OnSearching { get; } =
+    private static FastEvent<Action<ReferenceHub>> OnSearching { get; } =
         FastEvents.DefineEvent<Action<ReferenceHub>>
             (typeof(InvisibleInteractableToy), nameof(InvisibleInteractableToy.OnSearching));
     
     [HarmonyPatch(typeof(InvisibleInteractableToy.InteractableToySearchCompletor), nameof(InvisibleInteractableToy.InteractableToySearchCompletor.ValidateStart))]
-    public static bool Prefix(InvisibleInteractableToy.InteractableToySearchCompletor __instance,
+    private static bool Prefix(InvisibleInteractableToy.InteractableToySearchCompletor __instance,
         ref bool __result)
     {
         if (!ExPlayer.TryGet(__instance.Hub, out var player))
@@ -37,7 +42,7 @@ public static class PlayerSearchingToyPatch
             return __result = false;
 
         var canInteract = !__instance._target.IsLocked && __instance.ValidateDistance();
-        var args = new PlayerSearchingToyEventArgs(player, toy, canInteract);
+        var args = new PlayerSearchingToyEventArgs(player, toy!, canInteract);
 
         if (!ExPlayerEvents.OnSearchingToy(args))
             return __result = false;
