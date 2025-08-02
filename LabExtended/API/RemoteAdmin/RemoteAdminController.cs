@@ -1,6 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+
 using LabExtended.API.Enums;
 using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
@@ -11,14 +14,16 @@ using LabExtended.Extensions;
 using LabExtended.Utilities.Update;
 using LabExtended.Utilities.Generation;
 
-using LabExtended.Patches.Functions.RemoteAdmin;
-
 using NorthwoodLib.Pools;
 
 using LabExtended.API.RemoteAdmin.Actions;
 using LabExtended.API.RemoteAdmin.Buttons;
 
+using LabExtended.Attributes;
+
 using NetworkManagerUtils.Dummies;
+
+using RemoteAdmin.Communication;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -30,13 +35,28 @@ namespace LabExtended.API.RemoteAdmin;
 /// </summary>
 public class RemoteAdminController : IDisposable
 {
+    /// <summary>
+    /// The prefix for the dummy icon.
+    /// </summary>
+    public const string DummyIconPrefix = "";
+
+    /// <summary>
+    /// The prefix for the muted icon.
+    /// </summary>
+    public const string MutedIconPrefix = "";
+
+    /// <summary>
+    /// The prefix for the Overwatch icon.
+    /// </summary>
+    public const string OverwatchIconPrefix = "";
+
     private static readonly UniqueStringGenerator objectIdGenerator = new(10, false);
     private static readonly UniqueInt32Generator listIdGenerator = new(6000, 11000);
 
     // ReSharper disable once CollectionNeverUpdated.Local
     private static readonly HashSet<Type> globalObjects = new();
     private static readonly HashSet<Type> globalModules = new();
-    
+
     /// <summary>
     /// Gets all Remote Admin buttons.
     /// </summary>
@@ -47,7 +67,7 @@ public class RemoteAdminController : IDisposable
         [RemoteAdminButtonType.RequestAuth] = new RemoteAdminButton(RemoteAdminButtonType.RequestAuth),
         [RemoteAdminButtonType.ExternalLookup] = new RemoteAdminButton(RemoteAdminButtonType.ExternalLookup)
     };
-    
+
     /// <summary>
     /// Binds a Remote Admin object to a button.
     /// </summary>
@@ -65,7 +85,7 @@ public class RemoteAdminController : IDisposable
 
         return button.BindObject(remoteAdminObject);
     }
-    
+
     /// <summary>
     /// Unbinds a Remote Admin object from a button.
     /// </summary>
@@ -96,7 +116,7 @@ public class RemoteAdminController : IDisposable
     /// Gets the parent player.
     /// </summary>
     public ExPlayer Player { get; }
-    
+
     /// <summary>
     /// Gets the Remote Admin Action provider.
     /// </summary>
@@ -115,12 +135,16 @@ public class RemoteAdminController : IDisposable
         Player = player;
 
         Actions = new(player);
-        
+
         Objects = ListPool<IRemoteAdminObject>.Shared.Rent();
 
         globalObjects.ForEach(type => AddObject(type));
 
         InternalEvents.OnPlayerVerified += OnVerified;
+
+        PlayerEvents.RequestingRaPlayerList += OnRequestingPlayerList;
+        PlayerEvents.RequestedRaPlayerList += OnRequestedPlayerList;
+
         PlayerUpdateHelper.OnUpdate += Update;
     }
 
@@ -128,10 +152,13 @@ public class RemoteAdminController : IDisposable
     public void Dispose()
     {
         PlayerUpdateHelper.OnUpdate -= Update;
-        
+
+        PlayerEvents.RequestingRaPlayerList -= OnRequestingPlayerList;
+        PlayerEvents.RequestedRaPlayerList -= OnRequestedPlayerList;
+
         requestWatch?.Stop();
         requestWatch = null;
-        
+
         Actions?.Dispose();
         Actions = null;
 
@@ -150,10 +177,10 @@ public class RemoteAdminController : IDisposable
                 objectIdGenerator.Free(obj.Id);
                 listIdGenerator.Free(obj.ListId);
             }
-            
+
             ListPool<IRemoteAdminObject>.Shared.Return(Objects);
         }
-        
+
         Objects = null;
     }
 
@@ -370,39 +397,40 @@ public class RemoteAdminController : IDisposable
 
         Player.SendRemoteAdminInfo(StringBuilderPool.Shared.ToStringReturn(builder));
     }
-    
+
     internal void PrependObjects(StringBuilder builder)
     {
         for (var i = 0; i < Objects.Count; i++)
         {
             var obj = Objects[i];
-            
-            if (!obj.IsActive) 
+
+            if (!obj.IsActive)
                 continue;
-            
+
             if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
                 continue;
-            
-            if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff) 
+
+            if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
                 continue;
-            
+
             if (!obj.GetVisibility(Player))
                 continue;
 
             if (obj.Icons != RemoteAdminIconType.None)
             {
                 if ((obj.Icons & RemoteAdminIconType.DummyIcon) != 0)
-                    builder.Append(RemoteAdminListPatch.DummyIconPrefix);
+                    builder.Append(DummyIconPrefix);
 
-                if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0) 
-                    builder.Append(RemoteAdminListPatch.MutedIconPrefix);
-                
-                if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0) 
-                    builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
+                if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0)
+                    builder.Append(MutedIconPrefix);
+
+                if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0)
+                    builder.Append(OverwatchIconPrefix);
             }
 
             builder.Append($"({obj.ListId}) ");
-            builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
+            builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty))
+                .Append("</color>");
             builder.AppendLine();
         }
     }
@@ -412,40 +440,36 @@ public class RemoteAdminController : IDisposable
         for (var i = 0; i < Objects.Count; i++)
         {
             var obj = Objects[i];
-            
+
             if (!obj.IsActive)
                 continue;
-            
+
             if (obj.Flags.Any(RemoteAdminObjectFlags.ShowOnTop))
                 continue;
-            
-            if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff) 
+
+            if (!obj.Flags.Any(RemoteAdminObjectFlags.ShowToNorthwoodStaff) && Player.IsNorthwoodStaff)
                 continue;
-            
+
             if (!obj.GetVisibility(Player))
                 continue;
 
             if (obj.Icons != RemoteAdminIconType.None)
             {
                 if ((obj.Icons & RemoteAdminIconType.DummyIcon) != 0)
-                    builder.Append(RemoteAdminListPatch.DummyIconPrefix);
-                
-                if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0) 
-                    builder.Append(RemoteAdminListPatch.MutedIconPrefix);
-                
-                if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0) 
-                    builder.Append(RemoteAdminListPatch.OverwatchIconPrefix);
+                    builder.Append(DummyIconPrefix);
+
+                if ((obj.Icons & RemoteAdminIconType.MutedIcon) != 0)
+                    builder.Append(MutedIconPrefix);
+
+                if ((obj.Icons & RemoteAdminIconType.OverwatchIcon) != 0)
+                    builder.Append(OverwatchIconPrefix);
             }
 
             builder.Append($"({obj.ListId}) ");
-            builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty)).Append("</color>");
+            builder.Append(obj.GetName(Player).Replace("\n", string.Empty).Replace("RA_", string.Empty))
+                .Append("</color>");
             builder.AppendLine();
         }
-    }
-
-    internal void OnRequest()
-    {
-        requestWatch.Restart();
     }
 
     private void Update()
@@ -458,7 +482,7 @@ public class RemoteAdminController : IDisposable
                 ExPlayerEvents.OnOpenedRemoteAdmin(new(Player));
             else
                 ExPlayerEvents.OnClosedRemoteAdmin(new(Player));
-            
+
             wasOpen = IsOpen;
         }
     }
@@ -469,7 +493,66 @@ public class RemoteAdminController : IDisposable
             return;
 
         InternalEvents.OnPlayerVerified -= OnVerified;
-        
+
         _ = DummyActionCollector.GetCache(player.ReferenceHub);
+    }
+
+    private void OnRequestingPlayerList(PlayerRequestingRaPlayerListEventArgs args)
+    {
+        if (args.Player != Player)
+            return;
+
+        requestWatch.Restart();
+
+        if (Objects.Count > 0)
+            PrependObjects(args.ListBuilder);
+    }
+
+    private void OnRequestedPlayerList(PlayerRequestedRaPlayerListEventArgs args)
+    {
+        if (args.Player != Player)
+            return;
+
+        if (Objects.Count > 0)
+            AppendObjects(args.ListBuilder);
+    }
+
+    private static void OnAddingPlayer(PlayerRaPlayerListAddingPlayerEventArgs args)
+    {
+        if (args.Player is not ExPlayer player)
+            return;
+
+        if (args.Target is not ExPlayer target)
+            return;
+
+        if (!target.Toggles.IsVisibleInRemoteAdmin)
+        {
+            args.IsAllowed = false;
+            return;
+        }
+
+        args.Prefix = RaPlayerList.GetPrefix(target.ReferenceHub,
+            player.HasPermission(PlayerPermissions.ViewHiddenBadges),
+            player.HasPermission(PlayerPermissions.ViewHiddenGlobalBadges));
+
+        var icons = target.RemoteAdminForcedIcons;
+
+        if (icons != RemoteAdminIconType.None)
+        {
+            if ((icons & RemoteAdminIconType.DummyIcon) == RemoteAdminIconType.DummyIcon)
+                args.Prefix += DummyIconPrefix;
+
+            if ((icons & RemoteAdminIconType.MutedIcon) == RemoteAdminIconType.MutedIcon)
+                args.Prefix += MutedIconPrefix;
+
+            if ((icons & RemoteAdminIconType.OverwatchIcon) == RemoteAdminIconType.OverwatchIcon)
+                args.Prefix += OverwatchIconPrefix;
+        }
+    }
+
+    [LoaderInitialize(1)]
+    private static void OnInit()
+    {
+        PlayerEvents.RaPlayerListAddingPlayer += OnAddingPlayer;
     }
 }

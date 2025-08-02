@@ -17,13 +17,13 @@ namespace LabExtended.Patches.Functions.RemoteAdmin;
 public static class RemoteAdminHelpPatch
 {
     [HarmonyPatch(typeof(HelpCommand), nameof(HelpCommand.Execute))]
-    public static bool Prefix(HelpCommand __instance, ArraySegment<string> arguments, ICommandSender sender, 
+    private static bool Prefix(HelpCommand __instance, ArraySegment<string> arguments, ICommandSender sender,
         out string response, ref bool __result)
     {
         if (arguments.Count < 1)
         {
             response = __instance.GetCommandList(__instance._commandHandler, "Commands:");
-            
+
             CommandFormatter.AppendCommands(ref response);
 
             __result = true;
@@ -49,50 +49,49 @@ public static class RemoteAdminHelpPatch
 
             if (command.Aliases != null)
                 name += $"\nAliases: {string.Join(", ", command.Aliases)}";
-            
+
             if (command is ICommandHandler handler)
                 name += __instance.GetCommandList(handler, "\nSubcommands:");
 
             try
             {
                 var cmdType = command.GetType();
-                
+
                 name += $"\nImplemented in {cmdType.Assembly.GetName().Name}:{cmdType.FullName}";
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
 
             response = name;
 
             __result = true;
             return false;
         }
-        else
+
+        var args = ListPool<string>.Shared.Rent(arguments);
+
+        if (CommandSearch.TryGetCommand(args, null, out var likelyCommands, out var foundCommand)
+            && !foundCommand.IsHidden)
         {
-            var args = ListPool<string>.Shared.Rent(arguments);
-            
-            if (CommandSearch.TryGetCommand(args, null, out var likelyCommands, out var foundCommand)
-                && !foundCommand.IsHidden)
-            {
-                if (likelyCommands != null)
-                    ListPool<CommandData>.Shared.Return(likelyCommands);
+            if (likelyCommands != null)
+                ListPool<CommandData>.Shared.Return(likelyCommands);
 
-                ListPool<string>.Shared.Return(args);
-                
-                response = foundCommand.GetString();
-                
-                __result = true;
-                return false;
-            }
-            else
-            {
-                if (likelyCommands != null)
-                    ListPool<CommandData>.Shared.Return(likelyCommands);
+            ListPool<string>.Shared.Return(args);
 
-                ListPool<string>.Shared.Return(args);
-                
-                response = $"Unknown command!";
-                return __result = false;
-            }
+            response = foundCommand.GetString();
+
+            __result = true;
+            return false;
         }
+
+        if (likelyCommands != null)
+            ListPool<CommandData>.Shared.Return(likelyCommands);
+
+        ListPool<string>.Shared.Return(args);
+
+        response = $"Unknown command!";
+        return __result = false;
     }
 }

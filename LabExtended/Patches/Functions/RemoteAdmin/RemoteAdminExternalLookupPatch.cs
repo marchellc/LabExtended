@@ -11,90 +11,97 @@ using MEC;
 
 using RemoteAdmin;
 
-namespace LabExtended.Patches.Functions.RemoteAdmin
+namespace LabExtended.Patches.Functions.RemoteAdmin;
+
+/// <summary>
+/// Provides functionality of the custom External Lookup button.
+/// </summary>
+public static class RemoteAdminExternalLookupPatch
 {
-    public static class RemoteAdminExternalLookupPatch
+    [HarmonyPatch(typeof(ExternalLookupCommand), nameof(ExternalLookupCommand.Execute))]
+    private static bool Prefix(ExternalLookupCommand __instance, ArraySegment<string> arguments, ICommandSender sender,
+        out string response, ref bool __result)
     {
-        [HarmonyPatch(typeof(ExternalLookupCommand), nameof(ExternalLookupCommand.Execute))]
-        public static bool Prefix(ExternalLookupCommand __instance, ArraySegment<string> arguments, ICommandSender sender, out string response, ref bool __result)
+        if (!RemoteAdminController.Buttons.TryGetValue(RemoteAdminButtonType.ExternalLookup, out var button)
+            || !ExPlayer.TryGet(sender, out var player))
         {
-            if (!RemoteAdminController.Buttons.TryGetValue(RemoteAdminButtonType.ExternalLookup, out var button) 
-                || !ExPlayer.TryGet(sender, out var player))
+            response = null;
+            return true;
+        }
+
+        if (!sender.CheckPermission(PlayerPermissions.BanningUpToDay | PlayerPermissions.LongTermBanning
+                                                                     | PlayerPermissions.SetGroup |
+                                                                     PlayerPermissions.PlayersManagement
+                                                                     | PlayerPermissions.PermissionsManagement |
+                                                                     PlayerPermissions.ViewHiddenBadges
+                                                                     | PlayerPermissions.PlayerSensitiveDataAccess
+                                                                     | PlayerPermissions.ViewHiddenGlobalBadges,
+                out response))
+            return __result = false;
+
+        var playerCommandSender = sender as PlayerCommandSender;
+
+        if (playerCommandSender == null)
+        {
+            response = "This command can only be executed by players!";
+            return __result = false;
+        }
+
+        var text = string.Empty;
+
+        if (arguments.Count >= 1)
+        {
+            if (!int.TryParse(arguments.At(0), out var playerId))
             {
-                response = null;
-                return true;
+                response = "Invalid ID!";
+                return __result = false;
             }
 
-            if (!sender.CheckPermission(PlayerPermissions.BanningUpToDay | PlayerPermissions.LongTermBanning 
-                                                                         | PlayerPermissions.SetGroup | PlayerPermissions.PlayersManagement 
-                                                                         | PlayerPermissions.PermissionsManagement | PlayerPermissions.ViewHiddenBadges 
-                                                                         | PlayerPermissions.PlayerSensitiveDataAccess 
-                                                                         | PlayerPermissions.ViewHiddenGlobalBadges, out response))
-                return __result = false;
-
-            var playerCommandSender = sender as PlayerCommandSender;
-
-            if (playerCommandSender == null)
+            if (ReferenceHub.TryGetHub(playerId, out var referenceHub))
             {
-                response = "This command can only be executed by players!";
-                return __result = false;
-            }
+                text = referenceHub.authManager.UserId;
 
-            var text = string.Empty;
+                var remoteAdminExternalPlayerLookupMode =
+                    ServerConfigSynchronizer.Singleton.RemoteAdminExternalPlayerLookupMode;
 
-            if (arguments.Count >= 1)
-            {
-                if (!int.TryParse(arguments.At(0), out var playerId))
+                if (remoteAdminExternalPlayerLookupMode == "fullauth")
                 {
-                    response = "Invalid ID!";
-                    return __result = false;
-                }
+                    Timing.RunCoroutine(__instance.AuthenticateWithExternalServer(playerCommandSender, text));
 
-                if (ReferenceHub.TryGetHub(playerId, out var referenceHub))
-                {
-                    text = referenceHub.authManager.UserId;
-
-                    var remoteAdminExternalPlayerLookupMode = ServerConfigSynchronizer.Singleton.RemoteAdminExternalPlayerLookupMode;
-
-                    if (remoteAdminExternalPlayerLookupMode == "fullauth")
-                    {
-                        Timing.RunCoroutine(__instance.AuthenticateWithExternalServer(playerCommandSender, text));
-
-                        response = "Initiated communication with external server.";
-
-                        __result = true;
-                        return false;
-                    }
-
-                    if (remoteAdminExternalPlayerLookupMode != "urlonly")
-                    {
-                        response = "Invalid mode or command disabled via config.";
-                        return __result = false;
-                    }
-
-                    playerCommandSender.RaReply("%" + text + "%" + ServerConfigSynchronizer.Singleton.RemoteAdminExternalPlayerLookupURL, true, false, "");
-                    response = "Lookup success!";
+                    response = "Initiated communication with external server.";
 
                     __result = true;
                     return false;
                 }
-                else
+
+                if (remoteAdminExternalPlayerLookupMode != "urlonly")
                 {
-                    if (button.OnPressed(player, new int[] { playerId }))
-                    {
-                        response = "OK!";
-
-                        __result = true;
-                        return false;
-                    }
-
-                    response = "Invalid ID!";
+                    response = "Invalid mode or command disabled via config.";
                     return __result = false;
                 }
+
+                playerCommandSender.RaReply(
+                    "%" + text + "%" + ServerConfigSynchronizer.Singleton.RemoteAdminExternalPlayerLookupURL, true,
+                    false, "");
+                response = "Lookup success!";
+
+                __result = true;
+                return false;
             }
 
-            response = "Unknown error";
+            if (button.OnPressed(player, [playerId]))
+            {
+                response = "OK!";
+
+                __result = true;
+                return false;
+            }
+
+            response = "Invalid ID!";
             return __result = false;
         }
+
+        response = "Unknown error";
+        return __result = false;
     }
 }
