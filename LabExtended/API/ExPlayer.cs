@@ -4,7 +4,6 @@ using LabExtended.API.Containers;
 using LabExtended.API.CustomVoice;
 using LabExtended.API.RemoteAdmin;
 using LabExtended.API.FileStorage;
-using LabExtended.API.PositionSync;
 
 using LabExtended.API.Settings.Menus;
 using LabExtended.API.Settings.Entries;
@@ -50,11 +49,13 @@ using CentralAuth;
 using CommandSystem;
 
 using Footprinting;
-
+using LabApi.Events.Arguments.PlayerEvents;
+using LabApi.Events.Handlers;
+using LabExtended.Attributes;
 using NetworkManagerUtils.Dummies;
 
 using NorthwoodLib.Pools;
-
+using PlayerRoles.FirstPersonControl.NetworkMessages;
 using UserSettings.ServerSpecific;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -587,17 +588,17 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's hint cache.
     /// <para><i>null for players that cannot receive hints (ie. NPCs and the server player).</i></para>
     /// </summary>
-    public HintCache? Hints { get; }
+    public HintCache? Hints { get; private set; }
 
     /// <summary>
     /// Gets the player's position container.
     /// </summary>
-    public new PositionContainer Position { get; }
+    public new PositionContainer Position { get; private set; }
 
     /// <summary>
     /// Gets the player's rotation container.
     /// </summary>
-    public new RotationContainer Rotation { get; }
+    public new RotationContainer Rotation { get; private set; }
 
     /// <summary>
     /// Gets the player's role container.
@@ -708,16 +709,16 @@ public class ExPlayer : Player, IDisposable
         HashSetPool<PersonalHintElement>.Shared.Rent();
 
     /// <summary>
-    /// Gets the player's sent role cache.
+    /// Gets a list of sent role cache.
     /// </summary>
-    public Dictionary<uint, RoleTypeId> SentRoles { get; internal set; } =
+    public Dictionary<uint, RoleTypeId> SentRoles { get; private set; } =
         DictionaryPool<uint, RoleTypeId>.Shared.Rent();
     
     /// <summary>
-    /// Gets the player's sent positions cache.
+    /// Gets a list of sent positions.
     /// </summary>
-    public Dictionary<uint, PositionCache> SentPositions { get; internal set; } 
-        = DictionaryPool<uint, PositionCache>.Shared.Rent();
+    public Dictionary<uint, PositionSync.SentPosition> SentPositions { get; private set; } =
+        DictionaryPool<uint, PositionSync.SentPosition>.Shared.Rent();
 
     /// <summary>
     /// Gets the currently spectated player.
@@ -1373,13 +1374,9 @@ public class ExPlayer : Player, IDisposable
             if (ply == null) 
                 return;
             
-            ply.SentRoles?.Remove(NetworkId);
             ply.PersonalGhostFlags &= ~GhostBit;
         });
-
-        if (Hints != null)
-            ObjectPool<HintCache>.Shared.Return(Hints);
-
+        
         Effects?.Dispose();
         Effects = null!;
 
@@ -1394,51 +1391,6 @@ public class ExPlayer : Player, IDisposable
 
         TemporaryStorage?.Dispose();
         TemporaryStorage = null!;
-
-        if (PersistentStorage != null)
-        {
-            if (!string.IsNullOrWhiteSpace(UserId) && !PlayerStorage._persistentStorage.ContainsKey(UserId))
-                PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
-
-            PersistentStorage.LeaveTime = DateTime.Now;
-            PersistentStorage = null!;
-        }
-
-        if (SentRoles != null)
-        {
-            DictionaryPool<uint, RoleTypeId>.Shared.Return(SentRoles);
-            SentRoles = null!;
-        }
-
-        if (SentPositions != null)
-        {
-            DictionaryPool<uint, PositionCache>.Shared.Return(SentPositions);
-            SentPositions = null!;
-        }
-
-        if (settingsIdLookup != null)
-        {
-            DictionaryPool<string, SettingsEntry>.Shared.Return(settingsIdLookup);
-            settingsIdLookup = null;
-        }
-
-        if (settingsAssignedIdLookup != null)
-        {
-            DictionaryPool<int, SettingsEntry>.Shared.Return(settingsAssignedIdLookup);
-            settingsAssignedIdLookup = null;
-        }
-
-        if (settingsMenuLookup != null)
-        {
-            DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
-            settingsMenuLookup = null;
-        }
-
-        if (removeNextFrame != null)
-        {
-            ListPool<HintElement>.Shared.Return(removeNextFrame);
-            removeNextFrame = null!;
-        }
         
         if (HintElements != null)
         {
@@ -1449,9 +1401,51 @@ public class ExPlayer : Player, IDisposable
             });
 
             HashSetPool<PersonalHintElement>.Shared.Return(HintElements);
-
-            HintElements = null!;
         }
+
+        if (PersistentStorage != null)
+        {
+            if (!string.IsNullOrWhiteSpace(UserId) && !PlayerStorage._persistentStorage.ContainsKey(UserId))
+                PlayerStorage._persistentStorage.Add(UserId, PersistentStorage);
+
+            PersistentStorage.LeaveTime = DateTime.Now;
+            PersistentStorage = null!;
+        }
+
+        if (settingsIdLookup != null)
+            DictionaryPool<string, SettingsEntry>.Shared.Return(settingsIdLookup);
+
+        if (settingsAssignedIdLookup != null)
+            DictionaryPool<int, SettingsEntry>.Shared.Return(settingsAssignedIdLookup);
+
+        if (settingsMenuLookup != null)
+            DictionaryPool<string, SettingsMenu>.Shared.Return(settingsMenuLookup);
+
+        if (removeNextFrame != null)
+            ListPool<HintElement>.Shared.Return(removeNextFrame);
+        
+        if (Hints != null)
+            ObjectPool<HintCache>.Shared.Return(Hints);
+        
+        if (SentRoles != null)
+            DictionaryPool<uint, RoleTypeId>.Shared.Return(SentRoles);
+        
+        if (SentPositions != null)
+            DictionaryPool<uint, PositionSync.SentPosition>.Shared.Return(SentPositions);
+
+        settingsIdLookup = null;
+        settingsMenuLookup = null;
+        settingsAssignedIdLookup = null;
+
+        removeNextFrame = null!;
+        
+        Hints = null;
+
+        SentRoles = null!;
+        SentPositions = null!;
+
+        Position = null!;
+        Rotation = null!;
     }
 
     #region Operators
@@ -1499,7 +1493,7 @@ public class ExPlayer : Player, IDisposable
     /// Converts the <see cref="NetPeer"/> instance to it's corresponding <see cref="ExPlayer"/>.
     /// </summary>
     /// <param name="peer">The instance to convert.</param>
-    public static implicit operator ExPlayer(NetPeer peer)
+    public static implicit operator ExPlayer?(NetPeer peer)
         => Get(peer);
 
     /// <summary>
@@ -1521,14 +1515,14 @@ public class ExPlayer : Player, IDisposable
     /// </summary>
     /// <param name="sender">The instance to convert.</param>
     public static implicit operator ExPlayer(CommandSender sender)
-        => Get(sender);
+        => Get(sender)!;
 
     /// <summary>
     /// Converts the <see cref="PlayerRoleBase"/> instance to it's corresponding <see cref="ExPlayer"/>.
     /// </summary>
     /// <param name="role">The instance to convert.</param>
     public static implicit operator ExPlayer(PlayerRoleBase role)
-        => (role is null || !role.TryGetOwner(out var owner) ? null : Get(owner));
+        => (role is null || !role.TryGetOwner(out var owner) ? null : Get(owner))!;
 
     /// <summary>
     /// Converts the <see cref="Footprint"/> instance to it's corresponding <see cref="ExPlayer"/>.

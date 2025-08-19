@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 
+using LabExtended.Utilities;
+
 using PlayerRoles;
 
 namespace LabExtended.Patches.Functions.Players;
@@ -10,5 +12,5 @@ namespace LabExtended.Patches.Functions.Players;
 public static class DisableRoleSyncPatch
 {
     [HarmonyPatch(typeof(PlayerRoleManager), nameof(PlayerRoleManager.SendNewRoleInfo))]
-    private static bool Prefix(PlayerRoleManager __instance) => false;
+    private static bool Prefix(PlayerRoleManager __instance) => !RoleSync.IsEnabled;
 }

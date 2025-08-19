@@ -10,6 +10,9 @@ using VoiceChat.Networking;
 
 namespace LabExtended.Extensions;
 
+/// <summary>
+/// Extensions targeting C# events.
+/// </summary>
 public static class EventExtensions
 {
     public static void InvokeEvent(this ExVoiceChatEvents.ReceivingVoiceMessageEventHandler receivingVoiceMessageEventHandler,

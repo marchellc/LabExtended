@@ -4,12 +4,11 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.API.RoleSync;
 using LabExtended.API.Containers;
 
 using LabExtended.Core;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
 
 using PlayerRoles;
 
@@ -69,8 +68,14 @@ public static class PlayerSpawningPatch
                 __instance.InitializeNewRole(newRole, reason, spawnFlags);
                 
                 beforeSendAction?.InvokeSafe(__instance.CurrentRole);
-
-                RoleManager.Internal_SendRole(player, newRole);
+                
+                if (RoleSync.IsEnabled)
+                    RoleSync.Internal_Resync(player);
+                else
+                    __instance.SendNewRoleInfo();
+                
+                if (PositionSync.IsEnabled)
+                    PositionSync.Internal_Reset(player);
 
                 PlayerEvents.OnChangedRole(new PlayerChangedRoleEventArgs(player.ReferenceHub,
                     curRole?.RoleTypeId ?? RoleTypeId.None,

@@ -47,6 +47,36 @@ public class BaseConfig
     public bool UnloadPluginsOnQuit { get; set; } = true;
 
     /// <summary>
+    /// Enables or disables custom role sync.
+    /// </summary>
+    [Description("Whether or not to replace the game's role sync system with a custom one.")]
+    public bool CustomRoleSync
+    {
+        get => RoleSync.IsEnabled;
+        set => RoleSync.IsEnabled = value;
+    }
+
+    /// <summary>
+    /// Enables or disables custom role sync Overwatch spoof.
+    /// </summary>
+    [Description("Whether or not to enable the game's Overwatch spoof.")]
+    public bool CustomRoleSyncOverwatchSpoof
+    {
+        get => RoleSync.IsOverwatchSpoofEnabled;
+        set => RoleSync.IsOverwatchSpoofEnabled = value;
+    }
+
+    /// <summary>
+    /// Enables or disables custom position sync.
+    /// </summary>
+    [Description("Enables or disables the custom position sync system.")]
+    public bool CustomPositionSync
+    {
+        get => PositionSync.IsEnabled;
+        set => PositionSync.IsEnabled = value;
+    }
+
+    /// <summary>
     /// The maximum distance between a disarmer and a disarmed player before being automatically uncuffed.
     /// </summary>
     [Description("The maximum distance between a disarmer and a disarmed player before being automatically uncuffed.")]

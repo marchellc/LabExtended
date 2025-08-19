@@ -230,8 +230,11 @@ public static class PlayerUpdateHelper
         while (true)
         {
             await Task.Delay(1);
-            
-            OnThreadUpdate?.InvokeSafe();
+
+            var task = OnThreadUpdate?.InvokeSafe();
+
+            if (task != null)
+                await task;
         }
     }
 
