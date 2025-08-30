@@ -1,11 +1,13 @@
 ﻿using InventorySystem;
 using InventorySystem.Items;
+using InventorySystem.Items.DebugTools;
+using InventorySystem.Items.Firearms;
+using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
-
+using InventorySystem.Items.Usables.Scp1344;
 using LabExtended.API;
 using LabExtended.Utilities;
 using Mirror;
-
 using UnityEngine;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -37,15 +39,15 @@ public static class ItemExtensions
     /// Gets the current inventory slot of an item.
     /// </summary>
     /// <param name="item">The target item.</param>
-    /// <returns>The item slot number (1 - 8)</returns>
+    /// <returns>The item slot number (1 - 8 or 0 if the item does not have an owner)</returns>
     /// <exception cref="InvalidOperationException"></exception>
     public static byte GetInventorySlot(this ItemBase item)
     {
         if (item == null)
             throw new ArgumentNullException(nameof(item));
-        
-        if (item.Owner is null)
-            throw new InvalidOperationException("The targeted item must be owned by a player.");
+
+        if (item.Owner == null)
+            return 0;
 
         return (byte)(item.OwnerInventory.UserInventory.Items.FindKeyIndex(item.ItemSerial) + 1);
     }
@@ -187,6 +189,48 @@ public static class ItemExtensions
             return standardPhysics.Rb;
 
         return itemPickupBase.GetComponent<Rigidbody>();
+    }
+
+    /// <summary>
+    /// Applies effects granted to an item's owner once the item is dropped.
+    /// </summary>
+    /// <param name="item">The item to simulate drop of.</param>
+    /// <param name="keepItem">Whether or not the item should be kept in the player's inventory.</param>
+    /// <returns>true if a pickup of the item should be dropped</returns>
+    public static bool SimulateDrop(this ItemBase item, out bool keepItem)
+    {
+        keepItem = false;
+
+        if (item != null && item.Owner != null)
+        {
+            if (item is Scp1344Item scp1344 && scp1344 != null)
+            {
+                if (scp1344.Status is Scp1344Status.Deactivating)
+                {
+                    keepItem = true;
+                    return false;
+                }
+
+                if (scp1344.Status is Scp1344Status.Active)
+                {
+                    scp1344.ServerSetStatus(Scp1344Status.Dropping);
+
+                    keepItem = true;
+                    return false;
+                }
+            }
+
+            if (item is ParticleDisruptor particleDisruptor && particleDisruptor.DeleteOnDrop)
+                return false;
+
+            if (item is SingleUseKeycardItem singleUseKeycard && singleUseKeycard._destroyed)
+                return false;
+
+            if (item is RagdollMover)
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>

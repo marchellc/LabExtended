@@ -67,9 +67,13 @@ public static class PlayerThrowingItemPatch
         
         CustomItemPickupBehaviour? pickupBehaviour = null;
 
-        var pickup = pickupType != item.ItemTypeId || pickupScale != Vector3.one
-            ? ExMap.SpawnItem(pickupType, player.Position, pickupScale, player.Rotation, itemSerial)
-            : player.ReferenceHub.inventory.ServerDropItem(itemSerial);
+        var spawnPickup = item.SimulateDrop(out var keepItem);
+
+        var pickup = spawnPickup 
+            ? (pickupType != item.ItemTypeId || pickupScale != Vector3.one
+                    ? ExMap.SpawnItem(pickupType, player.Position, pickupScale, player.Rotation, itemSerial)
+                    : player.ReferenceHub.inventory.ServerDropItem(itemSerial))
+            : null;
 
         __instance.SendItemsNextFrame = true;
 
@@ -88,7 +92,7 @@ public static class PlayerThrowingItemPatch
             pickupBehaviour = inventoryBehaviour.ProcessDropped(pickup, player, droppedArgs);
         }
         
-        if (item != null)
+        if (item != null && !keepItem)
             item.DestroyItem();
 
         if (pickup != null && player.Toggles.CanThrowItems && tryThrow && pickup.TryGetRigidbody(out var rigidbody))
