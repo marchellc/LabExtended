@@ -21,7 +21,7 @@ public class WaypointToy : AdminToy, IWrapper<AdminToys.WaypointToy>
     public WaypointToy(Vector3? position = null, Quaternion? rotation = null, float? priority = null) 
         : base(PrefabList.Waypoint.CreateInstance().GetComponent<AdminToys.WaypointToy>())
     {
-        Base = base.Base as AdminToys.WaypointToy!;
+        Base = base.Base as AdminToys.WaypointToy;
 
         if (Base is null)
             throw new Exception("Could not create a WaypointToy instance!");
