@@ -79,7 +79,7 @@ namespace LabExtended.API.Toys
         /// </summary>
         public float MaxDistance
         {
-            get => Base.NetworkMaxDistance;
+            get => Base.MaxDistance;
             set => Base.NetworkMaxDistance = value;
         }
 
@@ -88,7 +88,7 @@ namespace LabExtended.API.Toys
         /// </summary>
         public float MinDistance
         {
-            get => Base.NetworkMinDistance;
+            get => Base.MinDistance;
             set => Base.NetworkMinDistance = value;
         }
 
@@ -97,14 +97,8 @@ namespace LabExtended.API.Toys
         /// </summary>
         public float Volume
         {
-            get => Base.NetworkVolume;
-            set
-            {
-                if (value > 1f)
-                    value = value / 100f;
-
-                Base.NetworkVolume = value;
-            }
+            get => Base.Volume;
+            set => Base.NetworkVolume = value;
         }
     }
 }
