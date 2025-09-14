@@ -83,9 +83,6 @@ public static class RoleSync
         if (player.Role.FakedList.TryGetValue(receiver, out var fakedValue))
             role = fakedValue;
 
-        if (!receiver.IsAlive && !player.Toggles.IsVisibleInSpectatorList)
-            role = RoleTypeId.Spectator;
-
         if (!player.ReferenceHub.IsCommunicatingGlobally())
         {
             var invisible = false;

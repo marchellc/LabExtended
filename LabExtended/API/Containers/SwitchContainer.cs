@@ -1,7 +1,8 @@
 ﻿using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
-using LabExtended.Attributes;
+
 using LabExtended.Core;
+using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using YamlDotNet.Serialization;
@@ -24,7 +25,6 @@ public class SwitchContainer
     public static SwitchContainer DefaultNpcSwitches { get; } = new()
     {
         IsVisibleInRemoteAdmin = true,
-        IsVisibleInSpectatorList = false,
 
         CanBeRespawned = false,
         CanBlockRoundEnd = false,
@@ -92,8 +92,8 @@ public class SwitchContainer
 
     /// <summary>
     /// Gets or sets a value indicating whether or not this player is visible in the Spectator List.
-    /// <para><b>WARNING: If disabled, this player will be invisible while spectating.</b></para>
     /// </summary>
+    [Obsolete("Use the IsSpectateable property instead!", true)]
     public bool IsVisibleInSpectatorList { get; set; } = true;
 
     /// <summary>
@@ -380,7 +380,6 @@ public class SwitchContainer
         other.IgnoredEffects.ForEach(x => IgnoredEffects.Add(x));
 
         IsVisibleInRemoteAdmin = other.IsVisibleInRemoteAdmin;
-        IsVisibleInSpectatorList = other.IsVisibleInSpectatorList;
         IsVisibleToScp939 = other.IsVisibleToScp939;
 
         CanSeeEveryoneAs939 = other.CanSeeEveryoneAs939;

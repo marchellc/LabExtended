@@ -572,7 +572,6 @@ public class ExPlayer : Player, IDisposable
             
             Toggles.IsVisibleToScp939 = false;
             Toggles.IsVisibleInRemoteAdmin = false;
-            Toggles.IsVisibleInSpectatorList = false;
         }
         
         InternalEvents.HandlePlayerJoin(this);
@@ -1350,12 +1349,10 @@ public class ExPlayer : Player, IDisposable
     public void Dispose()
     {
         if (host != null && host == this)
-        {
             host = null;
 
-            if (Server.Host != null && Server.Host == this)
-                Server.Host = null;
-        }
+        if (Server.Host != null && Server.Host == this)
+            Server.Host = null;
 
         GhostedFlags &= ~GhostBit;
 
@@ -1373,7 +1370,10 @@ public class ExPlayer : Player, IDisposable
         {
             if (ply == null) 
                 return;
-            
+
+            ply.SentRoles.Remove(NetworkId);
+            ply.SentPositions.Remove(NetworkId);
+
             ply.PersonalGhostFlags &= ~GhostBit;
         });
         
