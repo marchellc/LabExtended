@@ -41,7 +41,7 @@ public static class ApiVersion
     /// <summary>
     /// Gets the loader's game version compatibility.
     /// </summary>
-    public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 1, 3));
+    public static VersionRange? Compatibility { get; } = new VersionRange(new Version(14, 1, 4));
 
     /// <summary>
     /// Checks for server version compatibility.
