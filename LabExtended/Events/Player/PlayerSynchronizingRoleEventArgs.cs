@@ -1,5 +1,7 @@
 using LabExtended.API;
 
+using Mirror;
+
 using PlayerRoles;
 
 namespace LabExtended.Events.Player;
@@ -25,15 +27,22 @@ public class PlayerSynchronizingRoleEventArgs : BooleanEventArgs
     public RoleTypeId Role { get; set; }
 
     /// <summary>
+    /// Gets the writer used to send spoofed role data.
+    /// </summary>
+    public NetworkWriter SpoofedData { get; }
+
+    /// <summary>
     /// Creates a new <see cref="PlayerSynchronizingRoleEventArgs"/> instance.
     /// </summary>
     /// <param name="player">The source player.</param>
     /// <param name="receiver">The receiving player.</param>
     /// <param name="role">The target role type.</param>
-    public PlayerSynchronizingRoleEventArgs(ExPlayer player, ExPlayer receiver, RoleTypeId role)
+    /// <param name="spoofedData">The writer for spoofed role data.</param>
+    public PlayerSynchronizingRoleEventArgs(ExPlayer player, ExPlayer receiver, RoleTypeId role, NetworkWriter spoofedData)
     {
         Player = player;
         Receiver = receiver;
         Role = role;
+        SpoofedData = spoofedData;
     }
 }

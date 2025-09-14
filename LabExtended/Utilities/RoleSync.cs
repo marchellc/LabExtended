@@ -110,62 +110,78 @@ public static class RoleSync
 
     internal static void Internal_Resync(ExPlayer player)
     {
-        ExPlayer.Players.ForEach(receiver =>
+        using (var writer = NetworkWriterPool.Get())
         {
-            if (receiver.ReferenceHub != null
-                && receiver.IsOnlineAndVerified)
+            ExPlayer.Players.ForEach(receiver =>
             {
-                var role = GetRoleToSend(player, receiver);
-                
-                if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole)
-                    || sentRole != role)
+                writer.Reset();
+
+                if (receiver.ReferenceHub != null
+                    && receiver.IsOnlineAndVerified)
                 {
-                    var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
+                    var role = GetRoleToSend(player, receiver);
+                    var fakeRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(player.ReferenceHub, receiver.ReferenceHub, role, writer);
 
-                    if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
-                        return;
+                    if (fakeRole.HasValue)
+                        role = fakeRole.Value;
 
-                    role = synchronizingArgs.Role;
-                    
-                    player.SentRoles[receiver.NetworkId] = role;
-                    
-                    receiver.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub));
-                    
-                    ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
+                    if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole)
+                        || sentRole != role)
+                    {
+                        var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role, writer);
+
+                        if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+                            return;
+
+                        role = synchronizingArgs.Role;
+
+                        player.SentRoles[receiver.NetworkId] = role;
+
+                        receiver.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub, writer));
+
+                        ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     internal static void Internal_CheckDirtyRole(ExPlayer player, ExPlayer receiver)
     {
-        var role = GetRoleToSend(player, receiver);
-
-        if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) || sentRole != role)
+        using (var writer = NetworkWriterPool.Get())
         {
-            var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role);
+            var role = GetRoleToSend(player, receiver);
+            var fakedRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(player.ReferenceHub, receiver.ReferenceHub, role, writer);
 
-            if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
-                return;
+            if (fakedRole.HasValue)
+                role = fakedRole.Value;
 
-            role = synchronizingArgs.Role;
-            
-            player.SentRoles[receiver.NetworkId] = role;
-            
-            if (IsOverwatchSpoofEnabled && FpcServerPositionDistributor.IsDistributionActive(role))
-                role = RoleTypeId.Overwatch;
-            
-            receiver.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub));
-
-            if (role == player.Role.Type && player.Role.Is<ISubroutinedRole>(out var subroutinedRole))
+            if (!player.SentRoles.TryGetValue(receiver.NetworkId, out var sentRole) || sentRole != role)
             {
-                foreach (var subroutine in subroutinedRole.SubroutineModule.AllSubroutines)
+                var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(player, receiver, role, writer);
+
+                if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+                    return;
+
+                role = synchronizingArgs.Role;
+
+                player.SentRoles[receiver.NetworkId] = role;
+
+                if (IsOverwatchSpoofEnabled && FpcServerPositionDistributor.IsDistributionActive(role))
+                    role = RoleTypeId.Overwatch;
+
+                receiver.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub, writer));
+
+                if (role == player.Role.Type && player.Role.Is<ISubroutinedRole>(out var subroutinedRole))
                 {
-                    receiver.Send(new SubroutineMessage(subroutine, true));
+                    foreach (var subroutine in subroutinedRole.SubroutineModule.AllSubroutines)
+                    {
+                        receiver.Send(new SubroutineMessage(subroutine, true));
+                    }
                 }
+
+                ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
             }
-            
-            ExPlayerEvents.OnSynchronizedRole(new(player, receiver, role));
         }
     }
     
@@ -173,68 +189,86 @@ public static class RoleSync
     {
         player.Connection.WriteTo(writer =>
         {
-            var count = 0;
-            var position = 0;
-            
-            writer.WriteMessageId<RoleSyncInfoPack>();
-            
-            position = writer.Position;
-            
-            writer.Position += 2; // Skip UShort count
-            
-            ExPlayer.AllPlayers.ForEach(p =>
+            using (var spoofWriter = NetworkWriterPool.Get())
             {
-                if (p?.ReferenceHub != null)
+                var count = 0;
+                var position = 0;
+
+                writer.WriteMessageId<RoleSyncInfoPack>();
+
+                position = writer.Position;
+
+                writer.Position += 2; // Skip UShort count
+
+                ExPlayer.AllPlayers.ForEach(p =>
                 {
-                    var role = GetRoleToSend(p, player);
-                    var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(p, player, role);
-
-                    if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
-                        return;
-
-                    role = synchronizingArgs.Role;
-                    
-                    writer.WriteUInt(p.NetworkId);
-                    writer.WriteRoleType(role);
-
-                    if (role == p.Role.Type)
+                    if (p?.ReferenceHub != null)
                     {
-                        if (p.Role.Is<IPublicSpawnDataWriter>(out var publicSpawnDataWriter))
+                        spoofWriter.Reset();
+
+                        var role = GetRoleToSend(p, player);
+                        var fakeRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(p.ReferenceHub, player.ReferenceHub, role, spoofWriter);
+
+                        if (fakeRole.HasValue)
+                            role = fakeRole.Value;
+
+                        var synchronizingArgs = new PlayerSynchronizingRoleEventArgs(p, player, role, spoofWriter);
+
+                        if (!ExPlayerEvents.OnSynchronizingRole(synchronizingArgs))
+                            return;
+
+                        role = synchronizingArgs.Role;
+
+                        writer.WriteUInt(p.NetworkId);
+                        writer.WriteRoleType(role);
+
+                        if (spoofWriter.Position > 0)
                         {
-                            publicSpawnDataWriter.WritePublicSpawnData(writer);
+                            for (var x = 0; x < spoofWriter.Position; x++)
+                            {
+                                writer.WriteByte(spoofWriter.buffer[x]);
+                            }
                         }
 
-                        if (p == player && p.Role.Is<IPrivateSpawnDataWriter>(out var privateSpawnDataWriter))
+                        if (role == p.Role.Type)
                         {
-                            privateSpawnDataWriter.WritePrivateSpawnData(writer);
+                            if (p.Role.Is<IPublicSpawnDataWriter>(out var publicSpawnDataWriter))
+                            {
+                                publicSpawnDataWriter.WritePublicSpawnData(writer);
+                            }
+
+                            if (p == player && p.Role.Is<IPrivateSpawnDataWriter>(out var privateSpawnDataWriter))
+                            {
+                                privateSpawnDataWriter.WritePrivateSpawnData(writer);
+                            }
                         }
+                        else if (role.TryGetPrefab(out var prefab))
+                        {
+                            if (prefab is IPublicSpawnDataWriter publicSpawnDataWriter)
+                            {
+                                publicSpawnDataWriter.WritePublicSpawnData(writer);
+                            }
+
+                            if (p == player && prefab is IPrivateSpawnDataWriter privateSpawnDataWriter)
+                            {
+                                privateSpawnDataWriter.WritePrivateSpawnData(writer);
+                            }
+                        }
+
+                        p.SentRoles[player.NetworkId] = role;
+
+                        ExPlayerEvents.OnSynchronizedRole(new(p, player, role));
+
+                        count++;
                     }
-                    else if (role.TryGetPrefab(out var prefab))
-                    {
-                        if (prefab is IPublicSpawnDataWriter publicSpawnDataWriter)
-                        {
-                            publicSpawnDataWriter.WritePublicSpawnData(writer);
-                        }
+                });
 
-                        if (p == player && prefab is IPrivateSpawnDataWriter privateSpawnDataWriter)
-                        {
-                            privateSpawnDataWriter.WritePrivateSpawnData(writer);
-                        }
-                    }
+                var curPosition = writer.Position;
 
-                    p.SentRoles[player.NetworkId] = role;
-                    
-                    ExPlayerEvents.OnSynchronizedRole(new(p, player, role));
-                    
-                    count++;
-                }
-            });
-
-            var curPosition = writer.Position;
-            
-            writer.Position = position;
-            writer.WriteUShort((ushort)count);
-            writer.Position = curPosition;
+                writer.Position = position;
+                writer.WriteUShort((ushort)count);
+                writer.Position = curPosition;
+            }
         });
     }
 
