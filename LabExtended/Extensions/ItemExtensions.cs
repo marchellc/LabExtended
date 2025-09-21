@@ -318,11 +318,11 @@ public static class ItemExtensions
     /// <exception cref="ArgumentNullException"></exception>
     public static void TransferItem(this ItemBase item, ReferenceHub newOwner)
     {
-        if (item == null)
-            throw new ArgumentNullException(nameof(item));
-        
-        if (newOwner == null)
-            throw new ArgumentNullException(nameof(newOwner));
+        if (item == null || item.gameObject == null)
+            return;
+
+        if (newOwner == null || newOwner.gameObject == null)
+            return;
 
         if (item.Owner != null)
         {
@@ -366,21 +366,24 @@ public static class ItemExtensions
     /// <param name="item">The item instance to destroy.</param>
     public static void DestroyItem(this ItemBase item)
     {
-        if (item.Owner != null)
+        if (item != null && item.gameObject != null)
         {
-            if (item.OwnerInventory.CurItem.SerialNumber == item.ItemSerial)
+            if (item.Owner != null)
             {
-                item.OwnerInventory.CurInstance = null;
-                item.OwnerInventory.NetworkCurItem = ItemIdentifier.None;
+                if (item.OwnerInventory.CurItem.SerialNumber == item.ItemSerial)
+                {
+                    item.OwnerInventory.CurInstance = null;
+                    item.OwnerInventory.NetworkCurItem = ItemIdentifier.None;
+                }
+
+                item.OwnerInventory.UserInventory.Items.Remove(item.ItemSerial);
+                item.OwnerInventory.SendItemsNextFrame = true;
+
+                item.OnRemoved(null);
             }
 
-            item.OwnerInventory.UserInventory.Items.Remove(item.ItemSerial);
-            item.OwnerInventory.SendItemsNextFrame = true;
-            
-            item.OnRemoved(null);
+            UnityEngine.Object.Destroy(item.gameObject);
         }
-
-        UnityEngine.Object.Destroy(item.gameObject);
     }
 
     /// <summary>
