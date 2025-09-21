@@ -1,6 +1,4 @@
 using LabExtended.Attributes;
-
-using LabExtended.Core;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities.Update;

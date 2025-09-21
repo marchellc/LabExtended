@@ -1,19 +1,19 @@
 using LabExtended.API;
 
 using LabExtended.Events;
-using LabExtended.Extensions;
 using LabExtended.Attributes;
+using LabExtended.Extensions;
 
 using LabExtended.Events.Player;
 
 using Mirror;
 
 using PlayerRoles;
-using PlayerRoles.FirstPersonControl.NetworkMessages;
 using PlayerRoles.SpawnData;
 using PlayerRoles.Visibility;
-using PlayerRoles.PlayableScps.Scp079;
 using PlayerRoles.Subroutines;
+using PlayerRoles.PlayableScps.Scp079;
+using PlayerRoles.FirstPersonControl.NetworkMessages;
 
 using UnityEngine;
 

@@ -6,11 +6,20 @@ using LabExtended.API;
 
 namespace LabExtended.Utilities;
 
+/// <summary>
+/// Utilities related to Unity Engine physics.
+/// </summary>
 public static class PhysicsUtils
 {
+    /// <summary>
+    /// The layer mask for player collisions.
+    /// </summary>
     public static readonly LayerMask PlayerCollisionMask =
         LayerMask.GetMask("Default", "Glass", "InvisibleCollider", "Door");
 
+    /// <summary>
+    /// The layer mask for collisions with visible objects.
+    /// </summary>
     public static readonly LayerMask VisibleMask =
         LayerMask.GetMask("Default", "Hitbox", "CCTV", "Door", "InteractableNoPlayerCollision");
 

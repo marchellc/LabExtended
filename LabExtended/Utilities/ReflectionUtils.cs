@@ -1,6 +1,5 @@
 using System.Reflection;
 
-using LabExtended.Core;
 using LabExtended.Extensions;
 
 namespace LabExtended.Utilities;

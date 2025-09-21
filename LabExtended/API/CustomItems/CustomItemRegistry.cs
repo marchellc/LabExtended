@@ -1,13 +1,15 @@
 ﻿using System.Reflection;
+
 using HarmonyLib;
+
 using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Armor;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.Scp914Events;
 
 using LabApi.Events.Handlers;
-using LabApi.Features.Wrappers;
 using LabExtended.API.CustomItems.Behaviours;
 
 using LabExtended.Core;
@@ -15,8 +17,8 @@ using LabExtended.Events;
 using LabExtended.Attributes;
 using LabExtended.Events.Map;
 using LabExtended.Extensions;
+
 using LabExtended.Utilities;
-using LabExtended.Utilities.Testing.CustomItems;
 using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
@@ -564,9 +566,6 @@ public static class CustomItemRegistry
         if (type.GetCustomAttribute<LoaderIgnoreAttribute>() != null)
             return;
 
-        if (type == typeof(TestCustomItemHandler) && !TestCustomItemHandler.IsEnabled)
-            return;
-        
         var constructor = AccessTools.DeclaredConstructor(type);
 
         if (constructor is null)

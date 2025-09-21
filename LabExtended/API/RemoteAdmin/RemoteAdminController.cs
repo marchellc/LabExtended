@@ -9,21 +9,20 @@ using LabExtended.API.RemoteAdmin.Enums;
 using LabExtended.API.RemoteAdmin.Interfaces;
 
 using LabExtended.Events;
+using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities.Update;
-using LabExtended.Utilities.Generation;
-
-using NorthwoodLib.Pools;
 
 using LabExtended.API.RemoteAdmin.Actions;
 using LabExtended.API.RemoteAdmin.Buttons;
 
-using LabExtended.Attributes;
-
 using NetworkManagerUtils.Dummies;
 
 using RemoteAdmin.Communication;
+
+using LabExtended.Utilities;
+using NorthwoodLib.Pools;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -50,8 +49,8 @@ public class RemoteAdminController : IDisposable
     /// </summary>
     public const string OverwatchIconPrefix = "<link=RA_OverwatchEnabled><color=white>[</color><color=#03f8fc>\uf06e</color><color=white>]</color></link> ";
 
-    private static readonly UniqueStringGenerator objectIdGenerator = new(10, false);
-    private static readonly UniqueInt32Generator listIdGenerator = new(6000, 11000);
+    private static readonly UniqueList objectIdGenerator = new();
+    private static readonly UniqueList listIdGenerator = new();
 
     // ReSharper disable once CollectionNeverUpdated.Local
     private static readonly HashSet<Type> globalObjects = new();
@@ -174,8 +173,8 @@ public class RemoteAdminController : IDisposable
                     obj.OnDisabled();
                 }
 
-                objectIdGenerator.Free(obj.Id);
-                listIdGenerator.Free(obj.ListId);
+                listIdGenerator.Generated.Remove(obj.Id);
+                objectIdGenerator.Generated.Remove(obj.Id);
             }
 
             ListPool<IRemoteAdminObject>.Shared.Return(Objects);
@@ -209,8 +208,8 @@ public class RemoteAdminController : IDisposable
 
         raObject.CustomId = customId;
 
-        raObject.Id = objectIdGenerator.Next();
-        raObject.ListId = listIdGenerator.Next();
+        raObject.Id = objectIdGenerator.GetString(10);
+        raObject.ListId = listIdGenerator.Get(() => UnityEngine.Random.Range(6000, 11000));
 
         raObject.IsActive = true;
         raObject.OnEnabled();
@@ -256,9 +255,9 @@ public class RemoteAdminController : IDisposable
         }
 
         if (string.IsNullOrWhiteSpace(remoteAdminObject.Id))
-            remoteAdminObject.Id = objectIdGenerator.Next();
+            remoteAdminObject.Id = objectIdGenerator.GetString(10);
 
-        remoteAdminObject.ListId = listIdGenerator.Next();
+        remoteAdminObject.ListId = listIdGenerator.Get(() => UnityEngine.Random.Range(6000, 11000));
 
         Objects.Add(remoteAdminObject);
     }
@@ -280,8 +279,8 @@ public class RemoteAdminController : IDisposable
             remoteAdminObject.OnDisabled();
         }
 
-        objectIdGenerator.Free(remoteAdminObject.Id);
-        listIdGenerator.Free(remoteAdminObject.ListId);
+        objectIdGenerator.Generated.Remove(remoteAdminObject.Id);
+        listIdGenerator.Generated.Remove(remoteAdminObject.ListId);
 
         return Objects.Remove(remoteAdminObject);
     }

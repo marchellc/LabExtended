@@ -4,12 +4,13 @@ using LabApi.Events.Handlers;
 using LabExtended.API;
 using LabExtended.Attributes;
 using LabExtended.Utilities.Update;
+
 using Mirror;
+
 using PlayerRoles;
+using PlayerRoles.Visibility;
 using PlayerRoles.FirstPersonControl;
 using PlayerRoles.FirstPersonControl.NetworkMessages;
-
-using PlayerRoles.Visibility;
 
 using RelativePositioning;
 

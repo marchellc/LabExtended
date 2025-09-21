@@ -1,16 +1,21 @@
-using LabExtended.API.Collections.Unsafe;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Utilities.Update;
+using LabExtended.API.Collections.Unsafe;
 
 using UnityEngine;
 
 namespace LabExtended.API.Collections.Updateable;
 
 /// <summary>
-/// Represents a list of updateable elements. Wraps around <see cref="UnsafeList{T}"/>.
+/// Represents a list of elements that can be updated at a specified interval and provides events for element and list
+/// updates.
 /// </summary>
-/// <typeparam name="T">The element type.</typeparam>
+/// <remarks>The update loop is managed automatically after calling <see cref="Initialize"/>, which subscribes the
+/// list to periodic updates. The <see cref="Updated"/> event is raised after each update cycle, and the <see
+/// cref="ElementUpdated"/> event is raised for each element as it is updated. Call <see cref="Dispose"/> to unsubscribe
+/// the list from updates and release resources. This class is not thread-safe.</remarks>
+/// <typeparam name="T">The type of elements in the list. Must implement <see cref="IUpdateableElement"/>.</typeparam>
 public class UpdateableList<T> : UnsafeList<T>, IDisposable 
     where T : IUpdateableElement
 {

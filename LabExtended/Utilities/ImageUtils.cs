@@ -1,17 +1,26 @@
 ﻿using System.Drawing;
 using System.Drawing.Imaging;
-using System.Net;
+
 using System.Text;
+
 using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
+
 using UnityEngine;
+
 using Color = System.Drawing.Color;
 
 namespace LabExtended.Utilities;
 
+/// <summary>
+/// Utilities related to image conversion.
+/// </summary>
 public static class ImageUtils
 {
+    /// <summary>
+    /// Converts a long-form color hex to a short-form color hex.
+    /// </summary>
     public static string FullHexToShortHex(this string hex) 
     {
         int i = 0;
@@ -30,6 +39,9 @@ public static class ImageUtils
         return $"#{rShort:x}{gShort:x}{bShort:x}";
     }
     
+    /// <summary>
+    /// Converts a color to a short-form color hex.
+    /// </summary>
     public static string ToShortHex(this Color color) 
     {
         int rShort = Mathf.RoundToInt(color.R / 17f);
@@ -39,9 +51,15 @@ public static class ImageUtils
         return $"#{rShort:x}{gShort:x}{bShort:x}";
     }
 
+    /// <summary>
+    /// Converts a color to a long-form color hex.
+    /// </summary>
     public static string ToHex(this Color c) 
         => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
     
+    /// <summary>
+    /// Extracts all frames in an image.
+    /// </summary>
     public static Bitmap[] ExtractFrames(this Image image, int? horizontalResolution = null, int? verticalResolution = null)
     {
         if (image is null)
@@ -69,6 +87,9 @@ public static class ImageUtils
         return ListPool<Bitmap>.Shared.ToArrayReturn(frames);
     }
 
+    /// <summary>
+    /// Converts a bitmap to an array of colors used for primitive object toys.
+    /// </summary>
     public static UnityEngine.Color?[,] ToPrimitiveFrame(this Bitmap frame, UnityEngine.Color?[,] previousFrame = null)
     {
         if (frame is null)
@@ -96,6 +117,9 @@ public static class ImageUtils
         return current;
     }
     
+    /// <summary>
+    /// Converts an array of frames to a list of color arrays used for primitive object toys.
+    /// </summary>
     public static List<UnityEngine.Color?[,]> ToPrimitiveFrames(this Bitmap[] frames)
     {
         if (frames is null)
@@ -120,6 +144,9 @@ public static class ImageUtils
         return list;
     }
 
+    /// <summary>
+    /// Converts a bitmap frame to a string used for hint displas.
+    /// </summary>
     public static string ToHintFrame(this Bitmap frame, ref Color lastColor, int size = 33, int height = 75, char pixelCharacter = '█', StringBuilder builder = null)
     {
         if (frame is null)
@@ -162,9 +189,12 @@ public static class ImageUtils
         if (ownsBuilder)
             return StringBuilderPool.Shared.ToStringReturn(builder);
 
-        return null;
+        return null!;
     }
 
+    /// <summary>
+    /// Converts an array of frames to an array of string frames for hint displays.
+    /// </summary>
     public static string[] ToHintFrames(this Bitmap[] frames, int size = 33, int height = 75, char pixelCharacter = '█')
     {
         if (frames is null)

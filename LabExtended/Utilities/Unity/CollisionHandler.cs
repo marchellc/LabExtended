@@ -14,7 +14,10 @@ namespace LabExtended.Utilities.Unity
 
         private Func<Collision, bool> _onCollision;
         
-        public object CustomData { get; set; }
+        /// <summary>
+        /// Gets or sets the custom data of the handler.
+        /// </summary>
+        public object? CustomData { get; set; }
 
         private void OnCollisionEnter(Collision collision)
         {

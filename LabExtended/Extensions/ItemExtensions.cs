@@ -5,9 +5,12 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.Usables.Scp1344;
+
 using LabExtended.API;
 using LabExtended.Utilities;
+
 using Mirror;
+
 using UnityEngine;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.

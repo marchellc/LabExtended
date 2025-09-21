@@ -4,9 +4,16 @@ using System.Collections.ObjectModel;
 namespace LabExtended.API.Collections.Unsafe;
 
 /// <summary>
-/// An unsafe version of <see cref="List{T}"/> which ignores modifications made during enumeration. As an addition, volatile operations are allowed.
+/// Represents a high-performance, array-backed list of elements that provides fast, low-level access and manipulation
+/// without built-in thread safety or bounds checking. Intended for scenarios where maximum performance is required and
+/// the caller is responsible for ensuring correct usage.
 /// </summary>
-/// <typeparam name="T">The type of the list's object.</typeparam>
+/// <remarks>UnsafeList{T} is similar to List{T} but omits certain safety checks and thread synchronization to
+/// maximize performance. It is not thread-safe and does not perform bounds checking on all operations; callers must
+/// ensure that indices and capacities are valid. This type is suitable for advanced scenarios where the overhead of
+/// additional safety is undesirable and the caller can guarantee correct usage. Modifying the collection while
+/// enumerating it is not supported and may result in undefined behavior.</remarks>
+/// <typeparam name="T">The type of elements stored in the list.</typeparam>
 public class UnsafeList<T> : IList<T>, IList, IReadOnlyList<T>
 {
     /// <summary>

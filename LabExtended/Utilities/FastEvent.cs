@@ -7,12 +7,29 @@ using LabExtended.Extensions;
 
 namespace LabExtended.Utilities;
 
+/// <summary>
+/// Defines a cached fast event invoker.
+/// </summary>
 public class FastEvent<THandler> where THandler : Delegate
 {
+    /// <summary>
+    /// The reference to the event's field.
+    /// </summary>
     public AccessTools.FieldRef<object, THandler> Getter { get; }
+
+    /// <summary>
+    /// The delegate used to invoke the event.
+    /// </summary>
     public Func<object, object[], object> Invoker { get; }
+
+    /// <summary>
+    /// The information about the targeted event.
+    /// </summary>
     public EventInfo Event { get; }
 
+    /// <summary>
+    /// Creates a new <see cref="FastEvent{THandler}"/> instance.
+    /// </summary>
     public FastEvent(AccessTools.FieldRef<object, THandler> getter, Func<object, object[], object> invoker, EventInfo ev)
     {
         Getter = getter;
@@ -20,6 +37,9 @@ public class FastEvent<THandler> where THandler : Delegate
         Event = ev;
     }
 
+    /// <summary>
+    /// Invokes the targeted event.
+    /// </summary>
     public object InvokeEvent(object instance, params object[] args)
     {
         var result = default(object);

@@ -1,14 +1,15 @@
 ﻿#define ENABLE_PROFILER
 
 using System.Diagnostics;
+
 using LabExtended.API;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Utilities.Update;
+
 using NorthwoodLib.Pools;
+
 using Unity.Profiling;
-using Unity.Profiling.LowLevel.Unsafe;
-using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace LabExtended.Utilities;

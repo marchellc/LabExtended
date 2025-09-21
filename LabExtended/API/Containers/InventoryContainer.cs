@@ -6,8 +6,8 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
-using LabExtended.Utilities.Keycards;
 using LabExtended.Extensions;
+using LabExtended.API.CustomAmmo;
 
 using UnityEngine;
 
@@ -16,10 +16,8 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
-using LabExtended.API.CustomAmmo;
 
 #pragma warning disable CS8603 // Possible null reference return.
-
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
 namespace LabExtended.API.Containers;
@@ -153,7 +151,7 @@ public class InventoryContainer : IDisposable
     /// Gets permissions of the currently held keycard. <i>(<see cref="DoorPermissionFlags.None"/> if the player isn't holding a keycard)</i>.
     /// </summary>
     public DoorPermissionFlags HeldKeycardPermissions =>
-        CurrentItem is KeycardItem keycardItem && keycardItem.TryGetDetail<PredefinedPermsDetail>(out var perms)
+        CurrentItem is KeycardItem keycardItem && keycardItem.Details.TryGetFirst<PredefinedPermsDetail>(out var perms)
             ? perms.Levels.Permissions
             : DoorPermissionFlags.None;
 
@@ -228,7 +226,7 @@ public class InventoryContainer : IDisposable
 
             foreach (var keycard in Keycards)
             {
-                if (!keycard.TryGetDetail<PredefinedPermsDetail>(out var cardPerms))
+                if (!keycard.Details.TryGetFirst<PredefinedPermsDetail>(out var cardPerms))
                     continue;
 
                 perms |= cardPerms.Levels.Permissions;
@@ -399,7 +397,7 @@ public class InventoryContainer : IDisposable
     public bool HasKeycardPermission(DoorPermissionFlags keycardPermissions, bool anyPermission = false)
         => Keycards.Any(card =>
         {
-            if (!card.TryGetDetail<PredefinedPermsDetail>(out var cardPerms))
+            if (!card.Details.TryGetFirst<PredefinedPermsDetail>(out var cardPerms))
                 return false;
 
             return anyPermission

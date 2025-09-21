@@ -2,6 +2,13 @@ using System.Collections;
 
 namespace LabExtended.API.Collections.Unsafe;
 
+/// <summary>
+/// Provides an enumerator for iterating over the elements of an UnsafeList{T} without thread safety guarantees.
+/// </summary>
+/// <remarks>This enumerator does not provide thread safety. Modifying the underlying UnsafeList{T} during
+/// enumeration may result in undefined behavior. The enumerator is intended for performance-critical scenarios where
+/// thread safety is managed externally or is not required.</remarks>
+/// <typeparam name="T">The type of elements in the collection to enumerate.</typeparam>
 public struct UnsafeEnumerator<T> : IEnumerator<T>, IEnumerator
 {
     internal static volatile IEnumerator<T> emptyEnumerator = new UnsafeEnumerator<T>();
@@ -10,6 +17,11 @@ public struct UnsafeEnumerator<T> : IEnumerator<T>, IEnumerator
     private volatile int index;
     private T? current;
 
+    /// <summary>
+    /// Initializes a new instance of the UnsafeEnumerator{T} class for the specified list.
+    /// </summary>
+    /// <param name="list">The UnsafeList{T} to enumerate. Cannot be null.</param>
+    /// <exception cref="ArgumentNullException">Thrown if the list parameter is null.</exception>
     public UnsafeEnumerator(UnsafeList<T> list)
     {
         if (list is null)
@@ -38,7 +50,7 @@ public struct UnsafeEnumerator<T> : IEnumerator<T>, IEnumerator
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose() { }
 
-    /// <inheritdoc cref="IEnumerator{T}.MoveNext"/>
+    /// <inheritdoc cref="IEnumerator.MoveNext"/>
     public bool MoveNext()
     {
         if (((uint)index < (uint)list.size))

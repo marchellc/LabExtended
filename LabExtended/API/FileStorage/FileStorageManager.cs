@@ -8,7 +8,6 @@ using LabExtended.Extensions;
 using LabExtended.Events.Player;
 
 using LabExtended.Utilities;
-using LabExtended.Utilities.Testing.FileStorage;
 
 namespace LabExtended.API.FileStorage;
 
@@ -402,9 +401,6 @@ public static class FileStorageManager
             return;
 
         if (type.HasAttribute<LoaderIgnoreAttribute>())
-            return;
-        
-        if (type == typeof(TestFileStorageComponent) && !TestFileStorageComponent.IsEnabled)
             return;
             
         Components.Add(type);

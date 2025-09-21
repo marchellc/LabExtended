@@ -1,15 +1,17 @@
 ﻿using InventorySystem.Items;
-using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Pickups;
+using InventorySystem.Items.Firearms;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
-using LabExtended.API;
-using LabExtended.Attributes;
 
+using LabExtended.API;
 using LabExtended.Events;
+using LabExtended.Attributes;
 using LabExtended.Extensions;
-using LabExtended.Patches.Functions.Items;
+
 using LabExtended.Utilities.Firearms;
+using LabExtended.Patches.Functions.Items;
 
 using Mirror;
 

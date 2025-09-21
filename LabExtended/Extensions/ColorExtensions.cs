@@ -2,20 +2,32 @@
 
 namespace LabExtended.Extensions;
 
+/// <summary>
+/// Extensions targeting Unity colors.
+/// </summary>
 public static class ColorExtensions
 {
+    /// <summary>
+    /// Makes a glowing color.
+    /// </summary>
     public static Color ToGlowingColor(this Color color)
     {
         FixPrimitiveColor(ref color);
         return new Color(color.r * 50f, color.g * 50f, color.b * 50f, 0.1f);
     }
 
+    /// <summary>
+    /// Fixes primitive color ranges.
+    /// </summary>
     public static Color FixPrimitiveColor(this Color color)
     {
         FixPrimitiveColor(ref color);
         return color;
     }
 
+    /// <summary>
+    /// Fixes primitive color ranges.
+    /// </summary>
     public static void FixPrimitiveColor(ref Color color)
     {
         var rValue = color.r;

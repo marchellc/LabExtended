@@ -4,8 +4,17 @@ using LabExtended.API.Interfaces;
 
 namespace LabExtended.Extensions;
 
+/// <summary>
+/// Extensions targeting the <see cref="IMessage"/> interface.
+/// </summary>
 public static class MessageExtensions
 {
+    /// <summary>
+    /// Displays a message.
+    /// </summary>
+    /// <param name="message">The message to display.</param>
+    /// <param name="target">The player to display the message to.</param>
+    /// <exception cref="ArgumentNullException"></exception>
     public static void DisplayMessage(this IMessage message, ExPlayer target)
     {
         if (message is null)

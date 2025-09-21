@@ -1,8 +1,7 @@
 using LabExtended.API;
-using LabExtended.Core;
 
-using LabExtended.Utilities.RoleSelection.Humans;
 using LabExtended.Utilities.RoleSelection.Scps;
+using LabExtended.Utilities.RoleSelection.Humans;
 
 using PlayerRoles;
 using PlayerRoles.RoleAssign;
