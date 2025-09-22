@@ -49,13 +49,11 @@ using CentralAuth;
 using CommandSystem;
 
 using Footprinting;
-using LabApi.Events.Arguments.PlayerEvents;
-using LabApi.Events.Handlers;
-using LabExtended.Attributes;
+
 using NetworkManagerUtils.Dummies;
 
 using NorthwoodLib.Pools;
-using PlayerRoles.FirstPersonControl.NetworkMessages;
+
 using UserSettings.ServerSpecific;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -474,7 +472,13 @@ public class ExPlayer : Player, IDisposable
     /// Spawns a new dummy player with the specified nickname.
     /// </summary>
     /// <param name="nickname">The nickname to add to the dummy (Dummy will be set if left null).</param>
-    public ExPlayer(string? nickname = null) : this(DummyUtils.SpawnDummy(nickname ?? "Dummy"), SwitchContainer.GetNewNpcToggles(true))
+    /// <param name="hideFromPlayerList">Whether or not to hide the dummy from the player list (this is done by setting the ID of the dummy to ID_Dedicated so it's
+    /// considered as the server player which is hidden from the list)</param>
+    public ExPlayer(string? nickname, bool hideFromPlayerList) 
+        : this(hideFromPlayerList
+              ? SpawnHiddenDummy(nickname ?? "Dummy")
+              : DummyUtils.SpawnDummy(nickname ?? "Dummy"), 
+              SwitchContainer.GetNewNpcToggles(true))
     {
 
     }
@@ -563,7 +567,8 @@ public class ExPlayer : Player, IDisposable
         }
         else
         {
-            host = this;
+            if (host is null || host?.ReferenceHub == null)
+                host = this;
 
             Toggles.ShouldSendPosition = false;
 
@@ -949,7 +954,32 @@ public class ExPlayer : Player, IDisposable
     /// Whether the player is a NPC.
     /// </summary>
     [CommandPropertyAlias("isNpc")]
-    public new bool IsNpc => InstanceMode is ClientInstanceMode.Dummy;
+    public new bool IsNpc
+    {
+        get
+        {
+            if (InstanceMode is ClientInstanceMode.Dummy)
+                return true;
+
+            if (Connection != null)
+            {
+                if (Connection is DummyNetworkConnection)
+                    return true;
+
+                if (Connection is LocalConnectionToClient)
+                {
+                    if (host != null)
+                        return host.NetworkId != NetworkId;
+
+                    // host player, not an NPC
+                    if (NetworkClient.connection != null && NetworkClient.connection == Connection)
+                        return false;
+                }
+            }
+
+            return false;
+        }
+    }
 
     /// <summary>
     /// Whether the player is connected.
@@ -1446,6 +1476,21 @@ public class ExPlayer : Player, IDisposable
 
         Position = null!;
         Rotation = null!;
+    }
+
+    private static ReferenceHub SpawnHiddenDummy(string nick)
+    {
+        var hubGo = UnityEngine.Object.Instantiate(NetworkManager.singleton.playerPrefab);
+        var hub = hubGo.GetComponent<ReferenceHub>();
+
+        NetworkServer.AddPlayerForConnection(new DummyNetworkConnection(), hubGo);
+
+        hub.nicknameSync.MyNick = nick;
+
+        hub.authManager.NetworkSyncedUserId = "ID_Dedicated";
+        hub.authManager.syncMode = (SyncMode)ClientInstanceMode.DedicatedServer;
+
+        return hub;
     }
 
     #region Operators
