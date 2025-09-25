@@ -1,6 +1,6 @@
 ﻿using LabExtended.API.Settings.Entries;
 
-namespace LabExtended.Events.Player
+namespace LabExtended.Events.Player.Settings
 {
     /// <summary>
     /// Gets called when the server receives an entry update.

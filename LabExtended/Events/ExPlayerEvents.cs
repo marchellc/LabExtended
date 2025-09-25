@@ -3,6 +3,7 @@ using LabExtended.Extensions;
 
 using LabExtended.Events.Player;
 using LabExtended.Events.Player.Snake;
+using LabExtended.Events.Player.Settings;
 
 #pragma warning disable CS8604 // Possible null reference argument.
 
@@ -72,22 +73,7 @@ public static class ExPlayerEvents
     public static event Action<PlayerObservingScp173EventArgs>? ObservingScp173; 
     
     /// <inheritdoc cref="PlayerTriggeringTeslaGateEventArgs"/>
-    public static event Action<PlayerTriggeringTeslaGateEventArgs>? TriggeringTesla; 
-    
-    /// <inheritdoc cref="PlayerSearchingToyEventArgs"/>
-    public static event Action<PlayerSearchingToyEventArgs>? SearchingToy;
-    
-    /// <inheritdoc cref="PlayerSearchedToyEventArgs"/>
-    public static event Action<PlayerSearchedToyEventArgs>? SearchedToy; 
-    
-    /// <inheritdoc cref="PlayerInteractingToyEventArgs"/>
-    public static event Action<PlayerInteractingToyEventArgs>? InteractingToy;
-    
-    /// <inheritdoc cref="PlayerInteractedToyEventArgs"/>
-    public static event Action<PlayerInteractedToyEventArgs>? InteractedToy; 
-    
-    /// <inheritdoc cref="PlayerInteractingToyAbortedEventArgs"/>
-    public static event Action<PlayerInteractingToyAbortedEventArgs>? InteractingToyAborted; 
+    public static event Action<PlayerTriggeringTeslaGateEventArgs>? TriggeringTesla;
     #endregion
     
     #region Items
@@ -266,43 +252,6 @@ public static class ExPlayerEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnTriggeringTeslaGate(PlayerTriggeringTeslaGateEventArgs args)
         => TriggeringTesla.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="SearchingToy"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnSearchingToy(PlayerSearchingToyEventArgs args)
-        => SearchingToy.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="SearchedToy"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    public static void OnSearchedToy(PlayerSearchedToyEventArgs args)
-        => SearchedToy.InvokeEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="InteractingToy"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnInteractingToy(PlayerInteractingToyEventArgs args)
-        => InteractingToy.InvokeBooleanEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="InteractedToy"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    public static void OnInteractedToy(PlayerInteractedToyEventArgs args)
-        => InteractedToy.InvokeEvent(args);
-    
-    /// <summary>
-    /// Invokes the <see cref="InteractingToyAborted"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    public static void OnInteractingToyAborted(PlayerInteractingToyAbortedEventArgs args)
-        => InteractingToyAborted.InvokeEvent(args);
     
     /// <summary>
     /// Invokes the <see cref="SynchronizingRole"/> event.

@@ -2,7 +2,7 @@
 using LabExtended.API.Settings.Menus;
 using LabExtended.API.Settings.Entries;
 
-namespace LabExtended.Events.Player
+namespace LabExtended.Events.Player.Settings
 {
     /// <summary>
     /// Gets called when a new settings entry instance is created.

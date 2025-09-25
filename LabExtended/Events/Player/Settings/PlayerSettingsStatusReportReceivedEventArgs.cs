@@ -1,8 +1,7 @@
 ﻿using LabExtended.API;
-
 using UserSettings.ServerSpecific;
 
-namespace LabExtended.Events.Player;
+namespace LabExtended.Events.Player.Settings;
 
 public class PlayerSettingsStatusReportReceivedEventArgs : EventArgs
 {
