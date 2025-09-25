@@ -14,7 +14,7 @@ namespace LabExtended.Patches.Functions.Settings
         public static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
         {
             SettingsManager.OnResponseMessage(conn, msg);
-            return false;
+            return true;
         }
     }
 }
