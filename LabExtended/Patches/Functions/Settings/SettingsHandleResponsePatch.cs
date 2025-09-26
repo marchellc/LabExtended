@@ -8,10 +8,13 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.Patches.Functions.Settings
 {
-    public static class SettingsDisableResponsePatch
+    /// <summary>
+    /// Provides a Harmony patch for handling server-specific settings response messages from clients.
+    /// </summary>
+    public static class SettingsHandleResponsePatch
     {
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.ServerProcessClientResponseMsg))]
-        public static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
+        private static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
         {
             SettingsManager.OnResponseMessage(conn, msg);
             return true;

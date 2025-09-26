@@ -8,10 +8,13 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.Patches.Functions.Settings
 {
-    public static class SettingsDisableStatusPatch
+    /// <summary>
+    /// Provides a Harmony patch for handling server-specific settings status messages.
+    /// </summary>
+    public static class SettingsHandleStatusPatch
     {
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.ServerProcessClientStatusMsg))]
-        public static bool Prefix(NetworkConnection conn, ref SSSUserStatusReport msg)
+        private static bool Prefix(NetworkConnection conn, ref SSSUserStatusReport msg)
         {
             SettingsManager.OnStatusMessage(conn, msg);
             return true;
