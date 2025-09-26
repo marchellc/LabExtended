@@ -467,7 +467,6 @@ public class ExPlayer : Player, IDisposable
         settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
     
     internal List<HintElement> removeNextFrame = ListPool<HintElement>.Shared.Rent();
-    internal List<ServerSpecificSettingBase> settingsList = ListPool<ServerSpecificSettingBase>.Shared.Rent();
 
     /// <summary>
     /// Spawns a new dummy player with the specified nickname.
@@ -1443,9 +1442,6 @@ public class ExPlayer : Player, IDisposable
             PersistentStorage = null!;
         }
 
-        if (settingsList != null)
-            ListPool<ServerSpecificSettingBase>.Shared.Return(settingsList);
-
         if (settingsIdLookup != null)
             DictionaryPool<string, SettingsEntry>.Shared.Return(settingsIdLookup);
 
@@ -1467,7 +1463,6 @@ public class ExPlayer : Player, IDisposable
         if (SentPositions != null)
             DictionaryPool<uint, PositionSync.SentPosition>.Shared.Return(SentPositions);
 
-        settingsList = null!;
         settingsIdLookup = null;
         settingsMenuLookup = null;
         settingsAssignedIdLookup = null;
