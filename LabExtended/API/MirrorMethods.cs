@@ -1,10 +1,9 @@
 ﻿using LabExtended.Core;
-using LabExtended.Utilities;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using Mirror;
 
+using System.Reflection;
 using System.Reflection.Emit;
 
 using UnityEngine;
@@ -22,8 +21,17 @@ namespace LabExtended.API;
 /// </summary>
 public static class MirrorMethods
 {
+    private static bool hasInitialized;
+
+    private static Dictionary<string, string> rpcNames = new();
+    private static Dictionary<string, int> rpcHashes = new();
+    private static Dictionary<string, ulong> dirtyBits = new();
+    private static Dictionary<Type, MethodInfo> writers = new();
+
+    private static Action<NetworkIdentity, NetworkConnection> sendSpawnMessage;
+
     /// <summary>
-    /// Gets the maximum length of a string.
+    /// Gets the maximum length of a string (amount of UTF-8 bytes) that can be sent over the network.
     /// </summary>
     public const int MaxStringLength = 65534;
     
@@ -32,31 +40,76 @@ public static class MirrorMethods
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, string> RpcNames { get; } = new();
+    public static Dictionary<string, string> RpcNames
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return rpcNames;
+        }
+    }
     
     /// <summary>
     /// Gets hashes of all RPCs.
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, int> RpcHashes { get; } = new();
+    public static Dictionary<string, int> RpcHashes
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return rpcHashes;
+        }
+    }
 
     /// <summary>
     /// Gets dirty bits of all network properties
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, ulong> DirtyBits { get; } = new();
+    public static Dictionary<string, ulong> DirtyBits
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return dirtyBits;
+        }
+    }
 
     /// <summary>
     /// Gets Mirror-generated network writer extensions.
     /// </summary>
-    public static Dictionary<Type, Func<object, object[], object>> Writers { get; } = new();
+    public static Dictionary<Type, MethodInfo> Writers
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return writers;
+        }
+    }
 
     /// <summary>
     /// Gets the <see cref="NetworkServer.SendSpawnMessage"/> delegate.
     /// </summary>
-    public static Action<NetworkIdentity, NetworkConnection> SendSpawnMessage { get; private set; }
+    public static Action<NetworkIdentity, NetworkConnection> SendSpawnMessage
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return sendSpawnMessage;
+        }
+    }
 
     /// <summary>
     /// Attempts to get a specific behaviour component of a network identity.
@@ -848,7 +901,7 @@ public static class MirrorMethods
             if (!Writers.TryGetValue(customValue.GetType(), out var definedValueWriter))
                 throw new Exception($"Type {customValue.GetType().FullName} does not have a defined writer");
 
-            valueWriter = (x, y) => definedValueWriter(null, [x, y]);
+            valueWriter = (x, y) => definedValueWriter.Invoke(x, [y]);
         }
         
         WriteCustomSyncVar(writer, behaviour.netId, dirtyBit, behaviour.ComponentIndex, customValue, valueWriter);
@@ -880,7 +933,7 @@ public static class MirrorMethods
             if (!Writers.TryGetValue(customValue.GetType(), out var definedValueWriter))
                 throw new Exception($"Type {customValue.GetType().FullName} does not have a defined writer");
 
-            valueWriter = (x, y) => definedValueWriter(null, [x, y]);
+            valueWriter = (x, y) => definedValueWriter.Invoke(x, [y]);
         }
         
         WriteCustomSyncVar(writer, behaviour.netId, dirtyBit, behaviour.ComponentIndex, customValue, 
@@ -1077,12 +1130,12 @@ public static class MirrorMethods
     }
 
     // TODO: There's a weird bug that causes the Mono runtime to randomly crash at random points in this method.
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    // Seems to be caused by the Mono runtimn as no exceptions are thrown (and it doesn't happen on Windows).
+    private static void Init()
     {
         try
         {
-            SendSpawnMessage =
+            sendSpawnMessage =
                 typeof(NetworkServer).FindMethod(x => x.Name == "SendSpawnMessage")
                         .CreateDelegate(typeof(Action<NetworkIdentity, NetworkConnection>)) as
                     Action<NetworkIdentity, NetworkConnection>;
@@ -1108,18 +1161,21 @@ public static class MirrorMethods
                         if (isSerializer && method.ReturnType == typeof(void) && method.Name.StartsWith("Write"))
                         {
                             var parameters = method.GetAllParameters();
-                            if (parameters.Length != 2) continue;
+
+                            if (parameters.Length != 2)
+                                continue;
 
                             var serializedType = parameters
                                 .FirstOrDefault(y => y.ParameterType != typeof(NetworkWriter))
                                 ?.ParameterType;
 
-                            if (serializedType is null) continue;
-                            if (Writers.ContainsKey(serializedType)) continue;
-                            
-                            var invoker = FastReflection.ForMethod(method);
+                            if (serializedType is null) 
+                                continue;
 
-                            Writers.Add(serializedType, invoker);
+                            if (Writers.ContainsKey(serializedType))
+                                continue;
+
+                            Writers.Add(serializedType, method);
                         }
                         else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
                         {
@@ -1129,10 +1185,14 @@ public static class MirrorMethods
                                 continue;
 
                             var body = method.GetMethodBody();
-                            if (body is null) continue;
+
+                            if (body is null) 
+                                continue;
 
                             var codes = body.GetILAsByteArray();
-                            if (codes?.Length < 1) continue;
+
+                            if (codes?.Length < 1) 
+                                continue;
 
                             var full = method.Module.ResolveString(BitConverter.ToInt32(codes,
                                 codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
@@ -1148,19 +1208,29 @@ public static class MirrorMethods
                     for (var y = 0; y < properties.Length; y++)
                     {
                         var prop = properties[y];
-                        if (!prop.Name.StartsWith("Network")) continue;
+
+                        if (!prop.Name.StartsWith("Network")) 
+                            continue;
 
                         var name = $"{prop.ReflectedType.Name}.{prop.Name}";
-                        if (DirtyBits.ContainsKey(name)) continue;
+
+                        if (DirtyBits.ContainsKey(name)) 
+                            continue;
 
                         var setter = prop.GetSetMethod(true);
-                        if (setter is null) continue;
+
+                        if (setter is null)
+                            continue;
 
                         var body = setter.GetMethodBody();
-                        if (body is null) continue;
+
+                        if (body is null) 
+                            continue;
 
                         var il = body.GetILAsByteArray();
-                        if (il?.Length < 1) continue;
+
+                        if (il?.Length < 1) 
+                            continue;
                         
                         var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
 
@@ -1181,18 +1251,23 @@ public static class MirrorMethods
                 {
                     var method = writerExtensions[i];
 
-                    if (method.IsGenericMethod) continue;
-                    if (method.HasAttribute<ObsoleteAttribute>()) continue;
+                    if (method.IsGenericMethod) 
+                        continue;
+
+                    if (method.HasAttribute<ObsoleteAttribute>()) 
+                        continue;
 
                     var parameters = method.GetAllParameters();
-                    if (parameters.Length != 2) continue;
+
+                    if (parameters.Length != 2) 
+                        continue;
 
                     var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
-                    if (type is null) continue;
-                    
-                    var invoker = FastReflection.ForMethod(method);
 
-                    Writers.Add(type, invoker);
+                    if (type is null) 
+                        continue;
+
+                    Writers.Add(type, method);
                 }
                 catch (Exception ex)
                 {
@@ -1209,20 +1284,26 @@ public static class MirrorMethods
                 {
                     var method = generatedMethods[i];
 
-                    if (method.IsGenericMethod) continue;
-                    if (method.ReturnType != typeof(void)) continue;
+                    if (method.IsGenericMethod) 
+                        continue;
+
+                    if (method.ReturnType != typeof(void)) 
+                        continue;
 
                     var parameters = method.GetAllParameters();
-                    if (parameters.Length != 2) continue;
+
+                    if (parameters.Length != 2) 
+                        continue;
 
                     var type = parameters.FirstOrDefault(x => x.ParameterType != typeof(NetworkWriter))?.ParameterType;
 
-                    if (type is null) continue;
-                    if (Writers.ContainsKey(type)) continue;
+                    if (type is null) 
+                        continue;
 
-                    var invoker = FastReflection.ForMethod(method);
+                    if (Writers.ContainsKey(type)) 
+                        continue;
 
-                    Writers.Add(type, invoker);
+                    Writers.Add(type, method);
                 }
                 catch (Exception ex)
                 {
@@ -1234,5 +1315,7 @@ public static class MirrorMethods
         {
             ApiLog.Error("Mirror Methods", ex);
         }
+
+        hasInitialized = true;
     }
 }
