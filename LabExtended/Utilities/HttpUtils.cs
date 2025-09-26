@@ -167,8 +167,7 @@ public static class HttpUtils
         }
     }
     
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         PlayerUpdateHelper.OnUpdate += UpdateCallbacks;
         PlayerUpdateHelper.OnThreadUpdate += UpdateQueueAsync;

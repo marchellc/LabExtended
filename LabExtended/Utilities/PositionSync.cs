@@ -191,8 +191,7 @@ public static class PositionSync
         });
     }
     
-    [LoaderInitialize(1)]
-    private static void Internal_Init()
+    internal static void Internal_Init()
     {
         if (!IsEnabled)
             return;

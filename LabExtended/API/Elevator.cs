@@ -479,8 +479,7 @@ namespace LabExtended.API
         private static void OnElevatorDestroyed(ElevatorChamber chamber)
             => Lookup.Remove(chamber);
 
-        [LoaderInitialize(1)]
-        private static void OnInit()
+        internal static void Internal_Init()
         {
             ElevatorChamber.OnElevatorSpawned += OnElevatorSpawned;
             ElevatorChamber.OnElevatorRemoved += OnElevatorDestroyed;

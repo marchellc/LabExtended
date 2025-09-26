@@ -142,8 +142,7 @@ public static class CustomFirearmEvents
         => CustomItemUtils.ProcessEvent<CustomFirearmInventoryBehaviour>(args.Firearm.ItemSerial,
             item => item.OnProcessedEvent(args));
     
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         ExPlayerEvents.ChangingAttachments += OnChangingAttachments;
         ExPlayerEvents.ChangedAttachments += OnChangedAttachments;

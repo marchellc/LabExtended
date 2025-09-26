@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 
 using LabExtended.Core;
 using LabExtended.Extensions;
@@ -18,18 +17,34 @@ using System.Reflection;
 
 namespace LabExtended.Patches.Events.Scp049
 {
+    /// <summary>
+    /// Provides patching logic to modify the resurrection behavior of SCP-049 by intercepting and customizing the
+    /// server command processing for resurrection attempts.</summary>
     public static class Scp049CancellingResurrectionPatch
     {
+        /// <summary>
+        /// Gets a MethodInfo object representing the Prefix method of the Scp049CancellingResurrectionPatch type.
+        /// </summary>
         public static readonly MethodInfo ReplacementMethod = typeof(Scp049CancellingResurrectionPatch).FindMethod("Prefix");
+
+        /// <summary>
+        /// Gets a MethodInfo object representing the ServerProcessCmd method of the generic RagdollAbilityBase class
+        /// specialized with Scp049Role.
+        /// </summary>
         public static readonly MethodInfo TargetMethod = typeof(RagdollAbilityBase<>).MakeGenericType(typeof(Scp049Role))
             .FindMethod("ServerProcessCmd");
 
+        /// <summary>
+        /// Gets or sets the reflection metadata for the method to be patched.
+        /// </summary>
         public static MethodInfo? PatchMethod;
 
+        /// <summary>
+        /// Gets the global Harmony instance used for patching methods at runtime.
+        /// </summary>
         public static Harmony Harmony => ApiPatcher.Harmony;
 
-        [LoaderInitialize(1)]
-        public static void Enable()
+        internal static void Internal_Init()
             => PatchMethod = Harmony.Patch(TargetMethod, new HarmonyMethod(ReplacementMethod));
 
         private static bool Prefix(RagdollAbilityBase<Scp049Role> __instance, NetworkReader reader)

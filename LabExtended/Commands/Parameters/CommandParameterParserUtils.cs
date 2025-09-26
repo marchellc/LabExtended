@@ -17,6 +17,7 @@ using Extensions;
 
 using Parsers;
 using Parsers.Wrappers;
+using LabExtended.Utilities;
 
 /// <summary>
 /// Used to manage argument parsing.
@@ -306,42 +307,19 @@ public static class CommandParameterParserUtils
         return new(true, null, null, null);
     }
 
-    [LoaderInitialize(10)]
-    private static void OnInit()
+    private static void Internal_Discovered(Type type)
     {
-        try
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                try
-                {
-                    foreach (var type in assembly.GetTypes())
-                    {
-                        try
-                        {
-                            if (!type.IsEnum)
-                                continue;
-                            
-                            if (Parsers.ContainsKey(type))
-                                continue;
-                            
-                            Parsers.Add(type, new EnumParameterParser(type));
-                        }
-                        catch
-                        {
-                            // ignored
-                        }
-                    }
-                }
-                catch
-                {
-                    // ignored
-                }
-            }
-        }
-        catch
-        {
-            // ignored
-        }
+        if (!type.IsEnum)
+            return;
+
+        if (Parsers.ContainsKey(type))
+            return;
+
+        Parsers.Add(type, new EnumParameterParser(type));
+    }
+
+    internal static void Internal_Init()
+    {
+        ReflectionUtils.Discovered += Internal_Discovered;
     }
 }

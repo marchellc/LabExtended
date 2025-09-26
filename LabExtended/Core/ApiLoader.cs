@@ -20,6 +20,28 @@ using LabExtended.Utilities.Update;
 using NorthwoodLib.Pools;
 
 using Version = System.Version;
+using LabExtended.API.Audio;
+using LabExtended.API;
+using LabExtended.API.Containers;
+using LabExtended.API.CustomEffects;
+using LabExtended.API.CustomFirearms;
+using LabExtended.API.CustomItems;
+using LabExtended.API.CustomRoles;
+using LabExtended.API.CustomTeams;
+using LabExtended.API.FileStorage;
+using LabExtended.API.Hints;
+using LabExtended.API.Images;
+using LabExtended.API.RemoteAdmin.Actions;
+using LabExtended.API.RemoteAdmin;
+using LabExtended.API.Settings;
+using LabExtended.API.Toys;
+using LabExtended.Commands.Utilities;
+using LabExtended.Commands.Parameters;
+using LabExtended.Patches.Events.Scp049;
+using LabExtended.Patches.Fixes;
+using LabExtended.Patches.Functions;
+using LabExtended.Utilities.Firearms;
+using LabExtended.Utilities.Unity;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -186,7 +208,7 @@ public class ApiLoader : Plugin
     {
         ApiLog.Info("LabExtended", "LabAPI has finished loading, registering plugin hooks.");
 
-        ExServerEvents.Logging -= LogHandler;
+        ExServerEvents.Logging -= Internal_Log;
 
         var loadedAssemblies = ListPool<Assembly>.Shared.Rent();
 
@@ -240,9 +262,8 @@ public class ApiLoader : Plugin
         ListPool<Assembly>.Shared.Return(loadedAssemblies);
 
         Assembly.ApplyPatches();
-        Assembly.InvokeStaticMethods(
-            x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) && attribute.Priority >= 0,
-            x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+
+        InvokeApi(false);
 
         ReflectionUtils.Load();
 
@@ -275,21 +296,87 @@ public class ApiLoader : Plugin
         else
             BuildInfoCommand.ModDescription = $"\nLabExtended v{ApiVersion.Version}";
 
-        ExServerEvents.Logging += LogHandler;
-        ExServerEvents.Quitting += QuitHandler;
+        ExServerEvents.Logging += Internal_Log;
+        ExServerEvents.Quitting += Internal_Quit;
 
         Assembly.RegisterUpdates();
         Assembly.RegisterCommands();
 
-        Assembly.InvokeStaticMethods(
-            x => x.HasAttribute<LoaderInitializeAttribute>(out var attribute) &&
-                 attribute.Priority < 0, // Execute preload methods, like the LogPatch which is needed.
-            x => x.GetCustomAttribute<LoaderInitializeAttribute>().Priority, false);
+        InvokeApi(true);
 
         ApiLog.Info("LabExtended", "Waiting for LabAPI ..");
     }
 
-    private static void LogHandler(string logMessage)
+    private static void InvokeApi(bool isPreload)
+    {
+        if (isPreload)
+        {
+            SwitchContainer.Internal_Init();
+            LabApiParentCommandFix.Internal_Init();
+            LogPatch.Internal_Init();
+        }
+        else
+        {
+            PlayerLoopHelper.Internal_InitFirst();
+            PlayerUpdateHelper.Internal_Init();
+
+            ThreadUtils.Internal_Init();
+            TimingUtils.Internal_Init();
+
+            AudioManager.Internal_Init();
+            Camera.Internal_Init();
+
+            CustomPlayerEffect.Internal_Init();
+            CustomFirearmEvents.Internal_Init();
+            CustomItemRegistry.Internal_Init();
+            CustomRoleManager.Internal_Init();
+            CustomTeamHandler.Internal_Init();
+            CustomTeamRegistry.Internal_Init();
+
+            Elevator.Internal_Init();
+
+            ExMap.Internal_Init();
+            ExRound.Internal_Init();
+            ExServer.Internal_Init();
+            ExTeslaGate.Internal_Init();
+            ExServerEvents.Internal_Init();
+
+            FileStorageManager.Internal_Init();
+
+            HintController.Internal_Init();
+
+            ImageLoader.Internal_Init();
+            ImageSpawner.Internal_Init();
+
+            RemoteAdminActionProvider.Internal_Init();
+            RemoteAdminController.Internal_Init();
+
+            SettingsManager.Internal_Init();
+
+            AdminToy.Internal_Init();
+
+            CommandManager.Internal_Init();
+            CommandParameterParserUtils.Internal_Init();
+            CommandPropertyUtils.Internal_Init();
+
+            InternalEvents.Internal_Init();
+
+            Scp049CancellingResurrectionPatch.Internal_Init();
+
+            FirearmModuleCache.Internal_Init();
+
+            HttpUtils.Internal_Init();
+
+            ItemTracker.Internal_Init();
+
+            PositionSync.Internal_Init();
+            RoleSync.Internal_Init();
+
+            PlayerLoopHelper.Internal_InitLast(); // has to be last
+        }
+    }
+
+    private static void Internal_Log(string logMessage)
     {
         if (logMessage is null || !logMessage.EndsWith(LoadFinishedMessage))
             return;
@@ -297,9 +384,9 @@ public class ApiLoader : Plugin
         LogPoint();
     }
 
-    private static void QuitHandler()
+    private static void Internal_Quit()
     {
-        ExServerEvents.Quitting -= QuitHandler;
+        ExServerEvents.Quitting -= Internal_Quit;
 
         if (BaseConfig is null || !BaseConfig.UnloadPluginsOnQuit)
             return;

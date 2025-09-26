@@ -822,7 +822,6 @@ public static class SettingsManager
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
         => InternalEvents.OnPlayerVerified += OnPlayerVerified;
 }

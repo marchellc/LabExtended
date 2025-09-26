@@ -117,8 +117,7 @@ public static class ImageSpawner
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         InternalEvents.OnRoundStarted += OnStarted;
         InternalEvents.OnRoundEnded += OnStopped;

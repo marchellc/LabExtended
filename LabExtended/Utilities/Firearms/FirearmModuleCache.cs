@@ -591,8 +591,7 @@ public class FirearmModuleCache : IDisposable
         ListPool<FirearmModuleCache>.Shared.Return(list);
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         InternalEvents.OnRoundRestart += OnRestart;
         

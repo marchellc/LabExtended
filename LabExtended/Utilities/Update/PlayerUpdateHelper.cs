@@ -296,8 +296,7 @@ public static class PlayerUpdateHelper
         }));
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         InternalEvents.OnRoundWaiting += OnWaiting;
 

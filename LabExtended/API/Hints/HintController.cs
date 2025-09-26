@@ -921,7 +921,6 @@ public static class HintController
         SendNextFrame = false;
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
         => PlayerUpdateHelper.OnUpdate += Update;
 }

@@ -408,8 +408,7 @@ public static class FileStorageManager
         ApiLog.Debug("File Storage", $"Found component &3{type.FullName}&r");
     }
     
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         var config = ApiLoader.ApiConfig.StorageSection;
         

@@ -258,8 +258,7 @@ public static class AudioManager
     private static void OnFileModified(object _, FileSystemEventArgs ev)
         => OnFileAdded(_, ev);
     
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         ClipDirectory = Path.Combine(ApiLoader.DirectoryPath, "Audio");
 

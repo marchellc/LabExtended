@@ -10,9 +10,21 @@ using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions
 {
+    /// <summary>
+    /// Provides a Harmony patch for the ServerConsole.AddLog method to enable custom logging event handling.
+    /// </summary>
     [HarmonyPatch(typeof(ServerConsole), nameof(ServerConsole.AddLog))]
     public static class LogPatch
     {
+        /// <summary>
+        /// Modifies the provided sequence of IL instructions to inject additional logging behavior into the target
+        /// method.
+        /// </summary>
+        /// <param name="generator">The IL generator used to emit new instructions during the transpilation process.</param>
+        /// <param name="instructions">The original sequence of IL instructions to be modified.</param>
+        /// <param name="originalMethod">The method being patched. Provides context for the transpiler and may be used to tailor the transformation.</param>
+        /// <returns>An enumerable collection of CodeInstruction objects representing the modified IL instructions, including the
+        /// injected logging calls.</returns>
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> Transpiler(ILGenerator generator, IEnumerable<CodeInstruction> instructions,
             MethodBase originalMethod)
@@ -27,7 +39,7 @@ namespace LabExtended.Patches.Functions
             });
         }
 
-        [LoaderInitialize(-1)]
-        private static void OnInit() => ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
+        internal static void Internal_Init() 
+            => ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
     }
 }

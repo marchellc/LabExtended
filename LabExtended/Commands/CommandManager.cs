@@ -420,7 +420,6 @@ public static class CommandManager
     internal static void InvokeExecuted(this CommandContext ctx)
         => Executed?.InvokeSafe(ctx);
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
         => ServerEvents.CommandExecuting += OnCommand;
 }

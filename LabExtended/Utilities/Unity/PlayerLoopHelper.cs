@@ -398,8 +398,7 @@ namespace LabExtended.Utilities.Unity
         private static void InvokeAfter() => AfterLoop.InvokeSafe();
         private static void InvokeBefore() => BeforeLoop.InvokeSafe();
 
-        [LoaderInitialize(0)]
-        private static void Init()
+        internal static void Internal_InitFirst()
         {
             ModifySystem(x =>
             {
@@ -410,8 +409,7 @@ namespace LabExtended.Utilities.Unity
             });
         }
 
-        [LoaderInitialize(10)]
-        private static void InitModify()
+        internal static void Internal_InitLast()
         {
             ModifySystem(x =>
             {

@@ -424,8 +424,7 @@ namespace LabExtended.API
             }
         }
 
-        [LoaderInitialize(1)]
-        private static void OnInit()
+        internal static void Internal_Init()
         {
             InternalEvents.OnRoundRestart += Lookup.Clear;
             InternalEvents.OnRoundWaiting += OnWaiting;

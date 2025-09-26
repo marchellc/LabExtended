@@ -307,8 +307,7 @@ public static class ExServer
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         ExServerEvents.Quitting += OnQuitting;
         SceneManager.sceneLoaded += OnSceneLoaded;

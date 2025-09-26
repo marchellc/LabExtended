@@ -52,20 +52,25 @@ public static class LabApiParentCommandFix
         return false;
     }
 
-    [LoaderInitialize(-1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         MethodInfo method = null;
 
         foreach (var other in typeof(CommandLoader).GetAllMethods())
         {
-            if (!other.IsStatic) continue;
-            if (other.Name != "TryRegisterCommand") continue;
+            if (!other.IsStatic)
+                continue;
+
+            if (other.Name != "TryRegisterCommand") 
+                continue;
 
             var parameters = other.GetAllParameters();
             
-            if (parameters.Length < 2) continue;
-            if (parameters[0].ParameterType != typeof(Type) || parameters[1].ParameterType != typeof(Type)) continue;
+            if (parameters.Length < 2) 
+                continue;
+
+            if (parameters[0].ParameterType != typeof(Type) || parameters[1].ParameterType != typeof(Type)) 
+                continue;
             
             method = other;
             break;

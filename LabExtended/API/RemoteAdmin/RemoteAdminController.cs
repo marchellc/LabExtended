@@ -549,8 +549,7 @@ public class RemoteAdminController : IDisposable
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         PlayerEvents.RaPlayerListAddingPlayer += OnAddingPlayer;
     }

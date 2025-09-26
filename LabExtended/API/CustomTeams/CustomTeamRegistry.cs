@@ -113,8 +113,7 @@ public static class CustomTeamRegistry
         Register(type);
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         ReflectionUtils.Discovered += OnDiscovered;
     }

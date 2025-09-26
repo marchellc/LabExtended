@@ -452,8 +452,7 @@ namespace LabExtended.API
             Lookup.Remove(gate);
         }
 
-        [LoaderInitialize(1)]
-        private static void Init()
+        internal static void Internal_Init()
         {
             TeslaGate.OnAdded += OnTeslaSpawned;
             TeslaGate.OnRemoved += OnTeslaDestroyed;

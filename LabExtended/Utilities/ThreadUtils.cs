@@ -65,6 +65,6 @@ public static class ThreadUtils
         return task;
     }
     
-    [LoaderInitialize(1)]
-    private static void OnInit() => mainScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+    internal static void Internal_Init() 
+        => mainScheduler = TaskScheduler.FromCurrentSynchronizationContext();
 }

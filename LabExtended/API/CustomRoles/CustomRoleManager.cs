@@ -463,8 +463,7 @@ public static class CustomRoleManager
         player.Role.CustomRole = null;
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         InternalEvents.OnPlayerLeft += OnPlayerLeft;
     }

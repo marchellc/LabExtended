@@ -266,8 +266,7 @@ public class ItemTracker : IDisposable
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         MirrorEvents.Spawning += OnSpawned;
         

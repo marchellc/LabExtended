@@ -267,8 +267,7 @@ public static class TimingUtils
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void Init()
+    internal static void Internal_Init()
     {
         PlayerUpdateHelper.OnUpdate += Update;
     }

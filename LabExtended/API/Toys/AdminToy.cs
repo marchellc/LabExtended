@@ -446,8 +446,7 @@ public class AdminToy : NetworkWrapper<AdminToyBase>
         Lookup.Remove(toy);
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         InternalEvents.OnRoundRestart += Lookup.Clear;
 

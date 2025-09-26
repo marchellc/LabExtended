@@ -289,8 +289,7 @@ public abstract class CustomTeamHandler
         player.Role.CustomTeam = null;
     }
 
-    [LoaderInitialize(1)]
-    private static void Internal_Init()
+    internal static void Internal_Init()
     {
         PlayerEvents.ChangingRole += Internal_OnChangingRole;
         PlayerEvents.ChangedRole += Internal_OnChangedRole;

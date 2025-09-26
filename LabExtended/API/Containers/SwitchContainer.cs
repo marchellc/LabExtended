@@ -468,8 +468,7 @@ public class SwitchContainer
         }
     }
 
-    [LoaderInitialize(-1)]
-    private static void Internal_Init()
+    internal static void Internal_Init()
     {
         PlayerEvents.PickingUpAmmo += Internal_PickingUpAmmo;
         PlayerEvents.PickingUpItem += Internal_PickingUpItem;

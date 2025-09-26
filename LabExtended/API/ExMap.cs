@@ -633,8 +633,7 @@ public static class ExMap
         }
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         RagdollManager.OnRagdollSpawned += OnRagdollSpawned;
         RagdollManager.OnRagdollRemoved += OnRagdollRemoved;

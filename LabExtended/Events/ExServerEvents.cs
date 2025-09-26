@@ -48,8 +48,7 @@ public static class ExServerEvents
         OnQuitting();
     }
 
-    [LoaderInitialize(1)]
-    private static void OnInit()
+    internal static void Internal_Init()
     {
         Shutdown.OnQuit += OnQuit;
     }
