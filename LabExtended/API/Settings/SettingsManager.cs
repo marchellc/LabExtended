@@ -1,21 +1,19 @@
-﻿using LabExtended.Attributes;
-
-using Mirror;
-
-using UserSettings.ServerSpecific;
-
-using LabExtended.API.Settings.Menus;
-using LabExtended.API.Settings.Interfaces;
-
+﻿using LabApi.Loader;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
-
+using LabExtended.API.Settings.Interfaces;
+using LabExtended.API.Settings.Menus;
+using LabExtended.Attributes;
 using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
 using LabExtended.Events;
 using LabExtended.Extensions;
-
+using LabExtended.Patches.Functions.Settings;
+using Mirror;
 using NorthwoodLib.Pools;
+using System.Reflection;
+using UserSettings.ServerSpecific;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -48,10 +46,64 @@ public static class SettingsManager
     /// <exception cref="ArgumentNullException"></exception>
     public static void SyncEntries(this ExPlayer player)
     {
-        if (player?.ReferenceHub == null)
+        if (player is null)
             throw new ArgumentNullException(nameof(player));
 
-        ServerSpecificSettingsSync.SendToPlayer(player.ReferenceHub);
+        var list = ListPool<ServerSpecificSettingBase>.Shared.Rent();
+        var headers = ListPool<string>.Shared.Rent();
+
+        foreach (var settingsEntry in player.settingsIdLookup)
+        {
+            if (settingsEntry.Value?.Base is null)
+                continue;
+
+            if (!settingsEntry.Value.Player)
+                continue;
+
+            if (settingsEntry.Value.IsHidden)
+                continue;
+
+            if (settingsEntry.Value.Menu != null)
+            {
+                if (settingsEntry.Value.Menu.IsHidden)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(settingsEntry.Value.Menu.Header) &&
+                    !headers.Contains(settingsEntry.Value.Menu.CustomId))
+                {
+                    headers.Add(settingsEntry.Value.Menu.CustomId);
+                    list.Add(new SSGroupHeader(settingsEntry.Value.Menu.Header,
+                        settingsEntry.Value.Menu.HeaderReducedPadding, settingsEntry.Value.Menu.HeaderHint));
+                }
+            }
+
+            list.Add(settingsEntry.Value.Base);
+        }
+
+
+        Dictionary<Assembly, ServerSpecificSettingBase[]> playerSettings = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent();
+        playerSettings.AddRange(VanillaSettingsAdapter.SssByAssemblyGlobal);
+        if (VanillaSettingsAdapter.SssByAssemblyPersonal.TryGetValue(player, out var loadedPlayerSettings)) {
+            foreach (var kvp in loadedPlayerSettings) {
+                playerSettings[kvp.Key] = kvp.Value;
+            }
+        }
+
+        foreach (var sssByAssemblyEntry in playerSettings) {
+            Assembly pluginAssembly = sssByAssemblyEntry.Key;
+            ServerSpecificSettingBase[] collection = sssByAssemblyEntry.Value;
+            if (collection.First() is not SSGroupHeader) {
+                string pluginName = PluginLoader.Plugins.TryGetFirst(o => o.Value.Equals(pluginAssembly), out var result) ? result.Key.Name : pluginAssembly.GetName().Name;
+                list.Add(new SSGroupHeader(pluginName.SpaceByUpperCase()));
+                collection.ForEach(list.Add);
+            } else if (collection.Length > 1) {
+                collection.ForEach(list.Add);
+            }
+        }
+
+        player.Send(new SSSEntriesPack(ListPool<ServerSpecificSettingBase>.Shared.ToArrayReturn(list), Version));
+
+        ListPool<string>.Shared.Return(headers);
     }
 
     /// <summary>
@@ -434,8 +486,6 @@ public static class SettingsManager
             menuHeader.Menu = menu;
             menuHeader.Player = player;
 
-            player.settingsList.Add(menuHeader.Base);
-
             player.settingsIdLookup.Add(menuHeader.CustomId, menuHeader);
             player.settingsAssignedIdLookup.Add(menuHeader.AssignedId, menuHeader);
         }
@@ -448,8 +498,6 @@ public static class SettingsManager
             {
                 menuSetting.Player = player;
                 menuSetting.Menu = menu;
-
-                player.settingsList.Add(menuSetting.Base);
 
                 player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                 player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
@@ -491,8 +539,6 @@ public static class SettingsManager
 
         entry.Player = player;
 
-        player.settingsList.Add(entry.Base);
-
         player.settingsIdLookup.Add(entry.CustomId, entry);
         player.settingsAssignedIdLookup.Add(entry.AssignedId, entry);
 
@@ -526,8 +572,6 @@ public static class SettingsManager
         {
             var header = new SettingsGroup(groupHeader, reducedHeaderPadding, headerHint);
 
-            player.settingsList.Add(header.Base);
-
             player.settingsIdLookup[header.CustomId] = header;
             player.settingsAssignedIdLookup[header.AssignedId] = header;
         }
@@ -535,8 +579,6 @@ public static class SettingsManager
         foreach (var entry in entries)
         {
             entry.Player = player;
-
-            player.settingsList.Add(entry.Base);
 
             player.settingsIdLookup.Add(entry.CustomId, entry);
             player.settingsAssignedIdLookup.Add(entry.AssignedId, entry);
@@ -630,8 +672,6 @@ public static class SettingsManager
 
                             builtSetting.Player = player;
 
-                            player.settingsList.Add(builtSetting.Base);
-
                             player.settingsIdLookup.Add(builtSetting.CustomId, builtSetting);
                             player.settingsAssignedIdLookup.Add(builtSetting.AssignedId, builtSetting);
 
@@ -683,8 +723,6 @@ public static class SettingsManager
                                             $"Skipping menu settings entry &1{menuSetting.CustomId}&r due to a duplicate ID.");
                                         continue;
                                     }
-
-                                    player.settingsList.Add(menuSetting.Base);
 
                                     player.settingsIdLookup.Add(menuSetting.CustomId, menuSetting);
                                     player.settingsAssignedIdLookup.Add(menuSetting.AssignedId, menuSetting);
