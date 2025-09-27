@@ -1,21 +1,19 @@
-﻿using LabExtended.Attributes;
-
-using Mirror;
-
-using UserSettings.ServerSpecific;
-
-using LabExtended.API.Settings.Menus;
-using LabExtended.API.Settings.Interfaces;
-
+﻿using LabApi.Loader;
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
-
+using LabExtended.API.Settings.Interfaces;
+using LabExtended.API.Settings.Menus;
+using LabExtended.Attributes;
 using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
 using LabExtended.Events;
 using LabExtended.Extensions;
-
+using LabExtended.Patches.Functions.Settings;
+using Mirror;
 using NorthwoodLib.Pools;
+using System.Reflection;
+using UserSettings.ServerSpecific;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -80,6 +78,27 @@ public static class SettingsManager
             }
 
             list.Add(settingsEntry.Value.Base);
+        }
+
+
+        Dictionary<Assembly, ServerSpecificSettingBase[]> playerSettings = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent();
+        playerSettings.AddRange(VanillaSettingsAdapter.SssByAssemblyGlobal);
+        if (VanillaSettingsAdapter.SssByAssemblyPersonal.TryGetValue(player, out var loadedPlayerSettings)) {
+            foreach (var kvp in loadedPlayerSettings) {
+                playerSettings[kvp.Key] = kvp.Value;
+            }
+        }
+
+        foreach (var sssByAssemblyEntry in playerSettings) {
+            Assembly pluginAssembly = sssByAssemblyEntry.Key;
+            ServerSpecificSettingBase[] collection = sssByAssemblyEntry.Value;
+            if (collection.First() is not SSGroupHeader) {
+                string pluginName = PluginLoader.Plugins.TryGetFirst(o => o.Value.Equals(pluginAssembly), out var result) ? result.Key.Name : pluginAssembly.GetName().Name;
+                list.Add(new SSGroupHeader(pluginName.SpaceByUpperCase()));
+                collection.ForEach(list.Add);
+            } else if (collection.Length > 1) {
+                collection.ForEach(list.Add);
+            }
         }
 
         player.Send(new SSSEntriesPack(ListPool<ServerSpecificSettingBase>.Shared.ToArrayReturn(list), Version));
