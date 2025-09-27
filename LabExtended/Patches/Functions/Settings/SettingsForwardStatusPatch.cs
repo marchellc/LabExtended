@@ -8,10 +8,10 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.Patches.Functions.Settings
 {
-    public static class SettingsForwardStatusPatch
+    static class SettingsForwardStatusPatch
     {
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.ServerProcessClientStatusMsg))]
-        public static bool Prefix(NetworkConnection conn, ref SSSUserStatusReport msg)
+        private static bool Prefix(NetworkConnection conn, ref SSSUserStatusReport msg)
         {
             SettingsManager.OnStatusMessage(conn, msg);
             return true;

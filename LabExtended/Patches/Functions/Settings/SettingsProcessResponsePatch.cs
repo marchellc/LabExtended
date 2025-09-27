@@ -8,10 +8,10 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.Patches.Functions.Settings
 {
-    public static class SettingsProcessResponsePatch
+    static class SettingsProcessResponsePatch
     {
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.ServerProcessClientResponseMsg))]
-        public static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
+        private static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
         {
             try {
                 SettingsManager.OnResponseMessage(conn, msg);
