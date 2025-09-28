@@ -22,7 +22,7 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.DefinedSettings), MethodType.Getter)]
         private static bool DefinedSettingsGetterPrefix(ref ServerSpecificSettingBase[] __result)
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;
@@ -36,7 +36,7 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.DefinedSettings), MethodType.Setter)]
         private static bool DefinedSettingsSetterPrefix(ref ServerSpecificSettingBase[] value) 
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;
@@ -68,7 +68,7 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.SendToAll))]
         private static bool SendToAllPrefix()
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;
@@ -87,7 +87,7 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.SendToPlayer), typeof(ReferenceHub))]
         private static bool SendToSpecificHubPrefix(ReferenceHub hub)
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;
@@ -104,12 +104,12 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.SendToPlayer), typeof(ReferenceHub), typeof(ServerSpecificSettingBase[]), typeof(int?))]
         private static bool SendToSpecificHubWithSettingsPrefix(ReferenceHub hub, ServerSpecificSettingBase[] collection, int? versionOverride = null)
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;
 
-            if (ExPlayer.TryGet(hub, out var player))
+            if (!ExPlayer.TryGet(hub, out var player))
                 return false;
 
             player.SyncSettingsByAssembly(assembly, collection);
@@ -121,7 +121,7 @@ namespace LabExtended.Patches.Functions.Settings
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.SendToPlayersConditionally))]
         private static bool SendToConditionallyPrefix(Func<ReferenceHub, bool> filter)
         {
-            var assembly = ReflectionUtils.GetCallerAssembly(2, true, IsIgnoredAssembly);
+            var assembly = ReflectionUtils.GetCallerAssembly(2, false, IsIgnoredAssembly);
 
             if (IsIgnoredAssembly(assembly))
                 assembly = ReflectionUtils.GameAssembly;

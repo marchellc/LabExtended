@@ -63,7 +63,7 @@ public static class ReflectionUtils
     {
         var frames = new StackTrace().GetFrames();
 
-        for (int i = 0 + skipFrameCount; i < frames.Length; i++)
+        for (var i = 0 + skipFrameCount; i < frames.Length; i++)
         {
             var method = frames[i].GetMethod();
 
@@ -76,7 +76,10 @@ public static class ReflectionUtils
                 return assembly;
         }
 
-        throw new Exception("Couldn't get calling Assembly of SettingsDefinitions property");
+        if (throwIfNotFound)
+            throw new Exception("Could not find caller assembly.");
+
+        return null!;
     }
 
     private static void OnLoaded(object _, AssemblyLoadEventArgs ev)

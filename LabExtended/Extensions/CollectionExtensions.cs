@@ -651,7 +651,7 @@ public static class CollectionExtensions
 
         foreach (var pair in pairs)
         {
-            dict.Add(pair.Key, pair.Value);
+            dict[pair.Key] = pair.Value;
         }
 
         return dict;
@@ -670,7 +670,7 @@ public static class CollectionExtensions
     {
         foreach (var pair in pairs)
         {
-            dict.Add(pair.Key, pair.Value);
+            dict[pair.Key] = pair.Value;
         }
     }
 
@@ -690,7 +690,7 @@ public static class CollectionExtensions
     {
         foreach (var key in keys)
         {
-            dict.Add(key, selector(key));
+            dict[key] = selector(key);
         }
     }
 
@@ -773,9 +773,9 @@ public static class CollectionExtensions
         foreach (var pair in copy)
         {
             if (index == targetIndex)
-                dict.Add(pair.Key, pair.Value);
+                dict[pair.Key] = pair.Value;
             else
-                dict.Add(newPair.Key, newPair.Value);
+                dict[newPair.Key] = newPair.Value;
 
             index++;
         }

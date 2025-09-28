@@ -391,7 +391,7 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of <see cref="AdminToys.SpawnableCullingParent"/>
     /// </summary>
-    public static PrefabDefinition CullingParent { get; } = new("SpawnableCullingParent");
+    public static PrefabDefinition CullingParent { get; } = new("CullingParentToy");
     
     /// <summary>
     /// Gets the prefab of the SCP-079 camera toy (Entrance Zone w/ arm version).
@@ -547,6 +547,11 @@ public static class PrefabList
     /// Gets the prefab of huge orange pipes.
     /// </summary>
     public static PrefabDefinition HugePipes { get; } = new("Huge Orange Pipes Open Connector");
+
+    /// <summary>
+    /// Gets the prefab of a gate door.
+    /// </summary>
+    public static PrefabDefinition GateDoor { get; } = new("Spawnable Unsecured Pryable GateDoor");
 
     #endregion
 }
