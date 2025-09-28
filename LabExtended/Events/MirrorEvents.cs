@@ -33,7 +33,10 @@ public static class MirrorEvents
     public static event Action<NetworkIdentity>? Spawned;
     
     /// <inheritdoc cref="MirrorAddingObserverEventArgs"/>
-    public static event Action<MirrorAddingObserverEventArgs>? AddingObserver; 
+    public static event Action<MirrorAddingObserverEventArgs>? AddingObserver;
+
+    /// <inheritdoc cref="MirrorAddedObserverEventArgs"/>
+    public static event Action<MirrorAddedObserverEventArgs>? AddedObserver;
 
     /// <summary>
     /// Invokes the <see cref="Destroying"/> event.
@@ -70,4 +73,11 @@ public static class MirrorEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnAddingObserver(MirrorAddingObserverEventArgs args)
         => AddingObserver.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="AddedObserver"/> event.
+    /// </summary>
+    /// <param name="args">The event arguments.</param>
+    public static void OnAddedObserver(MirrorAddedObserverEventArgs args)
+        => AddedObserver.InvokeEvent(args);
 }

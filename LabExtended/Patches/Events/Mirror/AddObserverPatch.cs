@@ -8,7 +8,7 @@ using Mirror;
 namespace LabExtended.Patches.Events.Mirror;
 
 /// <summary>
-/// Implements the <see cref="MirrorEvents.AddingObserver"/> event.
+/// Implements the <see cref="MirrorEvents.AddingObserver"/> and <see cref="MirrorEvents.AddedObserver"/> events.
 /// </summary>
 public static class AddObserverPatch
 {
@@ -30,6 +30,8 @@ public static class AddObserverPatch
         __instance.observers.Add(conn.connectionId, conn);
         
         conn.AddToObserving(__instance);
+
+        MirrorEvents.OnAddedObserver(new(player, __instance));
         return false;
     }
 }
