@@ -1,60 +1,43 @@
-﻿using LabExtended.API.Enums;
-using LabExtended.API.Hints;
-using LabExtended.API.Containers;
-using LabExtended.API.CustomVoice;
-using LabExtended.API.RemoteAdmin;
-using LabExtended.API.FileStorage;
-
-using LabExtended.API.Settings.Menus;
-using LabExtended.API.Settings.Entries;
-
-using LabExtended.API.Hints.Elements.Personal;
-
-using LabExtended.Core.Pooling.Pools;
-
-using LabExtended.Commands.Attributes;
-using LabExtended.Commands.Interfaces;
-
-using LabExtended.Events;
-using LabExtended.Utilities;
-using LabExtended.Extensions;
-
-using LabApi.Features.Wrappers;
-
-using Mirror;
-using Mirror.LiteNetLib4Mirror;
-
-using PlayerRoles;
-using PlayerRoles.Spectating;
-using PlayerRoles.FirstPersonControl;
-
+﻿using CentralAuth;
+using CommandSystem;
+using Footprinting;
+using Hints;
 using InventorySystem.Disarming;
-
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
-
+using LabApi.Features.Wrappers;
+using LabExtended.API.Containers;
+using LabExtended.API.CustomVoice;
+using LabExtended.API.Enums;
+using LabExtended.API.FileStorage;
+using LabExtended.API.Hints;
+using LabExtended.API.Hints.Elements.Personal;
+using LabExtended.API.RemoteAdmin;
+using LabExtended.API.Settings.Entries;
+using LabExtended.API.Settings.Menus;
+using LabExtended.Commands.Attributes;
+using LabExtended.Commands.Interfaces;
+using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
+using LabExtended.Events;
+using LabExtended.Extensions;
+using LabExtended.Utilities;
+using LiteNetLib;
+using Mirror;
+using Mirror.LiteNetLib4Mirror;
+using NetworkManagerUtils.Dummies;
+using NorthwoodLib.Pools;
+using PlayerRoles;
+using PlayerRoles.FirstPersonControl;
+using PlayerRoles.Spectating;
 using RemoteAdmin;
 using RemoteAdmin.Communication;
-
-using LiteNetLib;
-
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Reflection;
 using UnityEngine;
-
-using VoiceChat;
-
-using Hints;
-
-using CentralAuth;
-
-using CommandSystem;
-
-using Footprinting;
-
-using NetworkManagerUtils.Dummies;
-
-using NorthwoodLib.Pools;
-
 using UserSettings.ServerSpecific;
+using VoiceChat;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -134,6 +117,11 @@ public class ExPlayer : Player, IDisposable
             return host;
         }
     }
+
+    /// <summary>
+    /// Gets a dictionary of Personal DefinedSettings for each Plugin Assembly
+    /// </summary>
+    public Dictionary<Assembly, ServerSpecificSettingBase[]>? SettingsByAssembly => settingsByAssembly;
 
     #region Get
     /// <summary>
@@ -459,7 +447,10 @@ public class ExPlayer : Player, IDisposable
     private string idInfoValue = string.Empty;
 
     internal ICommandRunner? activeRunner;
-    
+
+    internal Dictionary<Assembly, ServerSpecificSettingBase[]>?
+        settingsByAssembly = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent();
+
     internal Dictionary<string, SettingsMenu>? settingsMenuLookup = DictionaryPool<string, SettingsMenu>.Shared.Rent();
     internal Dictionary<string, SettingsEntry>? settingsIdLookup = DictionaryPool<string, SettingsEntry>.Shared.Rent();
 
@@ -467,7 +458,6 @@ public class ExPlayer : Player, IDisposable
         settingsAssignedIdLookup = DictionaryPool<int, SettingsEntry>.Shared.Rent();
     
     internal List<HintElement> removeNextFrame = ListPool<HintElement>.Shared.Rent();
-    internal List<ServerSpecificSettingBase> settingsList = ListPool<ServerSpecificSettingBase>.Shared.Rent();
 
     /// <summary>
     /// Spawns a new dummy player with the specified nickname.
@@ -1443,8 +1433,8 @@ public class ExPlayer : Player, IDisposable
             PersistentStorage = null!;
         }
 
-        if (settingsList != null)
-            ListPool<ServerSpecificSettingBase>.Shared.Return(settingsList);
+        if (settingsByAssembly != null)
+            DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Return(settingsByAssembly);
 
         if (settingsIdLookup != null)
             DictionaryPool<string, SettingsEntry>.Shared.Return(settingsIdLookup);
@@ -1467,7 +1457,7 @@ public class ExPlayer : Player, IDisposable
         if (SentPositions != null)
             DictionaryPool<uint, PositionSync.SentPosition>.Shared.Return(SentPositions);
 
-        settingsList = null!;
+        settingsByAssembly = null;
         settingsIdLookup = null;
         settingsMenuLookup = null;
         settingsAssignedIdLookup = null;
@@ -1481,6 +1471,21 @@ public class ExPlayer : Player, IDisposable
 
         Position = null!;
         Rotation = null!;
+    }
+
+    internal void SyncSettingsByAssembly(Assembly assembly, ServerSpecificSettingBase[] collection) {
+        if (!this)
+            return;
+
+        if (settingsByAssembly == null) {
+            ApiLog.Warn($"Player's {nameof(settingsByAssembly)} is null");
+            return;
+        }
+
+        if (collection == null || collection.Length == 0)
+            settingsByAssembly.Remove(assembly);
+        else
+            settingsByAssembly[assembly] = collection;
     }
 
     private static ReferenceHub SpawnHiddenDummy(string nick)
