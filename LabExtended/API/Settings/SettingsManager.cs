@@ -31,6 +31,11 @@ public static class SettingsManager
     public static List<SettingsBuilder> AllBuilders { get; } = new();
 
     /// <summary>
+    /// Gets a dictionary of DefinedSettings for each Plugin Assembly
+    /// </summary>
+    public static Dictionary<Assembly, ServerSpecificSettingBase[]> GlobalSettingsByAssembly { get; } = new();
+
+    /// <summary>
     /// Gets or sets the server-side settings version.
     /// </summary>
     public static int Version
@@ -82,11 +87,9 @@ public static class SettingsManager
 
 
         Dictionary<Assembly, ServerSpecificSettingBase[]> playerSettings = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent();
-        playerSettings.AddRange(VanillaSettingsAdapter.SssByAssemblyGlobal);
-        if (VanillaSettingsAdapter.SssByAssemblyPersonal.TryGetValue(player, out var loadedPlayerSettings)) {
-            foreach (var kvp in loadedPlayerSettings) {
-                playerSettings[kvp.Key] = kvp.Value;
-            }
+        playerSettings.AddRange(GlobalSettingsByAssembly); // todo Use SendOnJoinFilter
+        foreach (var kvp in player.settingsByAssembly) {
+            playerSettings[kvp.Key] = kvp.Value;
         }
 
         foreach (var sssByAssemblyEntry in playerSettings) {
