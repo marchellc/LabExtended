@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 
-using LabExtended.API.CustomVoice.Threading.Pitch;
-using LabExtended.Attributes;
+using LabExtended.API.Custom.Voice.Threading.Pitch;
+
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
@@ -19,7 +19,7 @@ using VoiceChat.Networking;
 
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
-namespace LabExtended.API.CustomVoice.Threading;
+namespace LabExtended.API.Custom.Voice.Threading;
 
 /// <summary>
 /// Used to modify voice messages on a background thread.

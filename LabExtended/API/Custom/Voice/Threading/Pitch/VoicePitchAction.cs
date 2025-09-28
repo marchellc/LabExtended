@@ -1,8 +1,11 @@
 ﻿using VoiceChat.Codec;
 using VoiceChat.Codec.Enums;
 
-namespace LabExtended.API.CustomVoice.Threading.Pitch;
+namespace LabExtended.API.Custom.Voice.Threading.Pitch;
 
+/// <summary>
+/// An actin used to modify the pitch of a received voice message.
+/// </summary>
 public class VoicePitchAction : IVoiceThreadAction, IDisposable
 {
     private float[] gInFIFO = new float[VoicePitchUtils.MAX_FRAME_LENGTH];
@@ -22,6 +25,10 @@ public class VoicePitchAction : IVoiceThreadAction, IDisposable
     private OpusDecoder decoder = new();
     private OpusEncoder encoder = new(OpusApplicationType.Voip);
     
+    /// <summary>
+    /// Modifies the specified voice packet in place by decoding, applying pitch shifting, and re-encoding the audio
+    /// data.
+    /// </summary>
     public void Modify(ref VoiceThreadPacket packet)
     {
         var data = new float[48000];
@@ -33,6 +40,9 @@ public class VoicePitchAction : IVoiceThreadAction, IDisposable
         packet.Length = encoder.Encode(data, packet.Data, 480);
     }
 
+    /// <summary>
+    /// Releases all resources used by the current instance of the class.
+    /// </summary>
     public void Dispose()
     {
         gInFIFO = null;
@@ -60,6 +70,15 @@ public class VoicePitchAction : IVoiceThreadAction, IDisposable
         gInit = 0;
     }
     
+    /// <summary>
+    /// Applies a pitch-shifting effect to the specified audio data in place.
+    /// </summary>
+    /// <param name="pitchShift">The pitch shift factor to apply. Values greater than 1.0 raise the pitch; values between 0.0 and 1.0 lower the
+    /// pitch. Must be greater than 0.</param>
+    /// <param name="numSampsToProcess">The number of audio samples to process from the input data.</param>
+    /// <param name="sampleRate">The sample rate of the audio data, in hertz. Must be positive.</param>
+    /// <param name="indata">The array of audio samples to process. The pitch-shifted result overwrites the original data in this array.
+    /// Cannot be null and must have at least numSampsToProcess elements.</param>
     public void PitchShift(float pitchShift, long numSampsToProcess, float sampleRate, float[] indata)
         => PitchShift(pitchShift, numSampsToProcess, 2048, 10, sampleRate, indata);
 

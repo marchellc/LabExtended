@@ -3,7 +3,7 @@ using VoiceChat.Codec;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
-namespace LabExtended.API.CustomVoice.Threading;
+namespace LabExtended.API.Custom.Voice.Threading;
 
 /// <summary>
 /// Represents a voice packet to-be modified.

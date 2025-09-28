@@ -1,4 +1,4 @@
-﻿namespace LabExtended.API.CustomVoice.Threading;
+﻿namespace LabExtended.API.Custom.Voice.Threading;
 
 /// <summary>
 /// A common interface for voice thread actions.

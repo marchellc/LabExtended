@@ -1,5 +1,5 @@
 ﻿using LabExtended.API;
-using LabExtended.API.CustomVoice;
+using LabExtended.API.Custom.Voice;
 
 using LabExtended.Extensions;
 

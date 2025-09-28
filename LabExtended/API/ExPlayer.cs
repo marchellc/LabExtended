@@ -14,7 +14,7 @@ using LabApi.Features.Wrappers;
 
 using LabExtended.API.Enums;
 using LabExtended.API.Containers;
-using LabExtended.API.CustomVoice;
+using LabExtended.API.Custom.Voice;
 using LabExtended.API.FileStorage;
 
 using LabExtended.API.Hints;

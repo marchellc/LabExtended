@@ -1,9 +1,28 @@
-﻿namespace LabExtended.API.CustomVoice.Threading.Pitch;
+﻿namespace LabExtended.API.Custom.Voice.Threading.Pitch;
 
+/// <summary>
+/// Utilities for modifying voice pitch.
+/// </summary>
 public static class VoicePitchUtils
 {
+    /// <summary>
+    /// The maximum length of a frame.
+    /// </summary>
     public const int MAX_FRAME_LENGTH = 16000;
 
+    /// <summary>
+    /// Performs an in-place Short-Time Fourier Transform (STFT) on the specified buffer using the given frame size and
+    /// transform direction.
+    /// </summary>
+    /// <remarks>The input buffer must be organized as pairs of real and imaginary values: [Re0, Im0, Re1,
+    /// Im1, ..., ReN, ImN]. The method modifies the input buffer directly and does not allocate additional arrays. The
+    /// transform is most commonly used for spectral analysis or signal processing tasks. This method is not
+    /// thread-safe.</remarks>
+    /// <param name="fftBuffer">The array of interleaved real and imaginary parts representing the input signal. The transform is performed
+    /// in-place, and the buffer will contain the transformed data upon completion. The length of the array must be at
+    /// least 2 × fftFrameSize.</param>
+    /// <param name="fftFrameSize">The number of complex samples in the frame to be transformed. Must be a power of two and greater than zero.</param>
+    /// <param name="sign">The direction of the transform. Use 1 for the forward transform and -1 for the inverse transform.</param>
     public static void ShortTimeFourierTransform(float[] fftBuffer, long fftFrameSize, long sign)
     {
         float wr, wi, arg, temp;

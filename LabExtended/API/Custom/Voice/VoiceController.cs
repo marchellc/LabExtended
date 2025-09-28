@@ -1,21 +1,22 @@
 ﻿using Achievements.Handlers;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events;
-using LabExtended.Events.Player;
 
-using LabExtended.Utilities.Unity;
+using LabExtended.API.Custom.Voice.Profiles;
+using LabExtended.API.Custom.Voice.Threading;
 
-using LabExtended.API.CustomVoice.Profiles;
-using LabExtended.API.CustomVoice.Threading;
 using LabExtended.Core;
 using LabExtended.Extensions;
 using LabExtended.Patches.Functions.Players;
 using LabExtended.Utilities.Update;
+
 using PlayerRoles.Voice;
+
 using UnityEngine;
 
 using VoiceChat;
@@ -26,7 +27,7 @@ using VoiceChat.Networking;
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
 
-namespace LabExtended.API.CustomVoice;
+namespace LabExtended.API.Custom.Voice;
 
 /// <summary>
 /// Used to control voice chat.

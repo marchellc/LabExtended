@@ -1,4 +1,4 @@
-﻿namespace LabExtended.API.CustomVoice.Threading;
+﻿namespace LabExtended.API.Custom.Voice.Threading;
 
 /// <summary>
 /// Used as a method to call.

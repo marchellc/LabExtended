@@ -1,6 +1,6 @@
 ﻿using LabExtended.API.Containers;
 using LabExtended.API.Interfaces;
-using LabExtended.API.CustomVoice.Profiles;
+using LabExtended.API.Custom.Voice.Profiles;
 
 using LabExtended.Extensions;
 
