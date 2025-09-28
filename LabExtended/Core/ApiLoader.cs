@@ -23,7 +23,6 @@ using Version = System.Version;
 using LabExtended.API.Audio;
 using LabExtended.API;
 using LabExtended.API.Containers;
-using LabExtended.API.CustomEffects;
 using LabExtended.API.CustomFirearms;
 using LabExtended.API.CustomItems;
 using LabExtended.API.CustomRoles;
@@ -42,6 +41,7 @@ using LabExtended.Patches.Fixes;
 using LabExtended.Patches.Functions;
 using LabExtended.Utilities.Firearms;
 using LabExtended.Utilities.Unity;
+using LabExtended.API.Custom.Effects;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).

@@ -1,12 +1,14 @@
 ﻿using System.Reflection;
+
 using HarmonyLib;
+
 using LabExtended.Attributes;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
 using PlayerRoles;
 
-namespace LabExtended.API.CustomEffects;
+namespace LabExtended.API.Custom.Effects;
 
 /// <summary>
 /// Represents a custom player effect.

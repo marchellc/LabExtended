@@ -3,7 +3,7 @@ using LabExtended.Utilities.Update;
 
 using UnityEngine;
 
-namespace LabExtended.API.CustomEffects;
+namespace LabExtended.API.Custom.Effects;
 
 /// <summary>
 /// A subtype of CustomEffect which adds ticking abilities.

@@ -7,7 +7,6 @@ using InventorySystem.Items.Usables.Scp244.Hypothermia;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.API.CustomEffects;
 using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
@@ -17,6 +16,7 @@ using System.Reflection;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using UnityEngine;
+using LabExtended.API.Custom.Effects;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 

@@ -1,7 +1,8 @@
 ﻿using LabExtended.Attributes;
+
 using UnityEngine;
 
-namespace LabExtended.API.CustomEffects;
+namespace LabExtended.API.Custom.Effects;
 
 /// <summary>
 /// A subtype of UpdatingCustomEffect which adds a duration property.

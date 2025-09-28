@@ -1,6 +1,5 @@
 ﻿using LabExtended.API;
-using LabExtended.API.CustomEffects;
-
+using LabExtended.API.Custom.Effects;
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 
