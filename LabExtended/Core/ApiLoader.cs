@@ -367,8 +367,6 @@ public class ApiLoader : Plugin
 
             HttpUtils.Internal_Init();
 
-            ItemTracker.Internal_Init();
-
             PositionSync.Internal_Init();
             RoleSync.Internal_Init();
 

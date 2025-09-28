@@ -53,9 +53,6 @@ namespace LabExtended.Patches.Functions.Items
                 if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
 
-                ItemTracker? curTracker = curItem?.GetTracker();
-                ItemTracker? newTracker = newItem?.GetTracker();
-
                 CustomItemInventoryBehaviour? curBehaviour =
                     (curItem != null &&
                      CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(curItem.ItemSerial, out var b))
@@ -94,8 +91,6 @@ namespace LabExtended.Patches.Functions.Items
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
 
-                        curTracker?.SetSelected(false);
-
                         var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
                             newItem?.ItemId ?? ItemIdentifier.None);
 
@@ -121,9 +116,6 @@ namespace LabExtended.Patches.Functions.Items
                         
                         __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
-
-                        curTracker?.SetSelected(false);
-                        newTracker?.SetSelected(true);
 
                         var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
                             newItem?.ItemId ?? ItemIdentifier.None);
@@ -152,8 +144,6 @@ namespace LabExtended.Patches.Functions.Items
                     
                     __instance.CurItem = ItemIdentifier.None;
                     __instance.CurInstance = null;
-
-                    curTracker?.SetSelected(false);
 
                     var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
                         newItem?.ItemId ?? ItemIdentifier.None);

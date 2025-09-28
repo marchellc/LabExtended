@@ -59,7 +59,6 @@ public static class PlayerThrowingItemPatch
             __instance.CurInstance == player.Inventory.Snake.Keycard)
             player.Inventory.Snake.Reset(false, true);
 
-        var tracker = item.GetTracker();
         var pickupType = inventoryBehaviour.GetCustomValue(ib => ib.Handler.PickupProperties.Type,
             type => type != ItemType.None, item.ItemTypeId);
         var pickupScale = inventoryBehaviour.GetCustomValue(ib => ib.Handler.PickupProperties.Scale,
@@ -85,10 +84,7 @@ public static class PlayerThrowingItemPatch
 
         if (pickup != null)
         {
-            player.Inventory!.droppedItems!.Add(pickup);
-            
-            tracker.SetPickup(pickup, player);
-            
+            player.Inventory!.droppedItems!.Add(pickup);          
             pickupBehaviour = inventoryBehaviour.ProcessDropped(pickup, player, droppedArgs);
         }
         
