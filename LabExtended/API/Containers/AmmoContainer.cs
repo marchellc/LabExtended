@@ -1,6 +1,7 @@
 ﻿using InventorySystem;
 using InventorySystem.Items.Firearms.Ammo;
 
+using LabExtended.Core.Pooling.Pools;
 using LabExtended.Extensions;
 
 using UnityEngine;
@@ -30,6 +31,11 @@ public class AmmoContainer
     /// Gets the player's ammo.
     /// </summary>
     public Dictionary<ItemType, ushort> Ammo => Inventory.UserInventory.ReserveAmmo;
+
+    /// <summary>
+    /// Gets the dictionary used to store custom ammo.
+    /// </summary>
+    public Dictionary<string, int> CustomAmmo { get; } = new();
 
     /// <summary>
     /// Whether or not the player has any ammo at all.
@@ -80,6 +86,11 @@ public class AmmoContainer
         get => GetAmmo(ItemType.Ammo762x39);
         set => SetAmmo(ItemType.Ammo762x39, value);
     }
+
+    /// <summary>
+    /// Gets called once the custom ammo list is modified.
+    /// </summary>
+    public event Action? CustomAmmoModified;
 
     /// <summary>
     /// Gets the amount of specified ammo type in player's inventory.
@@ -189,4 +200,121 @@ public class AmmoContainer
     /// <returns>A list of spawned ammo pickups.</returns>
     public List<AmmoPickup> DropAllAmmo(ItemType ammoType, ushort amount = ushort.MaxValue)
         => Inventory.ServerDropAmmo(ammoType, amount);
+
+    /// <summary>
+    /// Gets the amount of stored ammo.
+    /// </summary>
+    /// <param name="ammoId">The ID of the ammo.</param>
+    /// <returns>The amount of stored ammo.</returns>
+    public int GetCustomAmmo(string ammoId)
+    {
+        if (!CustomAmmo.TryGetValue(ammoId, out var value))
+            return 0;
+
+        return value;
+    }
+
+    /// <summary>
+    /// Sets the amount of stored ammo.
+    /// </summary>
+    /// <param name="ammoId">The ID of the ammo.</param>
+    /// <param name="amount">The amount of the ammo.</param>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public void SetCustomAmmo(string ammoId, int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Value must be non-negative");
+
+        CustomAmmo[ammoId] = amount;
+        CustomAmmoModified?.InvokeSafe();
+    }
+
+    /// <summary>
+    /// Adds the specified amount of ammo.
+    /// </summary>
+    /// <param name="ammoId">The ammo ID to add.</param>
+    /// <param name="amount">The amount to add.</param>
+    /// <returns>The currently stored amount of ammo.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public int AddCustomAmmo(string ammoId, int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Value must be non-negative");
+
+        if (!CustomAmmo.ContainsKey(ammoId))
+        {
+            CustomAmmo.Add(ammoId, amount);
+            CustomAmmoModified?.InvokeSafe();
+
+            return amount;
+        }
+
+        var newAmount = CustomAmmo[ammoId] += amount;
+
+        CustomAmmoModified?.InvokeSafe();
+        return newAmount;
+    }
+
+    /// <summary>
+    /// Removes the specified amount of ammo.
+    /// </summary>
+    /// <param name="ammoId">The ID of the ammo.</param>
+    /// <param name="amount">The amount to remove.</param>
+    /// <returns>The currently stored amount of ammo.</returns>
+    public int RemoveCustomAmmo(string ammoId, int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "Value must be non-negative");
+
+        if (!CustomAmmo.ContainsKey(ammoId))
+            return 0;
+
+        var current = CustomAmmo[ammoId] -= amount;
+
+        if (current <= 0)
+        {
+            CustomAmmo.Remove(ammoId);
+            CustomAmmoModified?.InvokeSafe();
+
+            return 0;
+        }
+
+        CustomAmmoModified?.InvokeSafe();
+        return current;
+    }
+
+    /// <summary>
+    /// Whether or not the player has at least one bullet of the specified ammo stored.
+    /// </summary>
+    /// <param name="ammoId">The ammo ID.</param>
+    /// <returns>true if the player has at least one bullet</returns>
+    public bool HasAnyCustomAmmo(string ammoId)
+        => GetCustomAmmo(ammoId) > 0;
+
+    /// <summary>
+    /// Whether or not the player has at least the specified amount of ammo.
+    /// </summary>
+    /// <param name="ammoId">The ammo ID.</param>
+    /// <param name="amount">The required amount.</param>
+    /// <returns>true if the player has at least the specified amount</returns>
+    public bool HasAtLeastCustomAmmo(string ammoId, int amount)
+        => GetCustomAmmo(ammoId) >= amount;
+
+    /// <summary>
+    /// Whether or not the player has exactly this amount of ammo.
+    /// </summary>
+    /// <param name="ammoId">The ammo ID.</param>
+    /// <param name="amount">The required amount.</param>
+    /// <returns>true if the player has exactly the specified amount</returns>
+    public bool HasExactlyCustomAmmo(string ammoId, int amount)
+        => GetCustomAmmo(ammoId) == amount;
+
+    /// <summary>
+    /// Clears all ammo.
+    /// </summary>
+    public void ClearCustomAmmo()
+    {
+        Ammo.Clear();
+        CustomAmmoModified?.InvokeSafe();
+    }
 }

@@ -55,7 +55,7 @@ public class CustomFirearmInventoryBehaviour : CustomItemInventoryBehaviour
         get
         {
             if (Handler.UsesCustomAmmo)
-                return Player.Inventory.CustomAmmo.Get(Handler.FirearmInventoryProperties.AmmoId);
+                return Player.Ammo.GetCustomAmmo(Handler.FirearmInventoryProperties.AmmoId!);
 
             var ammoType = GetAmmoType(Item.GetAmmoType());
             
@@ -252,7 +252,7 @@ public class CustomFirearmInventoryBehaviour : CustomItemInventoryBehaviour
     {
         if (Handler.UsesCustomAmmo)
         {
-            Player.Inventory.CustomAmmo.Add(Handler.FirearmInventoryProperties.AmmoId, amount);
+            Player.Ammo.AddCustomAmmo(Handler.FirearmInventoryProperties.AmmoId!, amount);
             return amount;
         }
         
@@ -286,7 +286,7 @@ public class CustomFirearmInventoryBehaviour : CustomItemInventoryBehaviour
     {
         if (Handler.UsesCustomAmmo)
         {
-            Player.Inventory.CustomAmmo.Remove(Handler.FirearmInventoryProperties.AmmoId, amount);
+            Player.Ammo.RemoveCustomAmmo(Handler.FirearmInventoryProperties.AmmoId!, amount);
             return amount;
         }
 

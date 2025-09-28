@@ -78,11 +78,11 @@ public partial class ViewCommand
                 }
             }
 
-            if (target.Inventory.CustomAmmo.Ammo.Count > 0)
+            if (target.Ammo.CustomAmmo.Count > 0)
             {
                 x.AppendLine("- Custom Ammo");
 
-                foreach (var pair in target.Inventory.CustomAmmo.Ammo)
+                foreach (var pair in target.Ammo.CustomAmmo)
                 {
                     x.AppendLine($"  > {pair.Key}: {pair.Value}");
                 }

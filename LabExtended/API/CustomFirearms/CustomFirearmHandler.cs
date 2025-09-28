@@ -30,7 +30,7 @@ public abstract class CustomFirearmHandler : CustomItemHandler
     /// Whether or not this firearm uses custom ammo.
     /// </summary>
     public bool UsesCustomAmmo =>
-        FirearmInventoryProperties.AmmoType is ItemType.None && FirearmInventoryProperties.AmmoId != 0;
+        FirearmInventoryProperties.AmmoType is ItemType.None && FirearmInventoryProperties.AmmoId != null;
 
     internal override void InternalInitializeItem(CustomItemInventoryBehaviour item, CustomItemPickupBehaviour? pickup)
     {

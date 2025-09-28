@@ -7,7 +7,6 @@ using InventorySystem.Items.Keycards;
 using InventorySystem.Items.Pickups;
 
 using LabExtended.Extensions;
-using LabExtended.API.CustomAmmo;
 
 using UnityEngine;
 
@@ -43,8 +42,6 @@ public class InventoryContainer : IDisposable
 
         if (CurrentItem is ChaosKeycardItem chaosKeycard)
             Snake.Keycard = chaosKeycard;
-
-        CustomAmmo = new();
 
         UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
 
@@ -111,11 +108,6 @@ public class InventoryContainer : IDisposable
     /// Gets the Snake minigame wrapper.
     /// </summary>
     public SnakeInfo Snake { get; private set; }
-    
-    /// <summary>
-    /// Gets the player's custom ammo storage.
-    /// </summary>
-    public CustomAmmoStorage CustomAmmo { get; private set; }
 
     /// <summary>
     /// Gets the amount of items in this player's inventory.
@@ -784,9 +776,6 @@ public class InventoryContainer : IDisposable
         
         Snake?.Reset(false, true);
         Snake = null;
-        
-        CustomAmmo?.Dispose();
-        CustomAmmo = null;
         
         droppedItems = null;
     }

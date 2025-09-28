@@ -18,7 +18,7 @@ public class CustomFirearmInventoryProperties : CustomItemInventoryProperties
     /// <summary>
     /// Gets the firearm's custom ammo ID.
     /// </summary>
-    public ushort AmmoId { get; set; } = 0;
+    public string? AmmoId { get; set; } = null;
 
     /// <summary>
     /// Gets or sets the firearm's max ammo capacity.
