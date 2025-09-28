@@ -33,7 +33,7 @@ namespace LabExtended.Patches.Events.Mirror
         [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.ClearObservers))]
         private static bool ClearObserversPrefix(NetworkIdentity __instance)
         {
-            foreach (var conn in __instance.observers.Values)
+            foreach (var conn in __instance.observers.Values.ToList())
             {
                 if (conn is null)
                     continue;

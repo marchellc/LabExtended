@@ -10,6 +10,8 @@ using LabExtended.Core;
 
 using NorthwoodLib.Pools;
 
+using System.Reflection;
+
 namespace LabExtended.Patches.Events.Mirror
 {
     /// <summary>
@@ -17,11 +19,13 @@ namespace LabExtended.Patches.Events.Mirror
     /// </summary>
     public static class MirrorSetSyncVarPatch
     {
-        private static readonly HarmonyMethod patchMethod = new(
-            typeof(MirrorSetSyncVarPatch).FindMethod(x => x.Name == "GeneratedSyncVarSetterPrefix"));
+        private static readonly MethodInfo patchMethod = typeof(MirrorSetSyncVarPatch).FindMethod(x => x.Name == "GeneratedSyncVarSetterPrefix");
 
         private static bool GeneratedSyncVarSetterPrefix<T>(NetworkBehaviour __instance, T value, ref T field, ulong dirtyBit, Action<T, T> OnChanged)
         {
+            if (!MirrorEvents.Internal_AnySyncVarSubsribers())
+                return true;
+
             if (NetworkBehaviour.SyncVarEqual(value, ref field))
                 return false;
 
@@ -83,10 +87,11 @@ namespace LabExtended.Patches.Events.Mirror
                                     continue;
 
                                 var genericMethod = targetMethod.MakeGenericMethod(property.PropertyType);
+                                var genericPatchMethod = patchMethod.MakeGenericMethod(property.PropertyType);
 
                                 if (genericMethod != null)
                                 {
-                                    if (ApiPatcher.Harmony.Patch(genericMethod, patchMethod) != null)
+                                    if (ApiPatcher.Harmony.Patch(genericMethod, new(genericPatchMethod)) != null)
                                     {
                                         patchedTypes.Add(property.PropertyType);
                                     }
@@ -113,7 +118,7 @@ namespace LabExtended.Patches.Events.Mirror
                 ApiLog.Error("MirrorSetSyncVarPatch", ex);
             }
 
-            ApiLog.Debug("MirrorSetSyncVarPatch", $"Patched &3{patchedTypes.Count}&r SyncVar setters");
+            ApiLog.Debug("MirrorSetSyncVarPatch", $"Patched &3{patchedTypes.Count}&r SyncVar setter types");
 
             ListPool<Type>.Shared.Return(patchedTypes);
         }

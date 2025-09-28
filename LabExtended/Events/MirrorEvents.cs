@@ -402,4 +402,7 @@ public static class MirrorEvents
             ApiLog.Error("OnSentRpc", ex);
         }
     }
+
+    internal static bool Internal_AnySyncVarSubsribers()
+        => UpdatingSyncVar is not null || UpdatedSyncVar is not null;
 }
