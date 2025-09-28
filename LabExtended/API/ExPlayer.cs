@@ -15,7 +15,6 @@ using LabApi.Features.Wrappers;
 using LabExtended.API.Enums;
 using LabExtended.API.Containers;
 using LabExtended.API.Custom.Voice;
-using LabExtended.API.FileStorage;
 
 using LabExtended.API.Hints;
 using LabExtended.API.Hints.Elements.Personal;
@@ -27,13 +26,13 @@ using LabExtended.API.Settings.Menus;
 
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
-
-using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events;
-using LabExtended.Utilities;
 using LabExtended.Extensions;
+
+using LabExtended.Utilities;
+using LabExtended.Utilities.FileStorage;
 
 using LiteNetLib;
 

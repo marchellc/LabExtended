@@ -1,4 +1,4 @@
-namespace LabExtended.API.FileStorage;
+namespace LabExtended.Utilities.FileStorage;
 
 /// <summary>
 /// Represents a property in a file storage component.

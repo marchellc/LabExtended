@@ -1,6 +1,6 @@
 using Newtonsoft.Json.Linq;
 
-namespace LabExtended.API.FileStorage;
+namespace LabExtended.Utilities.FileStorage;
 
 /// <summary>
 /// Base class for a storage property.

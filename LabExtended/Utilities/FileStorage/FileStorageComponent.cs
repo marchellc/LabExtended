@@ -1,9 +1,12 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+
 using LabExtended.Core;
+using LabExtended.API;
+
 using Newtonsoft.Json.Linq;
 
-namespace LabExtended.API.FileStorage;
+namespace LabExtended.Utilities.FileStorage;
 
 /// <summary>
 /// Represents a component in a player's file storage.

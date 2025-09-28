@@ -1,13 +1,16 @@
 using System.Collections.Concurrent;
+
 using LabExtended.Core;
-using LabExtended.Core.Pooling.Pools;
-using LabExtended.Utilities;
+
+using LabExtended.API;
 using LabExtended.Utilities.Update;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
 using NorthwoodLib.Pools;
 
-namespace LabExtended.API.FileStorage;
+namespace LabExtended.Utilities.FileStorage;
 
 /// <summary>
 /// A loaded file storage instance.

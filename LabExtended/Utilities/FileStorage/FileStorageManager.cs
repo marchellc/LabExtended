@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 
+using LabExtended.API;
 using LabExtended.Core;
 using LabExtended.Events;
 using LabExtended.Attributes;
@@ -7,9 +8,7 @@ using LabExtended.Extensions;
 
 using LabExtended.Events.Player;
 
-using LabExtended.Utilities;
-
-namespace LabExtended.API.FileStorage;
+namespace LabExtended.Utilities.FileStorage;
 
 /// <summary>
 /// Manages file storages.
