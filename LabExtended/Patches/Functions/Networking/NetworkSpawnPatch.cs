@@ -10,10 +10,13 @@ using UnityEngine;
 
 namespace LabExtended.Patches.Functions.Networking
 {
+    /// <summary>
+    /// Provides the <see cref="MirrorEvents.Spawning"/> and <see cref="MirrorEvents.Spawned"/> events.
+    /// </summary>
     public static class NetworkSpawnPatch
     {
         [HarmonyPatch(typeof(NetworkServer), nameof(NetworkServer.SpawnObject), typeof(GameObject), typeof(NetworkConnection))]
-        public static bool Prefix(GameObject obj, NetworkConnection ownerConnection)
+        private static bool Prefix(GameObject obj, NetworkConnection ownerConnection)
         {
             try
             {
@@ -28,6 +31,8 @@ namespace LabExtended.Patches.Functions.Networking
 
                 if (NetworkServer.spawned.ContainsKey(identity.netId))
                     return false;
+
+                MirrorEvents.OnSpawning(identity);
 
                 identity.connectionToClient = (NetworkConnectionToClient)ownerConnection;
 
@@ -58,7 +63,8 @@ namespace LabExtended.Patches.Functions.Networking
                 }
 
                 NetworkServer.RebuildObservers(identity, true);
-                MirrorEvents.OnSpawning(identity);
+
+                MirrorEvents.OnSpawned(identity);
             }
             catch (Exception ex)
             {

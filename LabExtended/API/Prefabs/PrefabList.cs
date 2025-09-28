@@ -391,7 +391,7 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of <see cref="AdminToys.SpawnableCullingParent"/>
     /// </summary>
-    public static PrefabDefinition CullingParent { get; } = new("CullingParentToy");
+    public static PrefabDefinition CullingParent { get; } = new("CullableParentToy");
     
     /// <summary>
     /// Gets the prefab of the SCP-079 camera toy (Entrance Zone w/ arm version).

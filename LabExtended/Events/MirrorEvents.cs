@@ -13,14 +13,24 @@ namespace LabExtended.Events;
 public static class MirrorEvents
 {
     /// <summary>
-    /// Called when a <see cref="NetworkBehaviour"/> gets destroyed.
+    /// Called before a <see cref="NetworkIdentity"/> gets destroyed.
     /// </summary>
-    public static event Action<NetworkIdentity>? Destroying;
+    public static event Action<NetworkIdentity, NetworkServer.DestroyMode>? Destroying;
 
     /// <summary>
-    /// Called when a new <see cref="NetworkBehaviour"/> spawns.
+    /// Called after a <see cref="NetworkIdentity"/> gets destroyed.
+    /// </summary>
+    public static event Action<NetworkIdentity, NetworkServer.DestroyMode>? Destroyed;
+
+    /// <summary>
+    /// Called before a new <see cref="NetworkIdentity"/> spawns.
     /// </summary>
     public static event Action<NetworkIdentity>? Spawning;
+
+    /// <summary>
+    /// Called after a new <see cref="NetworkIdentity"/> spawns.
+    /// </summary>
+    public static event Action<NetworkIdentity>? Spawned;
     
     /// <inheritdoc cref="MirrorAddingObserverEventArgs"/>
     public static event Action<MirrorAddingObserverEventArgs>? AddingObserver; 
@@ -29,8 +39,15 @@ public static class MirrorEvents
     /// Invokes the <see cref="Destroying"/> event.
     /// </summary>
     /// <param name="identity">The identity that is being destroyed.</param>
-    public static void OnDestroying(NetworkIdentity identity)
-        => Destroying.InvokeSafe(identity);
+    public static void OnDestroying(NetworkIdentity identity, NetworkServer.DestroyMode mode)
+        => Destroying.InvokeSafe(identity, mode);
+
+    /// <summary>
+    /// Invokes the <see cref="Destroyed"/> event.
+    /// </summary>
+    /// <param name="identity">The identity that is being destroyed.</param>
+    public static void OnDestroyed(NetworkIdentity identity, NetworkServer.DestroyMode mode)
+        => Destroyed.InvokeSafe(identity, mode);
 
     /// <summary>
     /// Invokes the <see cref="Spawning"/> event.
@@ -38,7 +55,14 @@ public static class MirrorEvents
     /// <param name="identity">The identity that is being spawned.</param>
     public static void OnSpawning(NetworkIdentity identity)
         => Spawning.InvokeSafe(identity);
-    
+
+    /// <summary>
+    /// Invokes the <see cref="Spawned"/> event.
+    /// </summary>
+    /// <param name="identity">The identity that is being spawned.</param>
+    public static void OnSpawned(NetworkIdentity identity)
+        => Spawning.InvokeSafe(identity);
+
     /// <summary>
     /// Invokes the <see cref="AddingObserver"/> event.
     /// </summary>

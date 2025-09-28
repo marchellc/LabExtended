@@ -550,11 +550,11 @@ public static class ExMap
     }
 
     // this is so stupid
-    private static void OnIdentityDestroyed(NetworkIdentity identity)
+    private static void OnIdentityDestroyed(NetworkIdentity identity, NetworkServer.DestroyMode mode)
     {
         try
         {
-            if (identity is null)
+            if (identity == null || mode is not NetworkServer.DestroyMode.Destroy)
                 return;
 
             Lockers.ForEach(l =>
