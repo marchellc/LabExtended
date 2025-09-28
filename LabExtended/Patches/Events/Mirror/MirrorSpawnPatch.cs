@@ -8,12 +8,12 @@ using Mirror;
 
 using UnityEngine;
 
-namespace LabExtended.Patches.Functions.Networking
+namespace LabExtended.Patches.Events.Mirror
 {
     /// <summary>
     /// Provides the <see cref="MirrorEvents.Spawning"/> and <see cref="MirrorEvents.Spawned"/> events.
     /// </summary>
-    public static class NetworkSpawnPatch
+    public static class MirrorSpawnPatch
     {
         [HarmonyPatch(typeof(NetworkServer), nameof(NetworkServer.SpawnObject), typeof(GameObject), typeof(NetworkConnection))]
         private static bool Prefix(GameObject obj, NetworkConnection ownerConnection)

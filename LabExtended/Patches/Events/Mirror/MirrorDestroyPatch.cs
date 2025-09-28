@@ -7,12 +7,12 @@ using Mirror;
 
 using UnityEngine;
 
-namespace LabExtended.Patches.Functions.Networking
+namespace LabExtended.Patches.Events.Mirror
 {
     /// <summary>
     /// Provides the <see cref="MirrorEvents.Destroying"/> and <see cref="MirrorEvents.Destroyed"/> patches.
     /// </summary>
-    public static class NetworkDestroyPatch
+    public static class MirrorDestroyPatch
     {
         [HarmonyPatch(typeof(NetworkServer), nameof(NetworkServer.DestroyObject), typeof(NetworkIdentity), typeof(NetworkServer.DestroyMode))]
         private static bool Prefix(NetworkIdentity identity, NetworkServer.DestroyMode mode)

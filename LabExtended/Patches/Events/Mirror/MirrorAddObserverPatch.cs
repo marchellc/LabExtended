@@ -10,7 +10,7 @@ namespace LabExtended.Patches.Events.Mirror;
 /// <summary>
 /// Implements the <see cref="MirrorEvents.AddingObserver"/> and <see cref="MirrorEvents.AddedObserver"/> events.
 /// </summary>
-public static class AddObserverPatch
+public static class MirrorAddObserverPatch
 {
     [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.AddObserver))]
     private static bool Prefix(NetworkIdentity __instance, NetworkConnectionToClient conn)
