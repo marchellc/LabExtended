@@ -59,27 +59,11 @@ public class InventoryContainer : IDisposable
         {
             if (value != null)
             {
-                if (value.Owner != null)
-                {
-                    value.OwnerInventory.UserInventory.Items.Remove(itemSerial);
-                    value.OwnerInventory.SendItemsNextFrame = true;
-
-                    value.OnRemoved(null);
-                }
-
-                value.Owner = Inventory._hub;
-                value.OnAdded(null);
-
-                UserInventory.Items[itemSerial] = value;
-
-                Inventory.SendItemsNextFrame = true;
+                value.TransferItem(Player.ReferenceHub);
             }
-            else if (UserInventory.Items.TryGetValue(itemSerial, out var item)
-                     && UserInventory.Items.Remove(itemSerial))
+            else if (UserInventory.Items.TryGetValue(itemSerial, out var item))
             {
-                item.OnRemoved(null);
-
-                Inventory.SendItemsNextFrame = true;
+                item.DestroyItem();
             }
         }
     }
@@ -587,9 +571,6 @@ public class InventoryContainer : IDisposable
     /// <returns>The amount of removed items.</returns>
     public int RemoveItems(ItemType type, int count = 1, bool throwIfNotEnough = false)
     {
-        if (count is < 1 or > 8)
-            throw new ArgumentOutOfRangeException(nameof(count));
-
         if (type is ItemType.None)
             return 0;
 

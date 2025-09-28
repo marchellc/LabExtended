@@ -4,10 +4,13 @@ using CustomRendering;
 
 using InventorySystem.Items.Usables.Scp244.Hypothermia;
 
+using LabExtended.API.Custom.Effects;
+
 using LabExtended.Core;
+using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Core.Pooling.Pools;
 
 using NorthwoodLib.Pools;
 
@@ -16,8 +19,6 @@ using System.Reflection;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using UnityEngine;
-using LabExtended.API.Custom.Effects;
-
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
