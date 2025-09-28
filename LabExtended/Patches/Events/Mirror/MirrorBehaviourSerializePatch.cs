@@ -37,6 +37,8 @@ namespace LabExtended.Patches.Events.Mirror
                     var isOwnerDirty = NetworkIdentity.IsDirty(ownerDirtyBits, i);
                     var isObserversDirty = NetworkIdentity.IsDirty(observersDirtyBits, i);
 
+                    var clearBits = true;
+
                     if (isOwnerDirty || isObserversDirty)
                     {
                         using var writer = NetworkWriterPool.Get();
@@ -52,10 +54,10 @@ namespace LabExtended.Patches.Events.Mirror
                         if (isObserversDirty)
                             observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                        MirrorEvents.OnBehaviourSerialized(behaviour, writer);
+                        clearBits = MirrorEvents.OnBehaviourSerialized(behaviour, writer);
                     }
 
-                    if (!initialState)
+                    if (!initialState && clearBits)
                         behaviour.ClearAllDirtyBits();
                 }
             }

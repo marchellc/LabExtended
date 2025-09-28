@@ -27,6 +27,7 @@ public static class MirrorMethods
     private static Dictionary<string, int> rpcHashes = new();
     private static Dictionary<string, ulong> dirtyBits = new();
     private static Dictionary<Type, MethodInfo> writers = new();
+    private static Dictionary<Type, Dictionary<ulong, PropertyInfo>> propertiesByBit = new();
 
     private static Action<NetworkIdentity, NetworkConnection> sendSpawnMessage;
 
@@ -40,7 +41,7 @@ public static class MirrorMethods
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, string> RpcNames
+    public static IReadOnlyDictionary<string, string> RpcNames
     {
         get
         {
@@ -56,7 +57,7 @@ public static class MirrorMethods
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, int> RpcHashes
+    public static IReadOnlyDictionary<string, int> RpcHashes
     {
         get
         {
@@ -72,7 +73,7 @@ public static class MirrorMethods
     /// <remarks>Keys are formatted as the declaring type of the property and then the name of the property
     /// (MyType.MyProperty)</remarks>
     /// </summary>
-    public static Dictionary<string, ulong> DirtyBits
+    public static IReadOnlyDictionary<string, ulong> DirtyBits
     {
         get
         {
@@ -84,9 +85,27 @@ public static class MirrorMethods
     }
 
     /// <summary>
+    /// Gets a mapping of types to dictionaries that associate bit values with their corresponding property names.
+    /// </summary>
+    /// <remarks>This property provides access to a dictionary where each key is a type, and each value is
+    /// another dictionary mapping bitwise flag values to property names for that type. This can be used to look up the
+    /// name of a property based on its bit representation for supported types. The property is initialized on first
+    /// access and is thread-safe for reading.</remarks>
+    public static IReadOnlyDictionary<Type, Dictionary<ulong, PropertyInfo>> PropertiesByBit
+    {
+        get
+        {
+            if (!hasInitialized)
+                Init();
+
+            return propertiesByBit;
+        }
+    }
+
+    /// <summary>
     /// Gets Mirror-generated network writer extensions.
     /// </summary>
-    public static Dictionary<Type, MethodInfo> Writers
+    public static IReadOnlyDictionary<Type, MethodInfo> Writers
     {
         get
         {
@@ -146,12 +165,12 @@ public static class MirrorMethods
     /// <param name="writer">The found delegate</param>
     /// <returns>true if the delegate was found</returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static bool TryGetWriter(this Type type, out Func<object, object[], object> writer)
+    public static bool TryGetWriter(this Type type, out MethodInfo writer)
     {
         if (type is null)
             throw new ArgumentNullException(nameof(type));
         
-        return Writers.TryGetValue(type, out writer);
+        return writers.TryGetValue(type, out writer);
     }
 
     /// <summary>
@@ -311,6 +330,52 @@ public static class MirrorMethods
             throw new ArgumentNullException(nameof(propertyName));
 
         return DirtyBits.TryGetValue(string.Concat(behaviourType.Name, propertyName), out dirtyBit);
+    }
+    
+    /// <summary>
+    /// Attempts to retrieve the property name associated with the specified dirty bit for a given behavior type.
+    /// </summary>
+    /// <param name="behaviourType">The type of the behavior whose property name mapping is to be queried. Cannot be null.</param>
+    /// <param name="dirtyBit">The dirty bit value for which to look up the corresponding property name.</param>
+    /// <param name="property">When this method returns, contains the property associated with the specified dirty bit, if found;
+    /// otherwise, an empty string. This parameter is passed uninitialized.</param>
+    /// <returns>true if a property name corresponding to the specified dirty bit is found for the given behavior type;
+    /// otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if behaviourType is null.</exception>
+    public static bool TryGetPropertyName(Type behaviourType, ulong dirtyBit, out PropertyInfo property)
+    {
+        if (behaviourType is null)
+            throw new ArgumentNullException(nameof(behaviourType));
+        
+        if (!propertiesByBit.TryGetValue(behaviourType, out var dict))
+        {
+            property = null!;
+            return false;
+        }
+
+        return dict.TryGetValue(dirtyBit, out property);
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the property name associated with the specified dirty bit for the given network behaviour
+    /// type.
+    /// </summary>
+    /// <remarks>Use this method to map a dirty bit to its corresponding property name for a specific
+    /// NetworkBehaviour type, typically when handling network synchronization or debugging.</remarks>
+    /// <typeparam name="T">The type of NetworkBehaviour for which to look up the property name.</typeparam>
+    /// <param name="dirtyBit">The dirty bit value representing a property to look up.</param>
+    /// <param name="property">When this method returns, contains the property associated with the specified dirty bit, if found;
+    /// otherwise, an empty string. This parameter is passed uninitialized.</param>
+    /// <returns>true if a property name was found for the specified dirty bit and type; otherwise, false.</returns>
+    public static bool TryGetPropertyName<T>(ulong dirtyBit, out PropertyInfo property) where T : NetworkBehaviour
+    {
+        if (!propertiesByBit.TryGetValue(typeof(T), out var dict))
+        {
+            property = null!;
+            return false;
+        }
+
+        return dict.TryGetValue(dirtyBit, out property);
     }
 
     /// <summary>
@@ -1129,8 +1194,6 @@ public static class MirrorMethods
         }
     }
 
-    // TODO: There's a weird bug that causes the Mono runtime to randomly crash at random points in this method.
-    // Seems to be caused by the Mono runtimn as no exceptions are thrown (and it doesn't happen on Windows).
     private static void Init()
     {
         try
@@ -1172,16 +1235,16 @@ public static class MirrorMethods
                             if (serializedType is null) 
                                 continue;
 
-                            if (Writers.ContainsKey(serializedType))
+                            if (writers.ContainsKey(serializedType))
                                 continue;
 
-                            Writers.Add(serializedType, method);
+                            writers.Add(serializedType, method);
                         }
                         else if (method.HasAttribute<ClientRpcAttribute>() || method.HasAttribute<TargetRpcAttribute>())
                         {
                             var name = $"{method.ReflectedType.Name}.{method.Name}";
 
-                            if (RpcNames.ContainsKey(name))
+                            if (rpcNames.ContainsKey(name))
                                 continue;
 
                             var body = method.GetMethodBody();
@@ -1194,14 +1257,14 @@ public static class MirrorMethods
                             if (codes?.Length < 1) 
                                 continue;
 
-                            var full = method.Module.ResolveString(BitConverter.ToInt32(codes,
-                                codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
+                            var full = method.Module.ResolveString(BitConverter.ToInt32(codes, codes.IndexOf((byte)OpCodes.Ldstr.Value) + 1));
+
                             var hashIndex = codes.IndexOf((byte)OpCodes.Ldc_I4.Value) + 1;
                             var hash = codes[hashIndex] | (codes[hashIndex + 1] << 8) | (codes[hashIndex + 2] << 16) |
                                        (codes[hashIndex + 3] << 24);
 
-                            RpcNames.Add(name, full);
-                            RpcHashes.Add(name, hash);
+                            rpcNames.Add(name, full);
+                            rpcHashes.Add(name, hash);
                         }
                     }
 
@@ -1214,8 +1277,11 @@ public static class MirrorMethods
 
                         var name = $"{prop.ReflectedType.Name}.{prop.Name}";
 
-                        if (DirtyBits.ContainsKey(name)) 
+                        if (dirtyBits.ContainsKey(name)) 
                             continue;
+
+                        if (!propertiesByBit.TryGetValue(type, out var typeDict))
+                            propertiesByBit[type] = typeDict = new();
 
                         var setter = prop.GetSetMethod(true);
 
@@ -1234,7 +1300,8 @@ public static class MirrorMethods
                         
                         var bit = il[il.LastIndexOf((byte)OpCodes.Ldc_I8.Value) + 1];
 
-                        DirtyBits.Add(name, bit);
+                        dirtyBits.Add(name, bit);
+                        typeDict.Add(bit, prop);
                     }
                 }
                 catch (Exception ex)
@@ -1267,7 +1334,7 @@ public static class MirrorMethods
                     if (type is null) 
                         continue;
 
-                    Writers.Add(type, method);
+                    writers.Add(type, method);
                 }
                 catch (Exception ex)
                 {
@@ -1300,10 +1367,10 @@ public static class MirrorMethods
                     if (type is null) 
                         continue;
 
-                    if (Writers.ContainsKey(type)) 
+                    if (writers.ContainsKey(type)) 
                         continue;
 
-                    Writers.Add(type, method);
+                    writers.Add(type, method);
                 }
                 catch (Exception ex)
                 {

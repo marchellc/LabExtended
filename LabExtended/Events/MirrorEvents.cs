@@ -1,7 +1,7 @@
-﻿using LabExtended.Core;
-using LabExtended.Extensions;
+﻿using LabExtended.API;
 
-using LabExtended.Events.Mirror;
+using LabExtended.Core;
+using LabExtended.Extensions;
 
 using Mirror;
 
@@ -14,6 +14,7 @@ namespace LabExtended.Events;
 /// </summary>
 public static class MirrorEvents
 {
+    #region Delegates
     /// <summary>
     /// Represents the method that handles serialization events for a NetworkBehaviour, providing access to the
     /// behaviour and the serialized data writer.
@@ -21,6 +22,7 @@ public static class MirrorEvents
     /// <param name="behaviour">The NetworkBehaviour instance being serialized. Cannot be null.</param>
     /// <param name="serializedData">The NetworkWriter used to write the serialized data for the behaviour. The handler should write any custom data
     /// to this writer as needed.</param>
+    /// <param name="serializeBehaviour">Whether or not the behaviour should serialize it's properties.</param>
     public delegate void BehaviourSerializingEventHandler(NetworkBehaviour behaviour, NetworkWriter serializedData, ref bool serializeBehaviour);
 
     /// <summary>
@@ -28,7 +30,104 @@ public static class MirrorEvents
     /// </summary>
     /// <param name="behaviour">The NetworkBehaviour instance that is being serialized.</param>
     /// <param name="serializedData">A NetworkWriter containing the serialized data of the behaviour.</param>
-    public delegate void BehaviourSerializedEventHandler(NetworkBehaviour behaviour, NetworkWriter serializedData);
+    /// <param name="clearBits">Whether or not dirty bits should be cleared.</param>
+    public delegate void BehaviourSerializedEventHandler(NetworkBehaviour behaviour, NetworkWriter serializedData, ref bool clearBits);
+
+    /// <summary>
+    /// Represents a method that is called when a NetworkBehaviour's SyncVar value is about to be updated, allowing
+    /// inspection or modification of the new value before it is applied.
+    /// </summary>
+    /// <param name="behaviour">The NetworkBehaviour instance containing the SyncVar that is being set.</param>
+    /// <param name="syncVarType">The type of the SyncVar field being updated.</param>
+    /// <param name="syncVarDirtyBit">The dirty bit mask associated with the SyncVar, used to track changes for network synchronization.</param>
+    /// <param name="currentSyncVarValue">The current value of the SyncVar before the update.</param>
+    /// <param name="newSyncVarValue">A reference to the new value to be assigned to the SyncVar. This value can be modified within the delegate to
+    /// alter the value that will be set.</param>
+    public delegate void BehaviourUpdatingSyncVarEventHandler(NetworkBehaviour behaviour, Type syncVarType, ulong syncVarDirtyBit, 
+        object currentSyncVarValue, ref object newSyncVarValue);
+
+    /// <summary>
+    /// Represents a method that is called when a NetworkBehaviour's SyncVar value gets updated.
+    /// <param name="behaviour">The NetworkBehaviour instance containing the SyncVar that is being set.</param>
+    /// <param name="syncVarType">The type of the SyncVar field being updated.</param>
+    /// <param name="syncVarDirtyBit">The dirty bit mask associated with the SyncVar, used to track changes for network synchronization.</param>
+    /// <param name="previousSyncVarValue">The previous value of the SyncVar before the update.</param>
+    /// <param name="newSyncVarValue">The new value to be assigned to the SyncVar.</param>
+    public delegate void BehaviourUpdatedSyncVarEventHandler(NetworkBehaviour behaviour, Type syncVarType, ulong syncVarDirtyBit, 
+        object previousSyncVarValue, object newSyncVarValue);
+
+    /// <summary>
+    /// Represents the method that handles the event raised when determining whether an observer should be added to a
+    /// network identity.
+    /// </summary>
+    /// <remarks>Event handlers can modify the <paramref name="isAllowed"/> parameter to control whether the
+    /// specified player is permitted to observe the network identity.</remarks>
+    /// <param name="identity">The network identity for which the observer is being considered.</param>
+    /// <param name="observer">The player being evaluated as a potential observer.</param>
+    /// <param name="isAllowed">A reference to a Boolean value that indicates whether the observer is allowed. Set to <see langword="true"/> to
+    /// allow the observer; otherwise, set to <see langword="false"/>.</param>
+    public delegate void AddingObserverEventHandler(NetworkIdentity identity, ExPlayer observer, ref bool isAllowed);
+
+    /// <summary>
+    /// Represents the method that handles the event when an observer is added to a network identity.
+    /// </summary>
+    /// <param name="identity">The network identity to which the observer is being added.</param>
+    /// <param name="observer">The observer that has been added to the network identity.</param>
+    public delegate void AddedObserverEventHandler(NetworkIdentity identity, ExPlayer observer);
+
+    /// <summary>
+    /// Represents the method that handles the event raised when determining whether an observer should be removed from a
+    /// network identity.
+    /// </summary>
+    /// <remarks>Event handlers can modify the <paramref name="isAllowed"/> parameter to control whether the
+    /// specified player is permitted to observe the network identity.</remarks>
+    /// <param name="identity">The network identity for which the observer is being removed.</param>
+    /// <param name="observer">The player being removed.</param>
+    /// <param name="isAllowed">A reference to a Boolean value that indicates whether the observer is allowed to be removed. Set to <see langword="true"/> to
+    /// allow the observer; otherwise, set to <see langword="false"/>.</param>
+    public delegate void RemovingObserverEventHandler(NetworkIdentity identity, ExPlayer observer, ref bool isAllowed);
+
+    /// <summary>
+    /// Represents the method that handles the event when an observer is removed from a network identity.
+    /// </summary>
+    /// <param name="identity">The network identity from which the observer is being removed.</param>
+    /// <param name="observer">The observer that has been removed from the network identity.</param>
+    public delegate void RemovedObserverEventHandler(NetworkIdentity identity, ExPlayer observer);
+
+    /// <summary>
+    /// Represents the method that handles the event raised before a remote procedure call (RPC) is sent to network
+    /// targets.
+    /// </summary>
+    /// <remarks>This event allows inspection or modification of the RPC message and its delivery. Handlers
+    /// can change the message contents or cancel the RPC by setting <paramref name="isAllowed"/> to <see
+    /// langword="false"/>.</remarks>
+    /// <param name="behaviour">The network behaviour instance initiating the RPC.</param>
+    /// <param name="rpcName">The name of the RPC method being invoked.</param>
+    /// <param name="rpcHash">The hash value identifying the RPC method.</param>
+    /// <param name="writer">The writer used to serialize the RPC parameters.</param>
+    /// <param name="targets">The list of target players to whom the RPC will be sent.</param>
+    /// <param name="message">A reference to the RPC message that will be sent. Can be modified to alter the outgoing message.</param>
+    /// <param name="isAllowed">A reference to a value indicating whether the RPC is permitted to be sent. Set to <see langword="false"/> to
+    /// prevent the RPC from being sent.</param>
+    public delegate void SendingRpcEventHandler(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, 
+        ref RpcMessage message, ref bool isAllowed);
+
+    /// <summary>
+    /// Represents the method that handles an event triggered when a remote procedure call (RPC) is sent from a network
+    /// behaviour.
+    /// </summary>
+    /// <remarks>This delegate allows inspection or modification of the outgoing RPC message before it is
+    /// transmitted to the specified targets. It can be used to implement custom logging, filtering, or message
+    /// transformation logic.</remarks>
+    /// <param name="behaviour">The network behaviour instance from which the RPC is being sent.</param>
+    /// <param name="rpcName">The name of the RPC method being invoked.</param>
+    /// <param name="rpcHash">The hash value that uniquely identifies the RPC method.</param>
+    /// <param name="writer">The writer used to serialize the RPC payload data.</param>
+    /// <param name="targets">The list of target players to whom the RPC will be sent.</param>
+    /// <param name="message">A reference to the RPC message that will be sent. Can be modified to alter the outgoing message.</param>
+    public delegate void SentRpcEventHandler(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, 
+        ref RpcMessage message);
+    #endregion
 
     /// <summary>
     /// Called before a <see cref="NetworkIdentity"/> gets destroyed.
@@ -50,11 +149,25 @@ public static class MirrorEvents
     /// </summary>
     public static event Action<NetworkIdentity>? Spawned;
     
-    /// <inheritdoc cref="MirrorAddingObserverEventArgs"/>
-    public static event Action<MirrorAddingObserverEventArgs>? AddingObserver;
+    /// <summary>
+    /// Gets called before a new observer is added to an observing list.
+    /// </summary>
+    public static event AddingObserverEventHandler? AddingObserver;
 
-    /// <inheritdoc cref="MirrorAddedObserverEventArgs"/>
-    public static event Action<MirrorAddedObserverEventArgs>? AddedObserver;
+    /// <summary>
+    /// Gets called after a new observer is added to an observing list.
+    /// </summary>
+    public static event AddedObserverEventHandler? AddedObserver;
+
+    /// <summary>
+    /// Gets called before an observer is removed from an observing list.
+    /// </summary>
+    public static event RemovingObserverEventHandler? RemovingObserver;
+
+    /// <summary>
+    /// Gets called after an observer is removed from an observing list.
+    /// </summary>
+    public static event RemovedObserverEventHandler? RemovedObserver;
 
     /// <summary>
     /// Gets called before serialized data of a behaviour is written to the identity writer.
@@ -65,6 +178,26 @@ public static class MirrorEvents
     /// Gets called after serialized data of a behaviour is written to the identity writer.
     /// </summary>
     public static event BehaviourSerializedEventHandler? BehaviourSerialized;
+
+    /// <summary>
+    /// Gets called before a behaviour's sync variable value is updated.
+    /// </summary>
+    public static event BehaviourUpdatingSyncVarEventHandler? UpdatingSyncVar;
+
+    /// <summary>
+    /// Gets called after a behaviour's sync variable value is updated.
+    /// </summary>
+    public static event BehaviourUpdatedSyncVarEventHandler? UpdatedSyncVar;
+
+    /// <summary>
+    /// Gets called before an RPC is sent to the specified targets.
+    /// </summary>
+    public static event SendingRpcEventHandler? SendingRpc;
+
+    /// <summary>
+    /// Gets called after an RPC is sent.
+    /// </summary>
+    public static event SentRpcEventHandler? SentRpc;
 
     /// <summary>
     /// Invokes the <see cref="Destroying"/> event.
@@ -97,17 +230,70 @@ public static class MirrorEvents
     /// <summary>
     /// Invokes the <see cref="AddingObserver"/> event.
     /// </summary>
-    /// <param name="args">The event arguments.</param>
-    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnAddingObserver(MirrorAddingObserverEventArgs args)
-        => AddingObserver.InvokeBooleanEvent(args);
+    public static bool OnAddingObserver(NetworkIdentity identity, ExPlayer observer)
+    {
+        var isAllowed = true;
+
+        try
+        {
+            AddingObserver?.Invoke(identity, observer, ref isAllowed);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnAddingObserver", ex);
+        }
+
+        return isAllowed;
+    }
 
     /// <summary>
     /// Invokes the <see cref="AddedObserver"/> event.
     /// </summary>
-    /// <param name="args">The event arguments.</param>
-    public static void OnAddedObserver(MirrorAddedObserverEventArgs args)
-        => AddedObserver.InvokeEvent(args);
+    public static void OnAddedObserver(NetworkIdentity identity, ExPlayer observer)
+    {
+        try
+        {
+            AddedObserver?.Invoke(identity, observer);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnAddedObserver", ex);
+        }
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="RemovingObserver"/> event.
+    /// </summary>
+    public static bool OnRemovingObserver(NetworkIdentity identity, ExPlayer observer)
+    {
+        var isAllowed = true;
+
+        try
+        {
+            RemovingObserver?.Invoke(identity, observer, ref isAllowed);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnRemovingObserver", ex);
+        }
+
+        return isAllowed;
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="RemovedObserver"/> event.
+    /// </summary>
+    public static void OnRemovedObserver(NetworkIdentity identity, ExPlayer observer)
+    {
+        try
+        {
+            RemovedObserver?.Invoke(identity, observer);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnRemovedObserver", ex);
+        }
+    }
 
     /// <summary>
     /// Invokes the <see cref="BehaviourSerializing"/> event.
@@ -135,15 +321,85 @@ public static class MirrorEvents
     /// </summary>
     /// <param name="behaviour">The behaviour being serialized.</param>
     /// <param name="writer">The target network writer.</param>
-    public static void OnBehaviourSerialized(NetworkBehaviour behaviour, NetworkWriter writer)
+    public static bool OnBehaviourSerialized(NetworkBehaviour behaviour, NetworkWriter writer)
     {
         try
         {
-            BehaviourSerialized?.Invoke(behaviour, writer);
+            var clearBits = true;
+
+            BehaviourSerialized?.Invoke(behaviour, writer, ref clearBits);
+            return clearBits;
         }
         catch (Exception ex)
         {
             ApiLog.Error("OnBehaviourSerializing", ex);
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="UpdatingSyncVar"/> event.
+    /// </summary>
+    public static void OnUpdatingSyncVar(NetworkBehaviour behaviour, Type syncVarType, ulong syncVarDirtyBit,
+        object currentSyncVarValue, ref object newSyncVarValue)
+    {
+        try
+        {
+            UpdatingSyncVar?.Invoke(behaviour, syncVarType, syncVarDirtyBit, currentSyncVarValue, ref newSyncVarValue);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnUpdatingSyncVar", ex);
+        }
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="UpdatedSyncVar"/> event.
+    /// </summary>
+    public static void OnUpdatedSyncVar(NetworkBehaviour behaviour, Type syncVarType, ulong syncVarDirtyBit,
+        object previousSyncVarValue, object newSyncVarValue)
+    {
+        try
+        {
+            UpdatedSyncVar?.Invoke(behaviour, syncVarType, syncVarDirtyBit, previousSyncVarValue, newSyncVarValue);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnUpdatedSyncVar", ex);
+        }
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="SendingRpc"/> event.
+    /// </summary>
+    public static bool OnSendingRpc(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, ref RpcMessage message)
+    {
+        var isAllowed = true;
+
+        try
+        {
+            SendingRpc?.Invoke(behaviour, rpcName, rpcHash, writer, targets, ref message, ref isAllowed);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnSendingRpc", ex);
+        }
+
+        return isAllowed;
+    }
+
+    /// <summary>
+    /// Invokes the <see cref="SentRpc"/> event.
+    /// </summary>
+    public static void OnSentRpc(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, ref RpcMessage message)
+    {
+        try
+        {
+            SentRpc?.Invoke(behaviour, rpcName, rpcHash, writer, targets, ref message);
+        }
+        catch (Exception ex)
+        {
+            ApiLog.Error("OnSentRpc", ex);
         }
     }
 }

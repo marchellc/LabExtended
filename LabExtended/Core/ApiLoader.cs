@@ -50,6 +50,7 @@ using LabExtended.Utilities.FileStorage;
 using LabExtended.API.Custom.Effects;
 
 using Version = System.Version;
+using LabExtended.Patches.Events.Mirror;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -370,6 +371,7 @@ public class ApiLoader : Plugin
             InternalEvents.Internal_Init();
 
             Scp049CancellingResurrectionPatch.Internal_Init();
+            MirrorSetSyncVarPatch.Internal_Init();
 
             FirearmModuleCache.Internal_Init();
 

@@ -21,7 +21,7 @@ public static class MirrorAddObserverPatch
         if (!ExPlayer.TryGet(conn, out var player))
             return true;
 
-        if (!MirrorEvents.OnAddingObserver(new(player, __instance)))
+        if (!MirrorEvents.OnAddingObserver(__instance, player))
             return false;
         
         if (__instance.observers.Count == 0)
@@ -31,7 +31,7 @@ public static class MirrorAddObserverPatch
         
         conn.AddToObserving(__instance);
 
-        MirrorEvents.OnAddedObserver(new(player, __instance));
+        MirrorEvents.OnAddedObserver(__instance, player);
         return false;
     }
 }

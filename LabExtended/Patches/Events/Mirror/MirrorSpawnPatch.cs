@@ -20,7 +20,7 @@ namespace LabExtended.Patches.Events.Mirror
         {
             try
             {
-                if (Mirror.Utils.IsPrefab(obj))
+                if (global::Mirror.Utils.IsPrefab(obj))
                     return false;
 
                 if (!obj.TryGetComponent<NetworkIdentity>(out var identity))
