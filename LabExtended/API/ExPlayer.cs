@@ -1,42 +1,62 @@
 ﻿using CentralAuth;
 using CommandSystem;
+
 using Footprinting;
+
 using Hints;
+
 using InventorySystem.Disarming;
+
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
+
 using LabApi.Features.Wrappers;
+
+using LabExtended.API.Enums;
 using LabExtended.API.Containers;
 using LabExtended.API.CustomVoice;
-using LabExtended.API.Enums;
 using LabExtended.API.FileStorage;
+
 using LabExtended.API.Hints;
 using LabExtended.API.Hints.Elements.Personal;
+
 using LabExtended.API.RemoteAdmin;
+
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Menus;
+
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
+
 using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Events;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
+
 using LiteNetLib;
+
 using Mirror;
 using Mirror.LiteNetLib4Mirror;
+
 using NetworkManagerUtils.Dummies;
+
 using NorthwoodLib.Pools;
+
 using PlayerRoles;
-using PlayerRoles.FirstPersonControl;
 using PlayerRoles.Spectating;
+using PlayerRoles.FirstPersonControl;
+
 using RemoteAdmin;
 using RemoteAdmin.Communication;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+
 using System.Reflection;
+
 using UnityEngine;
+
 using UserSettings.ServerSpecific;
+
 using VoiceChat;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -1471,21 +1491,6 @@ public class ExPlayer : Player, IDisposable
 
         Position = null!;
         Rotation = null!;
-    }
-
-    internal void SyncSettingsByAssembly(Assembly assembly, ServerSpecificSettingBase[] collection) {
-        if (!this)
-            return;
-
-        if (settingsByAssembly == null) {
-            ApiLog.Warn($"Player's {nameof(settingsByAssembly)} is null");
-            return;
-        }
-
-        if (collection == null || collection.Length == 0)
-            settingsByAssembly.Remove(assembly);
-        else
-            settingsByAssembly[assembly] = collection;
     }
 
     private static ReferenceHub SpawnHiddenDummy(string nick)

@@ -1,18 +1,24 @@
 ﻿using LabApi.Loader;
+
+using LabExtended.API.Settings.Menus;
+using LabExtended.API.Settings.Interfaces;
+
 using LabExtended.API.Settings.Entries;
 using LabExtended.API.Settings.Entries.Buttons;
 using LabExtended.API.Settings.Entries.Dropdown;
-using LabExtended.API.Settings.Interfaces;
-using LabExtended.API.Settings.Menus;
-using LabExtended.Attributes;
+
 using LabExtended.Core;
 using LabExtended.Core.Pooling.Pools;
+
 using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Patches.Functions.Settings;
+
 using Mirror;
+
 using NorthwoodLib.Pools;
+
 using System.Reflection;
+
 using UserSettings.ServerSpecific;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -51,7 +57,7 @@ public static class SettingsManager
     /// <exception cref="ArgumentNullException"></exception>
     public static void SyncEntries(this ExPlayer player)
     {
-        if (player is null)
+        if (player?.ReferenceHub == null)
             throw new ArgumentNullException(nameof(player));
 
         var list = ListPool<ServerSpecificSettingBase>.Shared.Rent();
@@ -59,7 +65,7 @@ public static class SettingsManager
 
         foreach (var settingsEntry in player.settingsIdLookup)
         {
-            if (settingsEntry.Value?.Base is null)
+            if (settingsEntry.Value?.Base == null)
                 continue;
 
             if (!settingsEntry.Value.Player)
@@ -73,10 +79,10 @@ public static class SettingsManager
                 if (settingsEntry.Value.Menu.IsHidden)
                     continue;
 
-                if (!string.IsNullOrWhiteSpace(settingsEntry.Value.Menu.Header) &&
-                    !headers.Contains(settingsEntry.Value.Menu.CustomId))
+                if (!string.IsNullOrWhiteSpace(settingsEntry.Value.Menu.Header) && !headers.Contains(settingsEntry.Value.Menu.CustomId))
                 {
                     headers.Add(settingsEntry.Value.Menu.CustomId);
+
                     list.Add(new SSGroupHeader(settingsEntry.Value.Menu.Header,
                         settingsEntry.Value.Menu.HeaderReducedPadding, settingsEntry.Value.Menu.HeaderHint));
                 }
@@ -85,21 +91,28 @@ public static class SettingsManager
             list.Add(settingsEntry.Value.Base);
         }
 
+        var playerSettings = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent(GlobalSettingsByAssembly); // todo Use SendOnJoinFilter
 
-        Dictionary<Assembly, ServerSpecificSettingBase[]> playerSettings = DictionaryPool<Assembly, ServerSpecificSettingBase[]>.Shared.Rent();
-        playerSettings.AddRange(GlobalSettingsByAssembly); // todo Use SendOnJoinFilter
-        foreach (var kvp in player.settingsByAssembly) {
-            playerSettings[kvp.Key] = kvp.Value;
-        }
+        if (player.settingsByAssembly != null)
+            playerSettings.AddRange(player.settingsByAssembly);
 
-        foreach (var sssByAssemblyEntry in playerSettings) {
-            Assembly pluginAssembly = sssByAssemblyEntry.Key;
-            ServerSpecificSettingBase[] collection = sssByAssemblyEntry.Value;
-            if (collection.First() is not SSGroupHeader) {
-                string pluginName = PluginLoader.Plugins.TryGetFirst(o => o.Value.Equals(pluginAssembly), out var result) ? result.Key.Name : pluginAssembly.GetName().Name;
+        foreach (var sssByAssemblyEntry in playerSettings) 
+        {
+            var pluginAssembly = sssByAssemblyEntry.Key;
+            var collection = sssByAssemblyEntry.Value;
+
+            if (collection.First() is not SSGroupHeader)
+            {
+                var pluginName = PluginLoader.Plugins.TryGetFirst(o => o.Value.Equals(pluginAssembly), out var result) 
+                    ? result.Key.Name 
+                    : pluginAssembly.GetName().Name;
+                
                 list.Add(new SSGroupHeader(pluginName.SpaceByUpperCase()));
+                
                 collection.ForEach(list.Add);
-            } else if (collection.Length > 1) {
+            } 
+            else if (collection.Length > 1)
+            {
                 collection.ForEach(list.Add);
             }
         }
@@ -631,6 +644,23 @@ public static class SettingsManager
         return customId.GetStableHashCode();
     }
 
+    internal static void SyncSettingsByAssembly(this ExPlayer player, Assembly assembly, ServerSpecificSettingBase[] collection)
+    {
+        if (!player)
+            return;
+
+        if (player.settingsByAssembly == null)
+        {
+            ApiLog.Warn($"Player's {nameof(ExPlayer.settingsByAssembly)} is null");
+            return;
+        }
+
+        if (collection == null || collection.Length == 0)
+            player.settingsByAssembly.Remove(assembly);
+        else
+            player.settingsByAssembly[assembly] = collection;
+    }
+
     private static void OnPlayerVerified(ExPlayer player)
     {
         try
@@ -819,7 +849,7 @@ public static class SettingsManager
             else
                 entry.Base.DeserializeValue(reader);
 
-            entry.InternalOnUpdated();
+            entry.Internal_Updated();
 
             ExPlayerEvents.OnSettingsEntryUpdated(new(entry));
 

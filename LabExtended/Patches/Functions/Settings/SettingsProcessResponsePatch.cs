@@ -1,8 +1,10 @@
 ﻿using Mirror;
+
 using HarmonyLib;
 
 using LabExtended.API;
 using LabExtended.API.Settings;
+
 using LabExtended.Core;
 using LabExtended.Extensions;
 
@@ -10,8 +12,20 @@ using UserSettings.ServerSpecific;
 
 namespace LabExtended.Patches.Functions.Settings
 {
-    static class SettingsProcessResponsePatch
+    /// <summary>
+    /// Provides utilities and delegates for handling server-specific settings responses received from clients during
+    /// the settings synchronization process.
+    /// </summary>
+    public static class SettingsProcessResponsePatch
     {
+        /// <summary>
+        /// Represents the delegate that is invoked when a server-specific setting is received for a player.
+        /// </summary>
+        public static Action<ReferenceHub, ServerSpecificSettingBase> OnSettingsListeners =
+                Traverse.Create(typeof(ServerSpecificSettingsSync))
+                            .Field(nameof(ServerSpecificSettingsSync.ServerOnSettingValueReceived))
+                            .GetValue<Action<ReferenceHub, ServerSpecificSettingBase>>();
+
         [HarmonyPatch(typeof(ServerSpecificSettingsSync), nameof(ServerSpecificSettingsSync.ServerProcessClientResponseMsg))]
         private static bool Prefix(NetworkConnection conn, ref SSSClientResponse msg)
         {
@@ -22,25 +36,31 @@ namespace LabExtended.Patches.Functions.Settings
                 if (!ReferenceHub.TryGetHub(conn, out var hub) || !ExPlayer.TryGet(hub, out var player))
                     return false;
 
-                List<ServerSpecificSettingBase> orAddNew = ServerSpecificSettingsSync.ReceivedUserSettings.GetOrAddNew(hub);
-                NetworkReaderPooled reader = NetworkReaderPool.Get(msg.Payload);
-                foreach (ServerSpecificSettingBase item in orAddNew)
+                var list = ServerSpecificSettingsSync.ReceivedUserSettings.GetOrAddNew(hub);
+                var reader = NetworkReaderPool.Get(msg.Payload);
+
+                for (var i = 0; i < list.Count; i++)
                 {
-                    if (item.SettingId == msg.Id && item.GetType() == msg.SettingType)
+                    var setting = list[i];
+
+                    if (setting.SettingId == msg.Id && setting.GetType() == msg.SettingType)
                     {
-                        ServerDeserializeClientResponse(player, item, reader);
+                        ServerDeserializeClientResponse(player, setting, reader);
                         return false;
                     }
                 }
-                ServerSpecificSettingBase serverSpecificSettingBase = ServerSpecificSettingsSync.CreateInstance(msg.SettingType);
-                orAddNew.Add(serverSpecificSettingBase);
-                serverSpecificSettingBase.SetId(msg.Id, null);
-                serverSpecificSettingBase.ApplyDefaultValues();
-                ServerDeserializeClientResponse(player, serverSpecificSettingBase, reader);
+
+                var newSetting = ServerSpecificSettingsSync.CreateInstance(msg.SettingType);
+
+                list.Add(newSetting);
+
+                newSetting.SetId(msg.Id, null);
+                newSetting.ApplyDefaultValues();
+
+                ServerDeserializeClientResponse(player, newSetting, reader);
             }
             catch (Exception e)
             {
-                ApiLog.Error(e.Message);
                 ApiLog.Error(e.ToColoredString());
             }
 
@@ -54,24 +74,28 @@ namespace LabExtended.Patches.Functions.Settings
                 reader.Dispose();
                 return;
             }
+
             setting.DeserializeValue(reader);
 
-            int msgId = setting.SettingId;
-            Type msgType = setting.GetType();
-            foreach (Delegate del in OnSettingsListeners.GetInvocationList())
+            var msgId = setting.SettingId;
+            var msgType = setting.GetType();
+
+            if (OnSettingsListeners != null)
             {
-                var assembly = del.Method.DeclaringType.Assembly;
-                if (player.settingsByAssembly.Any(ps => ps.Value.Any(s => s.SettingId == msgId && s.GetType() == msgType)) ||
-                   SettingsManager.GlobalSettingsByAssembly.Any(ps => ps.Value.Any(s => s.SettingId == msgId && s.GetType() == msgType)))
-                    del.DynamicInvoke(player.ReferenceHub, setting);
+                foreach (var del in OnSettingsListeners.GetInvocationList())
+                {
+
+                    var assembly = (del.Method.DeclaringType ?? del.Method.ReflectedType).Assembly;
+
+                    if (player.settingsByAssembly.Any(ps => ps.Value.Any(s => s.SettingId == msgId && s.GetType() == msgType))
+                        || SettingsManager.GlobalSettingsByAssembly.Any(ps => ps.Value.Any(s => s.SettingId == msgId && s.GetType() == msgType)))
+                    {
+                        del.DynamicInvoke(player.ReferenceHub, setting);
+                    }
+                }
             }
 
             reader.Dispose();
         }
-
-        private static Action<ReferenceHub, ServerSpecificSettingBase> OnSettingsListeners =
-            Traverse.Create(typeof(ServerSpecificSettingsSync))
-                .Field(nameof(ServerSpecificSettingsSync.ServerOnSettingValueReceived))
-                .GetValue<Action<ReferenceHub, ServerSpecificSettingBase>>();
     }
 }
