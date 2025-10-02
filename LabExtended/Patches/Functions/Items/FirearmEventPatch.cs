@@ -15,7 +15,7 @@ using UnityEngine;
 
 #pragma warning disable CS8604 // Possible null reference argument.
 
-namespace LabExtended.Patches.Functions.Items.Firearms;
+namespace LabExtended.Patches.Functions.Items;
 
 /// <summary>
 /// Implements the <see cref="ExFirearmEvents.ProcessingEvent"/> and <see cref="ExFirearmEvents.ProcessedEvent"/> events.

@@ -8,8 +8,8 @@ using LabApi.Events.Handlers;
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Behaviours;
+using LabExtended.API.Custom.Items;
+using LabExtended.API.Custom.Items.Events;
 
 using LabExtended.Extensions;
 using LabExtended.Events;
@@ -48,25 +48,34 @@ public static class PlayerThrowingItemPatch
         if (!droppingArgs.IsAllowed)
             return false;
 
-        var inventoryBehaviour = CustomItemUtils.GetBehaviour<CustomItemInventoryBehaviour>(item.ItemSerial);
-        
-        inventoryBehaviour?.OnDropping(droppingArgs);
+        tryThrow = droppingArgs.Throw;
 
-        if (!droppingArgs.IsAllowed)
-            return false;
+        CustomItem.Internal_GetCustomItem(itemSerial, out var customItem, out var customItemTracker);
 
         if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null &&
             __instance.CurInstance == player.Inventory.Snake.Keycard)
             player.Inventory.Snake.Reset(false, true);
 
-        var pickupType = inventoryBehaviour.GetCustomValue(ib => ib.Handler.PickupProperties.Type,
-            type => type != ItemType.None, item.ItemTypeId);
-        var pickupScale = inventoryBehaviour.GetCustomValue(ib => ib.Handler.PickupProperties.Scale,
-            scale => scale != Vector3.zero, Vector3.one);
-        
-        CustomItemPickupBehaviour? pickupBehaviour = null;
+        if (customItem != null)
+        {
+            var dataTemp = customItemTracker.Data;
 
-        var spawnPickup = item.SimulateDrop(out var keepItem);
+            customItem.OnDroppingItem(droppingArgs, ref dataTemp);
+            customItemTracker.Data = dataTemp;
+
+            tryThrow = droppingArgs.Throw;
+
+            if (!droppingArgs.IsAllowed)
+                return false;
+        }
+
+        var pickupType = customItem?.PickupType ?? item.ItemTypeId;
+        var pickupScale = customItem?.Scale ?? Vector3.one;
+
+        var keepItem = false;
+        var spawnPickup = pickupType != item.ItemTypeId || pickupScale != Vector3.one 
+            ? pickupType != ItemType.None && !pickupType.IsAmmo()
+            : item.SimulateDrop(out keepItem);
 
         var pickup = spawnPickup 
             ? (pickupType != item.ItemTypeId || pickupScale != Vector3.one
@@ -75,18 +84,34 @@ public static class PlayerThrowingItemPatch
             : null;
 
         __instance.SendItemsNextFrame = true;
-
-        tryThrow = droppingArgs.Throw;
         
         var droppedArgs = new PlayerDroppedItemEventArgs(player.ReferenceHub, pickup, tryThrow);
 
         PlayerEvents.OnDroppedItem(droppedArgs);
 
-        if (pickup != null)
+        if (customItem != null)
         {
-            player.Inventory!.droppedItems!.Add(pickup);          
-            pickupBehaviour = inventoryBehaviour.ProcessDropped(pickup, player, droppedArgs);
+            var customItemDroppedEventArgs = new CustomItemDroppedEventArgs(customItem, player, item, pickup, customItemTracker.Data, tryThrow);
+
+            if (player.Inventory.CurrentCustomItem != null 
+                && player.Inventory.CurrentCustomItem == customItem
+                && player.Inventory.CurrentItemIdentifier.SerialNumber == item.ItemSerial)
+                player.Inventory.CurrentCustomItem = null;
+
+            player.Inventory.ownedCustomItems.Remove(item.ItemSerial);
+
+            customItem.OnItemDropped(customItemDroppedEventArgs);
+
+            customItemTracker.Data = customItemDroppedEventArgs.PickupData;
+
+            customItemTracker.Item = null;
+            customItemTracker.Owner = null;
+
+            customItemTracker.Pickup = pickup;
         }
+
+        if (pickup != null)
+            player.Inventory.droppedItems?.Add(pickup);          
         
         if (item != null && !keepItem)
             item.DestroyItem();
@@ -119,7 +144,13 @@ public static class PlayerThrowingItemPatch
             if (!ExPlayerEvents.OnThrowingItem(throwingEv))
                 return false;
 
-            pickupBehaviour?.OnThrowing(throwingEv);
+            if (customItem != null)
+            {
+                var dataTemp = customItemTracker.Data;
+
+                customItem.OnThrowingItem(throwingEv, ref dataTemp);
+                customItemTracker.Data = dataTemp;
+            }
 
             if (!throwingEv.IsAllowed)
                 return false;
@@ -139,8 +170,14 @@ public static class PlayerThrowingItemPatch
             var threwArgs = new PlayerThrewItemEventArgs(player.ReferenceHub, pickup, rigidbody);
 
             PlayerEvents.OnThrewItem(threwArgs);
-            
-            pickupBehaviour?.OnThrown(threwArgs);
+
+            if (customItem != null)
+            {
+                var dataTemp = customItemTracker.Data;
+
+                customItem.OnThrewItem(threwArgs, ref dataTemp);
+                customItemTracker.Data = dataTemp;
+            }
         }
 
         return false;

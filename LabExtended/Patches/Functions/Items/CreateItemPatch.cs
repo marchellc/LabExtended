@@ -22,7 +22,7 @@ public static class CreateItemPatch
     {
         if (!InventoryItemLoader.TryGetItem<ItemBase>(identifier.TypeId, out var prefab))
         {
-            __result = null;
+            __result = null!;
             return false;
         }
 

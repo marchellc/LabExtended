@@ -24,8 +24,6 @@ using LabExtended.API;
 
 using LabExtended.API.Containers;
 
-using LabExtended.API.CustomFirearms;
-using LabExtended.API.CustomItems;
 using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomTeams;
 
@@ -52,6 +50,7 @@ using LabExtended.API.Custom.Effects;
 using Version = System.Version;
 using LabExtended.Patches.Events.Mirror;
 using Mirror;
+using LabExtended.API.Custom.Items;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -336,11 +335,10 @@ public class ApiLoader : Plugin
             AudioManager.Internal_Init();
             Camera.Internal_Init();
 
-            CustomPlayerEffect.Internal_Init();
-            CustomFirearmEvents.Internal_Init();
-            CustomItemRegistry.Internal_Init();
+            CustomItem.Internal_Init();
             CustomRoleManager.Internal_Init();
             CustomTeamHandler.Internal_Init();
+            CustomPlayerEffect.Internal_Init();
             CustomTeamRegistry.Internal_Init();
 
             Elevator.Internal_Init();

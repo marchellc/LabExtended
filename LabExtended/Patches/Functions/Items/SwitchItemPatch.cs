@@ -6,22 +6,20 @@ using InventorySystem.Items;
 using LabApi.Features.Wrappers;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Behaviours;
-
 using LabExtended.Core;
-using LabExtended.Utilities;
-using LabExtended.Extensions;
 
 using LabExtended.Events;
 using LabExtended.Events.Player;
 
 namespace LabExtended.Patches.Functions.Items
 {
+    /// <summary>
+    /// Implements the <see cref="ExPlayerEvents.SelectingItem"/> and <see cref="ExPlayerEvents.SelectedItem"/> events when switching items.
+    /// </summary>
     public static class SwitchItemPatch
     {
         [HarmonyPatch(typeof(Inventory), nameof(Inventory.ServerSelectItem))]
-        public static bool Prefix(Inventory __instance, ushort itemSerial)
+        private static bool Prefix(Inventory __instance, ushort itemSerial)
         {
             try
             {
@@ -34,12 +32,12 @@ namespace LabExtended.Patches.Functions.Items
                 if (!player.Toggles.CanSwitchItems)
                     return false;
 
-                ItemBase curItem =
+                ItemBase? curItem =
                     __instance.UserInventory.Items.TryGetValue(__instance.CurItem.SerialNumber, out var curItemBase)
                         ? curItemBase
                         : null;
                 
-                ItemBase newItem =
+                ItemBase? newItem =
                     itemSerial != 0 && __instance.UserInventory.Items.TryGetValue(itemSerial, out var newItemBase)
                         ? newItemBase
                         : null;
@@ -47,23 +45,11 @@ namespace LabExtended.Patches.Functions.Items
                 var prevIdentifier = __instance.NetworkCurItem;
 
                 var switchingArgs = new PlayerSelectingItemEventArgs(player,
-                    curItem != null ? Item.Get(curItem) : null,
-                    newItem != null ? Item.Get(newItem) : null);
+                    curItem != null ? Item.Get(curItem) : null!,
+                    newItem != null ? Item.Get(newItem) : null!);
 
                 if (!ExPlayerEvents.OnSelectingItem(switchingArgs))
                     return false;
-
-                CustomItemInventoryBehaviour? curBehaviour =
-                    (curItem != null &&
-                     CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(curItem.ItemSerial, out var b))
-                        ? b
-                        : null;
-
-                CustomItemInventoryBehaviour? newBehaviour =
-                    (newItem != null &&
-                     CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(newItem.ItemSerial, out var n))
-                        ? n
-                        : null;
 
                 if (__instance.CurInstance != null && player.Inventory.Snake.Keycard != null &&
                     __instance.CurInstance == player.Inventory.Snake.Keycard)
@@ -78,16 +64,11 @@ namespace LabExtended.Patches.Functions.Items
                 if (itemSerial == 0 || itemSerial == newItem?.ItemSerial ||
                     __instance.UserInventory.Items.TryGetValue(itemSerial, out newItem))
                 {
-                    if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem.AllowHolster))
+                    if ((__instance.CurItem.SerialNumber != 0 && flag && !curItem!.AllowHolster))
                         return false;
 
                     if (itemSerial == 0)
                     {
-                        curBehaviour?.OnUnselecting(switchingArgs);
-
-                        if (!switchingArgs.IsAllowed)
-                            return false;
-                        
                         __instance.NetworkCurItem = ItemIdentifier.None;
                         __instance.CurInstance = null;
 
@@ -95,50 +76,20 @@ namespace LabExtended.Patches.Functions.Items
                             newItem?.ItemId ?? ItemIdentifier.None);
 
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
-
-                        if (curBehaviour != null)
-                        {
-                            curBehaviour.IsSelected = false;
-                            curBehaviour.OnUnselected(selectedArgs);
-                        }
                     }
                     else
                     {
-                        curBehaviour?.OnUnselecting(switchingArgs);
-
-                        if (!switchingArgs.IsAllowed)
-                            return false;
-                        
-                        newBehaviour?.OnSelecting(switchingArgs);
-
-                        if (!switchingArgs.IsAllowed)
-                            return false;
-                        
-                        __instance.NetworkCurItem = new ItemIdentifier(newItem.ItemTypeId, itemSerial);
+                        __instance.NetworkCurItem = new ItemIdentifier(newItem!.ItemTypeId, itemSerial);
                         __instance.CurInstance = newItem;
 
                         var selectedArgs = new PlayerSelectedItemEventArgs(player, curItem, newItem, prevIdentifier,
                             newItem?.ItemId ?? ItemIdentifier.None);
 
                         ExPlayerEvents.OnSelectedItem(selectedArgs);
-
-                        if (curBehaviour != null)
-                        {
-                            curBehaviour.IsSelected = false;
-                            curBehaviour.OnUnselected(selectedArgs);
-                        }
-
-                        if (newBehaviour != null)
-                        {
-                            newBehaviour.IsSelected = true;
-                            newBehaviour.OnSelected(selectedArgs);
-                        }
                     }
                 }
                 else if (!flag)
                 {
-                    curBehaviour?.OnUnselecting(switchingArgs);
-
                     if (!switchingArgs.IsAllowed)
                         return false;
                     
@@ -149,12 +100,6 @@ namespace LabExtended.Patches.Functions.Items
                         newItem?.ItemId ?? ItemIdentifier.None);
 
                     ExPlayerEvents.OnSelectedItem(selectedArgs);
-
-                    if (curBehaviour != null)
-                    {
-                        curBehaviour.IsSelected = false;
-                        curBehaviour.OnUnselected(selectedArgs);
-                    }
                 }
                 
                 return false;

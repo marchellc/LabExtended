@@ -3,10 +3,12 @@
 using InventorySystem.Items.Pickups;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
+
 using LabExtended.Events;
 using LabExtended.Events.Map;
+using LabExtended.Patches.Functions.Items;
 using LabExtended.Utilities;
+
 using UnityEngine;
 
 namespace LabExtended.Patches.Events.Map;
@@ -35,7 +37,7 @@ public static class PickupCollidedPatch
         OnCollided.InvokeEvent(__instance, collision);
 
         var magnitude = collision.relativeVelocity.sqrMagnitude;
-        var weight = CustomItemUtils.GetPickupCustomWeight(__instance.Info.ItemId, __instance.Info.Serial, __instance.Info.WeightKg);
+        var weight = ItemWeightPatches.GetWeight(__instance.Info.ItemId, __instance.Info.Serial, __instance.Info.WeightKg);
         var damage = weight * magnitude / 2f;
 
         if (damage > 15f && collision.collider.TryGetComponent<BreakableWindow>(out var window))

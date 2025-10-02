@@ -137,11 +137,6 @@ public class ExPlayer : Player, IDisposable
         }
     }
 
-    /// <summary>
-    /// Gets a dictionary of Personal DefinedSettings for each Plugin Assembly
-    /// </summary>
-    public Dictionary<Assembly, ServerSpecificSettingBase[]>? SettingsByAssembly => settingsByAssembly;
-
     #region Get
     /// <summary>
     /// Gets an <see cref="ExPlayer"/> instance tied to the specified <see cref="ReferenceHub"/>.

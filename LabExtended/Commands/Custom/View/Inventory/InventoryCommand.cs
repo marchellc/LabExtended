@@ -3,11 +3,8 @@ using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Modules;
 
 using LabExtended.API;
-using LabExtended.API.CustomItems;
-using LabExtended.API.CustomItems.Behaviours;
 
 using LabExtended.Extensions;
-
 using LabExtended.Commands.Attributes;
 using LabExtended.Utilities.Firearms;
 
@@ -58,12 +55,6 @@ public partial class ViewCommand
                     if (item is ILightEmittingItem lightEmittingItem)
                     {
                         x.AppendLine($"    - Emitting Light: {lightEmittingItem.IsEmittingLight}");
-                    }
-
-                    if (CustomItemUtils.TryGetBehaviour<CustomItemInventoryBehaviour>(item.ItemSerial, out var behaviour)
-                        && behaviour?.Handler != null)
-                    {
-                        x.AppendLine($"    - Custom Item: {behaviour.Handler.Name} ({behaviour.Handler.Id})");
                     }
                 }
             }

@@ -15,6 +15,8 @@ using NorthwoodLib.Pools;
 using PlayerRoles.FirstPersonControl;
 
 using InventorySystem.Items.Usables;
+using LabExtended.API.Custom.Items;
+using LabExtended.Core.Pooling.Pools;
 
 #pragma warning disable CS8603 // Possible null reference return.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -27,6 +29,7 @@ namespace LabExtended.API.Containers;
 public class InventoryContainer : IDisposable
 {
     internal HashSet<ItemPickupBase>? droppedItems;
+    internal Dictionary<ushort, CustomItem> ownedCustomItems;
 
     /// <summary>
     /// Creates a new <see cref="InventoryContainer"/> instance.
@@ -46,6 +49,7 @@ public class InventoryContainer : IDisposable
         UsableItemsHandler = UsableItemsController.GetHandler(inventory._hub);
 
         droppedItems = HashSetPool<ItemPickupBase>.Shared.Rent();
+        ownedCustomItems = DictionaryPool<ushort, CustomItem>.Shared.Rent();
     }
 
     /// <summary>
@@ -99,9 +103,19 @@ public class InventoryContainer : IDisposable
     public int ItemCount => Inventory.UserInventory.Items.Count;
 
     /// <summary>
+    /// Gets the amount of custom items owned by this player.
+    /// </summary>
+    public int CustomItemCount => ownedCustomItems.Count;
+
+    /// <summary>
     /// Whether or not the player has any items.
     /// </summary>
     public bool HasAnyItems => Inventory.UserInventory.Items.Count > 0;
+
+    /// <summary>
+    /// Gets a value indicating whether any custom items are currently owned.
+    /// </summary>
+    public bool HasAnyCustomItems => ownedCustomItems.Count > 0;
 
     /// <summary>
     /// Gets a list of all items.
@@ -124,12 +138,22 @@ public class InventoryContainer : IDisposable
     public IReadOnlyCollection<ItemPickupBase> DroppedItems => droppedItems;
 
     /// <summary>
+    /// Gets a list of all custom items owned by this player.
+    /// </summary>
+    public IReadOnlyDictionary<ushort, CustomItem> CustomItems => ownedCustomItems;
+
+    /// <summary>
     /// Gets permissions of the currently held keycard. <i>(<see cref="DoorPermissionFlags.None"/> if the player isn't holding a keycard)</i>.
     /// </summary>
     public DoorPermissionFlags HeldKeycardPermissions =>
         CurrentItem is KeycardItem keycardItem && keycardItem.Details.TryGetFirst<PredefinedPermsDetail>(out var perms)
             ? perms.Levels.Permissions
             : DoorPermissionFlags.None;
+
+    /// <summary>
+    /// Gets the currently held custom item.
+    /// </summary>
+    public CustomItem? CurrentCustomItem { get; internal set; }
 
     /// <summary>
     /// Gets or sets the currently held item instance.
@@ -142,9 +166,11 @@ public class InventoryContainer : IDisposable
     }
 
     /// <summary>
-    /// Gets or sets the currently held item type.
-    /// <para>Setting an item creates a new item instance that is <b>not</b> added to the player's inventory.</para>
+    /// Gets or sets the type of the currently selected item in the inventory.
     /// </summary>
+    /// <remarks>Setting this property to a value other than <see cref="ItemType.None"/> will select the first
+    /// matching item in the inventory, or create a new instance if none exists. Setting it to <see
+    /// cref="ItemType.None"/> will clear the current selection.</remarks>
     public ItemType CurrentItemType
     {
         get => CurrentItem?.ItemTypeId ?? ItemType.None;
@@ -156,11 +182,21 @@ public class InventoryContainer : IDisposable
                 return;
             }
 
+            if (Items.TryGetFirst(x => x.ItemTypeId == value, out var invItem))
+            {
+                CurrentItemIdentifier = invItem.ItemId;
+                return;
+            }
+
             var instance = value.GetItemInstance<ItemBase>();
 
-            instance.Owner = Inventory._hub;
+            if (instance == null)
+                throw new Exception($"Could not make an item instance of type {value}");
 
-            CurrentItemIdentifier = new ItemIdentifier(instance.ItemTypeId, instance.ItemSerial);
+            instance.Owner = Inventory._hub;
+            instance.OnAdded(null);
+
+            CurrentItemIdentifier = instance.ItemId;
         }
     }
 
@@ -690,10 +726,6 @@ public class InventoryContainer : IDisposable
         if (pickupRigidbody == null)
             throw new Exception($"Pickup {itemType} cannot be thrown");
 
-        LabApi.Events.Handlers.PlayerEvents.OnThrowingItem(
-            new LabApi.Events.Arguments.PlayerEvents.PlayerThrowingItemEventArgs(Inventory._hub,
-                pickupInstance, pickupRigidbody));
-
         var velocity = Inventory._hub.GetVelocity();
         var angular = Vector3.Lerp(itemPrefab.ThrowSettings.RandomTorqueA, itemPrefab.ThrowSettings.RandomTorqueB,
             UnityEngine.Random.value);
@@ -754,11 +786,17 @@ public class InventoryContainer : IDisposable
     {
         if (droppedItems != null)
             HashSetPool<ItemPickupBase>.Shared.Return(droppedItems);
+
+        if (ownedCustomItems != null)
+            DictionaryPool<ushort, CustomItem>.Shared.Return(ownedCustomItems);
         
         Snake?.Reset(false, true);
         Snake = null;
+
+        CurrentCustomItem = null;
         
         droppedItems = null;
+        ownedCustomItems = null;
     }
 
     /// <inheritdoc cref="object.ToString"/>

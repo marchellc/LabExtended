@@ -2,13 +2,11 @@
 
 using HarmonyLib;
 
-using InventorySystem.Items.Armor;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Searching;
 
 using LabApi.Features.Wrappers;
 
-using LabExtended.API.CustomItems;
 using LabExtended.Extensions;
 
 using Mirror;
@@ -23,12 +21,12 @@ using BodyArmorPickup = InventorySystem.Items.Armor.BodyArmorPickup;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
-namespace LabExtended.Patches.Functions.Items.CustomItems;
+namespace LabExtended.Patches.Functions.Items;
 
 /// <summary>
 /// Implements custom weight from custom items.
 /// </summary>
-public static class CustomItemPickupWeightPatches
+public static class PickupWeightPatches
 {
     [HarmonyPatch(typeof(PickupRippleTrigger), nameof(PickupRippleTrigger.OnCollided))]
     private static bool RippleOnCollidedPrefix(PickupRippleTrigger __instance, CollisionDetectionPickup cdp,
@@ -38,7 +36,7 @@ public static class CustomItemPickupWeightPatches
             return false;
 
         var magnitude = collision.relativeVelocity.sqrMagnitude;
-        var weight = Mathf.Max(4f, CustomItemUtils.GetPickupCustomWeight(cdp.Info.ItemId, cdp.Info.Serial, cdp.Info.WeightKg) 
+        var weight = Mathf.Max(4f, ItemWeightPatches.GetWeight(cdp.Info.ItemId, cdp.Info.Serial, cdp.Info.WeightKg) 
                                    * PickupRippleTrigger.SoundRangeKg);
         var range = Mathf.Max(weight, cdp.GetRangeOfCollisionVelocity(magnitude));
 
@@ -63,7 +61,7 @@ public static class CustomItemPickupWeightPatches
     [HarmonyPatch(typeof(Pickup), nameof(Pickup.Weight), MethodType.Getter)]
     private static bool LabApiWrapperPrefix(Pickup __instance, ref float __result)
     {
-        __result = CustomItemUtils.GetPickupCustomWeight(__instance.Type, __instance.Serial, __instance.Base.Info.WeightKg);
+        __result = ItemWeightPatches.GetWeight(__instance.Type, __instance.Serial, __instance.Base.Info.WeightKg);
         return false;
     }
     
@@ -72,7 +70,7 @@ public static class CustomItemPickupWeightPatches
     {
         writer.WriteSByte((sbyte)value.ItemId);
         writer.WriteUShort(value.Serial);
-        writer.WriteFloat(CustomItemUtils.GetPickupCustomWeight(value.ItemId, value.Serial, value.WeightKg));
+        writer.WriteFloat(ItemWeightPatches.GetWeight(value.ItemId, value.Serial, value.WeightKg));
         writer.WriteByte(value.SyncedFlags);
 
         return false;
@@ -82,14 +80,14 @@ public static class CustomItemPickupWeightPatches
     private static bool PhysicsUpdateWeightPrefix(PickupStandardPhysics __instance)
     {
         __instance.Rb.mass = Mathf.Max(0.001f,
-            CustomItemUtils.GetPickupCustomWeight(__instance.Pickup.Info.ItemId, __instance.Pickup.Info.Serial, __instance.Pickup.Info.WeightKg));
+            ItemWeightPatches.GetWeight(__instance.Pickup.Info.ItemId, __instance.Pickup.Info.Serial, __instance.Pickup.Info.WeightKg));
         return false;
     }
     
     [HarmonyPatch(typeof(ItemPickupBase), nameof(ItemPickupBase.SearchTimeForPlayer))]
     private static bool PickupSearchTimePrefix(ItemPickupBase __instance, ReferenceHub hub, ref float __result)
     {
-        var weight = CustomItemUtils.GetPickupCustomWeight(__instance.Info.ItemId, __instance.Info.Serial, __instance.Info.WeightKg);
+        var weight = ItemWeightPatches.GetWeight(__instance.Info.ItemId, __instance.Info.Serial, __instance.Info.WeightKg);
         var time = ItemPickupBase.MinimalPickupTime + ItemPickupBase.WeightToTime * weight;
 
         for (var i = 0; i < hub.playerEffectsController.AllEffects.Length; i++)
@@ -122,7 +120,7 @@ public static class CustomItemPickupWeightPatches
         if (!other.transform.root.TryGetComponent<ItemPickupBase>(out var pickup))
             return false;
 
-        var weight = CustomItemUtils.GetPickupCustomWeight(pickup.Info.ItemId, pickup.Info.Serial, pickup.Info.WeightKg);
+        var weight = ItemWeightPatches.GetWeight(pickup.Info.ItemId, pickup.Info.Serial, pickup.Info.WeightKg);
 
         if (weight > 2.1f || !__instance._alreadyMovedPickups.Add(pickup.Info.Serial))
             return false;
