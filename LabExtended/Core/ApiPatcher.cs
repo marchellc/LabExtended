@@ -14,6 +14,8 @@ namespace LabExtended.Core;
 /// </summary>
 public static class ApiPatcher
 {
+    internal static int labExPatchCountOffset = 0;
+
     /// <summary>
     /// Whether or not transpilers should show debug lines.
     /// </summary>
@@ -129,8 +131,13 @@ public static class ApiPatcher
             else
                 AssemblyPatches[assembly] = patches;
 
+            var totalCount = patches.Count;
+
+            if (assembly == ApiLoader.Assembly)
+                totalCount += labExPatchCountOffset;
+
             ApiLog.Info("API Patcher",
-                $"&6[&r&2{assembly.GetName().Name}&r&6]&r Applied &1{patches.Count}&r patches in &3{Stopwatch.Elapsed}&r!");
+                $"&6[&r&2{assembly.GetName().Name}&r&6]&r Applied &1{totalCount}&r patches in &3{Stopwatch.Elapsed}&r!");
         }
         catch (Exception ex)
         {

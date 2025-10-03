@@ -269,11 +269,13 @@ public class ApiLoader : Plugin
 
         ListPool<Assembly>.Shared.Return(loadedAssemblies);
 
-        Assembly.ApplyPatches();
-
         InvokeApi(false);
 
+        Assembly.ApplyPatches();
+
         ReflectionUtils.Load();
+
+        BaseConfig.TestCustomItem.Register();
 
         ApiLog.Info("LabExtended", "Loading finished!");
     }

@@ -5,7 +5,6 @@ using HarmonyLib;
 
 using LabExtended.Core;
 using LabExtended.Events;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 namespace LabExtended.Patches.Functions
@@ -39,7 +38,9 @@ namespace LabExtended.Patches.Functions
             });
         }
 
-        internal static void Internal_Init() 
-            => ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch();
+        internal static void Internal_Init()
+        {
+            ApiPatcher.labExPatchCountOffset += ApiPatcher.Harmony.CreateClassProcessor(typeof(LogPatch)).Patch().Count;
+        }
     }
 }

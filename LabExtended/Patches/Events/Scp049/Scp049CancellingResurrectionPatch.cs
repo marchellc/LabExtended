@@ -45,7 +45,11 @@ namespace LabExtended.Patches.Events.Scp049
         public static Harmony Harmony => ApiPatcher.Harmony;
 
         internal static void Internal_Init()
-            => PatchMethod = Harmony.Patch(TargetMethod, new HarmonyMethod(ReplacementMethod));
+        {
+            PatchMethod = Harmony.Patch(TargetMethod, new HarmonyMethod(ReplacementMethod));
+
+            ApiPatcher.labExPatchCountOffset++;
+        }
 
         private static bool Prefix(RagdollAbilityBase<Scp049Role> __instance, NetworkReader reader)
         {

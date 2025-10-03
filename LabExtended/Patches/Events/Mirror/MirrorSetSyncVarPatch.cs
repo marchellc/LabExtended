@@ -57,6 +57,11 @@ namespace LabExtended.Patches.Events.Mirror
 
         internal static void Internal_Init()
         {
+            if (ApiLoader.ApiConfig.PatchSection.DisabledPatches.Contains("MirrorSetSyncVarPatch.GeneratedSyncVarSetterPrefix")
+                || ApiLoader.ApiConfig.PatchSection.DisabledPatches.Contains("MirrorSetSyncVarPatch.*")
+                || ApiLoader.ApiConfig.PatchSection.DisabledPatches.Contains("Mirror.*"))
+                return;
+
             var targetMethod = typeof(NetworkBehaviour).FindMethod(x => x.Name == nameof(NetworkBehaviour.GeneratedSyncVarSetter));
 
             if (targetMethod is null)
@@ -118,7 +123,7 @@ namespace LabExtended.Patches.Events.Mirror
                 ApiLog.Error("MirrorSetSyncVarPatch", ex);
             }
 
-            ApiLog.Debug("MirrorSetSyncVarPatch", $"Patched &3{patchedTypes.Count}&r SyncVar setter types");
+            ApiPatcher.labExPatchCountOffset += patchedTypes.Count;
 
             ListPool<Type>.Shared.Return(patchedTypes);
         }

@@ -83,5 +83,6 @@ public static class LabApiParentCommandFix
         }
 
         ApiPatcher.Harmony.Patch(method, new HarmonyMethod(typeof(LabApiParentCommandFix).Method("Prefix")));
+        ApiPatcher.labExPatchCountOffset++;
     }
 }
