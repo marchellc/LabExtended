@@ -19,7 +19,6 @@ using LabExtended.Utilities.Update;
 
 using NorthwoodLib.Pools;
 
-using LabExtended.API.Audio;
 using LabExtended.API;
 
 using LabExtended.API.Containers;
@@ -332,7 +331,6 @@ public class ApiLoader : Plugin
             ThreadUtils.Internal_Init();
             TimingUtils.Internal_Init();
 
-            AudioManager.Internal_Init();
             Camera.Internal_Init();
 
             CustomItem.Internal_Init();
