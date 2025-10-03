@@ -6,6 +6,8 @@ using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using YamlDotNet.Serialization;
+using LabExtended.Events.Player;
+using LabExtended.Events;
 
 namespace LabExtended.API.Containers;
 
@@ -333,6 +335,11 @@ public class SwitchContainer
     public bool HasUnlimitedAmmo { get; set; }
 
     /// <summary>
+    /// Gets or sets a value indicating whether or not the player should use stamina.
+    /// </summary>
+    public bool HasUnlimitedStamina { get; set; }
+
+    /// <summary>
     /// Whether or not players with instant kill should also be able to kill players with god mode.
     /// </summary>
     public bool InstantKillIgnoresGodMode { get; set; }
@@ -428,6 +435,7 @@ public class SwitchContainer
 
         HasInstantKill = other.HasInstantKill;
         HasUnlimitedAmmo = other.HasUnlimitedAmmo;
+        HasUnlimitedStamina = other.HasUnlimitedStamina;
 
         InstantKillIgnoresGodMode = other.InstantKillIgnoresGodMode;
 
@@ -468,11 +476,19 @@ public class SwitchContainer
         }
     }
 
+    private static void Internal_RefreshingModifiers(PlayerRefreshingModifiersEventArgs args)
+    {
+        if (args.Player.Toggles.HasUnlimitedStamina)
+            args.StaminaUsageMultiplier = 0f;
+    }
+
     internal static void Internal_Init()
     {
         PlayerEvents.PickingUpAmmo += Internal_PickingUpAmmo;
         PlayerEvents.PickingUpItem += Internal_PickingUpItem;
         PlayerEvents.PickingUpArmor += Internal_PickingUpArmor;
         PlayerEvents.PickingUpScp330 += Internal_PickingUpScp330;
+
+        ExPlayerEvents.RefreshingModifiers += Internal_RefreshingModifiers;
     }
 }
