@@ -41,7 +41,13 @@ public static class ExMapEvents
     public static event Action<TeslaGateTriggeringEventArgs>? TeslaGateTriggering;
     
     /// <inheritdoc cref="PickupCollidedEventArgs"/>
-    public static event Action<PickupCollidedEventArgs>? PickupCollided; 
+    public static event Action<PickupCollidedEventArgs>? PickupCollided;
+
+    /// <inheritdoc cref="ProjectileActivatingEventArgs"/>
+    public static event Action<ProjectileActivatingEventArgs>? ProjectileActivating;
+
+    /// <inheritdoc cref="ProjectileActivatedEventArgs"/>
+    public static event Action<ProjectileActivatedEventArgs>? ProjectileActivated;
 
     /// <summary>
     /// Executes the <see cref="DistributedPickup"/> event.
@@ -120,4 +126,20 @@ public static class ExMapEvents
     /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnPickupCollided(PickupCollidedEventArgs args)
         => PickupCollided.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Executes the <see cref="ProjectileActivating"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnProjectileActivating(ProjectileActivatingEventArgs args)
+        => ProjectileActivating.InvokeBooleanEvent(args);
+
+    /// <summary>
+    /// Executes the <see cref="ProjectileActivated"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    /// <returns>The event's <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
+    public static bool OnProjectileActivated(ProjectileActivatedEventArgs args)
+        => ProjectileActivated.InvokeBooleanEvent(args);
 }
