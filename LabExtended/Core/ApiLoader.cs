@@ -21,35 +21,35 @@ using NorthwoodLib.Pools;
 
 using LabExtended.API;
 
-using LabExtended.API.Containers;
+using LabExtended.API.Custom.Items;
+using LabExtended.API.Custom.Effects;
 
 using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomTeams;
 
+using LabExtended.API.RemoteAdmin;
+using LabExtended.API.RemoteAdmin.Actions;
+
+using LabExtended.API.Toys;
 using LabExtended.API.Hints;
 using LabExtended.API.Images;
-using LabExtended.API.RemoteAdmin.Actions;
-using LabExtended.API.RemoteAdmin;
 using LabExtended.API.Settings;
-using LabExtended.API.Toys;
+using LabExtended.API.Containers;
 
 using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Parameters;
 
-using LabExtended.Patches.Events.Scp049;
 using LabExtended.Patches.Fixes;
 using LabExtended.Patches.Functions;
+
+using LabExtended.Patches.Events.Scp049;
+using LabExtended.Patches.Events.Mirror;
 
 using LabExtended.Utilities.Unity;
 using LabExtended.Utilities.Firearms;
 using LabExtended.Utilities.FileStorage;
 
-using LabExtended.API.Custom.Effects;
-
 using Version = System.Version;
-using LabExtended.Patches.Events.Mirror;
-using Mirror;
-using LabExtended.API.Custom.Items;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -334,6 +334,9 @@ public class ApiLoader : Plugin
             Camera.Internal_Init();
 
             CustomItem.Internal_Init();
+            CustomFirearm.Internal_Init();
+            CustomProjectile.Internal_Init();
+
             CustomRoleManager.Internal_Init();
             CustomTeamHandler.Internal_Init();
             CustomPlayerEffect.Internal_Init();

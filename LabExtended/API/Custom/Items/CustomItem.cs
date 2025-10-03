@@ -289,7 +289,7 @@ namespace LabExtended.API.Custom.Items
             return false;
         }
 
-        private List<TrackedCustomItem> trackers = new();
+        internal List<TrackedCustomItem> trackers = new();
 
         /// <summary>
         /// Gets the ID of the custom item.
@@ -581,7 +581,7 @@ namespace LabExtended.API.Custom.Items
         /// <returns>An instance of the spawned item pickup at the specified position and rotation.</returns>
         /// <exception cref="InvalidOperationException">Thrown if the pickup type is 'None' or if the pickup type represents ammunition, as these cannot be spawned.</exception>
         /// <exception cref="Exception">Thrown if the item pickup instance could not be created.</exception>
-        public ItemPickupBase SpawnItem(Vector3 position, Quaternion? rotation, object? pickupData = null)
+        public virtual ItemPickupBase SpawnItem(Vector3 position, Quaternion? rotation, object? pickupData = null)
         {
             if (PickupType is ItemType.None)
                 throw new InvalidOperationException($"[{Name} - {Id}] None cannot be spawned");
@@ -621,7 +621,7 @@ namespace LabExtended.API.Custom.Items
         /// <exception cref="InvalidOperationException">Thrown if the item type is None, is ammo, or if the target player's inventory is full.</exception>
         /// <exception cref="ArgumentException">Thrown if <paramref name="pickup"/> does not belong to this custom item.</exception>
         /// <exception cref="Exception">Thrown if the item instance could not be created for the specified item type.</exception>
-        public ItemBase GiveItem(ItemPickupBase pickup, ExPlayer target, object? newData = null, bool setHeld = false, bool destroyPickup = true)
+        public virtual ItemBase GiveItem(ItemPickupBase pickup, ExPlayer target, object? newData = null, bool setHeld = false, bool destroyPickup = true)
         {
             if (target?.ReferenceHub == null)
                 throw new ArgumentNullException(nameof(target));
@@ -695,7 +695,7 @@ namespace LabExtended.API.Custom.Items
         /// <exception cref="InvalidOperationException">Thrown if the item type is <c>None</c>, if the item type is ammo, or if the target player's inventory is
         /// full.</exception>
         /// <exception cref="Exception">Thrown if the item instance could not be created for the specified item type.</exception>
-        public ItemBase AddItem(ExPlayer target, object? itemData = null, bool setHeld = false)
+        public virtual ItemBase AddItem(ExPlayer target, object? itemData = null, bool setHeld = false)
         {
             if (target?.ReferenceHub == null)
                 throw new ArgumentNullException(nameof(target));
@@ -738,7 +738,7 @@ namespace LabExtended.API.Custom.Items
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
         /// <exception cref="Exception"></exception>
-        public ItemBase CreateItem(object? itemData = default)
+        public virtual ItemBase CreateItem(object? itemData = default)
         {
             if (InventoryType is ItemType.None)
                 throw new InvalidOperationException($"[{Name} - {Id}] None cannot be added to inventory");
@@ -766,7 +766,7 @@ namespace LabExtended.API.Custom.Items
         /// <returns>Returns <see langword="true"/> if the item was successfully transferred; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="item"/> is null or if <paramref name="newOwner"/> is null or does not have a valid
         /// reference hub.</exception>
-        public bool TransferItem(ItemBase item, ExPlayer newOwner, bool setHeld = false)
+        public virtual bool TransferItem(ItemBase item, ExPlayer newOwner, bool setHeld = false)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -815,7 +815,7 @@ namespace LabExtended.API.Custom.Items
         /// <exception cref="InvalidOperationException">Thrown if the pickup type is <see cref="ItemType.None"/>, if the pickup type is ammo, or if the item does
         /// not have a valid owner.</exception>
         /// <exception cref="Exception">Thrown if the pickup instance could not be created.</exception>
-        public ItemPickupBase DropItem(ItemBase item, bool simulateEffects = true)
+        public virtual ItemPickupBase DropItem(ItemBase item, bool simulateEffects = true)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -875,7 +875,7 @@ namespace LabExtended.API.Custom.Items
         /// <exception cref="ArgumentException">Thrown if the specified item does not belong to this custom item.</exception>
         /// <exception cref="InvalidOperationException">Thrown if the pickup type is None, if the pickup type is ammo, or if the item does not have a valid owner.</exception>
         /// <exception cref="Exception">Thrown if the pickup instance could not be created.</exception>
-        public ItemPickupBase ThrowItem(ItemBase item, float throwForce = 1f)
+        public virtual ItemPickupBase ThrowItem(ItemBase item, float throwForce = 1f)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -925,7 +925,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="itemSerial">The serial number of the item to be destroyed. Must correspond to an existing item in the inventory or
         /// pickups.</param>
         /// <returns>true if the item was found and successfully destroyed; otherwise, false.</returns>
-        public bool DestroyItem(ushort itemSerial)
+        public virtual bool DestroyItem(ushort itemSerial)
         {
             if (InventoryExtensions.ServerTryGetItemWithSerial(itemSerial, out var item))
                 return DestroyItem(item);
@@ -945,7 +945,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="item">The item to be destroyed. Cannot be null.</param>
         /// <returns>true if the item was successfully destroyed and removed; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="item"/> is null.</exception>
-        public bool DestroyItem(ItemBase item)
+        public virtual bool DestroyItem(ItemBase item)
         {
             if (item == null)
                 throw new ArgumentNullException(nameof(item));
@@ -965,7 +965,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="pickup">The item pickup to be destroyed. Cannot be null.</param>
         /// <returns>true if the item pickup was successfully destroyed; otherwise, false.</returns>
         /// <exception cref="ArgumentNullException">Thrown if <paramref name="pickup"/> is null.</exception>
-        public bool DestroyItem(ItemPickupBase pickup)
+        public virtual bool DestroyItem(ItemPickupBase pickup)
         {
             if (pickup == null)
                 throw new ArgumentNullException(nameof(pickup));
@@ -982,7 +982,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="tracker">The tracker to destroy.</param>
         /// <returns>true if the tracker was destroyed</returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public bool DestroyTracker(TrackedCustomItem tracker)
+        public virtual bool DestroyTracker(TrackedCustomItem tracker)
         {
             if (tracker is null)
                 throw new ArgumentNullException(nameof(tracker));
@@ -1058,7 +1058,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data associated with the player throwing the item, containing information about the player and the
         /// item being thrown. Cannot be null.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnThrowingItem(LabExtended.Events.Player.PlayerThrowingItemEventArgs args, ref object? itemData)
+        public virtual void OnThrowingItem(LabExtended.Events.Player.PlayerThrowingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1069,7 +1069,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data associated with the player throwing the item, including information about the player and the
         /// thrown item.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnThrewItem(PlayerThrewItemEventArgs args, ref object? itemData)
+        public virtual void OnThrewItem(PlayerThrewItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1079,7 +1079,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnUsingItem(PlayerUsingItemEventArgs args, ref object? itemData)
+        public virtual void OnUsingItem(PlayerUsingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1089,7 +1089,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnUsedItem(PlayerUsedItemEventArgs args, ref object? itemData)
+        public virtual void OnUsedItem(PlayerUsedItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1099,7 +1099,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnCancellingUsingItem(PlayerCancellingUsingItemEventArgs args, ref object? itemData)
+        public virtual void OnCancellingUsingItem(PlayerCancellingUsingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1109,7 +1109,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnCancelledUsingItem(PlayerCancelledUsingItemEventArgs args, ref object? itemData)
+        public virtual void OnCancelledUsingItem(PlayerCancelledUsingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1120,7 +1120,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the player and the item being dropped.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnDroppingItem(PlayerDroppingItemEventArgs args, ref object? itemData)
+        public virtual void OnDroppingItem(PlayerDroppingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1131,7 +1131,7 @@ namespace LabExtended.API.Custom.Items
         /// <remarks>Finished pickup is handled via <see cref="OnItemAdded(CustomItemAddedEventArgs)"/></remarks>
         /// <param name="args">The event's arguments.</param>
         /// <param name="pickupData">A reference to the pickup's custom data.</param>
-        public void OnPickingUp(PlayerPickingUpItemEventArgs args, ref object? pickupData)
+        public virtual void OnPickingUp(PlayerPickingUpItemEventArgs args, ref object? pickupData)
         {
 
         }
@@ -1141,7 +1141,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">Event arguments.</param>
         /// <param name="itemData">Custom item properties.</param>
-        public void OnUnselecting(PlayerSelectingItemEventArgs args, ref object? itemData)
+        public virtual void OnUnselecting(PlayerSelectingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1151,7 +1151,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">Event arguments.</param>
         /// <param name="itemData">Custom item properties.</param>
-        public void OnUnselected(PlayerSelectedItemEventArgs args, ref object? itemData)
+        public virtual void OnUnselected(PlayerSelectedItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1161,7 +1161,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">Event arguments.</param>
         /// <param name="itemData">Custom item properties.</param>
-        public void OnSelecting(PlayerSelectingItemEventArgs args, ref object? itemData)
+        public virtual void OnSelecting(PlayerSelectingItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1171,7 +1171,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">Event arguments.</param>
         /// <param name="itemData">Custom item properties.</param>
-        public void OnSelected(PlayerSelectedItemEventArgs args, ref object? itemData)
+        public virtual void OnSelected(PlayerSelectedItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1182,7 +1182,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data associated with the player's flashlight toggle action. Contains information about the player
         /// and the toggle state.</param>
         /// <param name="itemData">A reference to the item data related to the flashlight.</param>
-        public void OnTogglingLight(PlayerTogglingFlashlightEventArgs args, ref object? itemData)
+        public virtual void OnTogglingLight(PlayerTogglingFlashlightEventArgs args, ref object? itemData)
         {
 
         }
@@ -1193,7 +1193,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data associated with the player's flashlight toggle action, including information about the player
         /// and the flashlight state.</param>
         /// <param name="itemData">A reference to the item-specific data./param>
-        public void OnToggledLight(PlayerToggledFlashlightEventArgs args, ref object? itemData)
+        public virtual void OnToggledLight(PlayerToggledFlashlightEventArgs args, ref object? itemData)
         {
 
         }
@@ -1203,7 +1203,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the player and the coin flip action.</param>
         /// <param name="itemData">A reference to an object representing item-specific data.</param>
-        public void OnFlippingCoin(PlayerFlippingCoinEventArgs args, ref object? itemData)
+        public virtual void OnFlippingCoin(PlayerFlippingCoinEventArgs args, ref object? itemData)
         {
 
         }
@@ -1213,7 +1213,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the player and the coin flip action. Cannot be null.</param>
         /// <param name="itemData">A reference to the item's data..</param>
-        public void OnFlippedCoin(PlayerFlippedCoinEventArgs args, ref object? itemData)
+        public virtual void OnFlippedCoin(PlayerFlippedCoinEventArgs args, ref object? itemData)
         {
 
         }
@@ -1225,7 +1225,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data containing information about the item being processed and the context of the upgrade
         /// operation.</param>
         /// <param name="itemData">A reference to an object representing the item's data.</param>
-        public void OnUpgradingItem(Scp914ProcessingInventoryItemEventArgs args, ref object? itemData)
+        public virtual void OnUpgradingItem(Scp914ProcessingInventoryItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1236,7 +1236,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event arguments containing information about the processed inventory item, including details of the
         /// upgrade operation.</param>
         /// <param name="itemData">A reference to the data associated with the upgraded item.</param>
-        public void OnUpgradedItem(Scp914ProcessedInventoryItemEventArgs args, ref object? itemData)
+        public virtual void OnUpgradedItem(Scp914ProcessedInventoryItemEventArgs args, ref object? itemData)
         {
 
         }
@@ -1247,7 +1247,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data containing information about the pickup item being processed and the context of the SCP-914
         /// upgrade.</param>
         /// <param name="itemData">A reference to an object that holds custom data associated with the item.</param>
-        public void OnUpgradingPickup(Scp914ProcessingPickupEventArgs args, ref object? itemData)
+        public virtual void OnUpgradingPickup(Scp914ProcessingPickupEventArgs args, ref object? itemData)
         {
 
         }
@@ -1257,7 +1257,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the processed pickup item and the SCP-914 upgrade operation.</param>
         /// <param name="itemData">A reference to an object containing custom data associated with the item.</param>
-        public void OnUpgradedPickup(Scp914ProcessedPickupEventArgs args, ref object? itemData)
+        public virtual void OnUpgradedPickup(Scp914ProcessedPickupEventArgs args, ref object? itemData)
         {
 
         }
@@ -1268,7 +1268,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="args">The event data containing information about the player being disarmed and the context of the disarming
         /// action.</param>
         /// <param name="itemData">A reference to the item's data./param>
-        public void OnDisarming(PlayerCuffingEventArgs args, ref object? itemData)
+        public virtual void OnDisarming(PlayerCuffingEventArgs args, ref object? itemData)
         {
 
         }
@@ -1278,7 +1278,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the player who was disarmed.</param>
         /// <param name="itemData">A reference to the item data associated with the disarm event..</param>
-        public void OnDisarmed(PlayerCuffedEventArgs args, ref object? itemData)
+        public virtual void OnDisarmed(PlayerCuffedEventArgs args, ref object? itemData)
         {
 
         }
@@ -1289,7 +1289,7 @@ namespace LabExtended.API.Custom.Items
         /// <remarks>This event is triggered for <b>every</b> custom item instance found in the player's inventory!</remarks>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnEscaping(PlayerEscapingEventArgs args, ref object? itemData)
+        public virtual void OnEscaping(PlayerEscapingEventArgs args, ref object? itemData)
         {
 
         }
@@ -1300,7 +1300,7 @@ namespace LabExtended.API.Custom.Items
         /// <remarks>This event is triggered for <b>every</b> custom item instance found in the player's inventory!</remarks>
         /// <param name="args">The event's arguments.</param>
         /// <param name="itemData">A reference to the item's custom data.</param>
-        public void OnEscaped(PlayerEscapedEventArgs args, ref object? itemData)
+        public virtual void OnEscaped(PlayerEscapedEventArgs args, ref object? itemData)
         {
 
         }
@@ -1310,7 +1310,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event's arguments.</param>
         /// <param name="pickupData">A reference to the pickup's custom data.</param>
-        public void OnCollided(PickupCollidedEventArgs args, ref object? pickupData)
+        public virtual void OnCollided(PickupCollidedEventArgs args, ref object? pickupData)
         {
 
         }
@@ -1760,7 +1760,7 @@ namespace LabExtended.API.Custom.Items
                     {
                         if (itemTracker.TargetItem.DestroyOnOwnerLeave)
                         {
-                            pickup.DestroySelf();
+                            itemTracker.TargetItem.DestroyItem(pickup);
                         }
                     }
                 }
