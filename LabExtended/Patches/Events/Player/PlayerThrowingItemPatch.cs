@@ -58,10 +58,7 @@ public static class PlayerThrowingItemPatch
 
         if (customItem != null)
         {
-            var dataTemp = customItemTracker.Data;
-
-            customItem.OnDroppingItem(droppingArgs, ref dataTemp);
-            customItemTracker.Data = dataTemp;
+            customItem.OnDroppingItem(droppingArgs, ref customItemTracker.Data);
 
             tryThrow = droppingArgs.Throw;
 

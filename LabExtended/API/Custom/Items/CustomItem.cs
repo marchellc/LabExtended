@@ -643,12 +643,13 @@ namespace LabExtended.API.Custom.Items
             if (!Internal_CheckItem(pickup.Info.Serial, out var tracker))
                 throw new ArgumentException($"[{Name} - {Id}] The specified pickup does not belong to this custom item.", nameof(pickup));
 
-            var item = InventoryType.GetItemInstance<ItemBase>(destroyPickup ? pickup.Info.Serial : null);
+            var item = target.ReferenceHub.inventory.ServerAddItem(InventoryType,
+                destroyPickup ? ItemAddReason.PickedUp : ItemAddReason.AdminCommand,
+                destroyPickup ? pickup.Info.Serial : (ushort)0,
+                destroyPickup ? pickup : null);
 
             if (item == null)
                 throw new Exception($"[{Name} - {Id}] Failed to create an instance of {InventoryType}");
-
-            item.TransferItem(target.ReferenceHub);
 
             var eventArgs = new CustomItemAddedEventArgs(target, this, CustomItemAddReason.PickedUp, item,
                 newData != null ? newData
@@ -714,12 +715,10 @@ namespace LabExtended.API.Custom.Items
             if (target.Inventory.ItemCount >= 8)
                 throw new InvalidOperationException($"[{Name} - {Id}] The target player's inventory is full.");
 
-            var item = InventoryType.GetItemInstance<ItemBase>();
+            var item = target.ReferenceHub.inventory.ServerAddItem(InventoryType, ItemAddReason.AdminCommand);
 
             if (item == null)
                 throw new Exception($"[{Name} - {Id}] Failed to create an instance of {InventoryType}");
-
-            item.TransferItem(target.ReferenceHub);
 
             var eventArgs = new CustomItemAddedEventArgs(target, this, CustomItemAddReason.Added, item, itemData, null, null);
 
@@ -1704,7 +1703,6 @@ namespace LabExtended.API.Custom.Items
         {
             // is this what adhd is??
             PlayerEvents.PickingUpItem += Internal_PickingUpItem;
-            PlayerEvents.PickedUpItem += Internal_PickedUp;
 
             PlayerEvents.TogglingFlashlight += Internal_TogglingFlashlight;
             PlayerEvents.ToggledFlashlight += Internal_ToggledFlashlight;
@@ -1775,54 +1773,21 @@ namespace LabExtended.API.Custom.Items
 
         private static void Internal_PickingUpItem(PlayerPickingUpItemEventArgs args)
         {
-            if (args.Player is ExPlayer player)
-            {
-                if (args.Pickup?.Base != null)
-                {
-                    if (Internal_GetCustomItem(args.Pickup.Serial, out var customItem, out var tracker))
-                    {
-                        customItem.OnPickingUp(args, ref tracker.Data);
-                    }
-                }
-            }
-        }
+            if (!args.IsAllowed)
+                return;
 
-        private static void Internal_Collided(PickupCollidedEventArgs args)
-        {
-            if (args.Pickup != null)
-            {
-                if (Internal_GetCustomItem(args.Pickup.Info.Serial, out var customItem, out var tracker))
-                {
-                    customItem.OnCollided(args, ref tracker.Data);
-                }
-            }
-        }
-
-        private static void Internal_PickedUp(PlayerPickedUpItemEventArgs args)
-        {
-            if (args.Item?.Base == null)
+            if (args.Pickup?.Base == null)
                 return;
 
             if (args.Player is not ExPlayer player)
                 return;
 
-            if (!Internal_GetCustomItem(args.Item.Serial, out var customItem, out var tracker))
+            if (!Internal_GetCustomItem(args.Pickup.Serial, out var customItem, out var tracker))
                 return;
 
-            if (customItem.InventoryType == args.Item.Type)
-            {
-                var eventArgs = new CustomItemAddedEventArgs(player, customItem, CustomItemAddReason.PickedUp, args.Item.Base, tracker.Data, tracker.Pickup, tracker.Data);
+            customItem.OnPickingUp(args, ref tracker.Data);
 
-                customItem.OnItemAdded(eventArgs);
-
-                tracker.Data = eventArgs.AddedData;
-
-                tracker.Item = args.Item.Base;
-                tracker.Owner = player;
-
-                tracker.Pickup = null;
-            }
-            else
+            if (args.IsAllowed)
             {
                 if (customItem.InventoryType is ItemType.None)
                 {
@@ -1836,28 +1801,40 @@ namespace LabExtended.API.Custom.Items
                     return;
                 }
 
-                var itemInstance = customItem.InventoryType.GetItemInstance<ItemBase>(args.Item.Serial);
+                var itemInstance = player.ReferenceHub.inventory.ServerAddItem(customItem.InventoryType, ItemAddReason.PickedUp, args.Pickup.Serial, args.Pickup.Base);
 
                 if (itemInstance == null)
                 {
-                    ApiLog.Warn("Custom Items", $"&3{customItem.Id}&r failed to create an item instance for item &3{args.Item.Serial}&r!");
+                    ApiLog.Warn("Custom Items", $"&3{customItem.Id}&r failed to create an item instance for item &3{args.Pickup.Serial}&r!");
                     return;
                 }
 
-                args.Item.Base.DestroyItem();
-
-                itemInstance.TransferItem(player.ReferenceHub);
-
-                var eventArgs = new CustomItemAddedEventArgs(player, customItem, CustomItemAddReason.PickedUp, itemInstance, tracker.Data, tracker.Pickup, tracker.Data);
-
-                customItem.OnItemAdded(eventArgs);
-
-                tracker.Data = eventArgs.AddedData;
+                var eventArgs = new CustomItemAddedEventArgs(player, customItem, CustomItemAddReason.PickedUp, itemInstance, tracker.Data, 
+                    args.Pickup.Base, tracker.Data);
 
                 tracker.Item = itemInstance;
                 tracker.Owner = player;
 
                 tracker.Pickup = null;
+
+                customItem.OnItemAdded(eventArgs);
+
+                tracker.Data = eventArgs.AddedData;
+
+                args.Pickup.Base.DestroySelf();
+            }
+
+            args.IsAllowed = false;
+        }
+
+        private static void Internal_Collided(PickupCollidedEventArgs args)
+        {
+            if (args.Pickup != null)
+            {
+                if (Internal_GetCustomItem(args.Pickup.Info.Serial, out var customItem, out var tracker))
+                {
+                    customItem.OnCollided(args, ref tracker.Data);
+                }
             }
         }
 

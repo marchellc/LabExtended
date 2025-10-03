@@ -7,7 +7,6 @@ using LabApi.Events.Arguments.PlayerEvents;
 
 using LabExtended.Extensions;
 
-using LabExtended.API.Custom.Items.Enums;
 using LabExtended.API.Custom.Items.Events;
 
 using LabExtended.Events;
@@ -215,26 +214,8 @@ namespace LabExtended.API.Custom.Items
             {
                 SetMaxAmmo(this, firearm);
 
-                if (args.AddReason is CustomItemAddReason.Added)
-                {
-                    if (DefaultAttachments?.Length > 0)
-                    {
-                        firearm.SetAttachments(attachment => DefaultAttachments.Contains(attachment.Name));
-                    }
-                }
-                else if (args.AddReason is CustomItemAddReason.Transferred or CustomItemAddReason.PickedUp)
-                {
-                    firearm.SetAttachments(attachment =>
-                    {
-                        if (BlacklistedAttachments != null && BlacklistedAttachments.Contains(attachment.Name))
-                            return false;
-
-                        if (WhitelistedAttachments?.Length > 0 && !WhitelistedAttachments.Contains(attachment.Name))
-                            return false;
-
-                        return true;
-                    });
-                }
+                if (DefaultAttachments?.Length > 0)
+                    firearm.SetAttachments(attachment => DefaultAttachments.Contains(attachment.Name));
             }
         }
 
