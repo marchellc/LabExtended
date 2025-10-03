@@ -57,6 +57,8 @@ using UnityEngine;
 using UserSettings.ServerSpecific;
 
 using VoiceChat;
+using LabExtended.Utilities.Update;
+using LabExtended.Events.Player;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -583,6 +585,8 @@ public class ExPlayer : Player, IDisposable
             Toggles.IsVisibleToScp939 = false;
             Toggles.IsVisibleInRemoteAdmin = false;
         }
+
+        PlayerUpdateHelper.OnUpdate += Internal_Update;
         
         InternalEvents.HandlePlayerJoin(this);
     }
@@ -1383,6 +1387,8 @@ public class ExPlayer : Player, IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
+        PlayerUpdateHelper.OnUpdate -= Internal_Update;
+
         if (host != null && host == this)
             host = null;
 
@@ -1485,6 +1491,61 @@ public class ExPlayer : Player, IDisposable
 
         Position = null!;
         Rotation = null!;
+    }
+
+    private void Internal_Update()
+    {
+        if (ReferenceHub != null)
+        {
+            Internal_RefreshModifiers(this);
+        }
+        else
+        {
+            PlayerUpdateHelper.OnUpdate -= Internal_Update;
+        }
+    }
+
+    private static void Internal_RefreshModifiers(ExPlayer player)
+    {
+        var inventory = player.ReferenceHub.inventory;
+
+        if (inventory != null)
+        {
+            inventory._staminaModifier = 1f;
+
+            inventory._movementMultiplier = 1f;
+            inventory._movementLimiter = float.MaxValue;
+
+            inventory._sprintingDisabled = false;
+
+            foreach (var pair in inventory.UserInventory.Items)
+            {
+                var mobilityController = pair.Value.GetMobilityController();
+
+                if (mobilityController is IStaminaModifier staminaModifier
+                    && staminaModifier.StaminaModifierActive)
+                {
+                    inventory._staminaModifier *= staminaModifier.StaminaUsageMultiplier;
+                    inventory._sprintingDisabled |= staminaModifier.SprintingDisabled;
+                }
+
+                if (mobilityController is IMovementSpeedModifier movementSpeedModifier
+                    && movementSpeedModifier.MovementModifierActive)
+                {
+                    inventory._movementLimiter = Mathf.Min(inventory._movementLimiter, movementSpeedModifier.MovementSpeedLimit);
+                    inventory._movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
+                }
+            }
+
+            var refreshingEventArgs = new PlayerRefreshingModifiersEventArgs(player, inventory._staminaModifier, inventory._movementMultiplier, 
+                inventory._movementLimiter);
+
+            ExPlayerEvents.OnRefreshingModifiers(refreshingEventArgs);
+
+            inventory._staminaModifier = refreshingEventArgs.StaminaUsageMultiplier;
+            inventory._movementMultiplier = refreshingEventArgs.MovementSpeedMultiplier;
+            inventory._movementLimiter = refreshingEventArgs.MovementSpeedLimiter;
+        }
     }
 
     private static ReferenceHub SpawnHiddenDummy(string nick)

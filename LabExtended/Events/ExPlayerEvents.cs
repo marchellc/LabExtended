@@ -74,8 +74,11 @@ public static class ExPlayerEvents
     
     /// <inheritdoc cref="PlayerTriggeringTeslaGateEventArgs"/>
     public static event Action<PlayerTriggeringTeslaGateEventArgs>? TriggeringTesla;
+
+    /// <inheritdoc cref="PlayerRefreshingModifiersEventArgs"/>
+    public static event Action<PlayerRefreshingModifiersEventArgs>? RefreshingModifiers;
     #endregion
-    
+
     #region Items
     /// <inheritdoc cref="PlayerDroppingCandyEventArgs"/>
     public static event Action<PlayerDroppingCandyEventArgs>? DroppingCandy;
@@ -267,8 +270,15 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnSynchronizedRole(PlayerSynchronizedRoleEventArgs args)
         => SynchronizedRole.InvokeEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="RefreshingModifiers"/> event.
+    /// </summary>
+    /// <param name="args">The event's arguments.</param>
+    public static void OnRefreshingModifiers(PlayerRefreshingModifiersEventArgs args)
+        => RefreshingModifiers.InvokeEvent(args);
     #endregion
-    
+
     #region Handlers - Items
     /// <summary>
     /// Invokes the <see cref="DroppingCandy"/> event.
