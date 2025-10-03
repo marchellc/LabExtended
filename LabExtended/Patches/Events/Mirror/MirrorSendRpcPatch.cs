@@ -25,54 +25,63 @@ namespace LabExtended.Patches.Events.Mirror
                 return false;
             }
 
-            if (__instance.netIdentity.observers == null || __instance.netIdentity.observers.Count == 0)
-                return false;
-
             var rpcMessage = new RpcMessage
             {
                 netId = __instance.netId,
                 componentIndex = __instance.ComponentIndex,
-
                 functionHash = (ushort)functionHashCode,
                 payload = writer.ToArraySegment()
             };
 
+            if (__instance.netIdentity.observers == null || __instance.netIdentity.observers.Count == 0)
+                return false;
+
             var players = ListPool<ExPlayer>.Shared.Rent();
+            var connections = ListPool<NetworkConnection>.Shared.Rent();
 
-            for (var i = 0; i < ExPlayer.Players.Count; i++)
+            foreach (var pair in __instance.netIdentity.observers)
             {
-                var player = ExPlayer.Players[i];
-
-                if (player?.ReferenceHub == null || !player.Connection.isReady)
-                    continue;
-
-                if (__instance.netIdentity.connectionToClient != null && __instance.netIdentity.connectionToClient == player.Connection && !includeOwner)
-                    continue;
-
-                if (!__instance.netIdentity.observers.ContainsKey(player.ConnectionId))
-                    continue;
-
-                players.Add(player);
-            }
-
-            if (players.Count > 0)
-            {
-                if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage)
-                    && players.Count > 0)
+                if (ExPlayer.TryGet(pair.Value, out var player))
                 {
-                    using var writer2 = NetworkWriterPool.Get();
+                    players.Add(player);
+                }
+                else
+                {
+                    if (__instance.connectionToClient == pair.Value && !includeOwner)
+                        continue;
 
-                    writer2.Write(rpcMessage);
-
-                    var segment = writer2.ToArraySegment();
-
-                    players.ForEach(ply => ply.ConnectionToClient.Send(segment, channelId));
-
-                    MirrorEvents.OnSentRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage);
+                    connections.Add(pair.Value);
                 }
             }
 
+            if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, connections, players, ref rpcMessage))
+            {
+                using var writer2 = NetworkWriterPool.Get();
+
+                writer2.Write(rpcMessage);
+
+                players.ForEach(ply =>
+                {
+                    if (ply.Connection.isReady)
+                    {
+                        ply.Connection.Send(rpcMessage, channelId);
+                    }
+                });
+
+                connections.ForEach(conn =>
+                {
+                    if (conn.isReady)
+                    {
+                        conn.Send(rpcMessage, channelId);
+                    }
+                });
+
+                MirrorEvents.OnSentRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage);
+            }
+
             ListPool<ExPlayer>.Shared.Return(players);
+            ListPool<NetworkConnection>.Shared.Return(connections);
+
             return false;
         }
 
@@ -103,24 +112,21 @@ namespace LabExtended.Patches.Events.Mirror
             };
 
             var players = ListPool<ExPlayer>.Shared.Rent();
+            var connections = ListPool<NetworkConnection>.Shared.Rent();
 
             players.Add(player);
+            connections.Add(conn);
 
-            if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage)
-                && players.Count > 0)
+            if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, connections, players, ref rpcMessage))
             {
-                using var writer2 = NetworkWriterPool.Get();
-
-                writer2.Write(rpcMessage);
-
-                var segment = writer2.ToArraySegment();
-
-                player.ConnectionToClient.Send(segment, channelId);
+                conn.Send(rpcMessage, channelId);
 
                 MirrorEvents.OnSentRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage);
             }
 
             ListPool<ExPlayer>.Shared.Return(players);
+            ListPool<NetworkConnection>.Shared.Return(connections);
+
             return false;
         }
     }

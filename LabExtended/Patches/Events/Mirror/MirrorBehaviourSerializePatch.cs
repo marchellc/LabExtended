@@ -14,6 +14,9 @@ namespace LabExtended.Patches.Events.Mirror
         [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.SerializeServer))]
         private static bool Prefix(NetworkIdentity __instance, bool initialState, NetworkWriter ownerWriter, NetworkWriter observersWriter)
         {
+            if (!MirrorEvents.Internal_AnySerializingSubscribers())
+                return true;
+
             __instance.ValidateComponents();
 
             var behaviours = __instance.NetworkBehaviours;

@@ -95,22 +95,22 @@ public static class MirrorEvents
     public delegate void RemovedObserverEventHandler(NetworkIdentity identity, ExPlayer observer);
 
     /// <summary>
-    /// Represents the method that handles the event raised before a remote procedure call (RPC) is sent to network
-    /// targets.
+    /// Represents the method that handles the event raised before a remote procedure call (RPC) is sent to specified
+    /// targets on the network.
     /// </summary>
-    /// <remarks>This event allows inspection or modification of the RPC message and its delivery. Handlers
-    /// can change the message contents or cancel the RPC by setting <paramref name="isAllowed"/> to <see
-    /// langword="false"/>.</remarks>
-    /// <param name="behaviour">The network behaviour instance initiating the RPC.</param>
-    /// <param name="rpcName">The name of the RPC method being invoked.</param>
+    /// <remarks>This event allows inspection and modification of RPC data and targets before the message is
+    /// sent. It can be used to implement custom filtering, logging, or security checks. Modifying <paramref
+    /// name="isAllowed"/> to <see langword="false"/> will prevent the RPC from being sent.</remarks>
+    /// <param name="behaviour">The network behaviour instance that is invoking the RPC.</param>
+    /// <param name="rpcName">The name of the RPC method being called.</param>
     /// <param name="rpcHash">The hash value identifying the RPC method.</param>
-    /// <param name="writer">The writer used to serialize the RPC parameters.</param>
-    /// <param name="targets">The list of target players to whom the RPC will be sent.</param>
-    /// <param name="message">A reference to the RPC message that will be sent. Can be modified to alter the outgoing message.</param>
-    /// <param name="isAllowed">A reference to a value indicating whether the RPC is permitted to be sent. Set to <see langword="false"/> to
-    /// prevent the RPC from being sent.</param>
-    public delegate void SendingRpcEventHandler(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, 
-        ref RpcMessage message, ref bool isAllowed);
+    /// <param name="writer">The writer used to serialize the RPC payload data.</param>
+    /// <param name="connectionTargets">The list of network connections to which the RPC will be sent.</param>
+    /// <param name="message">A reference to the RPC message being sent. Can be modified to alter the message before transmission.</param>
+    /// <param name="isAllowed">A reference to a Boolean value indicating whether the RPC is permitted to be sent. Set to <see
+    /// langword="false"/> to block the RPC.</param>
+    public delegate void SendingRpcEventHandler(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, 
+        List<NetworkConnection> connectionTargets, List<ExPlayer> playerTargets, ref RpcMessage message, ref bool isAllowed);
 
     /// <summary>
     /// Represents the method that handles an event triggered when a remote procedure call (RPC) is sent from a network
@@ -372,13 +372,14 @@ public static class MirrorEvents
     /// <summary>
     /// Invokes the <see cref="SendingRpc"/> event.
     /// </summary>
-    public static bool OnSendingRpc(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<ExPlayer> targets, ref RpcMessage message)
+    public static bool OnSendingRpc(NetworkBehaviour behaviour, string rpcName, int rpcHash, NetworkWriter writer, List<NetworkConnection> connections, 
+        List<ExPlayer> players, ref RpcMessage message)
     {
         var isAllowed = true;
 
         try
         {
-            SendingRpc?.Invoke(behaviour, rpcName, rpcHash, writer, targets, ref message, ref isAllowed);
+            SendingRpc?.Invoke(behaviour, rpcName, rpcHash, writer, connections, players, ref message, ref isAllowed);
         }
         catch (Exception ex)
         {
@@ -405,4 +406,7 @@ public static class MirrorEvents
 
     internal static bool Internal_AnySyncVarSubsribers()
         => UpdatingSyncVar is not null || UpdatedSyncVar is not null;
+
+    internal static bool Internal_AnySerializingSubscribers()
+        => BehaviourSerializing is not null || BehaviourSerialized is not null;
 }
