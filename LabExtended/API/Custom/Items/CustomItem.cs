@@ -11,6 +11,7 @@ using LabApi.Features.Wrappers;
 using LabExtended.API.Custom.Items.Enums;
 using LabExtended.API.Custom.Items.Events;
 
+using LabExtended.Core;
 using LabExtended.Core.Configs.Objects;
 
 using LabExtended.Events;
@@ -360,6 +361,8 @@ namespace LabExtended.API.Custom.Items
             Registered?.Invoke(this);
 
             OnRegistered();
+
+            ApiLog.Info("Custom Items", $"&2Registered&r custom item &3{Name}&r (&6{Id}&r)");
             return true;
         }
 
@@ -376,6 +379,8 @@ namespace LabExtended.API.Custom.Items
                 Unregistered?.Invoke(this);
 
                 OnUnregistered();
+
+                ApiLog.Info("Custom Items", $"&1Unregistered&r custom item &3{Name}&r (&6{Id}&r)");
                 return true;
             }
 
@@ -1699,6 +1704,7 @@ namespace LabExtended.API.Custom.Items
         {
             // is this what adhd is??
             PlayerEvents.PickingUpItem += Internal_PickingUpItem;
+            PlayerEvents.PickedUpItem += Internal_PickedUp;
 
             PlayerEvents.TogglingFlashlight += Internal_TogglingFlashlight;
             PlayerEvents.ToggledFlashlight += Internal_ToggledFlashlight;
@@ -1789,6 +1795,69 @@ namespace LabExtended.API.Custom.Items
                 {
                     customItem.OnCollided(args, ref tracker.Data);
                 }
+            }
+        }
+
+        private static void Internal_PickedUp(PlayerPickedUpItemEventArgs args)
+        {
+            if (args.Item?.Base == null)
+                return;
+
+            if (args.Player is not ExPlayer player)
+                return;
+
+            if (!Internal_GetCustomItem(args.Item.Serial, out var customItem, out var tracker))
+                return;
+
+            if (customItem.InventoryType == args.Item.Type)
+            {
+                var eventArgs = new CustomItemAddedEventArgs(player, customItem, CustomItemAddReason.PickedUp, args.Item.Base, tracker.Data, tracker.Pickup, tracker.Data);
+
+                customItem.OnItemAdded(eventArgs);
+
+                tracker.Data = eventArgs.AddedData;
+
+                tracker.Item = args.Item.Base;
+                tracker.Owner = player;
+
+                tracker.Pickup = null;
+            }
+            else
+            {
+                if (customItem.InventoryType is ItemType.None)
+                {
+                    ApiLog.Warn("Custom Items", $"&3{customItem.Id}&r has not defined it's inventory type!");
+                    return;
+                }
+
+                if (customItem.InventoryType.IsAmmo())
+                {
+                    ApiLog.Warn("Custom Items", $"&3{customItem.Id}&r has defined it's inventory type as ammo, which is not supported!");
+                    return;
+                }
+
+                var itemInstance = customItem.InventoryType.GetItemInstance<ItemBase>(args.Item.Serial);
+
+                if (itemInstance == null)
+                {
+                    ApiLog.Warn("Custom Items", $"&3{customItem.Id}&r failed to create an item instance for item &3{args.Item.Serial}&r!");
+                    return;
+                }
+
+                args.Item.Base.DestroyItem();
+
+                itemInstance.TransferItem(player.ReferenceHub);
+
+                var eventArgs = new CustomItemAddedEventArgs(player, customItem, CustomItemAddReason.PickedUp, itemInstance, tracker.Data, tracker.Pickup, tracker.Data);
+
+                customItem.OnItemAdded(eventArgs);
+
+                tracker.Data = eventArgs.AddedData;
+
+                tracker.Item = itemInstance;
+                tracker.Owner = player;
+
+                tracker.Pickup = null;
             }
         }
 

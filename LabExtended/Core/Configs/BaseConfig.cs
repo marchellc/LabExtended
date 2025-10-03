@@ -1,5 +1,5 @@
 using System.ComponentModel;
-
+using LabExtended.API.Custom.Items;
 using LabExtended.Patches.Functions.Players;
 using LabExtended.Utilities;
 

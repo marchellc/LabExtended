@@ -275,8 +275,6 @@ public class ApiLoader : Plugin
 
         ReflectionUtils.Load();
 
-        BaseConfig.TestCustomItem.Register();
-
         ApiLog.Info("LabExtended", "Loading finished!");
     }
 
