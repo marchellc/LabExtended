@@ -140,8 +140,13 @@ namespace LabExtended.Commands.Custom.CustomItems
 
                     x.AppendLine($"- [CI: {baseType.Name}] {pair.Value.Name} ({pair.Value.Id})");
 
-                    foreach (var tracker in pair.Value.trackers)
+                    foreach (var kvp in CustomItem.itemsBySerial)
                     {
+                        var tracker = kvp.Value;
+
+                        if (tracker.TargetItem != pair.Value)
+                            continue;
+
                         if (tracker.ValidateTracker())
                         {
                             if (tracker.Item != null)

@@ -80,12 +80,18 @@ namespace LabExtended.API.Custom.Items
         public delegate void ForEachPickupDelegate<T>(ItemPickupBase item, ref T? itemData);
         #endregion
 
-        private static Dictionary<string, CustomItem> itemsById = new();
+        internal static Dictionary<string, CustomItem> itemsById = new();
+        internal static Dictionary<ushort, TrackedCustomItem> itemsBySerial = new();
 
         /// <summary>
         /// Gets all registered custom items.
         /// </summary>
         public static IReadOnlyDictionary<string, CustomItem> RegisteredItems => itemsById;
+
+        /// <summary>
+        /// Gets all tracked custom items.
+        /// </summary>
+        public static IReadOnlyDictionary<ushort, TrackedCustomItem> TrackedItems => itemsBySerial;
 
         #region Events
         /// <summary>
@@ -129,13 +135,10 @@ namespace LabExtended.API.Custom.Items
         /// <returns>true if a custom item matching the specified serial is found; otherwise, false.</returns>
         public static bool IsCustomItem(ushort itemSerial, out CustomItem customItem)
         {
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker))
             {
-                if (pair.Value.Internal_CheckItem(itemSerial, out _))
-                {
-                    customItem = pair.Value;
-                    return true;
-                }
+                customItem = tracker.TargetItem;
+                return true;
             }
 
             customItem = null!;
@@ -154,15 +157,12 @@ namespace LabExtended.API.Custom.Items
         /// <returns>true if the specified item serial is associated with a custom item; otherwise, false.</returns>
         public static bool IsCustomItem(ushort itemSerial, out CustomItem customItem, out object? customData)
         {
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker))
             {
-                if (pair.Value.Internal_CheckItem(itemSerial, out var tracker))
-                {
-                    customItem = pair.Value;
-                    customData = tracker.Data;
+                customItem = tracker.TargetItem;
+                customData = tracker.Data;
 
-                    return true;
-                }
+                return true;
             }
 
             customItem = null!;
@@ -182,13 +182,10 @@ namespace LabExtended.API.Custom.Items
         /// false.</returns>
         public static bool IsCustomItem<T>(ushort itemSerial, out T customItem) where T : CustomItem
         {
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.TargetItem is T castItem)
             {
-                if (pair.Value is T castItem && pair.Value.Internal_CheckItem(itemSerial, out _))
-                {
-                    customItem = castItem;
-                    return true;
-                }
+                customItem = castItem;
+                return true;
             }
 
             customItem = null!;
@@ -210,15 +207,12 @@ namespace LabExtended.API.Custom.Items
         /// <returns>true if a custom item of type <typeparamref name="T"/> with the specified serial exists; otherwise, false.</returns>
         public static bool IsCustomItem<T>(ushort itemSerial, out T customItem, out object? customData) where T : CustomItem
         {
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.TargetItem is T castItem)
             {
-                if (pair.Value is T castItem && pair.Value.Internal_CheckItem(itemSerial, out var tracker))
-                {
-                    customItem = castItem;
-                    customData = tracker.Data;
+                customItem = castItem;
+                customData = tracker.Data;
 
-                    return true;
-                }
+                return true;
             }
 
             customItem = null!;
@@ -244,18 +238,15 @@ namespace LabExtended.API.Custom.Items
         /// <returns>true if a custom item matching the specified serial and type is found; otherwise, false.</returns>
         public static bool IsCustomItem<TItem, TData>(ushort itemSerial, out TItem customItem, out TData? customData) where TItem : CustomItem
         {
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.TargetItem is TItem castItem)
             {
-                if (pair.Value is TItem castItem 
-                    && pair.Value.Internal_CheckItem(itemSerial, out var tracker))
-                {
-                    customItem = castItem;
-                    customData = tracker.Data is TData castData
-                        ? castData
-                        : default;
+                customItem = castItem;
 
-                    return true;
-                }
+                customData = tracker.Data is TData castData
+                    ? castData
+                    : default;
+
+                return true;
             }
 
             customItem = null!;
@@ -276,21 +267,7 @@ namespace LabExtended.API.Custom.Items
         /// This parameter is passed uninitialized.</param>
         /// <returns>true if the item is tracked; otherwise, false.</returns>
         public static bool IsTrackedItem(ushort itemSerial, out TrackedCustomItem trackedItem)
-        {
-            foreach (var pair in itemsById)
-            {
-                if (pair.Value.Internal_CheckItem(itemSerial, out var tracker))
-                {
-                    trackedItem = tracker;
-                    return true;
-                }
-            }
-
-            trackedItem = null!;
-            return false;
-        }
-
-        internal List<TrackedCustomItem> trackers = new();
+            => itemsBySerial.TryGetValue(itemSerial, out trackedItem);
 
         /// <summary>
         /// Gets the ID of the custom item.
@@ -340,12 +317,6 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         [Description("Sets if custom items dropped by a player should be destroyed when the player who dropped them leaves.")]
         public virtual bool DestroyOnOwnerLeave { get; set; } = false;
-
-        /// <summary>
-        /// Gets a list of all tracked custom item instances.
-        /// </summary>
-        [YamlIgnore]
-        public IReadOnlyList<TrackedCustomItem> TrackedItems => trackers;
 
         /// <summary>
         /// Registers this custom item.
@@ -400,19 +371,20 @@ namespace LabExtended.API.Custom.Items
             if (forEachItemDelegate is null)
                 throw new ArgumentNullException(nameof(forEachItemDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Item == null
-                    || tracker.Owner?.ReferenceHub == null
-                    || tracker.Owner.Inventory.CurrentItemIdentifier.SerialNumber != tracker.TargetSerial)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                forEachItemDelegate(tracker.Item, tracker.Owner!, ref tracker.Data);
+                if (pair.Value.Item == null
+                    || pair.Value.Owner?.ReferenceHub == null
+                    || pair.Value.Owner.Inventory.CurrentItemIdentifier.SerialNumber != pair.Value.TargetSerial)
+                    continue;
+
+                forEachItemDelegate(pair.Value.Item, pair.Value.Owner!, ref pair.Value.Data);
             }
         }
 
@@ -429,25 +401,26 @@ namespace LabExtended.API.Custom.Items
             if (forEachItemDelegate is null)
                 throw new ArgumentNullException(nameof(forEachItemDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Item == null
-                    || tracker.Owner?.ReferenceHub == null
-                    || tracker.Owner.Inventory.CurrentItemIdentifier.SerialNumber != tracker.TargetSerial)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                var dataTemp = tracker.Data is T castData
+                if (pair.Value.Item == null
+                    || pair.Value.Owner?.ReferenceHub == null
+                    || pair.Value.Owner.Inventory.CurrentItemIdentifier.SerialNumber != pair.Value.TargetSerial)
+                    continue;
+
+                var dataTemp = pair.Value.Data is T castData
                     ? castData
                     : default;
 
-                forEachItemDelegate(tracker.Item, tracker.Owner!, ref dataTemp);
+                forEachItemDelegate(pair.Value.Item, pair.Value.Owner!, ref dataTemp);
 
-                tracker.Data = dataTemp;
+                pair.Value.Data = dataTemp;
             }
         }
 
@@ -466,17 +439,18 @@ namespace LabExtended.API.Custom.Items
             if (forEachItemDelegate is null)
                 throw new ArgumentNullException(nameof(forEachItemDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Item == null)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                forEachItemDelegate(tracker.Item, tracker.Owner!, ref tracker.Data);
+                if (pair.Value.Item == null || pair.Value.Owner == null)
+                    continue;
+
+                forEachItemDelegate(pair.Value.Item, pair.Value.Owner, ref pair.Value.Data);
             }
         }
 
@@ -495,23 +469,24 @@ namespace LabExtended.API.Custom.Items
             if (forEachItemDelegate is null)
                 throw new ArgumentNullException(nameof(forEachItemDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Item == null)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                var dataTemp = tracker.Data is T castData
+                if (pair.Value.Item == null || pair.Value.Owner == null)
+                    continue;
+
+                var dataTemp = pair.Value.Data is T castData
                     ? castData
                     : default;
 
-                forEachItemDelegate(tracker.Item, tracker.Owner!, ref dataTemp);
+                forEachItemDelegate(pair.Value.Item, pair.Value.Owner, ref dataTemp);
 
-                tracker.Data = dataTemp;
+                pair.Value.Data = dataTemp;
             }
         }
 
@@ -528,17 +503,18 @@ namespace LabExtended.API.Custom.Items
             if (forEachPickupDelegate is null)
                 throw new ArgumentNullException(nameof(forEachPickupDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Pickup == null)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                forEachPickupDelegate(tracker.Pickup, ref tracker.Data);
+                if (pair.Value.Pickup == null)
+                    continue;
+
+                forEachPickupDelegate(pair.Value.Pickup, ref pair.Value.Data);
             }
         }
 
@@ -555,23 +531,24 @@ namespace LabExtended.API.Custom.Items
             if (forEachPickupDelegate is null)
                 throw new ArgumentNullException(nameof(forEachPickupDelegate));
 
-            for (var x = 0; x < trackers.Count; x++)
+            foreach (var pair in itemsBySerial)
             {
-                var tracker = trackers[x];
-
-                if (!tracker.ValidateTracker())
+                if (pair.Value.TargetItem != this)
                     continue;
 
-                if (tracker.Pickup == null)
+                if (!pair.Value.ValidateTracker())
                     continue;
 
-                var dataTemp = tracker.Data is T castData
+                if (pair.Value.Pickup == null)
+                    continue;
+
+                var dataTemp = pair.Value.Data is T castData
                     ? castData
                     : default;
 
-                forEachPickupDelegate(tracker.Pickup, ref dataTemp);
+                forEachPickupDelegate(pair.Value.Pickup, ref dataTemp);
 
-                tracker.Data = dataTemp;
+                pair.Value.Data = dataTemp;
             }
         }
 
@@ -673,8 +650,6 @@ namespace LabExtended.API.Custom.Items
             }
             else
             {
-                trackers.Remove(tracker);
-
                 Internal_TrackItem(item, target, eventArgs.AddedData);
             }
 
@@ -991,7 +966,7 @@ namespace LabExtended.API.Custom.Items
             if (tracker is null)
                 throw new ArgumentNullException(nameof(tracker));
 
-            if (trackers.Remove(tracker))
+            if (itemsBySerial.Remove(tracker.TargetSerial))
             {
                 if (tracker.ValidateTracker())
                 {
@@ -1039,15 +1014,15 @@ namespace LabExtended.API.Custom.Items
         {
             var count = 0;
 
-            foreach (var tracker in trackers.ToList())
+            foreach (var pair in itemsBySerial.ToDictionary())
             {
-                if (DestroyTracker(tracker))
-                {
+                if (pair.Value.TargetItem != this)
+                    continue;
+
+                if (DestroyTracker(pair.Value))
                     count++;
-                }
             }
 
-            trackers.Clear();
             return count;
         }
 
@@ -1380,7 +1355,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="itemSerial">The serial number of the item to locate.</param>
         /// <returns>true if an item with the specified serial number exists in the collection; otherwise, false.</returns>
         public bool CheckItem(ushort itemSerial)
-            => trackers.Any(x => x.TargetSerial == itemSerial && x.ValidateTracker());
+            => itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.TargetItem == this && tracker.ValidateTracker();
 
         /// <summary>
         /// Determines whether an item with the specified serial number exists in the collection and retrieves its
@@ -1429,7 +1404,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="item">The item to check for existence and validity. Cannot be null.</param>
         /// <returns>true if the item exists in the collection and its base definition is not null; otherwise, false.</returns>
         public bool CheckItem(Item item)
-            => item?.Base != null && trackers.Any(x => x.TargetSerial == item.Serial && x.ValidateTracker());
+            => item?.Base != null && itemsBySerial.TryGetValue(item.Serial, out var tracker) && tracker.TargetItem == this && tracker.ValidateTracker();
 
         /// <summary>
         /// Determines whether the specified item exists in the collection and retrieves its associated data if found.
@@ -1481,7 +1456,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="item">The pickup item to check for existence. Cannot be null.</param>
         /// <returns>true if the item exists in the collection; otherwise, false.</returns>
         public bool CheckItem(Pickup item)
-            => item?.Base != null && trackers.Any(x => x.TargetSerial == item.Serial && x.ValidateTracker());
+            => item?.Base != null && itemsBySerial.TryGetValue(item.Serial, out var tracker) && tracker.TargetItem == this && tracker.ValidateTracker();
 
         /// <summary>
         /// Determines whether the specified pickup corresponds to a known item and retrieves its associated data.
@@ -1537,7 +1512,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="item">The item to locate in the collection. Cannot be null.</param>
         /// <returns>true if the item exists in the collection; otherwise, false.</returns>
         public bool CheckItem(ItemBase item)
-            => item != null && trackers.Any(x => x.TargetSerial == item.ItemSerial && x.ValidateTracker());
+            => item != null && itemsBySerial.TryGetValue(item.ItemSerial, out var tracker) && tracker.TargetItem == this && tracker.ValidateTracker();
 
         /// <summary>
         /// Determines whether the specified item exists in the collection and retrieves its associated data if found.
@@ -1589,7 +1564,7 @@ namespace LabExtended.API.Custom.Items
         /// <param name="item">The item to locate in the collection. Cannot be null.</param>
         /// <returns>true if the specified item is found in the collection; otherwise, false.</returns>
         public bool CheckItem(ItemPickupBase item)
-            => item != null && trackers.Any(x => x.TargetSerial == item.Info.Serial && x.ValidateTracker());
+            => item != null && itemsBySerial.TryGetValue(item.Info.Serial, out var tracker) && tracker.TargetItem == this && tracker.ValidateTracker();
 
         /// <summary>
         /// Determines whether the specified item exists in the collection and retrieves its associated data if found.
@@ -1639,43 +1614,31 @@ namespace LabExtended.API.Custom.Items
         #region Internal
         internal bool Internal_CheckItem(ushort itemSerial, out TrackedCustomItem trackedCustomItem)
         {
-            var invalidCount = 0;
+            trackedCustomItem = null!;
 
-            for (var i = 0; i < trackers.Count; i++)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.TargetItem == this)
             {
-                var tracker = trackers[i];
-
-                if (tracker.TargetSerial == itemSerial)
+                if (!tracker.ValidateTracker())
                 {
-                    if (!tracker.ValidateTracker())
-                    {
-                        invalidCount++;
-                        continue;
-                    }
-
-                    if (invalidCount > 0)
-                        trackers.RemoveAll(x => !x.ValidateTracker());
-
-                    trackedCustomItem = tracker;
-                    return true;
+                    itemsBySerial.Remove(itemSerial);
+                    return false;
                 }
+
+                trackedCustomItem = tracker;
+                return true;
             }
 
-            if (invalidCount > 0)
-                trackers.RemoveAll(x => !x.ValidateTracker());
-
-            trackedCustomItem = null!;
             return false;
         }
 
         internal void Internal_TrackPickup(ItemPickupBase pickup, object? pickupData)
         {
-            trackers.Add(new TrackedCustomItem(this, pickup.Info.Serial, null, null, pickup, pickupData));
+            itemsBySerial[pickup.Info.Serial] = new TrackedCustomItem(this, pickup.Info.Serial, null, null, pickup, pickupData);
         }
 
         internal void Internal_TrackItem(ItemBase item, ExPlayer owner, object? itemData)
-        {
-            trackers.Add(new TrackedCustomItem(this, item.ItemSerial, owner, item, null, itemData));
+        { 
+            itemsBySerial[item.ItemSerial] = new TrackedCustomItem(this, item.ItemSerial, owner, item, null, itemData);
         }
 
         internal static bool Internal_GetCustomItem(ushort itemSerial, out CustomItem customItem, out TrackedCustomItem itemTracker)
@@ -1683,15 +1646,12 @@ namespace LabExtended.API.Custom.Items
             customItem = null!;
             itemTracker = null!;
 
-            foreach (var pair in itemsById)
+            if (itemsBySerial.TryGetValue(itemSerial, out var tracker) && tracker.ValidateTracker())
             {
-                if (pair.Value.Internal_CheckItem(itemSerial, out var tracker))
-                {
-                    customItem = pair.Value;
-                    itemTracker = tracker;
+                itemTracker = tracker;
+                customItem = tracker.TargetItem;
 
-                    return true;
-                }
+                return true;
             }
 
             return false;
@@ -2069,10 +2029,7 @@ namespace LabExtended.API.Custom.Items
 
         private static void Internal_Waiting()
         {
-            foreach (var item in itemsById)
-            {
-                item.Value.trackers.Clear();
-            }
+            itemsBySerial.Clear();
         }
         #endregion
     }

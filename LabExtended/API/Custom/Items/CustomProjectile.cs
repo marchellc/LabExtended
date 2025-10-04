@@ -305,7 +305,8 @@ namespace LabExtended.API.Custom.Items
                 return;
 
             customProjectile.OnExploded(args, ref tracker.Data);
-            customProjectile.trackers.Remove(tracker);
+
+            CustomItem.itemsBySerial.Remove(tracker.TargetSerial);
         }
 
         private static void Internal_Activating(ProjectileActivatingEventArgs args)
