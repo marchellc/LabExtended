@@ -23,10 +23,11 @@ public static class PlayerConstructorPatch
     {
         if (referenceHub != null)
         {
-            var player = new ExPlayer(referenceHub,
-                referenceHub.isLocalPlayer || referenceHub.connectionToClient.GetType() != typeof(NetworkConnectionToClient)
-                    ? GetNewNpcToggles()
-                    : GetNewPlayerToggles());
+            if (!ExPlayer.TryGet(referenceHub, out var player))
+                player = new ExPlayer(referenceHub,
+                    referenceHub.isLocalPlayer || referenceHub.connectionToClient.GetType() != typeof(NetworkConnectionToClient)
+                        ? GetNewNpcToggles()
+                        : GetNewPlayerToggles());
 
             if (referenceHub.isLocalPlayer)
             {

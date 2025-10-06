@@ -1,5 +1,6 @@
 ﻿using LabApi.Events;
 using LabApi.Events.Handlers;
+
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Arguments.ServerEvents;
 
@@ -7,11 +8,8 @@ using LabExtended.API;
 using LabExtended.API.Enums;
 
 using LabExtended.Core;
-
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
-using NetworkManagerUtils;
 using NetworkManagerUtils.Dummies;
 
 #pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
@@ -40,12 +38,18 @@ namespace LabExtended.Events
         internal static void HandlePlayerVerified(ExPlayer player)
         {
             if (player.IsServer)
+            {
+                ExPlayerEvents.OnHostVerified(player);
                 return;
+            }
             
             OnPlayerVerified.InvokeSafe(player);
             
-            if (player.IsNpc) 
+            if (player.IsNpc)
+            {
+                ExPlayerEvents.OnNpcVerified(player);
                 return;
+            }
 
             if (!string.IsNullOrWhiteSpace(player.UserId))
             {
@@ -80,12 +84,24 @@ namespace LabExtended.Events
         internal static void HandlePlayerJoin(ExPlayer player)
         {
             if (!player.IsServer)
+            {
                 OnPlayerJoined.InvokeSafe(player);
+            }
             else
+            {
                 OnHostJoined.InvokeSafe(player);
 
-            if (!player.IsNpc) 
+                ExPlayerEvents.OnHostJoined(player);
+            }
+
+            if (!player.IsNpc)
+            {
                 ExPlayerEvents.OnJoined(player);
+            }
+            else
+            {
+                ExPlayerEvents.OnNpcJoined(player);
+            }
         }
 
         internal static void HandlePlayerLeave(ExPlayer? player)
@@ -119,6 +135,12 @@ namespace LabExtended.Events
             else if (player.IsServer)
             {
                 OnHostLeft.InvokeSafe(player);
+
+                ExPlayerEvents.OnHostLeft(player);
+            }
+            else if (player.IsNpc)
+            {
+                ExPlayerEvents.OnNpcLeft(player);
             }
         }
 

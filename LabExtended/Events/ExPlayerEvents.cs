@@ -1,4 +1,5 @@
 ﻿using LabExtended.API;
+
 using LabExtended.Extensions;
 
 using LabExtended.Events.Player;
@@ -21,15 +22,45 @@ public static class ExPlayerEvents
     public static event Action<ExPlayer>? Joined;
 
     /// <summary>
+    /// Gets called when a new NPC joins the server.
+    /// </summary>
+    public static event Action<ExPlayer>? NpcJoined;
+
+    /// <summary>
+    /// Gets called when the local server player joins the server.
+    /// </summary>
+    public static event Action<ExPlayer>? HostJoined;
+
+    /// <summary>
     /// Gets called when a player finishes authentification.
     /// </summary>
-    public static event Action<ExPlayer>? Verified; 
+    public static event Action<ExPlayer>? Verified;
+
+    /// <summary>
+    /// Gets called when an NPC player finishes authentification.
+    /// </summary>
+    public static event Action<ExPlayer>? NpcVerified;
+
+    /// <summary>
+    /// Gets called when the local server player finishes authentification.
+    /// </summary>
+    public static event Action<ExPlayer>? HostVerified;
 
     /// <summary>
     /// Gets called after the player's object is destroyed.
     /// </summary>
-    public static event Action<ExPlayer>? Left; 
-    
+    public static event Action<ExPlayer>? Left;
+
+    /// <summary>
+    /// Gets called after an NPC player's object is destroyed.
+    /// </summary>
+    public static event Action<ExPlayer>? NpcLeft;
+
+    /// <summary>
+    /// Gets called after the local server player's object is destroyed.
+    /// </summary>
+    public static event Action<ExPlayer>? HostLeft;
+
     /// <inheritdoc cref="PlayerLeavingEventArgs"/>
     public static event Action<PlayerLeavingEventArgs>? Leaving;
     #endregion
@@ -139,20 +170,62 @@ public static class ExPlayerEvents
     /// <param name="player">Player who joined.</param>
     public static void OnJoined(ExPlayer player)
         => Joined.InvokeSafe(player);
-    
+
+    /// <summary>
+    /// Invokes the <see cref="NpcJoined"/> event.
+    /// </summary>
+    /// <param name="player">Player who joined.</param>
+    public static void OnNpcJoined(ExPlayer player)
+        => NpcJoined.InvokeSafe(player);
+
+    /// <summary>
+    /// Invokes the <see cref="HostJoined"/> event.
+    /// </summary>
+    /// <param name="player">Player who joined.</param>
+    public static void OnHostJoined(ExPlayer player)
+        => HostJoined.InvokeSafe(player);
+
     /// <summary>
     /// Invokes the <see cref="Verified"/> event.
     /// </summary>
     /// <param name="player">The player who just verified.</param>
     public static void OnVerified(ExPlayer player)
         => Verified.InvokeSafe(player);
-    
+
+    /// <summary>
+    /// Invokes the <see cref="NpcVerified"/> event.
+    /// </summary>
+    /// <param name="player">Player who joined.</param>
+    public static void OnNpcVerified(ExPlayer player)
+        => NpcJoined.InvokeSafe(player);
+
+    /// <summary>
+    /// Invokes the <see cref="HostVerified"/> event.
+    /// </summary>
+    /// <param name="player">Player who joined.</param>
+    public static void OnHostVerified(ExPlayer player)
+        => HostJoined.InvokeSafe(player);
+
     /// <summary>
     /// Invokes the <see cref="Left"/> event.
     /// </summary>
     /// <param name="player">Player who left.</param>
     public static void OnLeft(ExPlayer player)
         => Left.InvokeSafe(player);
+
+    /// <summary>
+    /// Invokes the <see cref="NpcLeft"/> event.
+    /// </summary>
+    /// <param name="player">Player who left.</param>
+    public static void OnNpcLeft(ExPlayer player)
+        => NpcLeft.InvokeSafe(player);
+
+    /// <summary>
+    /// Invokes the <see cref="HostLeft"/> event.
+    /// </summary>
+    /// <param name="player">Player who left.</param>
+    public static void OnHostLeft(ExPlayer player)
+        => HostLeft.InvokeSafe(player);
 
     /// <summary>
     /// Invokes the <see cref="Leaving"/> event.
