@@ -71,7 +71,7 @@ public class PlaybackBase : IDisposable
         
         Display = display;
         
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
     }
 
     /// <summary>
@@ -170,7 +170,7 @@ public class PlaybackBase : IDisposable
     {
         if (State != PlaybackState.Disposed)
         {
-            PlayerUpdateHelper.OnUpdate -= Update;
+            PlayerUpdateHelper.Component.OnUpdate -= Update;
 
             Stop();
         }

@@ -1,13 +1,16 @@
 ﻿using HarmonyLib;
 
+using InventorySystem;
+
 namespace LabExtended.Patches.Functions.Players
 {
     /// <summary>
-    /// Prevents the <see cref="InventorySystem.Inventory.RefreshModifiers"/> method from executing.
+    /// Prevents the base-game from refreshing modifiers.
     /// </summary>
     public static class DisableRefreshModifiersPatch
     {
-        [HarmonyPatch(typeof(InventorySystem.Inventory), nameof(InventorySystem.Inventory.RefreshModifiers))]
-        private static bool Prefix() => false;
+        [HarmonyPatch(typeof(Inventory), nameof(Inventory.RefreshModifiers))]
+        private static bool Prefix(Inventory __instance)
+            => false;
     }
 }

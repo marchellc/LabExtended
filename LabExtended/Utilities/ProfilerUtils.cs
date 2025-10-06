@@ -102,7 +102,7 @@ public static class ProfilerUtils
                 Result.Categories[category] = new(category, ushort.MaxValue,
                     ProfilerRecorderOptions.WrapAroundWhenCapacityReached | ProfilerRecorderOptions.SumAllSamplesInFrame);
 
-            PlayerUpdateHelper.OnUpdate += Update;
+            PlayerUpdateHelper.Component.OnUpdate += Update;
             
             allEnabled = true;
         }

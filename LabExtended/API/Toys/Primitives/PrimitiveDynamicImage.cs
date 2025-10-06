@@ -111,7 +111,7 @@ public class PrimitiveDynamicImage : IDisposable
         Toy = toy ?? throw new ArgumentNullException(nameof(toy));
         Watch = new Stopwatch();
 
-        PlayerUpdateHelper.OnUpdate += OnUpdate;
+        PlayerUpdateHelper.Component.OnUpdate += OnUpdate;
     }
     
     /// <summary>
@@ -161,7 +161,7 @@ public class PrimitiveDynamicImage : IDisposable
     {
         Reset();
         
-        PlayerUpdateHelper.OnUpdate -= OnUpdate;
+        PlayerUpdateHelper.Component.OnUpdate -= OnUpdate;
         
         if (Toy != null)
         {

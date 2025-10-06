@@ -1,20 +1,11 @@
-using System.Diagnostics;
 using System.Reflection;
 
 using LabExtended.API;
 using LabExtended.API.Enums;
 
-using LabExtended.Core;
-using LabExtended.Events;
 using LabExtended.Extensions;
-using LabExtended.Attributes;
-
-using LabExtended.Utilities.Unity;
-
-using NorthwoodLib.Pools;
 
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace LabExtended.Utilities.Update;
 
@@ -24,59 +15,36 @@ namespace LabExtended.Utilities.Update;
 public static class PlayerUpdateHelper
 {
     /// <summary>
-    /// Exposes the update loop.
+    /// Gets the main <see cref="PlayerUpdateComponent"/> instance.
     /// </summary>
-    public struct PlayerUpdateLoop { }
-    
-    private static long longestUpdate = -1;
-    private static long shortestUpdate = -1;
-
-    private static long previousLongest = -1;
-    private static long previousShortest = -1;
-
-    private static int updatesCount = 0;
-    
-    private static bool isStatsPaused = true;
-    
-    private static Stopwatch timeWatch = new();
+    public static PlayerUpdateComponent Component { get; } = PlayerUpdateComponent.Create();
 
     /// <summary>
-    /// Gets called once per every frame.
+    /// Occurs when a frame is rendered.
     /// </summary>
     public static event Action? OnUpdate;
+
+    /// <summary>
+    /// Occurs after the standard update cycle has completed, allowing subscribers to perform actions that should run
+    /// late in the frame.
+    /// </summary>
+    /// <remarks>Use this event to execute logic that must happen after all regular update processing.
+    /// Subscribers should ensure their handlers are efficient, as all listeners are invoked sequentially. This event is
+    /// static and affects all instances.</remarks>
+    public static event Action? OnLateUpdate;
+
+    /// <summary>
+    /// Occurs when a fixed update cycle is processed, allowing subscribers to perform actions at a consistent interval.
+    /// </summary>
+    /// <remarks>This event is typically raised at a fixed time step, such as in physics or simulation loops,
+    /// to ensure consistent updates regardless of frame rate. Subscribers should avoid long-running operations to
+    /// prevent delays in the update cycle.</remarks>
+    public static event Action? OnFixedUpdate;
 
     /// <summary>
     /// Gets called once per every millisecond on a background thread.
     /// </summary>
     public static event Func<Task>? OnThreadUpdate;
-    
-    /// <summary>
-    /// Gets an <b>approximate</b> count of registered update methods.
-    /// </summary>
-    public static int Count => updatesCount;
-
-    /// <summary>
-    /// Gets a list of all update methods assigned to <see cref="OnUpdate"/>.
-    /// <remarks>This method creates a new instance of <see cref="List{T}"/> every time it's called.</remarks>
-    /// </summary>
-    /// <returns></returns>
-    public static List<Action> GetUpdates()
-    {
-        var updates = new List<Action>();
-        
-        if (OnUpdate is null)
-            return updates;
-
-        foreach (var updateDelegate in OnUpdate.GetInvocationList())
-        {
-            if (updateDelegate is not Action action)
-                continue;
-            
-            updates.Add(action);
-        }
-        
-        return updates;
-    }
 
     /// <summary>
     /// Registers all update methods in an assembly.
@@ -168,7 +136,7 @@ public static class PlayerUpdateHelper
             {
                 reference.IsEnabled = false;
                 
-                OnUpdate -= reference.OnUpdate;
+                Component.OnUpdate -= reference.OnUpdate;
                 return;
             }
 
@@ -193,37 +161,18 @@ public static class PlayerUpdateHelper
             reference.TargetUpdate.InvokeSafe();
         };
 
-        isStatsPaused = false;
-
-        OnUpdate += reference.OnUpdate;
-
-        updatesCount++;
+        Component.OnUpdate += reference.OnUpdate;
         return reference;
     }
-    
+
     private static void Update()
-    {
-        if (isStatsPaused && OnUpdate != null)
-            isStatsPaused = false;
-        
-        if (!isStatsPaused)
-            timeWatch.Restart();
+        => OnUpdate?.InvokeSafe();
 
-#pragma warning disable CS8604 // Possible null reference argument.
-        OnUpdate.InvokeSafe();
-#pragma warning restore CS8604 // Possible null reference argument.
+    private static void LateUpdate()
+        => OnLateUpdate?.InvokeSafe();
 
-        if (isStatsPaused) 
-            return;
-        
-        var elapsed = timeWatch.ElapsedTicks;
-
-        if (elapsed > longestUpdate || longestUpdate == -1)
-            longestUpdate = elapsed;
-
-        if (elapsed < shortestUpdate || shortestUpdate == -1)
-            shortestUpdate = elapsed;
-    }
+    private static void FixedUpdate()
+        => OnFixedUpdate?.InvokeSafe();
 
     private static async Task ThreadUpdateAsync()
     {
@@ -238,75 +187,11 @@ public static class PlayerUpdateHelper
         }
     }
 
-    private static void OnWaiting()
-    {
-        if (isStatsPaused)
-            return;
-        
-        ApiLog.Debug("Player Update Helper", StringBuilderPool.Shared.BuildString(x =>
-        {
-            x.AppendLine();
-            
-            var longestSpan = TimeSpan.FromTicks(longestUpdate);
-            var shortestSpan = TimeSpan.FromTicks(shortestUpdate);
-
-            if (previousLongest != -1 && longestUpdate > previousLongest)
-            {
-                var previousLongestSpan = TimeSpan.FromTicks(longestUpdate - previousLongest);
-
-                x.AppendLine(
-                    $"&1Longest Update&r: &3{longestSpan.TotalMilliseconds} ms&r (&1+ {previousLongestSpan.TotalMilliseconds} ms&r)");
-            }
-            else if (previousLongest != -1 && longestUpdate < previousLongest)
-            {
-                var previousLongestSpan = TimeSpan.FromTicks(previousLongest - longestUpdate);
-
-                x.AppendLine(
-                    $"&1Longest Update&r: &3{longestSpan.TotalMilliseconds} ms&r (&2- {previousLongestSpan.TotalMilliseconds} ms&r)");
-            }
-            else
-            {
-                x.AppendLine($"&1Longest Update&r: &3{longestSpan.TotalMilliseconds} ms&r");
-            }
-            
-            if (previousShortest != -1 && shortestUpdate > previousShortest)
-            {
-                var previousShortestSpan = TimeSpan.FromTicks(shortestUpdate - previousShortest);
-
-                x.AppendLine(
-                    $"&2Shortest Update&r: &3{shortestSpan.TotalMilliseconds} ms&r (&1+ {previousShortestSpan.TotalMilliseconds} ms&r)");
-            }
-            else if (previousShortest != -1 && shortestUpdate < previousShortest)
-            {
-                var previousShortestSpan = TimeSpan.FromTicks(previousShortest - shortestUpdate);
-
-                x.AppendLine(
-                    $"&2Shortest Update&r: &3{shortestSpan.TotalMilliseconds} ms&r (&2- {previousShortestSpan.TotalMilliseconds} ms&r)");
-            }
-            else
-            {
-                x.AppendLine($"&2Shortest Update&r: &3{longestSpan.TotalMilliseconds} ms&r");
-            }
-
-            previousLongest = longestUpdate;
-            previousShortest = shortestUpdate;
-            
-            longestUpdate = -1;
-            shortestUpdate = -1;
-        }));
-    }
-
     internal static void Internal_Init()
     {
-        InternalEvents.OnRoundWaiting += OnWaiting;
-
-        PlayerLoopHelper.ModifySystem(x =>
-        {
-            if (!x.InjectAfter<TimeUpdate.WaitForLastPresentationAndUpdateTime>(Update, typeof(PlayerUpdateLoop)))
-                return null;
-
-            return x;
-        });
+        Component.OnUpdate += Update;
+        Component.OnLateUpdate += LateUpdate;
+        Component.OnFixedUpdate += FixedUpdate;
 
         Task.Run(ThreadUpdateAsync);
     }

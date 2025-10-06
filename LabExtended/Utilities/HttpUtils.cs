@@ -169,7 +169,7 @@ public static class HttpUtils
     
     internal static void Internal_Init()
     {
-        PlayerUpdateHelper.OnUpdate += UpdateCallbacks;
+        PlayerUpdateHelper.Component.OnUpdate += UpdateCallbacks;
         PlayerUpdateHelper.OnThreadUpdate += UpdateQueueAsync;
     }
 }

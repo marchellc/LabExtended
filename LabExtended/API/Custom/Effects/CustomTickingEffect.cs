@@ -27,14 +27,14 @@ public class CustomTickingEffect : CustomPlayerEffect
     public override void Start()
     {
         base.Start();
-        PlayerUpdateHelper.OnUpdate += OnUpdate;
+        PlayerUpdateHelper.Component.OnUpdate += OnUpdate;
     }
 
     /// <inheritdoc cref="CustomPlayerEffect.Stop"/>
     public override void Stop()
     {
         base.Stop();
-        PlayerUpdateHelper.OnUpdate -= OnUpdate;
+        PlayerUpdateHelper.Component.OnUpdate -= OnUpdate;
     }
 
     private void OnUpdate()

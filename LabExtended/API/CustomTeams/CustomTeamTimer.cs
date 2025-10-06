@@ -138,7 +138,7 @@ public abstract class CustomTeamTimer<TInstance> : IDisposable
         InternalEvents.OnRoundStarted += OnStarted;
         InternalEvents.OnRoundEnded += OnEnding;
         
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
     }
     
     /// <inheritdoc cref="IDisposable.Dispose"/>
@@ -147,7 +147,7 @@ public abstract class CustomTeamTimer<TInstance> : IDisposable
         InternalEvents.OnRoundStarted -= OnStarted;
         InternalEvents.OnRoundEnded -= OnEnding;
         
-        PlayerUpdateHelper.OnUpdate -= Update;
+        PlayerUpdateHelper.Component.OnUpdate -= Update;
         
         SpawnedWaves.Clear();
     }

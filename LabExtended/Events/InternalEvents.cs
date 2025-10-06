@@ -133,6 +133,7 @@ namespace LabExtended.Events
         
         private static void HandleRoundWaiting()
         {
+            ExPlayer.playerUpdate.Clear();
             ExPlayer.preauthData.Clear();
 
             // No reason not to reset the NPC connection ID

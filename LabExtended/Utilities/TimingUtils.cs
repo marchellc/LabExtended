@@ -269,6 +269,6 @@ public static class TimingUtils
 
     internal static void Internal_Init()
     {
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
     }
 }

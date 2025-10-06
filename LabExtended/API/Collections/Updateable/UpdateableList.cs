@@ -43,14 +43,14 @@ public class UpdateableList<T> : UnsafeList<T>, IDisposable
     /// <returns></returns>
     public UpdateableList<T> Initialize()
     {
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
         return this;
     }
     
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        PlayerUpdateHelper.OnUpdate -= Update;
+        PlayerUpdateHelper.Component.OnUpdate -= Update;
     }
     
     private void Update()

@@ -457,7 +457,7 @@ namespace LabExtended.API
             TeslaGate.OnAdded += OnTeslaSpawned;
             TeslaGate.OnRemoved += OnTeslaDestroyed;
             
-            PlayerUpdateHelper.OnUpdate += OnUpdate;
+            PlayerUpdateHelper.Component.OnUpdate += OnUpdate;
 
             InternalEvents.OnRoundRestart += Lookup.Clear;
             InternalEvents.OnRoundRestart += Gates.Clear;

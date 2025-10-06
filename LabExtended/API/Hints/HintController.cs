@@ -922,5 +922,5 @@ public static class HintController
     }
 
     internal static void Internal_Init()
-        => PlayerUpdateHelper.OnUpdate += Update;
+        => PlayerUpdateHelper.Component.OnUpdate += Update;
 }

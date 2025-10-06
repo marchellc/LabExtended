@@ -92,7 +92,7 @@ public class VoiceController : IDisposable
         sessionPackets = DictionaryPool<long, VoiceMessage>.Shared.Rent();
         profiles = DictionaryPool<Type, VoiceProfile>.Shared.Rent();
 
-        PlayerUpdateHelper.OnUpdate += UpdateSpeaking;
+        PlayerUpdateHelper.Component.OnUpdate += UpdateSpeaking;
         PlayerEvents.ChangedRole += HandleRoleChange;
 
         OnJoined.InvokeSafe(this);
@@ -278,7 +278,7 @@ public class VoiceController : IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        PlayerUpdateHelper.OnUpdate -= UpdateSpeaking;
+        PlayerUpdateHelper.Component.OnUpdate -= UpdateSpeaking;
         PlayerEvents.ChangedRole -= HandleRoleChange;
 
         Thread?.Dispose();

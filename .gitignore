@@ -10,3 +10,6 @@ LabExtended.sln.DotSettings.user
 global.json
 /LabExtended.ImageConvertor/obj
 /LabExtended.ImageConvertor/bin/Debug/net9.0
+/LabExtended.ImageConvertor/bin/Release/net9.0
+/LabExtended.ImageConvertor/Properties/PublishProfiles
+/LabExtended.ImageConvertor/LabExtended.ImageConvertor.csproj.user

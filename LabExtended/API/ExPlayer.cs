@@ -1,4 +1,5 @@
 ﻿using CentralAuth;
+
 using CommandSystem;
 
 using Footprinting;
@@ -12,9 +13,11 @@ using InventorySystem.Items.Pickups;
 
 using LabApi.Features.Wrappers;
 
-using LabExtended.API.Enums;
 using LabExtended.API.Containers;
+
 using LabExtended.API.Custom.Voice;
+
+using LabExtended.API.Enums;
 
 using LabExtended.API.Hints;
 using LabExtended.API.Hints.Elements.Personal;
@@ -29,11 +32,13 @@ using LabExtended.Commands.Interfaces;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events;
+using LabExtended.Events.Player;
+
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
 using LabExtended.Utilities.FileStorage;
-
+using LabExtended.Utilities.Update;
 using LiteNetLib;
 
 using Mirror;
@@ -44,8 +49,8 @@ using NetworkManagerUtils.Dummies;
 using NorthwoodLib.Pools;
 
 using PlayerRoles;
-using PlayerRoles.Spectating;
 using PlayerRoles.FirstPersonControl;
+using PlayerRoles.Spectating;
 
 using RemoteAdmin;
 using RemoteAdmin.Communication;
@@ -57,8 +62,6 @@ using UnityEngine;
 using UserSettings.ServerSpecific;
 
 using VoiceChat;
-using LabExtended.Utilities.Update;
-using LabExtended.Events.Player;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -71,6 +74,8 @@ namespace LabExtended.API;
 [CommandPropertyAlias("player")]
 public class ExPlayer : Player, IDisposable
 {
+    internal static PlayerUpdateComponent playerUpdate = PlayerUpdateComponent.Create();
+
     internal static Dictionary<string, string> preauthData = new(byte.MaxValue);
     internal static ExPlayer? host;
 
@@ -586,7 +591,7 @@ public class ExPlayer : Player, IDisposable
             Toggles.IsVisibleInRemoteAdmin = false;
         }
 
-        PlayerUpdateHelper.OnUpdate += Internal_Update;
+        playerUpdate.OnUpdate += RefreshModifiers;
         
         InternalEvents.HandlePlayerJoin(this);
     }
@@ -1387,7 +1392,7 @@ public class ExPlayer : Player, IDisposable
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        PlayerUpdateHelper.OnUpdate -= Internal_Update;
+        playerUpdate.OnUpdate -= RefreshModifiers;
 
         if (host != null && host == this)
             host = null;
@@ -1493,59 +1498,44 @@ public class ExPlayer : Player, IDisposable
         Rotation = null!;
     }
 
-    private void Internal_Update()
+    private void RefreshModifiers()
     {
-        if (ReferenceHub != null)
+        var inventory = ReferenceHub.inventory;
+
+        inventory._staminaModifier = 1f;
+
+        inventory._movementMultiplier = 1f;
+        inventory._movementLimiter = float.MaxValue;
+
+        inventory._sprintingDisabled = false;
+
+        foreach (var pair in inventory.UserInventory.Items)
         {
-            Internal_RefreshModifiers(this);
-        }
-        else
-        {
-            PlayerUpdateHelper.OnUpdate -= Internal_Update;
-        }
-    }
+            var mobilityController = pair.Value.GetMobilityController();
 
-    private static void Internal_RefreshModifiers(ExPlayer player)
-    {
-        var inventory = player.ReferenceHub.inventory;
-
-        if (inventory != null)
-        {
-            inventory._staminaModifier = 1f;
-
-            inventory._movementMultiplier = 1f;
-            inventory._movementLimiter = float.MaxValue;
-
-            inventory._sprintingDisabled = false;
-
-            foreach (var pair in inventory.UserInventory.Items)
+            if (mobilityController is IStaminaModifier staminaModifier
+                && staminaModifier.StaminaModifierActive)
             {
-                var mobilityController = pair.Value.GetMobilityController();
-
-                if (mobilityController is IStaminaModifier staminaModifier
-                    && staminaModifier.StaminaModifierActive)
-                {
-                    inventory._staminaModifier *= staminaModifier.StaminaUsageMultiplier;
-                    inventory._sprintingDisabled |= staminaModifier.SprintingDisabled;
-                }
-
-                if (mobilityController is IMovementSpeedModifier movementSpeedModifier
-                    && movementSpeedModifier.MovementModifierActive)
-                {
-                    inventory._movementLimiter = Mathf.Min(inventory._movementLimiter, movementSpeedModifier.MovementSpeedLimit);
-                    inventory._movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
-                }
+                inventory._staminaModifier *= staminaModifier.StaminaUsageMultiplier;
+                inventory._sprintingDisabled |= staminaModifier.SprintingDisabled;
             }
 
-            var refreshingEventArgs = new PlayerRefreshingModifiersEventArgs(player, inventory._staminaModifier, inventory._movementMultiplier, 
-                inventory._movementLimiter);
-
-            ExPlayerEvents.OnRefreshingModifiers(refreshingEventArgs);
-
-            inventory._staminaModifier = refreshingEventArgs.StaminaUsageMultiplier;
-            inventory._movementMultiplier = refreshingEventArgs.MovementSpeedMultiplier;
-            inventory._movementLimiter = refreshingEventArgs.MovementSpeedLimiter;
+            if (mobilityController is IMovementSpeedModifier movementSpeedModifier
+                && movementSpeedModifier.MovementModifierActive)
+            {
+                inventory._movementLimiter = Mathf.Min(inventory._movementLimiter, movementSpeedModifier.MovementSpeedLimit);
+                inventory._movementMultiplier *= movementSpeedModifier.MovementSpeedMultiplier;
+            }
         }
+
+        var refreshingEventArgs = new PlayerRefreshingModifiersEventArgs(this, inventory._staminaModifier, inventory._movementMultiplier,
+            inventory._movementLimiter);
+
+        ExPlayerEvents.OnRefreshingModifiers(refreshingEventArgs);
+
+        inventory.Network_syncStaminaModifier = refreshingEventArgs.StaminaUsageMultiplier;
+        inventory.Network_syncMovementMultiplier = refreshingEventArgs.MovementSpeedMultiplier;
+        inventory.Network_syncMovementLimiter = refreshingEventArgs.MovementSpeedLimiter;
     }
 
     private static ReferenceHub SpawnHiddenDummy(string nick)

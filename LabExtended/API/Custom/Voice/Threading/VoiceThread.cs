@@ -97,7 +97,7 @@ public class VoiceThread : IDisposable
         onPacketProcessed = ProcessPitched;
         
         ExServerEvents.Quitting += Dispose;
-        PlayerUpdateHelper.OnUpdate += UpdateOutputQueue;
+        PlayerUpdateHelper.Component.OnUpdate += UpdateOutputQueue;
         
         Task.Run(UpdateInputQueueAsync);
     }
@@ -108,7 +108,7 @@ public class VoiceThread : IDisposable
         if (isDisposed)
             return;
 
-        PlayerUpdateHelper.OnUpdate -= UpdateOutputQueue;
+        PlayerUpdateHelper.Component.OnUpdate -= UpdateOutputQueue;
         ExServerEvents.Quitting -= Dispose;
         
         isDisposed = true;

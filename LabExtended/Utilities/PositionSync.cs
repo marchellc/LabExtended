@@ -196,7 +196,7 @@ public static class PositionSync
         if (!IsEnabled)
             return;
         
-        PlayerUpdateHelper.OnUpdate += Internal_Update;
+        PlayerUpdateHelper.Component.OnUpdate += Internal_Update;
         PlayerRoleManager.OnRoleChanged -= FpcServerPositionDistributor.ResetPlayer;
     }
 }

@@ -179,7 +179,7 @@ public class ContinuableCommandRunner : ICommandRunner
 
         if (command.RemainingTime > 0f && !eventStatus)
         {
-            PlayerUpdateHelper.OnUpdate += Update;
+            PlayerUpdateHelper.Component.OnUpdate += Update;
 
             eventStatus = true;
         }
@@ -189,7 +189,7 @@ public class ContinuableCommandRunner : ICommandRunner
     {
         if (command != null && eventStatus)
         {
-            PlayerUpdateHelper.OnUpdate -= Update;
+            PlayerUpdateHelper.Component.OnUpdate -= Update;
 
             eventStatus = false;
         }

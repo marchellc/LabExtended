@@ -4,7 +4,7 @@ using LabExtended.Extensions;
 namespace LabExtended.Utilities.Update;
 
 /// <summary>
-/// Represents a handle in <see cref="PlayerUpdateHelper.OnUpdate"/>.
+/// Represents a handle in <see cref="PlayerUpdateHelper.Component.OnUpdate"/>.
 /// </summary>
 public class PlayerUpdateReference
 {

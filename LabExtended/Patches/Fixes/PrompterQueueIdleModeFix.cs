@@ -28,7 +28,7 @@ namespace LabExtended.Patches.Fixes
 
         internal static void Internal_Init()
         {
-            PlayerUpdateHelper.OnUpdate += Internal_Update;
+            PlayerUpdateHelper.Component.OnUpdate += Internal_Update;
         }
     }
 }

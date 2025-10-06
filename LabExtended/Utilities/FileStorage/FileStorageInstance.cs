@@ -73,7 +73,7 @@ public class FileStorageInstance : IDisposable
     /// </summary>
     public void Load()
     {
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
         FileStorageManager.CheckDirtiness += CheckDirty;
 
         foreach (var componentType in FileStorageManager.Components)
@@ -492,7 +492,7 @@ public class FileStorageInstance : IDisposable
     {
         if (Components != null)
         {
-            PlayerUpdateHelper.OnUpdate -= Update;
+            PlayerUpdateHelper.Component.OnUpdate -= Update;
             FileStorageManager.CheckDirtiness -= CheckDirty;
 
             foreach (var component in Components)

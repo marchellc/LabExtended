@@ -144,13 +144,13 @@ public class RemoteAdminController : IDisposable
         PlayerEvents.RequestingRaPlayerList += OnRequestingPlayerList;
         PlayerEvents.RequestedRaPlayerList += OnRequestedPlayerList;
 
-        PlayerUpdateHelper.OnUpdate += Update;
+        PlayerUpdateHelper.Component.OnUpdate += Update;
     }
 
     /// <inheritdoc cref="IDisposable.Dispose"/>
     public void Dispose()
     {
-        PlayerUpdateHelper.OnUpdate -= Update;
+        PlayerUpdateHelper.Component.OnUpdate -= Update;
 
         PlayerEvents.RequestingRaPlayerList -= OnRequestingPlayerList;
         PlayerEvents.RequestedRaPlayerList -= OnRequestedPlayerList;
