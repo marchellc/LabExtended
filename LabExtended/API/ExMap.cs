@@ -35,6 +35,7 @@ using UnityEngine;
 
 using Utils;
 using Utils.Networking;
+using LabExtended.Events.Mirror;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 
@@ -550,16 +551,16 @@ public static class ExMap
     }
 
     // this is so stupid
-    private static void OnIdentityDestroyed(NetworkIdentity identity, NetworkServer.DestroyMode mode)
+    private static void OnDestroyingIdentity(MirrorDestroyingIdentityEventArgs args)
     {
         try
         {
-            if (identity == null || mode is not NetworkServer.DestroyMode.Destroy)
+            if (args.Identity == null || args.Mode is not NetworkServer.DestroyMode.Destroy)
                 return;
 
             Lockers.ForEach(l =>
             {
-                if (l.netId != identity.netId)
+                if (l.netId != args.Identity.netId)
                     return;
 
                 for (var i = 0; i < l.Chambers.Length; i++)
@@ -571,9 +572,9 @@ public static class ExMap
                 }
             });
 
-            Lockers.RemoveAll(x => x.netId == identity.netId);
+            Lockers.RemoveAll(x => x.netId == args.Identity.netId);
 
-            if (identity.TryGetComponent<IInteractable>(out var interactable))
+            if (args.Identity.TryGetComponent<IInteractable>(out var interactable))
                 InteractableCollider.AllInstances.Remove(interactable);
         }
         catch (Exception ex)
@@ -641,7 +642,7 @@ public static class ExMap
         ItemPickupBase.OnBeforePickupDestroyed += OnPickupDestroyed;
         ItemPickupBase.OnPickupAdded += OnPickupCreated;
 
-        MirrorEvents.Destroying += OnIdentityDestroyed;
+        MirrorEvents.Destroying += OnDestroyingIdentity;
 
         InternalEvents.OnRoundWaiting += OnRoundWaiting;
 

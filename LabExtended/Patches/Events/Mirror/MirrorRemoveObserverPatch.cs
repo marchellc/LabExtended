@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+
 using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
 
@@ -18,14 +20,13 @@ namespace LabExtended.Patches.Events.Mirror
             if (conn is null)
                 return false;
 
-            if (!ExPlayer.TryGet(conn, out var player))
-                return true;
+            var player = ExPlayer.Get(conn);
 
-            if (!MirrorEvents.OnRemovingObserver(__instance, player))
+            if (!MirrorEvents.OnRemovingObserver(new MirrorRemovingObserverEventArgs(__instance, player, conn)))
                 return false;
 
             if (__instance.observers.Remove(conn.connectionId))
-                MirrorEvents.OnRemovedObserver(__instance, player);
+                MirrorEvents.OnRemovedObserver(new MirrorRemovedObserverEventArgs(__instance, player, conn));
 
             return false;
         }
@@ -33,24 +34,18 @@ namespace LabExtended.Patches.Events.Mirror
         [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.ClearObservers))]
         private static bool ClearObserversPrefix(NetworkIdentity __instance)
         {
-            foreach (var conn in __instance.observers.Values.ToList())
+            foreach (var pair in __instance.observers.ToList())
             {
-                if (conn is null)
+                if (pair.Value is null)
                     continue;
 
-                if (ExPlayer.TryGet(conn, out var player))
-                {
-                    if (!MirrorEvents.OnRemovingObserver(__instance, player))
-                        continue;
+                var player = ExPlayer.Get(pair.Value);
 
-                    __instance.observers.Remove(conn.connectionId);
+                if (!MirrorEvents.OnRemovingObserver(new MirrorRemovingObserverEventArgs(__instance, player, pair.Value)))
+                    continue;
 
-                    MirrorEvents.OnRemovedObserver(__instance, player);
-                }
-                else
-                {
-                    __instance.observers.Remove(conn.connectionId);
-                }
+                if (__instance.observers.Remove(pair.Key))
+                    MirrorEvents.OnRemovedObserver(new MirrorRemovedObserverEventArgs(__instance, player, pair.Value));
             }
 
             return false;

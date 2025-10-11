@@ -1,22 +1,20 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
 
 namespace LabExtended.Patches.Events.Mirror
 {
     /// <summary>
-    /// Implements the <see cref="MirrorEvents.BehaviourSerializing"/> and <see cref="MirrorEvents.BehaviourSerialized"/> events.
+    /// Implements the <see cref="MirrorEvents.SerializingBehaviour"/> and <see cref="MirrorEvents.SerializedBehaviour"/> events.
     /// </summary>
     public static class MirrorBehaviourSerializePatch
     {
         [HarmonyPatch(typeof(NetworkIdentity), nameof(NetworkIdentity.SerializeServer))]
         private static bool Prefix(NetworkIdentity __instance, bool initialState, NetworkWriter ownerWriter, NetworkWriter observersWriter)
         {
-            if (!MirrorEvents.Internal_AnySerializingSubscribers())
-                return true;
-
             __instance.ValidateComponents();
 
             var behaviours = __instance.NetworkBehaviours;
@@ -33,6 +31,9 @@ namespace LabExtended.Patches.Events.Mirror
 
             if (ownerDirtyBits != 0 || observersDirtyBits != 0)
             {
+                var serializingBehaviourEventArgs = new MirrorSerializingBehaviourEventArgs(null!, null!);
+                var serializedBehaviourEventArgs = new MirrorSerializedBehaviourEventArgs(null!, null!, !initialState);
+
                 for (var i = 0; i < behaviours.Length; i++)
                 {
                     var behaviour = behaviours[i];
@@ -40,28 +41,37 @@ namespace LabExtended.Patches.Events.Mirror
                     var isOwnerDirty = NetworkIdentity.IsDirty(ownerDirtyBits, i);
                     var isObserversDirty = NetworkIdentity.IsDirty(observersDirtyBits, i);
 
-                    var clearBits = true;
-
                     if (isOwnerDirty || isObserversDirty)
                     {
                         using var writer = NetworkWriterPool.Get();
 
-                        if (MirrorEvents.OnBehaviourSerializing(behaviour, writer))
+                        serializingBehaviourEventArgs.Behaviour = behaviour;
+                        serializingBehaviourEventArgs.Writer = writer;
+                        serializingBehaviourEventArgs.IsAllowed = true;
+
+                        if (MirrorEvents.OnSerializingBehaviour(serializingBehaviourEventArgs))
                             behaviour.Serialize(writer, initialState);
 
-                        var segment = writer.ToArraySegment();
+                        if (writer.Position > 0)
+                        {
+                            var segment = writer.ToArraySegment();
 
-                        if (isOwnerDirty)
-                            ownerWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
+                            if (isOwnerDirty)
+                                ownerWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                        if (isObserversDirty)
-                            observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
+                            if (isObserversDirty)
+                                observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                        clearBits = MirrorEvents.OnBehaviourSerialized(behaviour, writer);
+                            serializedBehaviourEventArgs.Behaviour = behaviour;
+                            serializedBehaviourEventArgs.Writer = writer;
+                            serializedBehaviourEventArgs.ResetBits = !initialState;
+
+                            MirrorEvents.OnSerializedBehaviour(serializedBehaviourEventArgs);
+
+                            if (serializedBehaviourEventArgs.ResetBits)
+                                behaviour.ClearAllDirtyBits();
+                        }
                     }
-
-                    if (!initialState && clearBits)
-                        behaviour.ClearAllDirtyBits();
                 }
             }
 

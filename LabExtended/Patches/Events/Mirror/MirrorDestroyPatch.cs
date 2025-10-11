@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Core;
+
 using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
 
@@ -19,70 +21,64 @@ namespace LabExtended.Patches.Events.Mirror
         {
             try
             {
-                MirrorEvents.OnDestroying(identity, mode);
-
-                if (NetworkServer.active && NetworkServer.aoi)
+                if (MirrorEvents.OnDestroying(new MirrorDestroyingIdentityEventArgs(identity, mode)))
                 {
-                    try
+                    if (NetworkServer.active && NetworkServer.aoi)
                     {
-                        NetworkServer.aoi.OnDestroyed(identity);
+                        try
+                        {
+                            NetworkServer.aoi.OnDestroyed(identity);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogException(ex);
+                        }
                     }
-                    catch (Exception ex)
+
+                    NetworkServer.spawned.Remove(identity.netId);
+
+                    (identity.connectionToClient as NetworkConnectionToClient)?.RemoveOwnedObject(identity);
+
+                    NetworkServer.SendToObservers(identity, new ObjectDestroyMessage
                     {
-                        Debug.LogException(ex);
+                        netId = identity.netId
+                    }, 0);
+
+                    identity.ClearObservers();
+
+                    if (NetworkClient.active && NetworkServer.activeHost)
+                    {
+                        if (identity.isLocalPlayer)
+                            identity.OnStopLocalPlayer();
+
+                        identity.OnStopClient();
+                        identity.isOwned = false;
+                        identity.NotifyAuthority();
+
+                        NetworkClient.connection.owned.Remove(identity);
+                        NetworkClient.spawned.Remove(identity.netId);
                     }
+
+                    identity.OnStopServer();
+
+                    MirrorEvents.OnDestroyed(new MirrorDestroyedIdentityEventArgs(identity, mode));
+
+                    if (mode != NetworkServer.DestroyMode.Destroy)
+                    {
+                        if (mode == NetworkServer.DestroyMode.Reset)
+                            identity.Reset();
+
+                        return false;
+                    }
+
+                    identity.destroyCalled = true;
+
+                    if (Application.isPlaying)
+                        UnityEngine.Object.Destroy(identity.gameObject);
+                    else
+                        UnityEngine.Object.DestroyImmediate(identity.gameObject);
                 }
 
-                NetworkServer.spawned.Remove(identity.netId);
-                NetworkConnectionToClient connectionToClient = identity.connectionToClient;
-
-                if (connectionToClient != null)
-                    connectionToClient.RemoveOwnedObject(identity);
-
-                NetworkServer.SendToObservers(identity, new ObjectDestroyMessage
-                {
-                    netId = identity.netId
-                }, 0);
-
-                identity.ClearObservers();
-
-                if (NetworkClient.active && NetworkServer.activeHost)
-                {
-                    if (identity.isLocalPlayer)
-                        identity.OnStopLocalPlayer();
-
-                    identity.OnStopClient();
-                    identity.isOwned = false;
-                    identity.NotifyAuthority();
-
-                    NetworkClient.connection.owned.Remove(identity);
-                    NetworkClient.spawned.Remove(identity.netId);
-                }
-
-                identity.OnStopServer();
-
-                if (mode != NetworkServer.DestroyMode.Destroy)
-                {
-                    if (mode == NetworkServer.DestroyMode.Reset)
-                        identity.Reset();
-
-                    MirrorEvents.OnDestroyed(identity, mode);
-                    return false;
-                }
-
-                identity.destroyCalled = true;
-
-                if (Application.isPlaying)
-                {
-                    UnityEngine.Object.Destroy(identity.gameObject);
-
-                    MirrorEvents.OnDestroyed(identity, mode);
-                    return false;
-                }
-
-                UnityEngine.Object.DestroyImmediate(identity.gameObject);
-
-                MirrorEvents.OnDestroyed(identity, mode);
                 return false;
             }
             catch (Exception ex)

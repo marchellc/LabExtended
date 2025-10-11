@@ -1,8 +1,10 @@
 ﻿using HarmonyLib;
 
 using LabExtended.Core;
-using LabExtended.Events;
 using LabExtended.Extensions;
+
+using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
 
@@ -32,7 +34,8 @@ namespace LabExtended.Patches.Events.Mirror
                 if (NetworkServer.spawned.ContainsKey(identity.netId))
                     return false;
 
-                MirrorEvents.OnSpawning(identity);
+                if (!MirrorEvents.OnSpawning(new MirrorSpawningIdentityEventArgs(identity))) 
+                    return false;
 
                 identity.connectionToClient = (NetworkConnectionToClient)ownerConnection;
 
@@ -64,7 +67,7 @@ namespace LabExtended.Patches.Events.Mirror
 
                 NetworkServer.RebuildObservers(identity, true);
 
-                MirrorEvents.OnSpawned(identity);
+                MirrorEvents.OnSpawned(new MirrorSpawnedIdentityEventArgs(identity));
             }
             catch (Exception ex)
             {

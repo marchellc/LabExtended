@@ -1,7 +1,9 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
+
 using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
 
@@ -17,11 +19,10 @@ public static class MirrorAddObserverPatch
     {
         if (__instance.observers.ContainsKey(conn.connectionId))
             return false;
-        
-        if (!ExPlayer.TryGet(conn, out var player))
-            return true;
 
-        if (!MirrorEvents.OnAddingObserver(__instance, player))
+        var observer = ExPlayer.Get(conn);
+
+        if (!MirrorEvents.OnAddingObserver(new MirrorAddingObserverEventArgs(__instance, observer, conn)))
             return false;
         
         if (__instance.observers.Count == 0)
@@ -31,7 +32,7 @@ public static class MirrorAddObserverPatch
         
         conn.AddToObserving(__instance);
 
-        MirrorEvents.OnAddedObserver(__instance, player);
+        MirrorEvents.OnAddedObserver(new MirrorAddedObserverEventArgs(__instance, observer, conn));
         return false;
     }
 }

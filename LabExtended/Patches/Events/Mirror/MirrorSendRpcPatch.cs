@@ -1,12 +1,11 @@
 ﻿using HarmonyLib;
 
 using LabExtended.API;
-using LabExtended.Core;
+
 using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using Mirror;
-
-using NorthwoodLib.Pools;
 
 namespace LabExtended.Patches.Events.Mirror
 {
@@ -19,68 +18,49 @@ namespace LabExtended.Patches.Events.Mirror
         private static bool SendAllRpcPrefix(NetworkBehaviour __instance, string functionFullName, int functionHashCode, NetworkWriter writer,
             int channelId, bool includeOwner)
         {
-            if (!__instance.isServer)
-            {
-                ApiLog.Warn("Mirror", "ClientRpc " + functionFullName + " called on un-spawned object: " + __instance.name);
-                return false;
-            }
-
-            var rpcMessage = new RpcMessage
-            {
-                netId = __instance.netId,
-                componentIndex = __instance.ComponentIndex,
-                functionHash = (ushort)functionHashCode,
-                payload = writer.ToArraySegment()
-            };
-
-            if (__instance.netIdentity.observers == null || __instance.netIdentity.observers.Count == 0)
+            if (__instance.netIdentity.observers?.Count < 1)
                 return false;
 
-            var players = ListPool<ExPlayer>.Shared.Rent();
-            var connections = ListPool<NetworkConnection>.Shared.Rent();
+            var sendingRpcEventArgs = new MirrorSendingRpcEventArgs(null!, writer, __instance, functionHashCode, functionFullName);
+            var sentRpcEventArgs = new MirrorSentRpcEventArgs(null!, writer, __instance, functionHashCode, functionFullName);
 
-            foreach (var pair in __instance.netIdentity.observers)
+            foreach (var pair in __instance.netIdentity.observers!)
             {
-                if (ExPlayer.TryGet(pair.Value, out var player))
+                if (__instance.connectionToClient == pair.Value && !includeOwner)
+                    continue;
+
+                if (!ExPlayer.TryGet(pair.Value, out var player))
                 {
-                    players.Add(player);
+                    pair.Value.Send(new RpcMessage
+                    {
+                        netId = __instance.netId,
+                        componentIndex = __instance.ComponentIndex,
+                        functionHash = (ushort)functionHashCode,
+                        payload = writer.ToArraySegment()
+                    });
                 }
                 else
                 {
-                    if (__instance.connectionToClient == pair.Value && !includeOwner)
+                    sendingRpcEventArgs.IsAllowed = true;
+                    sendingRpcEventArgs.Player = player;
+
+                    if (!MirrorEvents.OnSendingRpc(sendingRpcEventArgs))
                         continue;
 
-                    connections.Add(pair.Value);
+                    pair.Value.Send(new RpcMessage
+                    {
+                        netId = __instance.netId,
+                        componentIndex = __instance.ComponentIndex,
+                        functionHash = (ushort)functionHashCode,
+                        payload = sendingRpcEventArgs.Writer.ToArraySegment()
+                    });
+
+                    sentRpcEventArgs.Player = player;
+                    sentRpcEventArgs.Writer = sendingRpcEventArgs.Writer;
+
+                    MirrorEvents.OnSentRpc(sentRpcEventArgs);
                 }
             }
-
-            if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, connections, players, ref rpcMessage))
-            {
-                using var writer2 = NetworkWriterPool.Get();
-
-                writer2.Write(rpcMessage);
-
-                players.ForEach(ply =>
-                {
-                    if (ply.Connection.isReady)
-                    {
-                        ply.Connection.Send(rpcMessage, channelId);
-                    }
-                });
-
-                connections.ForEach(conn =>
-                {
-                    if (conn.isReady)
-                    {
-                        conn.Send(rpcMessage, channelId);
-                    }
-                });
-
-                MirrorEvents.OnSentRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage);
-            }
-
-            ListPool<ExPlayer>.Shared.Return(players);
-            ListPool<NetworkConnection>.Shared.Return(connections);
 
             return false;
         }
@@ -89,43 +69,38 @@ namespace LabExtended.Patches.Events.Mirror
         private static bool SendTargetRpcPrefix(NetworkBehaviour __instance, NetworkConnection conn, string functionFullName, int functionHashCode, 
             NetworkWriter writer, int channelId)
         {
-            if (!__instance.isServer)
-            {
-                ApiLog.Warn("Mirror", "ClientRpc " + functionFullName + " called on un-spawned object: " + __instance.name);
-                return false;
-            }
-
             conn ??= __instance.connectionToClient;
 
             if (conn is null)
                 return false;
 
-            if (!ExPlayer.TryGet(conn, out var player))
-                return true;
-
-            var rpcMessage = new RpcMessage
+            if (ExPlayer.TryGet(conn, out var player))
             {
-                netId = __instance.netId,
-                componentIndex = __instance.ComponentIndex,
-                functionHash = (ushort)functionHashCode,
-                payload = writer.ToArraySegment()
-            };
+                var sendingRpcEventArgs = new MirrorSendingRpcEventArgs(player, writer, __instance, functionHashCode, functionFullName);
 
-            var players = ListPool<ExPlayer>.Shared.Rent();
-            var connections = ListPool<NetworkConnection>.Shared.Rent();
+                if (!MirrorEvents.OnSendingRpc(sendingRpcEventArgs))
+                    return false;
 
-            players.Add(player);
-            connections.Add(conn);
+                conn.Send(new RpcMessage
+                {
+                    netId = __instance.netId,
+                    componentIndex = __instance.ComponentIndex,
+                    functionHash = (ushort)functionHashCode,
+                    payload = sendingRpcEventArgs.Writer.ToArraySegment()
+                });
 
-            if (MirrorEvents.OnSendingRpc(__instance, functionFullName, functionHashCode, writer, connections, players, ref rpcMessage))
-            {
-                conn.Send(rpcMessage, channelId);
-
-                MirrorEvents.OnSentRpc(__instance, functionFullName, functionHashCode, writer, players, ref rpcMessage);
+                MirrorEvents.OnSentRpc(new MirrorSentRpcEventArgs(player, sendingRpcEventArgs.Writer, __instance, functionHashCode, functionFullName));
             }
-
-            ListPool<ExPlayer>.Shared.Return(players);
-            ListPool<NetworkConnection>.Shared.Return(connections);
+            else
+            {
+                conn.Send(new RpcMessage
+                {
+                    netId = __instance.netId,
+                    componentIndex = __instance.ComponentIndex,
+                    functionHash = (ushort)functionHashCode,
+                    payload = writer.ToArraySegment()
+                });
+            }
 
             return false;
         }

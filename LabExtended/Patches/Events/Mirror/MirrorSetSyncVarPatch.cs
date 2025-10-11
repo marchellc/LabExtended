@@ -1,12 +1,13 @@
 ﻿using LabExtended.Events;
+using LabExtended.Events.Mirror;
+
+using LabExtended.Core;
 using LabExtended.Utilities;
 using LabExtended.Extensions;
 
 using Mirror;
 
 using HarmonyLib;
-
-using LabExtended.Core;
 
 using NorthwoodLib.Pools;
 
@@ -15,7 +16,7 @@ using System.Reflection;
 namespace LabExtended.Patches.Events.Mirror
 {
     /// <summary>
-    /// Implements the <see cref="MirrorEvents.UpdatingSyncVar"/> and <see cref="MirrorEvents.UpdatedSyncVar"/> events.
+    /// Implements the <see cref="MirrorEvents.SettingSyncVar"/> and <see cref="MirrorEvents.SetSyncVar"/> events.
     /// </summary>
     public static class MirrorSetSyncVarPatch
     {
@@ -23,31 +24,25 @@ namespace LabExtended.Patches.Events.Mirror
 
         private static bool GeneratedSyncVarSetterPrefix<T>(NetworkBehaviour __instance, T value, ref T field, ulong dirtyBit, Action<T, T> OnChanged)
         {
-            if (!MirrorEvents.Internal_AnySyncVarSubsribers())
-                return true;
-
             if (NetworkBehaviour.SyncVarEqual(value, ref field))
                 return false;
 
-            var currentValue = field;
-            var newValue = value as object;
+            var settingSyncVarEventArgs = new MirrorSettingSyncVarEventArgs(__instance, typeof(T), dirtyBit, field, value);
 
-            MirrorEvents.OnUpdatingSyncVar(__instance, typeof(T), dirtyBit, currentValue!, ref newValue!);
-
-            if (newValue is null)
+            if (!MirrorEvents.OnSettingSyncVar(settingSyncVarEventArgs) || settingSyncVarEventArgs.NewValue is null)
                 return false;
 
-            value = (T)newValue;
+            var previousValue = field;
 
             __instance.SetSyncVar(value, ref field, dirtyBit);
 
-            MirrorEvents.OnUpdatedSyncVar(__instance, typeof(T), dirtyBit, currentValue!, newValue);
+            MirrorEvents.OnSetSyncVar(new MirrorSetSyncVarEventArgs(__instance, settingSyncVarEventArgs.Type, dirtyBit, previousValue, value));
 
             if (OnChanged != null && NetworkServer.activeHost && !__instance.GetSyncVarHookGuard(dirtyBit))
             {
                 __instance.SetSyncVarHookGuard(dirtyBit, true);
 
-                OnChanged(currentValue, value);
+                OnChanged(previousValue, value);
 
                 __instance.SetSyncVarHookGuard(dirtyBit, false);
             }
