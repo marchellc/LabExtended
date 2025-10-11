@@ -31,9 +31,6 @@ namespace LabExtended.Patches.Events.Mirror
 
             if (ownerDirtyBits != 0 || observersDirtyBits != 0)
             {
-                var serializingBehaviourEventArgs = new MirrorSerializingBehaviourEventArgs(null!, null!);
-                var serializedBehaviourEventArgs = new MirrorSerializedBehaviourEventArgs(null!, null!, !initialState);
-
                 for (var i = 0; i < behaviours.Length; i++)
                 {
                     var behaviour = behaviours[i];
@@ -45,32 +42,25 @@ namespace LabExtended.Patches.Events.Mirror
                     {
                         using var writer = NetworkWriterPool.Get();
 
-                        serializingBehaviourEventArgs.Behaviour = behaviour;
-                        serializingBehaviourEventArgs.Writer = writer;
-                        serializingBehaviourEventArgs.IsAllowed = true;
+                        var serializingBehaviourEventArgs = new MirrorSerializingBehaviourEventArgs(behaviour, writer);
 
                         if (MirrorEvents.OnSerializingBehaviour(serializingBehaviourEventArgs))
                             behaviour.Serialize(writer, initialState);
 
-                        if (writer.Position > 0)
-                        {
-                            var segment = writer.ToArraySegment();
+                        var segment = writer.ToArraySegment();
 
-                            if (isOwnerDirty)
-                                ownerWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
+                        if (isOwnerDirty)
+                            ownerWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                            if (isObserversDirty)
-                                observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
+                        if (isObserversDirty)
+                            observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                            serializedBehaviourEventArgs.Behaviour = behaviour;
-                            serializedBehaviourEventArgs.Writer = writer;
-                            serializedBehaviourEventArgs.ResetBits = !initialState;
+                        var serializedBehaviourEventArgs = new MirrorSerializedBehaviourEventArgs(behaviour, writer, !initialState);
 
-                            MirrorEvents.OnSerializedBehaviour(serializedBehaviourEventArgs);
+                        MirrorEvents.OnSerializedBehaviour(serializedBehaviourEventArgs);
 
-                            if (serializedBehaviourEventArgs.ResetBits)
-                                behaviour.ClearAllDirtyBits();
-                        }
+                        if (serializedBehaviourEventArgs.ResetBits)
+                            behaviour.ClearAllDirtyBits();
                     }
                 }
             }
