@@ -50,6 +50,7 @@ using LabExtended.Utilities.Firearms;
 using LabExtended.Utilities.FileStorage;
 
 using Version = System.Version;
+using LabExtended.API.Custom.Gamemodes;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -336,6 +337,8 @@ public class ApiLoader : Plugin
             CustomItem.Internal_Init();
             CustomFirearm.Internal_Init();
             CustomProjectile.Internal_Init();
+
+            CustomGamemode._Init();
 
             CustomRoleManager.Internal_Init();
             CustomTeamHandler.Internal_Init();
