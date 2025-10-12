@@ -1,5 +1,6 @@
 ﻿using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomTeams;
+
 using LabExtended.Extensions;
 using LabExtended.Utilities.Values;
 
@@ -27,6 +28,9 @@ using UnityEngine;
 
 namespace LabExtended.API.Containers;
 
+/// <summary>
+/// Provides properties and methods for easier role management.
+/// </summary>
 public class RoleContainer
 {
     internal RoleContainer(PlayerRoleManager manager)
@@ -78,7 +82,12 @@ public class RoleContainer
     public RoleSpawnFlags SpawnFlags => Role.ServerSpawnFlags;
 
     /// <summary>
-    /// Gets the player's first spawned role (when the round started, will be None if the player joined afterwards).
+    /// Gets the role assigned to the player by the late join function (will be <see cref="RoleTypeId.None"/> if the player joined after the function's timer).
+    /// </summary>
+    public RoleTypeId LateJoinRole { get; internal set; } = RoleTypeId.None;
+
+    /// <summary>
+    /// Gets the player's first spawned role (when the round started, will be <see cref="RoleTypeId.None"/> if the player joined afterwards).
     /// </summary>
     public RoleTypeId RoundStartRole { get; internal set; } = RoleTypeId.None;
 
@@ -122,7 +131,9 @@ public class RoleContainer
     /// <summary>
     /// Gets the name of the player's role.
     /// </summary>
-    public string Name => string.IsNullOrWhiteSpace(Role.RoleName) ? Role.ToString() : Role.RoleName;
+    public string Name => string.IsNullOrWhiteSpace(Role.RoleName) 
+        ? Role.ToString().SpaceByUpperCase() 
+        : Role.RoleName;
 
     /// <summary>
     /// Gets the name of the player's role, prefixed with a color tag with the role's color and postfixed with a color closing tag.
