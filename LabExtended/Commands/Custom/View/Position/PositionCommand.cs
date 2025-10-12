@@ -12,7 +12,7 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
-    [CommandOverload("position", "Shows information about your current position.")]
+    [CommandOverload("position", "Shows information about your current position.", null)]
     public void Position()
     {
         Ok(x =>

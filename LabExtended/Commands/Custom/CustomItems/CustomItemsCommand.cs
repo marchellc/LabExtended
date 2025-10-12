@@ -26,7 +26,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Lists all active custom item instances owned by a specific player.
         /// </summary>
-        [CommandOverload("inv", "Lists all active custom instances owned by a specific player.")]
+        [CommandOverload("inv", "Lists all active custom instances owned by a specific player.", null)]
         public void Inventory(
             [CommandParameter("Player", "The targeted player (defaults to you).")] ExPlayer? target = null)
         {
@@ -99,7 +99,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Lists all registered custom items.
         /// </summary>
-        [CommandOverload("list", "Lists all registered custom items.")]
+        [CommandOverload("list", "Lists all registered custom items.", null)]
         public void List()
         {
             if (CustomItem.RegisteredObjects.Count == 0)
@@ -125,7 +125,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Lists all active custom item instances.
         /// </summary>
-        [CommandOverload("active", "Lists all active custom item instances.")]
+        [CommandOverload("active", "Lists all active custom item instances.", null)]
         public void Active()
         {
             if (CustomItem.RegisteredObjects.Count == 0)
@@ -184,7 +184,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Destroys an active instance of a custom item.
         /// </summary>
-        [CommandOverload("destroy", "Destroys an active instance of a custom item.")]
+        [CommandOverload("destroy", "Destroys an active instance of a custom item.", null)]
         public void Destroy(
             [CommandParameter("Serial", "The serial number of the item to destroy. Specify 0 to destroy all.")] ushort itemSerial)
         {
@@ -252,8 +252,8 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Adds a custom item to a player's inventory.
         /// </summary>
-        [CommandOverload("add", "Adds a custom item to a player's inventory.")]
-        [CommandOverload("give", "Adds a custom item to a player's inventory.")]
+        [CommandOverload("add", "Adds a custom item to a player's inventory.", null)]
+        [CommandOverload("give", null, null)]
         public void Add(
             [CommandParameter("ID", "The ID of the custom item to add.")] string itemId,
             [CommandParameter("Target", "The player to add the item to (defaults to you).")] ExPlayer? target = null)
@@ -287,7 +287,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// <summary>
         /// Spawns a custom item at a specific position.
         /// </summary>
-        [CommandOverload("spawn", "Spawns a custom item at a specific position.")]
+        [CommandOverload("spawn", "Spawns a custom item at a specific position.", null)]
         public void Spawn(
             [CommandParameter("ID", "The ID of the custom item to spawn.")] string itemId,
             [CommandParameter("Position", "The position to spawn the item at.")] Vector3 position)

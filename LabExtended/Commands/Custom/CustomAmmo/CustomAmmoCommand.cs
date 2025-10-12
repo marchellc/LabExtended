@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.CustomAmmo;
 [Command("customammo", "Custom Ammo management.", "cammo")]
 public class CustomAmmoCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload("get", "Gets the amount of custom ammo in a player's inventory.")]
+    [CommandOverload("get", "Gets the amount of custom ammo in a player's inventory.", null)]
     public void GetCommand(
         [CommandParameter("ID", "ID of the ammo.")] string ammoId,
         [CommandParameter("Target", "The target player.")] ExPlayer? target = null)
@@ -19,7 +19,7 @@ public class CustomAmmoCommand : CommandBase, IServerSideCommand
         Ok($"Player \"{player.Nickname}\" ({player.ClearUserId}) has \"{amount}\" of ammo \"{ammoId}\".");
     }
 
-    [CommandOverload("set", "Sets a specific amount of custom ammo in a player's inventory.")]
+    [CommandOverload("set", "Sets a specific amount of custom ammo in a player's inventory.", null)]
     public void SetCommand(
         [CommandParameter("ID", "ID of the ammo.")] string ammoId,
         [CommandParameter("Amount", "Amount to set.")] int amount,
@@ -32,7 +32,7 @@ public class CustomAmmoCommand : CommandBase, IServerSideCommand
         Ok($"Set ammo \"{ammoId}\" of player \"{player.Nickname}\" ({player.ClearUserId}) to \"{amount}\".");
     }
     
-    [CommandOverload("add", "Adds a specific amount of custom ammo to a player's inventory.")]
+    [CommandOverload("add", "Adds a specific amount of custom ammo to a player's inventory.", null)]
     public void AddCommand(
         [CommandParameter("ID", "ID of the ammo.")] string ammoId,
         [CommandParameter("Amount", "Amount to add.")] int amount,
@@ -44,7 +44,7 @@ public class CustomAmmoCommand : CommandBase, IServerSideCommand
         Ok($"Added \"{amount}\" of ammo \"{ammoId}\" to player \"{player.Nickname}\" ({player.ClearUserId}), new amount: \"{current}\".");
     }
     
-    [CommandOverload("Remove", "Removes a specific amount of custom ammo from a player's inventory.")]
+    [CommandOverload("Remove", "Removes a specific amount of custom ammo from a player's inventory.", null)]
     public void RemoveCommand(
         [CommandParameter("ID", "ID of the ammo.")] string ammoId,
         [CommandParameter("Amount", "Amount to remove.")] int amount,
@@ -56,7 +56,7 @@ public class CustomAmmoCommand : CommandBase, IServerSideCommand
         Ok($"Removed \"{amount}\" of ammo \"{ammoId}\" from player \"{player.Nickname}\" ({player.ClearUserId}), new amount: \"{current}\".");
     }
     
-    [CommandOverload("clear", "Removes all custom ammo from a player's inventory.")]
+    [CommandOverload("clear", "Removes all custom ammo from a player's inventory.", null)]
     public void ClearCommand(
         [CommandParameter("Target", "The target player.")] ExPlayer? target = null)
     {

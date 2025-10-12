@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("clear", "Clears the text of a text toy.")]
+    [CommandOverload("clear", "Clears the text of a text toy.", null)]
     public void ClearOverload(
         [CommandParameter("ID", "ID of the spawned text toy.")] uint toyId)
     {

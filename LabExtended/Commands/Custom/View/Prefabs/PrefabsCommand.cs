@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
-    [CommandOverload("prefabs", "Lists prefab names.")]
+    [CommandOverload("prefabs", "Lists prefab names.", null)]
     public void PrefabsOverload()
     {
         Ok(x =>

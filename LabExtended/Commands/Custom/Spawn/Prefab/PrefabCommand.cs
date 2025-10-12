@@ -9,7 +9,7 @@ namespace LabExtended.Commands.Custom.Spawn;
 
 public partial class SpawnCommand
 {
-    [CommandOverload("prefab", "Spawns a prefab")]
+    [CommandOverload("prefab", "Spawns a prefab", null)]
     public void PrefabOverload(
         [CommandParameter("Name", "Name of the prefab")] string prefabName, 
         [CommandParameter("Size", "Size of the prefab (defaults to one)")] Vector3? size = null, 

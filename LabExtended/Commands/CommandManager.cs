@@ -104,6 +104,8 @@ public static class CommandManager
                 if (method.IsStatic)
                     continue;
 
+                var overloadDescription = string.Empty;
+
                 foreach (var commandOverloadAttribute in method.GetCustomAttributes<CommandOverloadAttribute>(false))
                 {
                     if (method.ReturnType != typeof(void) 
@@ -120,7 +122,13 @@ public static class CommandManager
 
                     overload.Name = commandOverloadAttribute.Name;
                     overload.Permission = commandOverloadAttribute.Permission;
-                    overload.Description = commandOverloadAttribute.Description;
+
+                    if (overloadDescription == string.Empty && commandOverloadAttribute.Description?.Length > 0)
+                        overloadDescription = commandOverloadAttribute.Description;
+
+                    overload.Description = commandOverloadAttribute.Description?.Length > 0
+                        ? commandOverloadAttribute.Description
+                        : overloadDescription;
 
                     if (commandOverloadAttribute.isDefaultOverload)
                     {

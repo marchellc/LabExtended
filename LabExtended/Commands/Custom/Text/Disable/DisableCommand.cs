@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("disable", "Disables a playback option.")]
+    [CommandOverload("disable", "Disables a playback option.", null)]
     public void DisableOverload(
         [CommandParameter("ID", "ID of the text toy.")] uint toyId, 
         [CommandParameter("Option", "The option to disable.")] PlaybackFlags option)

@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.Reset;
 
 public partial class ResetTargetsCommand
 {
-    [CommandOverload("gravity", "Resets the gravity of a list of players.")]
+    [CommandOverload("gravity", "Resets the gravity of a list of players.", null)]
     public void GravityTarget(List<ExPlayer> targets)
     {
         targets.ForEach(p => p.Position.Gravity = PositionContainer.DefaultGravity);

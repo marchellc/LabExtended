@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.Image;
 [Command("image", "Image API commands.")]
 public class ImageCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload("reload", "Reloads a specified image file.")]
+    [CommandOverload("reload", "Reloads a specified image file.", null)]
     public void Reload(
         [CommandParameter("Name", "Name of the image to reload.")]
         string name)

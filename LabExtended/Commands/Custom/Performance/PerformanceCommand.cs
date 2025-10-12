@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.Performance;
 [Command("performance", "Shows detailed performance statistics.", "perf")]
 public partial class PerformanceCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload]
+    [CommandOverload(null, null)]
     public void InvokeCommand(int duration)
     {
         ProfilerUtils.Run(duration);

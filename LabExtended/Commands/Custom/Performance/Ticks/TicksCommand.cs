@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.Performance;
 
 public partial class PerformanceCommand
 {
-    [CommandOverload("ticks", "Displays the current & target amount of ticks.")]
+    [CommandOverload("ticks", "Displays the current & target amount of ticks.", null)]
     public void InvokeTicks()
         => Ok($"Running at {ExServer.Tps} ticks per second (target: {Application.targetFrameRate})");
 }

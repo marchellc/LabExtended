@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("enable", "Enables a playback option.")]
+    [CommandOverload("enable", "Enables a playback option.", null)]
     public void EnableOverload(
         [CommandParameter("ID", "ID of the text toy.")] uint toyId, 
         [CommandParameter("Option", "The option to enable.")] PlaybackFlags option)

@@ -6,7 +6,7 @@ namespace LabExtended.Commands.Custom.Reload;
 
 public partial class ReloadCommand
 {
-    [CommandOverload("gameconfig", "Reloads the game's gameplay and Remote Admin configuration.")]
+    [CommandOverload("gameconfig", "Reloads the game's gameplay and Remote Admin configuration.", null)]
     public void GameConfigOverload()
     {
         ConfigFile.ReloadGameConfigs(false);

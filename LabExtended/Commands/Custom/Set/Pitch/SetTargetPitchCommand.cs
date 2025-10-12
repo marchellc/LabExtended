@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Custom.Set;
 
 public partial class SetTargetCommand
 {
-    [CommandOverload("pitch", "Sets the voice pitch of a specific player.")]
+    [CommandOverload("pitch", "Sets the voice pitch of a specific player.", null)]
     public void PitchTarget(
         [CommandParameter("Value", "The new pitch value (1 is default).")] float value,
         [CommandParameter("Target", "The target player (defaults to you).")] ExPlayer? target = null)

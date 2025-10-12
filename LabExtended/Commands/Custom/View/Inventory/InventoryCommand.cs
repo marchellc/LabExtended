@@ -15,7 +15,7 @@ public partial class ViewCommand
     /// <summary>
     /// Lists all items and ammo in a player's inventory.
     /// </summary>
-    [CommandOverload("inv", "Lists all items in a player's inventory.")]
+    [CommandOverload("inv", "Lists all items in a player's inventory.", null)]
     public void Inventory(
         [CommandParameter("Target", "The targeted player (defaults to you).")] ExPlayer? target = null)
     {

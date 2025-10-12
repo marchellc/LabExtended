@@ -12,9 +12,9 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
-    [CommandOverload("objects", "Lists all spawned network objects.")]
+    [CommandOverload("objects", "Lists all spawned network objects.", null)]
     public void ListObjects(
-        [CommandParameter("Type", "Name of the object's type (use \"*\" to show all objects).")] string objectType = "*")
+        [CommandParameter("Type", "Name of the object's type (use \"all\" to show all objects).")] string objectType = "all")
     {
         Ok(x =>
         {
@@ -24,7 +24,7 @@ public partial class ViewCommand
                 return;
             }
 
-            if (objectType != null && !string.Equals(objectType, "*", StringComparison.InvariantCultureIgnoreCase))
+            if (objectType != null && !string.Equals(objectType, "all", StringComparison.InvariantCultureIgnoreCase))
             {
                 var targetList = ListPool<NetworkBehaviour>.Shared.Rent();
 

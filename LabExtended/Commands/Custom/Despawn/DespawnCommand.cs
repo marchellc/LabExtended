@@ -70,7 +70,7 @@ public class DespawnCommand : CommandBase, IRemoteAdminCommand
         }
     }
 
-    [CommandOverload("id", "Despawns a network object by it's ID.")]
+    [CommandOverload("id", "Despawns a network object by it's ID.", null)]
     public void NetworkIdOverload(
         [CommandParameter("ID", "ID of the network object.")] uint id)
     {

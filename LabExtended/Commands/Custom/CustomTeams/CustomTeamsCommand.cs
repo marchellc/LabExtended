@@ -12,7 +12,7 @@ namespace LabExtended.Commands.Custom.CustomTeams;
 [Command("customteam", "Manages the CustomTeams API", "ct")]
 public class CustomTeamsCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload("list", "Lists all custom teams.")]
+    [CommandOverload("list", "Lists all custom teams.", null)]
     public void List()
     {
         if (CustomTeamRegistry.RegisteredHandlers.Count == 0)
@@ -32,7 +32,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         });
     }
 
-    [CommandOverload("waves", "Lists all spawned waves of a team.")]
+    [CommandOverload("waves", "Lists all spawned waves of a team.", null)]
     public void Waves(
         [CommandParameter("Name", "Name of the team.")] string name)
     {
@@ -61,7 +61,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         });
     }
 
-    [CommandOverload("wave", "Shows information about an active wave.")]
+    [CommandOverload("wave", "Shows information about an active wave.", null)]
     public void Wave(
         [CommandParameter("Name", "Name of the team.")] string name,
         [CommandParameter("ID", "ID of the wave.")] int id)
@@ -116,7 +116,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         });
     }
 
-    [CommandOverload("spawn", "Spawns a new wave of a custom team.")]
+    [CommandOverload("spawn", "Spawns a new wave of a custom team.", null)]
     public void Spawn(
         [CommandParameter("Name", "Name of the team to spawn.")] string name)
     {
@@ -137,7 +137,7 @@ public class CustomTeamsCommand : CommandBase, IServerSideCommand
         Ok($"Spawned a new wave of '{handler.GetType().Name}' with '{instance.AlivePlayers.Count}' player(s) (ID: {instance.Id})");
     }
 
-    [CommandOverload("despawn", "Despawns an active wave of a custom team.")]
+    [CommandOverload("despawn", "Despawns an active wave of a custom team.", null)]
     public void Despawn(
         [CommandParameter("Name", "Name of the team to despawn.")] string name,
         [CommandParameter("ID", "ID of the instance to despawn (or * for all).")] string id)

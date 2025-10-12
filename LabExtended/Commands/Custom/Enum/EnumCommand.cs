@@ -1,5 +1,6 @@
 ﻿using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
+
 using LabExtended.Commands.Parameters;
 using LabExtended.Commands.Parameters.Parsers;
 
@@ -15,7 +16,7 @@ public class EnumCommand : CommandBase, IAllCommand
     /// Invokes the command.
     /// </summary>
     /// <param name="enumName">Name of the enum</param>
-    [CommandOverload]
+    [CommandOverload(null, null)]
     public void Invoke(string enumName)
     {
         var enumParser = default(EnumParameterParser);

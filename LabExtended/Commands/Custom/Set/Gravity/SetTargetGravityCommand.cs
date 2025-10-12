@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.Set;
 
 public partial class SetTargetCommand
 {
-    [CommandOverload("gravity", "Sets the gravity of a specific player.")]
+    [CommandOverload("gravity", "Sets the gravity of a specific player.", null)]
     public void GravityTarget(
         [CommandParameter("Value", "The new gravity vector.")]Vector3 gravity, 
         [CommandParameter("Target", "The target player (defaults to you).")] ExPlayer? target = null)

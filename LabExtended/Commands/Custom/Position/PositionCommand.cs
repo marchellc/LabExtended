@@ -12,7 +12,7 @@ namespace LabExtended.Commands.Custom.Position;
 [Command("position", "Manages the saving of custom consistent positions.")]
 public class PositionCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload("list", "Lists all saved positions.")]
+    [CommandOverload("list", "Lists all saved positions.", null)]
     public void List()
     {
         if (MapUtilities.Positions.Count(x => !x.Key.StartsWith("example") && x.Value.RoomName != RoomName.Unnamed) == 0)
@@ -49,7 +49,7 @@ public class PositionCommand : CommandBase, IServerSideCommand
         });
     }
 
-    [CommandOverload("set", "Sets a position.")]
+    [CommandOverload("set", "Sets a position.", null)]
     public void Set(
         [CommandParameter("Name", "Name of the position.")] string name,
         [CommandParameter("Position", "The value of the position.")] Vector3 position,
@@ -69,7 +69,7 @@ public class PositionCommand : CommandBase, IServerSideCommand
         Ok($"Saved position '{name}'!");
     }
     
-    [CommandOverload("setcur", "Sets a position using the room you are currently in.")]
+    [CommandOverload("setcur", "Sets a position using the room you are currently in.", null)]
     public void SetCurrent(
         [CommandParameter("Name", "Name of the position.")] string name,
         [CommandParameter("Position", "The value of the position.")] Vector3 position)
@@ -97,7 +97,7 @@ public class PositionCommand : CommandBase, IServerSideCommand
         Ok($"Saved position '{name}'!");
     }
 
-    [CommandOverload("remove", "Removes a saved position.")]
+    [CommandOverload("remove", "Removes a saved position.", null)]
     public void Remove(
         [CommandParameter("Name", "Name of the position to remove.")] string name)
     {

@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.Reset;
 
 public partial class ResetAllCommand
 {
-    [CommandOverload("gravity", "Resets the gravity of all players.")]
+    [CommandOverload("gravity", "Resets the gravity of all players.", null)]
     public void GravityTarget()
     {
         PositionContainer.ResetGravity();

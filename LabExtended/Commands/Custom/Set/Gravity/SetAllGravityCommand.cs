@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.Set;
 
 public partial class SetAllCommand
 {
-    [CommandOverload("gravity", "Sets the gravity of all players.")]
+    [CommandOverload("gravity", "Sets the gravity of all players.", null)]
     public void GravityTarget([CommandParameter("Value", "The new gravity vector.")] Vector3 gravity)
     {
         ExPlayer.AllPlayers.ForEach(p => p.Position.Gravity = gravity);

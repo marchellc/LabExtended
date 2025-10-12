@@ -9,7 +9,7 @@ namespace LabExtended.Commands.Custom.Reload;
 
 public partial class ReloadCommand
 {
-    [CommandOverload("plugin", "Reloads a specific plugin.")]
+    [CommandOverload("plugin", "Reloads a specific plugin.", null)]
     public void PluginOverload(
         [CommandParameter("Name", "Name of the plugin to reload.")] string pluginName,
         [CommandParameter("OnlyConfig", "Whether or not to reload only the plugin's config.")] bool onlyConfig = false)

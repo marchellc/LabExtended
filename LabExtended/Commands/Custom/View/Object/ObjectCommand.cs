@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
-    [CommandOverload("object", "Shows the description of a network object.")]
+    [CommandOverload("object", "Shows the description of a network object.", null)]
     public void ObjectOverload(
         [CommandParameter("ID", "ID of the target object.")] uint objectId)
     {

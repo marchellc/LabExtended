@@ -9,7 +9,7 @@ namespace LabExtended.Commands.Custom.Spawn;
 
 public partial class SpawnCommand
 {
-    [CommandOverload("item", "Spawns an item.")]
+    [CommandOverload("item", "Spawns an item.", null)]
     public void ItemOverload(
         [CommandParameter("Target", "The target player.")] ExPlayer target,
         [CommandParameter("Amount", "The amount of items to spawn.")] int amount, 

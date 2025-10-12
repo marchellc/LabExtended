@@ -26,7 +26,7 @@ public class CommandOverloadAttribute : Attribute
     /// <summary>
     /// Creates a new <see cref="CommandOverloadAttribute"/> instance.
     /// </summary>
-    public CommandOverloadAttribute(string description = "No description", string? permission = null)
+    public CommandOverloadAttribute(string? description, string? permission)
     {
         isDefaultOverload = true;
 
@@ -40,7 +40,7 @@ public class CommandOverloadAttribute : Attribute
     /// <param name="name">Name of the overload.</param>
     /// <param name="description">Description of the overload.</param>
     /// <param name="permission">Sets the permission required to invoke the overload.</param>
-    public CommandOverloadAttribute(string name, string description = "No description", string? permission = null)
+    public CommandOverloadAttribute(string name, string? description, string? permission)
     {
         Name = name;
         Description = description;

@@ -7,7 +7,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("image", "Plays an image.")]
+    [CommandOverload("image", "Plays an image.", null)]
     public void ImageOverload(
         [CommandParameter("ID", "ID of the text toy.")] uint toyId,
         [CommandParameter("Name", "Name of the image to play.")] string imageName)

@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("stop", "Stops the playback.")]
+    [CommandOverload("stop", "Stops the playback.", null)]
     public void StopOverload(uint toyId)
     {
         if (!AdminToy.TryGet<API.Toys.TextToy>(x => x.NetId == toyId, out var textToy))

@@ -5,7 +5,7 @@ namespace LabExtended.Commands.Custom.TextToy;
 
 public partial class TextCommand
 {
-    [CommandOverload("set", "Sets the text of a text toy.")]
+    [CommandOverload("set", "Sets the text of a text toy.", null)]
     public void SetOverload(
         [CommandParameter("ID", "ID of the text toy.")] uint toyId, 
         [CommandParameter("Text", "The text to set.")] string text)

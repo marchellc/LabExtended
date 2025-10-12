@@ -8,7 +8,7 @@ namespace LabExtended.Commands.Custom.CustomEffects;
 [Command("customeffect", "Manages Custom Effects", "ceffect")]
 public class CustomEffectsCommand : CommandBase, IServerSideCommand
 {
-    [CommandOverload("list", "Lists all available Custom Effects.")]
+    [CommandOverload("list", "Lists all available Custom Effects.", null)]
     public void ListCommand(
         [CommandParameter("Target", "The target player. Specifying a " +
                                     "target will list of effects registered on a player.")] ExPlayer? target = null)
@@ -45,7 +45,7 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         }
     }
     
-    [CommandOverload("enable", "Enables an inactive Custom Effect.")]
+    [CommandOverload("enable", "Enables an inactive Custom Effect.", null)]
     public void EnableCommand(
         [CommandParameter("Name", "Name of the Custom Effect.")] string effectName, 
         [CommandParameter("Target", "The target player (defaults to you).")] ExPlayer? target = null)
@@ -75,7 +75,7 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         Ok($"Enabled effect \"{effect.GetType().Name}\" on \"{player.Nickname}\" ({player.ClearUserId}).");
     }
 
-    [CommandOverload("disable", "Disables an active Custom Effect.")]
+    [CommandOverload("disable", "Disables an active Custom Effect.", null)]
     public void DisableCommand(
         [CommandParameter("Name", "Name of the Custom Effect")] string effectName, 
         [CommandParameter("Target", "The target player (defaults to you).")] ExPlayer? target = null)
@@ -105,7 +105,7 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         Ok($"Disabled effect \"{effect.GetType().Name}\" on \"{player.Nickname}\" ({player.ClearUserId}).");
     }
 
-    [CommandOverload("clear", "Clears all Custom Effects.")]
+    [CommandOverload("clear", "Clears all Custom Effects.", null)]
     public void ClearCommand(ExPlayer? target = null)
     {
         var player = target ?? Sender;
