@@ -20,7 +20,7 @@ namespace LabExtended.Commands.Custom.Despawn;
 [Attributes.Command("despawn", "Despawns an object.")]
 public class DespawnCommand : CommandBase, IRemoteAdminCommand
 {
-    [CommandOverload("Despawns an object that you're currently looking at.")]
+    [CommandOverload("Despawns an object that you're currently looking at.", null)]
     public void RaycastOverload(
         [CommandParameter("Player", "The player of which camera will be used")] ExPlayer? originPlayer = null, 
         [CommandParameter("Distance", "The maximum hit distance")] float distance = 50f)

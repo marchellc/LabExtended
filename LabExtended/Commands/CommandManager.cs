@@ -3,9 +3,9 @@
 using LabApi.Events.Arguments.ServerEvents;
 using LabApi.Events.Handlers;
 
-using LabApi.Features.Enums;
 using LabApi.Features.Permissions;
 
+using LabExtended.Commands.Runners;
 using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
@@ -14,16 +14,11 @@ using LabExtended.Commands.Tokens.Parsing;
 
 using LabExtended.API;
 using LabExtended.Core;
-using LabExtended.Attributes;
-using LabExtended.Commands.Runners;
 using LabExtended.Extensions;
-using LabExtended.Utilities.Unity;
-
-using MEC;
 
 using NorthwoodLib.Pools;
-#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -108,47 +103,50 @@ public static class CommandManager
             {
                 if (method.IsStatic)
                     continue;
-                
-                if (!method.HasAttribute<CommandOverloadAttribute>(out var commandOverloadAttribute))
-                    continue;
 
-                if (method.ReturnType != typeof(void) && method.ReturnType != typeof(IEnumerator<float>) && method.ReturnType != typeof(Task))
+                foreach (var commandOverloadAttribute in method.GetCustomAttributes<CommandOverloadAttribute>(false))
                 {
-                    ApiLog.Warn("Command Manager", $"Method &3{method.GetMemberName()}&r cannot be used as an overload " +
-                                                   $"because it's return type is not supported (&1{method.ReturnType.FullName}&r). " +
-                                                   $"Command method's should return only &1void&r, &1IEnumerator<float>&r coroutine or a &1Task&r.");
-                    continue;
-                }
-
-                var overload = new CommandOverload(method);
-                
-                overload.Name = commandOverloadAttribute.Name;
-                overload.Description = commandOverloadAttribute.Description;
-
-                if (commandOverloadAttribute.isDefaultOverload)
-                {
-                    if (instance.DefaultOverload != null)
+                    if (method.ReturnType != typeof(void) 
+                        && method.ReturnType != typeof(IEnumerator<float>) 
+                        && method.ReturnType != typeof(Task))
                     {
-                        ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r " +
-                                                        $"was specified as the default overload, but the command already has one " +
-                                                        $"(&3{instance.DefaultOverload.Target.GetMemberName()}&r)");
-                        
-                        continue;
-                    }
-                    
-                    instance.DefaultOverload = overload;
-                }
-                else
-                {
-                    if (instance.Overloads.ContainsKey(commandOverloadAttribute.Name))
-                    {
-                        ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r" +
-                                                        $"cannot be added as an overload because an overload with the same name already exists.");
-                        
+                        ApiLog.Warn("Command Manager", $"Method &3{method.GetMemberName()}&r cannot be used as an overload " +
+                                                       $"because it's return type is not supported (&1{method.ReturnType.FullName}&r). " +
+                                                       $"Command method's should return only &1void&r, &1IEnumerator<float>&r coroutine or a &1Task&r.");
                         continue;
                     }
 
-                    instance.Overloads.Add(commandOverloadAttribute.Name, overload);
+                    var overload = new CommandOverload(method);
+
+                    overload.Name = commandOverloadAttribute.Name;
+                    overload.Permission = commandOverloadAttribute.Permission;
+                    overload.Description = commandOverloadAttribute.Description;
+
+                    if (commandOverloadAttribute.isDefaultOverload)
+                    {
+                        if (instance.DefaultOverload != null)
+                        {
+                            ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r " +
+                                                            $"was specified as the default overload, but the command already has one " +
+                                                            $"(&3{instance.DefaultOverload.Target.GetMemberName()}&r)");
+
+                            continue;
+                        }
+
+                        instance.DefaultOverload = overload;
+                    }
+                    else
+                    {
+                        if (instance.Overloads.ContainsKey(commandOverloadAttribute.Name))
+                        {
+                            ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r" +
+                                                            $"cannot be added as an overload because an overload with the same name already exists.");
+
+                            continue;
+                        }
+
+                        instance.Overloads.Add(commandOverloadAttribute.Name, overload);
+                    }
                 }
             }
 
@@ -264,6 +262,20 @@ public static class CommandManager
                 }
                 
                 overload = command.DefaultOverload;
+            }
+
+            if (overload.Permission != null && !player.HasPermissions(overload.Permission))
+            {
+                var response =
+                    CommandResponseFormatter.FormatMissingPermissionsFailure(overload.Permission, $"{command.Name} {overload.Name}",
+                        ev.CommandType);
+
+                ev.WriteError(response, "red");
+
+                ServerEvents.OnCommandExecuted(new(ev.Sender, ev.CommandType, null, ev.Arguments, false, response));
+
+                ListPool<string>.Shared.Return(args);
+                return;
             }
 
             line = string.Join(" ", args);

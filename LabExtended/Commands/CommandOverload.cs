@@ -81,7 +81,12 @@ public class CommandOverload
     /// Gets the overload's description.
     /// </summary>
     public string Description { get; internal set; }
-    
+
+    /// <summary>
+    /// Gets the permission required to execute the overload.
+    /// </summary>
+    public string? Permission { get; internal set; }
+
     /// <summary>
     /// Gets the overload's buffer.
     /// </summary>
@@ -122,7 +127,7 @@ public class CommandOverload
             Runner = RegularCommandRunner.Singleton;
         }
         
-        foreach (var parameter in parameters)
+        foreach (var parameter in parameters!)
         {
             var builder = new CommandParameterBuilder(parameter);
             
