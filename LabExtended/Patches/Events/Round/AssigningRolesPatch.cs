@@ -5,17 +5,17 @@ using HarmonyLib;
 using PlayerRoles.RoleAssign;
 using PlayerRoles;
 
-using LabExtended.Core.Pooling.Pools;
-
 using LabExtended.API;
+
 using LabExtended.Events;
+
 using LabExtended.Utilities;
 using LabExtended.Utilities.RoleSelection;
 
 namespace LabExtended.Patches.Events.Round;
 
 /// <summary>
-/// Implements the <see cref="ExRoundEvents.AssigningRoles"/> event.
+/// Implements the <see cref="ExRoundEvents.AssigningRoles"/> and <see cref="ExRoundEvents.AssignedRoles"/> events.
 /// </summary>
 public static class AssigningRolesPatch
 {
@@ -29,7 +29,7 @@ public static class AssigningRolesPatch
     /// </summary>
     public static readonly List<ExPlayer> Players = new();
 
-    public static FastEvent<Action> OnPlayersSpawned { get; } =
+    private static FastEvent<Action> OnPlayersSpawned { get; } =
         FastEvents.DefineEvent<Action>(typeof(RoleAssigner), nameof(RoleAssigner.OnPlayersSpawned));
 
     [HarmonyPatch(typeof(RoleAssigner), nameof(RoleAssigner.OnRoundStarted))]
@@ -62,14 +62,23 @@ public static class AssigningRolesPatch
 
         foreach (var pair in Roles)
         {
-            pair.Key.Role.RoundStartRole = pair.Value;
-            pair.Key.Role.Set(pair.Value, RoleChangeReason.RoundStart, RoleSpawnFlags.All);
+            if (pair.Value != RoleTypeId.None)
+            {
+                pair.Key.Role.RoundStartRole = pair.Value;
+                pair.Key.Role.Set(pair.Value, RoleChangeReason.RoundStart, RoleSpawnFlags.All);
 
-            if (pair.Key.Role.IsAlive)
-                RoleAssigner.AlreadySpawnedPlayers.Add(pair.Key.UserId);
+                if (pair.Key.Role.IsAlive)
+                    RoleAssigner.AlreadySpawnedPlayers.Add(pair.Key.UserId);
+            }
         }
 
-        OnPlayersSpawned.InvokeEvent(null, Array.Empty<object>());
+        OnPlayersSpawned.InvokeEvent(null!, Array.Empty<object>());
+
+        ExRoundEvents.OnAssignedRoles(new(Roles));
+
+        Roles.Clear();
+        Players.Clear();
+
         return false;
     }
 }
