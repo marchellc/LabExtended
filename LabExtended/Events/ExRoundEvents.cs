@@ -41,6 +41,21 @@ namespace LabExtended.Events
         public static event Action<AssigningRolesEventArgs>? AssigningRoles;
 
         /// <summary>
+        /// Gets called after player's round-start roles are assigned.
+        /// </summary>
+        public static event Action<AssignedRolesEventArgs>? AssignedRoles;
+
+        /// <summary>
+        /// Gets called before a player's role is set by late-join.
+        /// </summary>
+        public static event Action<LateJoinSettingRoleEventArgs>? LateJoinSettingRole;
+
+        /// <summary>
+        /// Gets called after a player's role is set by late-join.
+        /// </summary>
+        public static event Action<LateJoinSetRoleEventArgs>? LateJoinSetRole;
+
+        /// <summary>
         /// Invokes the <see cref="Ended"/> event.
         /// </summary>
         public static void OnEnded()
@@ -76,5 +91,26 @@ namespace LabExtended.Events
         /// <param name="args">The event's arguments.</param>
         public static bool OnAssigningRoles(AssigningRolesEventArgs args)
             => AssigningRoles.InvokeBooleanEvent(args);
+
+        /// <summary>
+        /// Invokes the <see cref="AssignedRoles"/> event.
+        /// </summary>
+        /// <param name="args">The event's arguments.</param>
+        public static void OnAssignedRoles(AssignedRolesEventArgs args)
+            => AssignedRoles.InvokeEvent(args);
+
+        /// <summary>
+        /// Invokes the <see cref="LateJoinSettingRole"/> event.
+        /// </summary>
+        /// <param name="args">The event's arguments.</param>
+        public static bool OnLateJoinSettingRole(LateJoinSettingRoleEventArgs args)
+            => LateJoinSettingRole.InvokeBooleanEvent(args);
+
+        /// <summary>
+        /// Invokes the <see cref="LateJoinSetRole"/> event.
+        /// </summary>
+        /// <param name="args">The event's arguments.</param>
+        public static void OnLateJoinSetRole(LateJoinSetRoleEventArgs args)
+            => LateJoinSetRole.InvokeEvent(args);
     }
 }
