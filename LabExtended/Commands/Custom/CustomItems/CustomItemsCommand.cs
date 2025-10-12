@@ -102,7 +102,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         [CommandOverload("list", "Lists all registered custom items.")]
         public void List()
         {
-            if (CustomItem.RegisteredItems.Count == 0)
+            if (CustomItem.RegisteredObjects.Count == 0)
             {
                 Fail($"No items have been registered.");
                 return;
@@ -110,7 +110,9 @@ namespace LabExtended.Commands.Custom.CustomItems
 
             Ok(x =>
             {
-                foreach (var pair in CustomItem.RegisteredItems)
+                x.AppendLine();
+
+                foreach (var pair in CustomItem.RegisteredObjects)
                 {
                     var type = pair.Value.GetType();
                     var baseType = type.BaseType ?? type;
@@ -126,7 +128,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         [CommandOverload("active", "Lists all active custom item instances.")]
         public void Active()
         {
-            if (CustomItem.RegisteredItems.Count == 0)
+            if (CustomItem.RegisteredObjects.Count == 0)
             {
                 Fail($"No items have been registered.");
                 return;
@@ -134,7 +136,9 @@ namespace LabExtended.Commands.Custom.CustomItems
 
             Ok(x =>
             {
-                foreach (var pair in CustomItem.RegisteredItems)
+                x.AppendLine();
+
+                foreach (var pair in CustomItem.RegisteredObjects)
                 {
                     var baseType = pair.Value.GetType().BaseType ?? pair.Value.GetType();
 
@@ -184,7 +188,7 @@ namespace LabExtended.Commands.Custom.CustomItems
         public void Destroy(
             [CommandParameter("Serial", "The serial number of the item to destroy. Specify 0 to destroy all.")] ushort itemSerial)
         {
-            if (CustomItem.RegisteredItems.Count == 0)
+            if (CustomItem.RegisteredObjects.Count == 0)
             {
                 Fail($"No items have been registered.");
                 return;
@@ -196,7 +200,7 @@ namespace LabExtended.Commands.Custom.CustomItems
                 {
                     x.AppendLine();
 
-                    foreach (var pair in CustomItem.RegisteredItems)
+                    foreach (var pair in CustomItem.RegisteredObjects)
                         x.AppendLine($"- [ID: {pair.Key}] {pair.Value.Name}; {pair.Value.DestroyInstances()} instance(s) destroyed!");
                 });
             }
@@ -249,19 +253,20 @@ namespace LabExtended.Commands.Custom.CustomItems
         /// Adds a custom item to a player's inventory.
         /// </summary>
         [CommandOverload("add", "Adds a custom item to a player's inventory.")]
+        [CommandOverload("give", "Adds a custom item to a player's inventory.")]
         public void Add(
             [CommandParameter("ID", "The ID of the custom item to add.")] string itemId,
             [CommandParameter("Target", "The player to add the item to (defaults to you).")] ExPlayer? target = null)
         {
             target ??= Sender;
 
-            if (CustomItem.RegisteredItems.Count == 0)
+            if (CustomItem.RegisteredObjects.Count == 0)
             {
                 Fail($"No items have been registered.");
                 return;
             }
 
-            if (!CustomItem.RegisteredItems.TryGetValue(itemId, out var customItem))
+            if (!CustomItem.RegisteredObjects.TryGetValue(itemId, out var customItem))
             {
                 Fail($"Unknown custom item ID");
                 return;
@@ -287,13 +292,13 @@ namespace LabExtended.Commands.Custom.CustomItems
             [CommandParameter("ID", "The ID of the custom item to spawn.")] string itemId,
             [CommandParameter("Position", "The position to spawn the item at.")] Vector3 position)
         {
-            if (CustomItem.RegisteredItems.Count == 0)
+            if (CustomItem.RegisteredObjects.Count == 0)
             {
                 Fail($"No items have been registered.");
                 return;
             }
 
-            if (!CustomItem.RegisteredItems.TryGetValue(itemId, out var customItem))
+            if (!CustomItem.RegisteredObjects.TryGetValue(itemId, out var customItem))
             {
                 Fail($"Unknown custom item ID");
                 return;

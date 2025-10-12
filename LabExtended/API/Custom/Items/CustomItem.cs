@@ -31,7 +31,7 @@ namespace LabExtended.API.Custom.Items
     /// <summary>
     /// Base class for custom item implementations.
     /// </summary>
-    public abstract class CustomItem
+    public abstract class CustomItem : CustomObject<CustomItem>
     {
         #region Delegates
         /// <summary>
@@ -80,13 +80,7 @@ namespace LabExtended.API.Custom.Items
         public delegate void ForEachPickupDelegate<T>(ItemPickupBase item, ref T? itemData);
         #endregion
 
-        internal static Dictionary<string, CustomItem> itemsById = new();
         internal static Dictionary<ushort, TrackedCustomItem> itemsBySerial = new();
-
-        /// <summary>
-        /// Gets all registered custom items.
-        /// </summary>
-        public static IReadOnlyDictionary<string, CustomItem> RegisteredItems => itemsById;
 
         /// <summary>
         /// Gets all tracked custom items.
@@ -270,12 +264,6 @@ namespace LabExtended.API.Custom.Items
             => itemsBySerial.TryGetValue(itemSerial, out trackedItem);
 
         /// <summary>
-        /// Gets the ID of the custom item.
-        /// </summary>
-        [YamlIgnore]
-        public abstract string Id { get; }
-
-        /// <summary>
         /// Gets the name of the custom item.
         /// </summary>
         [YamlIgnore]
@@ -317,46 +305,6 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         [Description("Sets if custom items dropped by a player should be destroyed when the player who dropped them leaves.")]
         public virtual bool DestroyOnOwnerLeave { get; set; } = false;
-
-        /// <summary>
-        /// Registers this custom item.
-        /// </summary>
-        /// <returns>true if the item was registered</returns>
-        public bool Register()
-        {
-            if (itemsById.ContainsKey(Id))
-                return false;
-
-            itemsById.Add(Id, this);
-
-            Registered?.Invoke(this);
-
-            OnRegistered();
-
-            ApiLog.Info("Custom Items", $"&2Registered&r custom item &3{Name}&r (&6{Id}&r)");
-            return true;
-        }
-
-        /// <summary>
-        /// Unregisters this custom item and removes all active instances.
-        /// </summary>
-        /// <returns></returns>
-        public bool Unregister()
-        {
-            if (itemsById.Remove(Id))
-            {
-                DestroyInstances();
-
-                Unregistered?.Invoke(this);
-
-                OnUnregistered();
-
-                ApiLog.Info("Custom Items", $"&1Unregistered&r custom item &3{Name}&r (&6{Id}&r)");
-                return true;
-            }
-
-            return false;
-        }
 
         /// <summary>
         /// Invokes the specified delegate for each item currently held by a valid tracker and its associated owner.
@@ -1299,12 +1247,24 @@ namespace LabExtended.API.Custom.Items
         /// <summary>
         /// Gets called once the item has been registered.
         /// </summary>
-        public virtual void OnRegistered() { }
+        public override void OnRegistered()
+        {
+            Registered?.InvokeSafe(this);
+
+            ApiLog.Info("Custom Items", $"&2Registered&r custom item &3{Name}&r (&6{Id}&r)");
+        }
 
         /// <summary>
         /// Gets called once the item has been unregistered.
         /// </summary>
-        public virtual void OnUnregistered() { }
+        public override void OnUnregistered()
+        {
+            DestroyInstances();
+
+            Unregistered?.InvokeSafe(this);
+
+            ApiLog.Info("Custom Items", $"&1Unregistered&r custom item &3{Name}&r (&6{Id}&r)");
+        }
 
         /// <summary>
         /// Called when an item is added to a player -or- when the player picks up a spawned pickup.
