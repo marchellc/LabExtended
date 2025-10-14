@@ -23,6 +23,7 @@ using LabExtended.API;
 
 using LabExtended.API.Custom.Items;
 using LabExtended.API.Custom.Effects;
+using LabExtended.API.Custom.Gamemodes;
 
 using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomTeams;
@@ -47,10 +48,9 @@ using LabExtended.Patches.Events.Mirror;
 
 using LabExtended.Utilities.Unity;
 using LabExtended.Utilities.Firearms;
-using LabExtended.Utilities.FileStorage;
 
 using Version = System.Version;
-using LabExtended.API.Custom.Gamemodes;
+using LabExtended.Core.Storage;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).
@@ -276,6 +276,8 @@ public class ApiLoader : Plugin
 
         ReflectionUtils.Load();
 
+        StorageManager.Internal_Init();
+
         ApiLog.Info("LabExtended", "Loading finished!");
     }
 
@@ -352,8 +354,6 @@ public class ApiLoader : Plugin
             ExServer.Internal_Init();
             ExTeslaGate.Internal_Init();
             ExServerEvents.Internal_Init();
-
-            FileStorageManager.Internal_Init();
 
             HintController.Internal_Init();
 

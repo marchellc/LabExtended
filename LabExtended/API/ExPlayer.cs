@@ -29,6 +29,8 @@ using LabExtended.API.Settings.Menus;
 
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
+
+using LabExtended.Core.Storage;
 using LabExtended.Core.Pooling.Pools;
 
 using LabExtended.Events;
@@ -37,8 +39,8 @@ using LabExtended.Events.Player;
 using LabExtended.Extensions;
 
 using LabExtended.Utilities;
-using LabExtended.Utilities.FileStorage;
 using LabExtended.Utilities.Update;
+
 using LiteNetLib;
 
 using Mirror;
@@ -667,11 +669,11 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's persistent storage. <i>(persistent until the next server restart)</i>
     /// </summary>
     public PlayerStorage PersistentStorage { get; internal set; }
-    
+
     /// <summary>
-    /// Gets the player's file storage. This WILL be NULL if file storage is disabled!
+    /// Gets the player's file storage. Will be null if disabled via config -or- if the player has Do Not Track active.
     /// </summary>
-    public FileStorageInstance? FileStorage { get; internal set; }
+    public StorageInstance? FileStorage { get; internal set; }
 
     /// <summary>
     /// Gets the player's toggles.
