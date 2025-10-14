@@ -82,5 +82,5 @@ public class YamlVector3
     /// <param name="vector">The instance to convert.</param>
     /// <returns>The converted Vector3.</returns>
     public static implicit operator Vector3(YamlVector3 vector)
-        => vector.Vector;
+        => vector?.Vector ?? throw new ArgumentNullException(nameof(vector));
 }
