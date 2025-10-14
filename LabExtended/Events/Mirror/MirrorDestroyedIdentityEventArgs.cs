@@ -8,13 +8,13 @@ namespace LabExtended.Events.Mirror
     public class MirrorDestroyedIdentityEventArgs : MirrorIdentityEventArgs    
     {
         /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorDestroyedIdentityEventArgs"/> class.
+        /// </summary>
+        internal static MirrorDestroyedIdentityEventArgs Singleton { get; } = new();
+
+        /// <summary>
         /// Gets the destroy mode.
         /// </summary>
-        public NetworkServer.DestroyMode Mode { get; }
-
-        public MirrorDestroyedIdentityEventArgs(NetworkIdentity identity, NetworkServer.DestroyMode mode) : base(identity)
-        {
-            Mode = mode;
-        }
+        public NetworkServer.DestroyMode Mode { get; internal set; }
     }
 }

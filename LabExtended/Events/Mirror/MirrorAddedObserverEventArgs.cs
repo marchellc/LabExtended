@@ -10,19 +10,18 @@ namespace LabExtended.Events.Mirror
     public class MirrorAddedObserverEventArgs : MirrorIdentityEventArgs
     {
         /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorAddedObserverEventArgs"/> class.
+        /// </summary>
+        internal static MirrorAddedObserverEventArgs Singleton { get; } = new();
+
+        /// <summary>
         /// Gets the player who was added. May be null if no instance was created for this connection.
         /// </summary>
-        public ExPlayer? Observer { get; }
+        public ExPlayer? Observer { get; internal set; }
 
         /// <summary>
         /// Gets the connection of the player who was added as observer.
         /// </summary>
-        public NetworkConnectionToClient Connection { get; }
-
-        public MirrorAddedObserverEventArgs(NetworkIdentity identity, ExPlayer? observer, NetworkConnectionToClient connection) : base(identity)
-        {
-            Observer = observer;
-            Connection = connection;
-        }
+        public NetworkConnectionToClient Connection { get; internal set; }
     }
 }

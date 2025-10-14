@@ -8,6 +8,11 @@ namespace LabExtended.Events.Mirror
     public class MirrorSerializedBehaviourEventArgs : MirrorIdentityEventArgs
     {
         /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorSerializedBehaviourEventArgs"/> class.
+        /// </summary>
+        internal static MirrorSerializedBehaviourEventArgs Singleton { get; } = new();
+
+        /// <summary>
         /// Gets the behaviour that was serialized.
         /// </summary>
         public NetworkBehaviour Behaviour { get; internal set; }
@@ -21,12 +26,5 @@ namespace LabExtended.Events.Mirror
         /// Whether or not the behaviour's dirty bits should be reset to zero.
         /// </summary>
         public bool ResetBits { get; set; }
-
-        public MirrorSerializedBehaviourEventArgs(NetworkBehaviour behaviour, NetworkWriter writer, bool resetBits) : base(behaviour.netIdentity)
-        {
-            Behaviour = behaviour;
-            Writer = writer;
-            ResetBits = resetBits;
-        }
     }
 }

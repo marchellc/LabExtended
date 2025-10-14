@@ -8,6 +8,11 @@ namespace LabExtended.Events.Mirror
     public class MirrorSerializingBehaviourEventArgs : MirrorIdentityBooleanEventArgs
     {
         /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorSerializingBehaviourEventArgs"/> class.
+        /// </summary>
+        internal static MirrorSerializingBehaviourEventArgs Singleton { get; } = new();
+
+        /// <summary>
         /// Gets the behaviour being serialized.
         /// </summary>
         public NetworkBehaviour Behaviour { get; internal set; }
@@ -16,11 +21,5 @@ namespace LabExtended.Events.Mirror
         /// Gets or sets the network writer containing the serialized data.
         /// </summary>
         public NetworkWriter Writer { get; set; }
-
-        public MirrorSerializingBehaviourEventArgs(NetworkBehaviour behaviour, NetworkWriter writer) : base(behaviour.netIdentity)
-        {
-            Behaviour = behaviour;
-            Writer = writer;
-        }
     }
 }

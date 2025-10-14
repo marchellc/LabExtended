@@ -10,6 +10,11 @@ namespace LabExtended.Events.Mirror
     public class MirrorSentRpcEventArgs : MirrorIdentityEventArgs
     {
         /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorSentRpcEventArgs"/> class.
+        /// </summary>
+        internal static MirrorSentRpcEventArgs Singleton { get; } = new();
+
+        /// <summary>
         /// Gets the player who received the RPC.
         /// </summary>
         public ExPlayer Player { get; internal set; }
@@ -22,25 +27,16 @@ namespace LabExtended.Events.Mirror
         /// <summary>
         /// Gets the behaviour which sent the RPC.
         /// </summary>
-        public NetworkBehaviour Behaviour { get; }
+        public NetworkBehaviour Behaviour { get; internal set; }
 
         /// <summary>
         /// Gets the hash of the RPC method name.
         /// </summary>
-        public int RpcHash { get; }
+        public int RpcHash { get; internal set; }
 
         /// <summary>
         /// Gets the full name of the RPC method.
         /// </summary>
-        public string RpcName { get; }
-
-        public MirrorSentRpcEventArgs(ExPlayer player, NetworkWriter writer, NetworkBehaviour behaviour, int rpcHash, string rpcName) : base(behaviour.netIdentity)
-        {
-            Player = player;
-            Writer = writer;
-            Behaviour = behaviour;
-            RpcHash = rpcHash;
-            RpcName = rpcName;
-        }
+        public string RpcName { get; internal set; }
     }
 }

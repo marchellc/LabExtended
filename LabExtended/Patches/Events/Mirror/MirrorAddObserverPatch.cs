@@ -21,8 +21,14 @@ public static class MirrorAddObserverPatch
             return false;
 
         var observer = ExPlayer.Get(conn);
+        var addingEventArgs = MirrorAddingObserverEventArgs.Singleton;
 
-        if (!MirrorEvents.OnAddingObserver(new MirrorAddingObserverEventArgs(__instance, observer, conn)))
+        addingEventArgs.IsAllowed = true;
+        addingEventArgs.Identity = __instance;
+        addingEventArgs.Observer = observer;
+        addingEventArgs.Connection = conn;
+
+        if (!MirrorEvents.OnAddingObserver(addingEventArgs))
             return false;
         
         if (__instance.observers.Count == 0)
@@ -32,7 +38,13 @@ public static class MirrorAddObserverPatch
         
         conn.AddToObserving(__instance);
 
-        MirrorEvents.OnAddedObserver(new MirrorAddedObserverEventArgs(__instance, observer, conn));
+        var addedEventArgs = MirrorAddedObserverEventArgs.Singleton;
+
+        addedEventArgs.Identity = __instance;
+        addedEventArgs.Observer = observer;
+        addedEventArgs.Connection = conn;
+
+        MirrorEvents.OnAddedObserver(addedEventArgs);
         return false;
     }
 }

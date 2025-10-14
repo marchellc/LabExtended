@@ -21,7 +21,13 @@ namespace LabExtended.Patches.Events.Mirror
         {
             try
             {
-                if (MirrorEvents.OnDestroying(new MirrorDestroyingIdentityEventArgs(identity, mode)))
+                var destroyingArgs = MirrorDestroyingIdentityEventArgs.Singleton;
+
+                destroyingArgs.IsAllowed = true;
+                destroyingArgs.Mode = mode;
+                destroyingArgs.Identity = identity;
+
+                if (MirrorEvents.OnDestroying(destroyingArgs))
                 {
                     if (NetworkServer.active && NetworkServer.aoi)
                     {
@@ -37,7 +43,7 @@ namespace LabExtended.Patches.Events.Mirror
 
                     NetworkServer.spawned.Remove(identity.netId);
 
-                    (identity.connectionToClient as NetworkConnectionToClient)?.RemoveOwnedObject(identity);
+                    identity.connectionToClient?.RemoveOwnedObject(identity);
 
                     NetworkServer.SendToObservers(identity, new ObjectDestroyMessage
                     {
@@ -61,7 +67,12 @@ namespace LabExtended.Patches.Events.Mirror
 
                     identity.OnStopServer();
 
-                    MirrorEvents.OnDestroyed(new MirrorDestroyedIdentityEventArgs(identity, mode));
+                    var destroyedArgs = MirrorDestroyedIdentityEventArgs.Singleton;
+
+                    destroyedArgs.Identity = identity;
+                    destroyedArgs.Mode = mode;
+
+                    MirrorEvents.OnDestroyed(destroyedArgs);
 
                     if (mode != NetworkServer.DestroyMode.Destroy)
                     {

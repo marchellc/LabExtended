@@ -34,7 +34,12 @@ namespace LabExtended.Patches.Events.Mirror
                 if (NetworkServer.spawned.ContainsKey(identity.netId))
                     return false;
 
-                if (!MirrorEvents.OnSpawning(new MirrorSpawningIdentityEventArgs(identity))) 
+                var spawningEventArgs = MirrorIdentityBooleanEventArgs.Instance;
+
+                spawningEventArgs.IsAllowed = true;
+                spawningEventArgs.Identity = identity;
+
+                if (!MirrorEvents.OnSpawning(spawningEventArgs)) 
                     return false;
 
                 identity.connectionToClient = (NetworkConnectionToClient)ownerConnection;
@@ -67,7 +72,11 @@ namespace LabExtended.Patches.Events.Mirror
 
                 NetworkServer.RebuildObservers(identity, true);
 
-                MirrorEvents.OnSpawned(new MirrorSpawnedIdentityEventArgs(identity));
+                var spawnedEventArgs = MirrorIdentityEventArgs.Instance;
+
+                spawnedEventArgs.Identity = identity;
+
+                MirrorEvents.OnSpawned(spawnedEventArgs);
             }
             catch (Exception ex)
             {

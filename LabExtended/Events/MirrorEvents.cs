@@ -25,12 +25,12 @@ public static class MirrorEvents
     /// <summary>
     /// Called before a new <see cref="NetworkIdentity"/> spawns.
     /// </summary>
-    public static event Action<MirrorSpawningIdentityEventArgs>? Spawning;
+    public static event Action<MirrorIdentityBooleanEventArgs>? Spawning;
 
     /// <summary>
     /// Called after a new <see cref="NetworkIdentity"/> spawns.
     /// </summary>
-    public static event Action<MirrorSpawnedIdentityEventArgs>? Spawned;
+    public static event Action<MirrorIdentityEventArgs>? Spawned;
     
     /// <summary>
     /// Gets called before a new observer is added to an observing list.
@@ -97,13 +97,13 @@ public static class MirrorEvents
     /// <summary>
     /// Invokes the <see cref="Spawning"/> event.
     /// </summary>
-    public static bool OnSpawning(MirrorSpawningIdentityEventArgs args)
+    public static bool OnSpawning(MirrorIdentityBooleanEventArgs args)
         => Spawning.InvokeBooleanEvent(args);
 
     /// <summary>
     /// Invokes the <see cref="Spawned"/> event.
     /// </summary>
-    public static void OnSpawned(MirrorSpawnedIdentityEventArgs args)
+    public static void OnSpawned(MirrorIdentityEventArgs args)
         => Spawned.InvokeEvent(args);
 
     /// <summary>

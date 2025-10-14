@@ -27,7 +27,15 @@ namespace LabExtended.Patches.Events.Mirror
             if (NetworkBehaviour.SyncVarEqual(value, ref field))
                 return false;
 
-            var settingSyncVarEventArgs = new MirrorSettingSyncVarEventArgs(__instance, typeof(T), dirtyBit, field, value);
+            var settingSyncVarEventArgs = MirrorSettingSyncVarEventArgs.Singleton;
+
+            settingSyncVarEventArgs.IsAllowed = true;
+            settingSyncVarEventArgs.property = null;
+            settingSyncVarEventArgs.CurrentValue = field;
+            settingSyncVarEventArgs.NewValue = value;
+            settingSyncVarEventArgs.Behaviour = __instance;
+            settingSyncVarEventArgs.dirtyBit = dirtyBit;
+            settingSyncVarEventArgs.Identity = __instance.netIdentity;
 
             if (!MirrorEvents.OnSettingSyncVar(settingSyncVarEventArgs) || settingSyncVarEventArgs.NewValue is null)
                 return false;
@@ -36,7 +44,16 @@ namespace LabExtended.Patches.Events.Mirror
 
             __instance.SetSyncVar(value, ref field, dirtyBit);
 
-            MirrorEvents.OnSetSyncVar(new MirrorSetSyncVarEventArgs(__instance, settingSyncVarEventArgs.Type, dirtyBit, previousValue, value));
+            var setSyncVarEventArgs = MirrorSetSyncVarEventArgs.Singleton;
+
+            setSyncVarEventArgs.property = null;
+            setSyncVarEventArgs.PreviousValue = field;
+            setSyncVarEventArgs.NewValue = value;
+            setSyncVarEventArgs.Behaviour = __instance;
+            setSyncVarEventArgs.DirtyBit = dirtyBit;
+            setSyncVarEventArgs.Identity = __instance.netIdentity;
+
+            MirrorEvents.OnSetSyncVar(setSyncVarEventArgs);
 
             if (OnChanged != null && NetworkServer.activeHost && !__instance.GetSyncVarHookGuard(dirtyBit))
             {

@@ -11,17 +11,22 @@ namespace LabExtended.Events.Mirror
     /// </summary>
     public class MirrorSetSyncVarEventArgs : MirrorIdentityEventArgs
     {
-        private PropertyInfo? property;
+        /// <summary>
+        /// Gets the singleton instance of the <see cref="MirrorSetSyncVarEventArgs"/> class.
+        /// </summary>
+        internal static MirrorSetSyncVarEventArgs Singleton { get; } = new();
+
+        internal PropertyInfo? property;
 
         /// <summary>
         /// Gets the targeted network behaviour instance.
         /// </summary>
-        public NetworkBehaviour Behaviour { get; }
+        public NetworkBehaviour Behaviour { get; internal set; }
 
         /// <summary>
         /// Gets the type of the variable that was set.
         /// </summary>
-        public Type Type { get; }
+        public Type Type { get; internal set; }
 
         /// <summary>
         /// Gets the property that was set.
@@ -40,25 +45,16 @@ namespace LabExtended.Events.Mirror
         /// <summary>
         /// Gets or sets the dirty bit flag of the variable that was set.
         /// </summary>
-        public ulong DirtyBit { get; }
+        public ulong DirtyBit { get; internal set; }
 
         /// <summary>
         /// Gets the previous value of the property.
         /// </summary>
-        public object? PreviousValue { get; }
+        public object? PreviousValue { get; internal set; }
 
         /// <summary>
         /// Gets the new value of the property.
         /// </summary>
-        public object? NewValue { get; }
-
-        public MirrorSetSyncVarEventArgs(NetworkBehaviour behaviour, Type type, ulong dirtyBit, object? previousValue, object? newValue) : base(behaviour.netIdentity)
-        {
-            Behaviour = behaviour;
-            Type = type;
-            DirtyBit = dirtyBit;
-            PreviousValue = previousValue;
-            NewValue = newValue;
-        }
+        public object? NewValue { get; internal set; }
     }
 }

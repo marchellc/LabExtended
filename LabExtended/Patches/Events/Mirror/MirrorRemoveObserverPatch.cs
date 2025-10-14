@@ -21,12 +21,26 @@ namespace LabExtended.Patches.Events.Mirror
                 return false;
 
             var player = ExPlayer.Get(conn);
+            var removingArgs = MirrorRemovingObserverEventArgs.Singleton;
 
-            if (!MirrorEvents.OnRemovingObserver(new MirrorRemovingObserverEventArgs(__instance, player, conn)))
+            removingArgs.IsAllowed = true;
+            removingArgs.Identity = __instance;
+            removingArgs.Connection = conn;
+            removingArgs.Observer = player;
+
+            if (!MirrorEvents.OnRemovingObserver(removingArgs))
                 return false;
 
             if (__instance.observers.Remove(conn.connectionId))
-                MirrorEvents.OnRemovedObserver(new MirrorRemovedObserverEventArgs(__instance, player, conn));
+            {
+                var removedArgs = MirrorRemovedObserverEventArgs.Singleton;
+
+                removedArgs.Identity = __instance;
+                removedArgs.Connection = conn;
+                removedArgs.Observer = player;
+
+                MirrorEvents.OnRemovedObserver(removedArgs);
+            }
 
             return false;
         }
@@ -40,12 +54,26 @@ namespace LabExtended.Patches.Events.Mirror
                     continue;
 
                 var player = ExPlayer.Get(pair.Value);
+                var removingArgs = MirrorRemovingObserverEventArgs.Singleton;
 
-                if (!MirrorEvents.OnRemovingObserver(new MirrorRemovingObserverEventArgs(__instance, player, pair.Value)))
+                removingArgs.IsAllowed = true;
+                removingArgs.Identity = __instance;
+                removingArgs.Connection = pair.Value;
+                removingArgs.Observer = player;
+
+                if (!MirrorEvents.OnRemovingObserver(removingArgs))
                     continue;
 
                 if (__instance.observers.Remove(pair.Key))
-                    MirrorEvents.OnRemovedObserver(new MirrorRemovedObserverEventArgs(__instance, player, pair.Value));
+                {
+                    var removedArgs = MirrorRemovedObserverEventArgs.Singleton;
+
+                    removedArgs.Identity = __instance;
+                    removedArgs.Connection = pair.Value;
+                    removedArgs.Observer = player;
+
+                    MirrorEvents.OnRemovedObserver(removedArgs);
+                }
             }
 
             return false;

@@ -21,8 +21,22 @@ namespace LabExtended.Patches.Events.Mirror
             if (__instance.netIdentity.observers?.Count < 1)
                 return false;
 
-            var sendingRpcEventArgs = new MirrorSendingRpcEventArgs(null!, writer, __instance, functionHashCode, functionFullName);
-            var sentRpcEventArgs = new MirrorSentRpcEventArgs(null!, writer, __instance, functionHashCode, functionFullName);
+            var sendingRpcEventArgs = MirrorSendingRpcEventArgs.Singleton;
+
+            sendingRpcEventArgs.IsAllowed = true;
+            sendingRpcEventArgs.Identity = __instance.netIdentity;
+            sendingRpcEventArgs.Writer = writer;
+            sendingRpcEventArgs.Behaviour = __instance;
+            sendingRpcEventArgs.RpcHash = functionHashCode;
+            sendingRpcEventArgs.RpcName = functionFullName;
+
+            var sentRpcEventArgs = MirrorSentRpcEventArgs.Singleton;
+
+            sendingRpcEventArgs.Identity = __instance.netIdentity;
+            sendingRpcEventArgs.Writer = writer;
+            sendingRpcEventArgs.Behaviour = __instance;
+            sendingRpcEventArgs.RpcHash = functionHashCode;
+            sendingRpcEventArgs.RpcName = functionFullName;
 
             foreach (var pair in __instance.netIdentity.observers!)
             {
@@ -76,7 +90,14 @@ namespace LabExtended.Patches.Events.Mirror
 
             if (ExPlayer.TryGet(conn, out var player))
             {
-                var sendingRpcEventArgs = new MirrorSendingRpcEventArgs(player, writer, __instance, functionHashCode, functionFullName);
+                var sendingRpcEventArgs = MirrorSendingRpcEventArgs.Singleton;
+
+                sendingRpcEventArgs.IsAllowed = true;
+                sendingRpcEventArgs.Identity = __instance.netIdentity;
+                sendingRpcEventArgs.Writer = writer;
+                sendingRpcEventArgs.Behaviour = __instance;
+                sendingRpcEventArgs.RpcHash = functionHashCode;
+                sendingRpcEventArgs.RpcName = functionFullName;
 
                 if (!MirrorEvents.OnSendingRpc(sendingRpcEventArgs))
                     return false;
@@ -89,7 +110,15 @@ namespace LabExtended.Patches.Events.Mirror
                     payload = sendingRpcEventArgs.Writer.ToArraySegment()
                 });
 
-                MirrorEvents.OnSentRpc(new MirrorSentRpcEventArgs(player, sendingRpcEventArgs.Writer, __instance, functionHashCode, functionFullName));
+                var sentRpcEventArgs = MirrorSentRpcEventArgs.Singleton;
+
+                sendingRpcEventArgs.Identity = __instance.netIdentity;
+                sendingRpcEventArgs.Writer = writer;
+                sendingRpcEventArgs.Behaviour = __instance;
+                sendingRpcEventArgs.RpcHash = functionHashCode;
+                sendingRpcEventArgs.RpcName = functionFullName;
+
+                MirrorEvents.OnSentRpc(sentRpcEventArgs);
             }
             else
             {

@@ -42,7 +42,12 @@ namespace LabExtended.Patches.Events.Mirror
                     {
                         using var writer = NetworkWriterPool.Get();
 
-                        var serializingBehaviourEventArgs = new MirrorSerializingBehaviourEventArgs(behaviour, writer);
+                        var serializingBehaviourEventArgs = MirrorSerializingBehaviourEventArgs.Singleton;
+
+                        serializingBehaviourEventArgs.IsAllowed = true;
+                        serializingBehaviourEventArgs.Identity = __instance;
+                        serializingBehaviourEventArgs.Writer = writer;
+                        serializingBehaviourEventArgs.Behaviour = behaviour;
 
                         if (MirrorEvents.OnSerializingBehaviour(serializingBehaviourEventArgs))
                             behaviour.Serialize(writer, initialState);
@@ -55,7 +60,12 @@ namespace LabExtended.Patches.Events.Mirror
                         if (isObserversDirty)
                             observersWriter.WriteBytes(segment.Array, segment.Offset, segment.Count);
 
-                        var serializedBehaviourEventArgs = new MirrorSerializedBehaviourEventArgs(behaviour, writer, !initialState);
+                        var serializedBehaviourEventArgs = MirrorSerializedBehaviourEventArgs.Singleton;
+
+                        serializedBehaviourEventArgs.Identity = __instance;
+                        serializedBehaviourEventArgs.Writer = writer;
+                        serializedBehaviourEventArgs.Behaviour = behaviour;
+                        serializedBehaviourEventArgs.ResetBits = !initialState;
 
                         MirrorEvents.OnSerializedBehaviour(serializedBehaviourEventArgs);
 
