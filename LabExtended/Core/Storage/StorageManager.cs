@@ -1,4 +1,6 @@
-﻿using LabExtended.API;
+﻿using LabApi.Features.Wrappers;
+
+using LabExtended.API;
 using LabExtended.Events;
 
 namespace LabExtended.Core.Storage
@@ -61,13 +63,11 @@ namespace LabExtended.Core.Storage
             if (!ApiLoader.ApiConfig.StorageSection.IsEnabled)
                 throw new Exception($"Storage is disabled in config!");
 
-            var basePath = shared && !string.IsNullOrWhiteSpace(ApiLoader.ApiConfig.StorageSection.SharedPath)
-                ? ApiLoader.ApiConfig.StorageSection.SharedPath
-                : ApiLoader.ApiConfig.StorageSection.ServerPath;
-
             var path = ApiLoader.ApiConfig.StorageSection.CustomPaths.TryGetValue(name, out var customPath)
                 ? customPath
-                : Path.Combine(basePath, name);
+                : (shared
+                      ? Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, $"{name}_Shared")
+                      : Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, $"{name}_{Server.Port.ToString()}"));
 
             var storage = new StorageInstance() { Name = name, Path = path };
 
@@ -89,10 +89,11 @@ namespace LabExtended.Core.Storage
                 || player.DoNotTrack)
                 return;
 
-            if (string.IsNullOrEmpty(ApiLoader.ApiConfig.StorageSection.PlayerPath))
-                return;
-
-            var playerStorage = new StorageInstance { Name = player.UserId, Path = Path.Combine(ApiLoader.ApiConfig.StorageSection.PlayerPath, player.UserId) };
+            var playerStorage = new StorageInstance 
+            { 
+                Name = player.UserId, 
+                Path = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, "Players", player.UserId) 
+            };
 
             playerStorage.Initialize();
             player.FileStorage = playerStorage;
@@ -105,21 +106,34 @@ namespace LabExtended.Core.Storage
             if (!ApiLoader.ApiConfig.StorageSection.IsEnabled)
                 return;
 
-            if (!string.IsNullOrWhiteSpace(ApiLoader.ApiConfig.StorageSection.ServerPath))
+            if (string.IsNullOrWhiteSpace(ApiLoader.ApiConfig.StorageSection.StoragePath))
             {
-                ServerStorage = new() { Name = "ServerSpecific", Path = ApiLoader.ApiConfig.StorageSection.ServerPath };
-                ServerStorage.Initialize();
-
-                ServerStorageLoaded?.Invoke();
-            }    
-
-            if (!string.IsNullOrWhiteSpace(ApiLoader.ApiConfig.StorageSection.SharedPath))
-            {
-                SharedStorage = new() { Name = "ServerShared", Path = ApiLoader.ApiConfig.StorageSection.SharedPath };
-                SharedStorage.Initialize();
-
-                SharedStorageLoaded?.Invoke();
+                ApiLog.Warn("StorageManager", $"Storage is enabled in config, but it's missing the root directory!");
+                return;
             }
+
+            var playersDir = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, "Players");
+            var sharedDir = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, "Shared");
+            var serverDir = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, Server.Port.ToString());
+
+            if (!Directory.Exists(playersDir))
+                Directory.CreateDirectory(playersDir);
+
+            if (!Directory.Exists(sharedDir))
+                Directory.CreateDirectory(sharedDir);
+
+            if (!Directory.Exists(serverDir))
+                Directory.CreateDirectory(serverDir);
+
+            ServerStorage = new() { Name = "ServerSpecific", Path = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, Server.Port.ToString()) };
+            ServerStorage.Initialize();
+
+            ServerStorageLoaded?.Invoke();
+
+            SharedStorage = new() { Name = "ServerShared", Path = Path.Combine(ApiLoader.ApiConfig.StorageSection.StoragePath, "Shared") };
+            SharedStorage.Initialize();
+
+            SharedStorageLoaded?.Invoke();
 
             ExPlayerEvents.Left += Internal_Left;
             ExPlayerEvents.Verified += Internal_Verified;

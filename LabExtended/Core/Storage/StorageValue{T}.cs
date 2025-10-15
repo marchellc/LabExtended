@@ -43,8 +43,7 @@ namespace LabExtended.Core.Storage
             set
             {
                 this.value = value;
-
-                MakeDirty();
+                this.IsDirty = true;
             }
         }
 
@@ -66,5 +65,9 @@ namespace LabExtended.Core.Storage
             if (Reader<T>.read != null)
                 value = Reader<T>.read(reader);
         }
+
+        /// <inheritdoc/>
+        public override string ToString()
+            => value?.ToString() ?? "(null)";
     }
 }

@@ -10,11 +10,6 @@ namespace LabExtended.Core.Storage
         internal int dirtyRetries = 0;
 
         /// <summary>
-        /// Gets the dirty bitmask of this storage value.
-        /// </summary>
-        public ulong DirtyBit { get; internal set; }
-
-        /// <summary>
         /// Gets the name of this storage value.
         /// </summary>
         public string Name { get; set; }
@@ -44,9 +39,9 @@ namespace LabExtended.Core.Storage
         public StorageInstance Storage { get; internal set; }
 
         /// <summary>
-        /// Gets whether this value is dirty and needs to be saved.
+        /// Gets or sets whether this value is dirty and needs to be saved.
         /// </summary>
-        public bool IsDirty => Storage != null && (Storage.dirtyBits & DirtyBit) == DirtyBit;
+        public bool IsDirty { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StorageValue"/> class.
@@ -125,20 +120,6 @@ namespace LabExtended.Core.Storage
         public virtual void ReadValue(NetworkReader reader)
         {
 
-        }
-
-        /// <summary>
-        /// Marks the object as dirty, indicating that it has been modified and requires further processing.
-        /// </summary>
-        /// <remarks>This method sets the appropriate dirty bit in the associated storage if the object is
-        /// not already marked as dirty. No action is taken if the storage is null or the object is already marked as
-        /// dirty.</remarks>
-        public void MakeDirty()
-        {
-            if (Storage is null || IsDirty)
-                return;
-
-            Storage.dirtyBits |= DirtyBit;
         }
     }
 }

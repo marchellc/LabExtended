@@ -1,11 +1,8 @@
 ﻿using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
-
-using LabExtended.API.Collections.Unsafe;
-
-using System.Diagnostics;
-
 using Mirror;
+using System.Diagnostics;
+using System.IO;
 
 namespace LabExtended.Core.Storage
 {
@@ -14,10 +11,6 @@ namespace LabExtended.Core.Storage
     /// </summary>
     public class StorageInstance
     {
-        internal ulong dirtyBits = 0;
-
-        private ulong previousBit = 1;
-
         private NetworkWriter writer = new();
         private NetworkReader reader = new(default);
 
@@ -28,7 +21,7 @@ namespace LabExtended.Core.Storage
 
         private FileSystemSafeWatcher watcher;
 
-        internal UnsafeList<StorageValue> values = new();
+        internal List<StorageValue> values = new();
         
         private Dictionary<string, StorageValue> lookup = new();
 
@@ -45,7 +38,7 @@ namespace LabExtended.Core.Storage
         /// <summary>
         /// Gets or sets the amount of milliseconds that must pass between writes performed by this server.
         /// </summary>
-        public int WriteGuard { get; set; } = 100;
+        public int WriteGuard { get; set; } = 300;
 
         /// <summary>
         /// Gets or sets the amount of milliseconds that must pass between each update tick.
@@ -88,6 +81,8 @@ namespace LabExtended.Core.Storage
 
             if (factory is null)
                 throw new ArgumentNullException(nameof(factory));
+
+            value = factory();
 
             if (value is null)
                 throw new Exception($"Factory provided a null value");
@@ -234,10 +229,7 @@ namespace LabExtended.Core.Storage
             if (lookup.ContainsKey(value.Name))
                 return false;
 
-            value.DirtyBit = previousBit << 1;
-            value.Path = System.IO.Path.Combine(Path, value.Name);
-
-            previousBit = value.DirtyBit;
+            value.Path = System.IO.Path.GetFullPath(System.IO.Path.Combine(Path, value.Name));
 
             value.Storage = this;
             value.OnAdded();
@@ -249,6 +241,7 @@ namespace LabExtended.Core.Storage
             values.Add(value);
             lookup.Add(value.Name, value);
 
+            ApiLog.Debug("StorageManager", $"Added value &3{value.ValuePath}&r to storage &3{Name}&r! (Path: &6{value.Path}&r)");
             return true;
         }
 
@@ -274,15 +267,13 @@ namespace LabExtended.Core.Storage
             if (!lookup.Remove(value.Name))
                 return false;
 
-            dirtyBits &= ~value.DirtyBit;
-
             if (deleteFile && File.Exists(value.Path))
                 File.Delete(value.Path);
 
             value.OnDestroyed();
 
-            value.DirtyBit = 0;
             value.Storage = null!;
+            value.IsDirty = false;
             value.Path = string.Empty;
 
             return true;
@@ -347,8 +338,6 @@ namespace LabExtended.Core.Storage
             values.Clear();
 
             lookup.Clear();
-
-            dirtyBits = 0;
         }
 
         /// <summary>
@@ -359,12 +348,12 @@ namespace LabExtended.Core.Storage
         /// items before repopulating it.</remarks>
         public void Save()
         {
-            values.ForEach(x => x.MakeDirty());
+            values.ForEach(x => x.IsDirty = true);
         }
 
         private void Internal_Update()
         {
-            if (UpdateGuard > 0)
+            if (UpdateGuard > 0 && updateGuard != null)
             {
                 if (updateGuard.ElapsedMilliseconds < UpdateGuard)
                     return;
@@ -386,17 +375,15 @@ namespace LabExtended.Core.Storage
 
                     reader.SetBuffer(segment);
 
-                    value.ReadValue(reader);
-
-                    if (value.IsDirty)
-                        dirtyBits &= ~value.DirtyBit;
-
+                    value.IsDirty = false;
                     value.dirtyRetries = 0;
+
+                    value.ReadValue(reader);
 
                     if (isRemote)
                         value.OnChanged();
 
-                    ApiLog.Debug("StorageManager", $"Read value of &3{value.ValuePath}&r (IsRemote: &6{isRemote}&r)");
+                    ApiLog.Debug("StorageManager", $"Read value of &3{value.ValuePath}&r (IsRemote: &6{isRemote}&r): {value}");
                 }
                 catch (Exception ex)
                 {
@@ -407,7 +394,7 @@ namespace LabExtended.Core.Storage
             {
                 value.ApplyDefault();
 
-                ApiLog.Debug("StorageManager", $"Applied default value of &3{value.ValuePath}&r (IsDirty: &6{value.IsDirty}&r)");
+                ApiLog.Debug("StorageManager", $"Applied default value of &3{value.ValuePath}&r (IsDirty: &6{value.IsDirty}&r): {value}");
             }
         }
 
@@ -430,8 +417,7 @@ namespace LabExtended.Core.Storage
                     
                     if (value.dirtyRetries > MaxRetries)
                     {
-                        dirtyBits &= ~value.DirtyBit;
-
+                        value.IsDirty = false;
                         value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Dirty value of &3{value.ValuePath}&r will be discarded due to exceeding maximum retry count!");
@@ -448,15 +434,11 @@ namespace LabExtended.Core.Storage
                         {
                             writeGuard.Restart();
 
-                            using var file = File.Open(value.Path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                            using var fileStream = new FileStream(value.Path, FileMode.Create, FileAccess.Write, FileShare.Read, 4096, FileOptions.None);
 
-                            for (var x = 0; x < writer.Position; x++)
-                            {
-                                file.WriteByte(writer.buffer[x]);
-                            }
+                            fileStream.Write(writer.buffer, 0, writer.Position);
 
-                            dirtyBits &= ~value.DirtyBit;
-
+                            value.IsDirty = false;
                             value.dirtyRetries = 0;
 
                             ApiLog.Debug("StorageManager", $"Saved dirty value of &3{value.ValuePath}&r");
@@ -470,8 +452,7 @@ namespace LabExtended.Core.Storage
                     }
                     else
                     {
-                        dirtyBits &= ~value.DirtyBit;
-
+                        value.IsDirty = false;
                         value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Value &3{value.ValuePath}&r did not write any data into the buffer!");
@@ -485,34 +466,25 @@ namespace LabExtended.Core.Storage
 
         private void Internal_FileChanged(object _, FileSystemEventArgs args)
         {
-            var targetValue = values.Find(x => System.IO.Path.GetFullPath(x.Path) == System.IO.Path.GetFullPath(args.FullPath));
+            var fullPath = System.IO.Path.GetFullPath(args.FullPath);
+            var targetValue = values.FirstOrDefault(x => x.Path == fullPath);
 
-            ApiLog.Debug("StorageManager", $"Received value change at &6{args.FullPath}&r! (Value: &3{targetValue?.ValuePath ?? "(null)"}&r)");
+            ApiLog.Debug("StorageManager", $"Received value change at &6{fullPath}&r! (Value: &3{targetValue?.ValuePath ?? "(null)"}&r)");
 
             if (targetValue is null)
-            {
-                ApiLog.Warn("StorageManager", $"Received value change for an unknown file: &3{args.FullPath}&r");
                 return;
-            }
 
             Internal_ReadFile(targetValue, true);
         }
 
         private bool Internal_CheckGuard(FileSystemEventArgs args)
         {
-            if (WriteGuard < 1)
-                return false;
+            var isActive = WriteGuard > 0
+                && writeGuard != null
+                && writeGuard.IsRunning
+                && writeGuard.ElapsedMilliseconds < WriteGuard;
 
-            if (!writeGuard.IsRunning)
-                return false;
-
-            if (writeGuard.ElapsedMilliseconds < WriteGuard)
-            {
-                ApiLog.Debug("StorageManager", $"WriteGuard of &3{Name}&r is active");
-                return true;
-            }
-
-            return false;
+            return isActive;
         }
     }
 }

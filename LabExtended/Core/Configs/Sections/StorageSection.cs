@@ -20,22 +20,10 @@ public class StorageSection
     public bool LoadPlayerStorage { get; set; }
 
     /// <summary>
-    /// Gets or sets the path to the parent directory for player storage.
-    /// </summary>
-    [Description("Sets the path to the parent directory for player storage.")]
-    public string PlayerPath { get; set; } = string.Empty;
-
-    /// <summary>
     /// Gets or sets the directory of the shared storage.
     /// </summary>
-    [Description("Path to the shared storage directory.")]
-    public string SharedPath { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the directory of the server's storage.
-    /// </summary>
-    [Description("Sets the directory of the server's storage.")]
-    public string ServerPath { get; set; } = string.Empty;
+    [Description("Path to the storage directory.")]
+    public string StoragePath { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets a collection of custom paths for storage instances, identified by name.
