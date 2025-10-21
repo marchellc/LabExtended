@@ -1,8 +1,9 @@
 ﻿using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
+
 using Mirror;
+
 using System.Diagnostics;
-using System.IO;
 
 namespace LabExtended.Core.Storage
 {
@@ -241,7 +242,7 @@ namespace LabExtended.Core.Storage
             values.Add(value);
             lookup.Add(value.Name, value);
 
-            ApiLog.Debug("StorageManager", $"Added value &3{value.ValuePath}&r to storage &3{Name}&r! (Path: &6{value.Path}&r)");
+            // ApiLog.Debug("StorageManager", $"Added value &3{value.ValuePath}&r to storage &3{Name}&r! (Path: &6{value.Path}&r)");
             return true;
         }
 
@@ -309,7 +310,7 @@ namespace LabExtended.Core.Storage
 
             updateGuard.Restart();
 
-            ApiLog.Debug("StorageManager", $"Initialized storage instance &3{Name}&r (&6{Path}&r)");
+            // ApiLog.Debug("StorageManager", $"Initialized storage instance &3{Name}&r (&6{Path}&r)");
         }
 
         /// <summary>
@@ -383,7 +384,7 @@ namespace LabExtended.Core.Storage
                     if (isRemote)
                         value.OnChanged();
 
-                    ApiLog.Debug("StorageManager", $"Read value of &3{value.ValuePath}&r (IsRemote: &6{isRemote}&r): {value}");
+                    // ApiLog.Debug("StorageManager", $"Read value of &3{value.ValuePath}&r (IsRemote: &6{isRemote}&r): {value}");
                 }
                 catch (Exception ex)
                 {
@@ -394,7 +395,7 @@ namespace LabExtended.Core.Storage
             {
                 value.ApplyDefault();
 
-                ApiLog.Debug("StorageManager", $"Applied default value of &3{value.ValuePath}&r (IsDirty: &6{value.IsDirty}&r): {value}");
+                // ApiLog.Debug("StorageManager", $"Applied default value of &3{value.ValuePath}&r (IsDirty: &6{value.IsDirty}&r): {value}");
             }
         }
 
@@ -441,7 +442,7 @@ namespace LabExtended.Core.Storage
                             value.IsDirty = false;
                             value.dirtyRetries = 0;
 
-                            ApiLog.Debug("StorageManager", $"Saved dirty value of &3{value.ValuePath}&r");
+                            // ApiLog.Debug("StorageManager", $"Saved dirty value of &3{value.ValuePath}&r");
                         }
                         catch (Exception ex)
                         {
@@ -469,7 +470,7 @@ namespace LabExtended.Core.Storage
             var fullPath = System.IO.Path.GetFullPath(args.FullPath);
             var targetValue = values.FirstOrDefault(x => x.Path == fullPath);
 
-            ApiLog.Debug("StorageManager", $"Received value change at &6{fullPath}&r! (Value: &3{targetValue?.ValuePath ?? "(null)"}&r)");
+            // ApiLog.Debug("StorageManager", $"Received value change at &6{fullPath}&r! (Value: &3{targetValue?.ValuePath ?? "(null)"}&r)");
 
             if (targetValue is null)
                 return;
