@@ -15,7 +15,7 @@ namespace LabExtended.Events.Scp049
         /// <summary>
         /// Owner of the targeted ragdoll.
         /// </summary>
-        public ExPlayer Target { get; }
+        public ExPlayer? Target { get; }
 
         /// <summary>
         /// Error code to send in case this event is disallowed.
@@ -28,7 +28,7 @@ namespace LabExtended.Events.Scp049
         /// <param name="scp">SCP-049 player.</param>
         /// <param name="target">Target ragdoll owner.</param>
         /// <param name="code">Error code.</param>
-        public Scp049CancellingResurrectionEventArgs(ExPlayer scp, ExPlayer target, byte code) 
+        public Scp049CancellingResurrectionEventArgs(ExPlayer scp, ExPlayer? target, byte code) 
             => (Scp, Target, ErrorCode) = (scp, target, code);
     }
 }

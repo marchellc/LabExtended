@@ -37,6 +37,7 @@ namespace LabExtended.Events.Scp079
         /// </summary>
         /// <param name="activator">The player who activated it.</param>
         /// <param name="scps">List of surviving SCPs.</param>
-        public Scp079RecontainingEventArgs(ExPlayer activator, List<ExPlayer> scps) => (Activator, Scps) = (activator, scps);
+        public Scp079RecontainingEventArgs(ExPlayer activator, List<ExPlayer> scps) 
+            => (Activator, Scps) = (activator, scps);
     }
 }

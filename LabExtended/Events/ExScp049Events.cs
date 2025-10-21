@@ -10,23 +10,12 @@ namespace LabExtended.Events;
 /// </summary>
 public static class ExScp049Events
 {
-    /// <inheritdoc cref="Scp049SensingTargetEventArgs"/>
-    public static event Action<Scp049SensingTargetEventArgs>? SensingTarget; 
-    
     /// <inheritdoc cref="Scp049CancellingResurrectionEventArgs"/>
-    public static event Action<Scp049CancellingResurrectionEventArgs>? CancellingResurrection; 
-    
-    /// <inheritdoc cref="Scp049AttemptingResurrectionEventArgs"/>
-    public static event Action<Scp049AttemptingResurrectionEventArgs>? AttemptingResurrection;
+    public static event Action<Scp049CancellingResurrectionEventArgs>? CancellingResurrection;
 
-    /// <summary>
-    /// Invokes the <see cref="SensingTarget"/> event.
-    /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnSensingTarget(Scp049SensingTargetEventArgs args)
-        => SensingTarget.InvokeBooleanEvent(args);
-    
+    /// <inheritdoc cref="Scp049CancelledResurrectionEventArgs"/>
+    public static event Action<Scp049CancelledResurrectionEventArgs>? CancelledResurrection;
+
     /// <summary>
     /// Invokes the <see cref="CancellingResurrection"/> event.
     /// </summary>
@@ -34,12 +23,10 @@ public static class ExScp049Events
     /// <returns>The <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
     public static bool OnCancellingResurrection(Scp049CancellingResurrectionEventArgs args)
         => CancellingResurrection.InvokeBooleanEvent(args);
-    
+
     /// <summary>
-    /// Invokes the <see cref="AttemptingResurrection"/> event.
+    /// Invokes the <see cref="CancelledResurrection"/> event.
     /// </summary>
-    /// <param name="args">The event's arguments.</param>
-    /// <returns>The <see cref="BooleanEventArgs.IsAllowed"/> property.</returns>
-    public static bool OnAttemptingResurrection(Scp049AttemptingResurrectionEventArgs args)
-        => AttemptingResurrection.InvokeBooleanEvent(args);
+    public static void OnCancelledResurrection(Scp049CancelledResurrectionEventArgs args)
+        => CancelledResurrection.InvokeEvent(args);
 }

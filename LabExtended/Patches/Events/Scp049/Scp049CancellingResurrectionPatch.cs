@@ -73,7 +73,7 @@ namespace LabExtended.Patches.Events.Scp049
 
                 __instance._errorCode = __instance.ServerValidateCancel();
 
-                var cancellingArgs = new Scp049CancellingResurrectionEventArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub), __instance._errorCode);
+                var cancellingArgs = new Scp049CancellingResurrectionEventArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub!), __instance._errorCode);
 
                 if (!ExScp049Events.OnCancellingResurrection(cancellingArgs) || cancellingArgs.ErrorCode != 0)
                 {
@@ -82,6 +82,8 @@ namespace LabExtended.Patches.Events.Scp049
                 }
 
                 __instance.IsInProgress = false;
+
+                ExScp049Events.OnCancelledResurrection(new Scp049CancelledResurrectionEventArgs(scp, ExPlayer.Get(ragdoll?.Info.OwnerHub!)));
                 return false;
             }
             else
