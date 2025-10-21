@@ -323,7 +323,6 @@ public class ApiLoader : Plugin
         if (isPreload)
         {
             SwitchContainer.Internal_Init();
-            LabApiParentCommandFix.Internal_Init();
             LogPatch.Internal_Init();
         }
         else
