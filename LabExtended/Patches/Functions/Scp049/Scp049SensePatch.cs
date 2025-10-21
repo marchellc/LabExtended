@@ -1,9 +1,10 @@
 ﻿using HarmonyLib;
 
-using LabExtended.API;
+using LabApi.Events.Arguments.Scp049Events;
+using LabApi.Events.Handlers;
 
-using LabExtended.Events;
-using LabExtended.Events.Scp049;
+using LabExtended.API;
+using LabExtended.API.Containers;
 
 using LabExtended.Extensions;
 
@@ -18,12 +19,13 @@ using Utils.Networking;
 
 namespace LabExtended.Patches.Functions.Scp049
 {
+    /// <summary>
+    /// Implements the functionality of the <see cref="SwitchContainer.CanBeScp049Target"/> and <see cref="SwitchContainer.CanUseSenseAs049"/> toggles.
+    /// </summary>
     public static class Scp049SensePatch
     {
-        public static double NullTargetCooldown = 2.5;
-        
         [HarmonyPatch(typeof(Scp049SenseAbility), nameof(Scp049SenseAbility.ServerProcessCmd))]
-        public static bool Prefix(Scp049SenseAbility __instance, NetworkReader reader)
+        private static bool Prefix(Scp049SenseAbility __instance, NetworkReader reader)
         {
             if (!__instance.Cooldown.IsReady || !__instance.Duration.IsReady)
                 return false;
@@ -38,8 +40,8 @@ namespace LabExtended.Patches.Functions.Scp049
 
             if (target is null || !target.Toggles.CanBeScp049Target || !scp.Toggles.CanUseSenseAs049)
             {
-                if (NullTargetCooldown > 0)
-                    __instance.Cooldown.Trigger(NullTargetCooldown);
+                if (Scp049SenseAbility.AttemptFailCooldown > 0)
+                    __instance.Cooldown.Trigger(Scp049SenseAbility.AttemptFailCooldown);
 
                 __instance.ServerSendRpc(true);
                 return false;
@@ -56,19 +58,17 @@ namespace LabExtended.Patches.Functions.Scp049
                     true, true, 0, false).IsLooking)
                 return false;
 
-            var sensingArgs = new Scp049SensingTargetEventArgs(scp, target, __instance.CastRole, __instance);
+            var sensingArgs = new Scp049UsingSenseEventArgs(scp.ReferenceHub, target.ReferenceHub);
 
-            if (!ExScp049Events.OnSensingTarget(sensingArgs) || sensingArgs.Target is null)
+            Scp049Events.OnUsingSense(sensingArgs);
+
+            if (!sensingArgs.IsAllowed)
             {
-                if (sensingArgs.Cooldown > 0)
-                    __instance.Cooldown.Trigger(sensingArgs.Cooldown);
-
                 __instance.ServerSendRpc(true);
                 return false;
             }
 
-            if (sensingArgs.Duration > 0)
-                __instance.Duration.Trigger(sensingArgs.Duration);
+            __instance.Duration.Trigger(Scp049SenseAbility.EffectDuration);
 
             __instance.Target = sensingArgs.Target.ReferenceHub;
             __instance.HasTarget = true;
