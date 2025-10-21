@@ -254,7 +254,9 @@ namespace LabExtended.API
         {
             get
             {
-                if (Group is ElevatorGroup.GateA || Group is ElevatorGroup.GateB)
+                if (Group is ElevatorGroup.GateA01
+                    or ElevatorGroup.GateA02
+                    or ElevatorGroup.GateB)
                     return IsInSurface;
 
                 if (Group is ElevatorGroup.LczA01 || Group is ElevatorGroup.LczA02 || Group is ElevatorGroup.LczB01 || Group is ElevatorGroup.LczB02)

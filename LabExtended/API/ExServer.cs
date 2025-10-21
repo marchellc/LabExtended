@@ -280,7 +280,7 @@ public static class ExServer
     /// <param name="sender">The command sender to use.</param>
     /// <returns>The command's output.</returns>
     public static string ExecuteCommand(string command, CommandSender? sender = null)
-        => GameCore.Console.singleton.TypeCommand(command, sender ?? ServerConsole.Scs);
+        => GameCore.Console.Singleton.TypeCommand(command, sender ?? ServerConsole.Scs);
 
     /// <summary>
     /// Shows the server on the list (only works on verified servers).

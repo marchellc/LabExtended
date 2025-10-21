@@ -54,10 +54,10 @@ public static class ScpRoleSelector
         for (var i = 0; i < scpContext.Chosen.Count; i++)
         {
             var player = scpContext.Chosen[i];
-            var rolePreference = ScpSpawner.GetPreferenceOfPlayer(player.ReferenceHub, scpRole);
+            var rolePreference = ScpSpawner.GetCombinedPreferencePoints(player.ReferenceHub, scpRole, scpContext.Roles);
 
             for (var x = 0; x < scpContext.Roles.Count; x++)
-                rolePreference -= ScpSpawner.GetPreferenceOfPlayer(player.ReferenceHub, scpContext.Roles[x]);
+                rolePreference -= ScpSpawner.GetCombinedPreferencePoints(player.ReferenceHub, scpContext.Roles[x], scpContext.Roles);
 
             num2++;
 

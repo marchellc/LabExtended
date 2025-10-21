@@ -12,13 +12,10 @@ namespace LabExtended.Patches.Functions.Players
         [HarmonyPatch(typeof(NicknameSync), nameof(NicknameSync.Network_customPlayerInfoString), MethodType.Setter)]
         private static bool Prefix(NicknameSync __instance, ref string value)
         {
-            if (!ExPlayer.TryGet(__instance._hub, out var player)
-                || player.infoPropertyBuilder == null)
+            if (!ExPlayer.TryGet(__instance._hub, out var player))
                 return true;
 
-            player.infoPropertyBuilder.Clear();
-            player.infoPropertyBuilder.Append(value);
-
+            player.infoProperty = value;
             return false;
         }
     }
