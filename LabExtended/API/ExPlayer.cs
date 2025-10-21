@@ -64,6 +64,8 @@ using UnityEngine;
 using UserSettings.ServerSpecific;
 
 using VoiceChat;
+using System.Text;
+using LabExtended.Core;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -466,6 +468,9 @@ public class ExPlayer : Player, IDisposable
         => Get(n => n.Role.Type == role);
     #endregion
 
+    internal StringBuilder? infoBuilder;
+    internal string? infoProperty;
+
     private UserIdHelper.UserIdInfo? idInfo;
     private string idInfoValue = string.Empty;
 
@@ -525,6 +530,8 @@ public class ExPlayer : Player, IDisposable
         else if (referenceHub.connectionToServer != null &&
                  LiteNetLib4MirrorServer.Peers.TryPeekIndex(referenceHub.connectionToServer.connectionId, out peer))
             Peer = peer;
+
+        infoBuilder = StringBuilderPool.Shared.Rent();
 
         Role = new(referenceHub.roleManager);
         Ammo = new(referenceHub.inventory);
@@ -594,6 +601,7 @@ public class ExPlayer : Player, IDisposable
         }
 
         playerUpdate.OnUpdate += RefreshModifiers;
+        playerUpdate.OnUpdate += RefreshCustomInfo;
         
         InternalEvents.HandlePlayerJoin(this);
     }
@@ -1100,6 +1108,31 @@ public class ExPlayer : Player, IDisposable
     }
 
     /// <summary>
+    /// Gets or sets a value indicating whether the custom information area is enabled.
+    /// </summary>
+    /// <remarks>Setting this property to <see langword="true"/> enables the custom information area by
+    /// updating the  <see cref="Player.InfoArea"/> field. Setting it to <see langword="false"/> disables the custom
+    /// information area.</remarks>
+    public bool HasEnabledCustomInfo
+    {
+        get => (InfoArea & PlayerInfoArea.CustomInfo) == PlayerInfoArea.CustomInfo;
+        set
+        {
+            if (value)
+            {
+                if (!HasEnabledCustomInfo)
+                {
+                    InfoArea |= PlayerInfoArea.CustomInfo;
+                }
+            }
+            else
+            {
+                InfoArea &= ~PlayerInfoArea.CustomInfo;
+            }
+        }
+    }
+
+    /// <summary>
     /// Whether the player has a custom name applied.
     /// </summary>
     [CommandPropertyAlias("hasCustomName")]
@@ -1395,6 +1428,7 @@ public class ExPlayer : Player, IDisposable
     public void Dispose()
     {
         playerUpdate.OnUpdate -= RefreshModifiers;
+        playerUpdate.OnUpdate -= RefreshCustomInfo;
 
         if (host != null && host == this)
             host = null;
@@ -1484,10 +1518,16 @@ public class ExPlayer : Player, IDisposable
         if (SentPositions != null)
             DictionaryPool<uint, PositionSync.SentPosition>.Shared.Return(SentPositions);
 
+        if (infoBuilder != null)
+            StringBuilderPool.Shared.Return(infoBuilder);
+
         settingsByAssembly = null;
         settingsIdLookup = null;
         settingsMenuLookup = null;
         settingsAssignedIdLookup = null;
+
+        infoBuilder = null!;
+        infoProperty = null;
 
         removeNextFrame = null!;
         
@@ -1498,6 +1538,41 @@ public class ExPlayer : Player, IDisposable
 
         Position = null!;
         Rotation = null!;
+    }
+
+    private void RefreshCustomInfo()
+    {
+        if (infoBuilder == null)
+            return;
+
+        if ((InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
+            return;
+
+        infoBuilder.Clear();
+
+        if (infoProperty?.Length > 0)
+            infoBuilder.AppendLine(infoProperty);
+
+        ExPlayerEvents.OnRefreshingCustomInfo(this, infoBuilder);
+
+        if (infoBuilder.Length == 0)
+            return;
+
+        var customInfo = infoBuilder
+            .ToString()
+            .TrimEnd('\n');
+
+        if (NetworkBehaviour.SyncVarEqual(customInfo, ref ReferenceHub.nicknameSync._customPlayerInfoString))
+            return;
+
+        if (!NicknameSync.ValidateCustomInfo(customInfo, out var rejectionText))
+        {
+            ApiLog.Warn("LabExtended", $"CustomInfo of &3{ToLogString()}&r was &1REJECTED&r! (&3{rejectionText}&r)");
+            return;
+        }
+
+        ReferenceHub.nicknameSync._customPlayerInfoString = customInfo;
+        ReferenceHub.nicknameSync.syncVarDirtyBits |= 2UL;
     }
 
     private void RefreshModifiers()

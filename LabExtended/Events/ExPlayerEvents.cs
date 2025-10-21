@@ -6,6 +6,8 @@ using LabExtended.Events.Player;
 using LabExtended.Events.Player.Snake;
 using LabExtended.Events.Player.Settings;
 
+using System.Text;
+
 #pragma warning disable CS8604 // Possible null reference argument.
 
 namespace LabExtended.Events;
@@ -108,6 +110,11 @@ public static class ExPlayerEvents
 
     /// <inheritdoc cref="PlayerRefreshingModifiersEventArgs"/>
     public static event Action<PlayerRefreshingModifiersEventArgs>? RefreshingModifiers;
+
+    /// <summary>
+    /// Gets called every frame if the player has the custom info flag enabled.
+    /// </summary>
+    public static event Action<ExPlayer, StringBuilder>? RefreshingCustomInfo;
     #endregion
 
     #region Items
@@ -350,6 +357,12 @@ public static class ExPlayerEvents
     /// <param name="args">The event's arguments.</param>
     public static void OnRefreshingModifiers(PlayerRefreshingModifiersEventArgs args)
         => RefreshingModifiers.InvokeEvent(args);
+
+    /// <summary>
+    /// Invokes the <see cref="RefreshingCustomInfo"/> event.
+    /// </summary>
+    public static void OnRefreshingCustomInfo(ExPlayer player, StringBuilder builder)
+        => RefreshingCustomInfo.InvokeSafe(player, builder);
     #endregion
 
     #region Handlers - Items
