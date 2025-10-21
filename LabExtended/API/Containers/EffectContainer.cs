@@ -232,6 +232,11 @@ public class EffectContainer : IDisposable
     public MovementBoost MovementBoost { get; private set; }
 
     /// <summary>
+    /// Gets the player's NightVision effect.
+    /// </summary>
+    public NightVision NightVision { get; private set; }
+
+    /// <summary>
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public PocketCorroding PocketCorroding { get; private set; }
@@ -349,6 +354,15 @@ public class EffectContainer : IDisposable
     {
         get => SoundtrackMute.IsEnabled;
         set => SoundtrackMute.IsEnabled = value;
+    }
+
+    /// <summary>
+    /// Whether or not the Night Vision effect is enabled.
+    /// </summary>
+    public bool HasNightVision
+    {
+        get => NightVision.IsEnabled;
+        set => NightVision.IsEnabled = value;
     }
 
     /// <summary>
