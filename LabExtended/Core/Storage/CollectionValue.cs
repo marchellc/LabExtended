@@ -1,4 +1,6 @@
-﻿using Mirror;
+﻿using LabExtended.Core.Storage.Interfaces;
+
+using Mirror;
 
 using System.Collections;
 using System.Collections.ObjectModel;
@@ -54,7 +56,15 @@ namespace LabExtended.Core.Storage
             }
             set
             {
+                var curValue = collection[index];
+
+                if (curValue != null && curValue is IStorageValue collectionStorageValue)
+                    collectionStorageValue.OnRemoved(this);
+
                 collection[index] = value;
+
+                if (value != null && value is IStorageValue newCollectionStorageValue)
+                    newCollectionStorageValue.OnAdded(this);
 
                 IsDirty = true;
             }
@@ -87,6 +97,14 @@ namespace LabExtended.Core.Storage
             else
             {
                 this.collection = new(collection);
+            }
+
+            for (var i = 0; i < this.collection.Count; i++)
+            {
+                var item = this.collection[i];
+
+                if (item is IStorageValue collectionStorageValue)
+                    collectionStorageValue.OnAdded(this);
             }
 
             Collection = this.collection.AsReadOnly();
@@ -159,6 +177,9 @@ namespace LabExtended.Core.Storage
         {
             collection.Add(item);
 
+            if (item is IStorageValue collectionStorageValue)
+                collectionStorageValue.OnAdded(this);
+
             IsDirty = true;
         }
 
@@ -174,6 +195,9 @@ namespace LabExtended.Core.Storage
         {
             if (collection.Remove(item))
             {
+                if (item is IStorageValue collectionStorageValue)
+                    collectionStorageValue.OnRemoved(this);
+
                 IsDirty = true;
                 return true;
             }
@@ -189,9 +213,17 @@ namespace LabExtended.Core.Storage
         /// <param name="index">The zero-based index of the element to remove.</param>
         public void RemoveAt(int index)
         {
-            collection.RemoveAt(index);
+            if (index >= 0 && index < collection.Count)
+            {
+                var item = collection[index];
 
-            IsDirty = true;
+                if (item is IStorageValue collectionStorageValue)
+                    collectionStorageValue.OnRemoved(this);
+
+                collection.RemoveAt(index);
+
+                IsDirty = true;
+            }
         }
 
         /// <summary>
@@ -203,6 +235,14 @@ namespace LabExtended.Core.Storage
         {
             if (collection.Count > 0)
             {
+                for (var i = 0; i < collection.Count; i++)
+                {
+                    var item = collection[i];
+
+                    if (item is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnRemoved(this);
+                }
+
                 collection.Clear();
 
                 IsDirty = true;
@@ -215,13 +255,26 @@ namespace LabExtended.Core.Storage
             if (Reader<T>.read is not null)
             {
                 if (collection.Count > 0)
+                {
+                    for (var i = 0; i < collection.Count; i++)
+                    {
+                        var item = collection[i];
+
+                        if (item is IStorageValue collectionStorageValue)
+                            collectionStorageValue.OnRemoved(this);
+                    }
+
                     collection.Clear();
+                }
 
                 var count = reader.ReadInt();
 
                 for (var i = 0; i < count; i++)
                 {
                     var item = Reader<T>.read(reader);
+
+                    if (item is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnAdded(this);
 
                     collection.Add(item);
                 }
