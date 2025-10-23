@@ -41,7 +41,51 @@ namespace LabExtended.Core.Storage
         /// <summary>
         /// Gets or sets whether this value is dirty and needs to be saved.
         /// </summary>
-        public bool IsDirty { get; set; }
+        public bool IsDirty
+        {
+            get => field;
+            set
+            {
+                if (value != field)
+                {
+                    if (value)
+                    {
+                        LastChangeTime = UnityEngine.Time.realtimeSinceStartup;
+                    }
+                    else
+                    {
+                        dirtyRetries = 0;
+
+                        LastSaveTime = UnityEngine.Time.realtimeSinceStartup;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the time, in seconds, of the most recent change (from <see cref="UnityEngine.Time.realtimeSinceStartup"/>).
+        /// </summary>
+        public float LastChangeTime { get; internal set; }
+
+        /// <summary>
+        /// Gets the time, in seconds, since the last save (from <see cref="UnityEngine.Time.realtimeSinceStartup"/>).
+        /// </summary>
+        public float LastSaveTime { get; internal set; }
+
+        /// <summary>
+        /// Gets the number of seconds that have elapsed since the last change occurred.
+        /// </summary>
+        public float SecondsSinceChange => UnityEngine.Time.realtimeSinceStartup - LastChangeTime;
+
+        /// <summary>
+        /// Gets the number of seconds that have elapsed since the value was last saved.
+        /// </summary>
+        public float SecondsSinceSave => UnityEngine.Time.realtimeSinceStartup - LastSaveTime;
+
+        /// <summary>
+        /// Gets the number of seconds that have elapsed since the value was last marked as dirty.
+        /// </summary>
+        public float SecondsDirty => IsDirty ? SecondsSinceChange : 0f;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StorageValue"/> class.
@@ -78,6 +122,14 @@ namespace LabExtended.Core.Storage
         public virtual void OnChanged()
         {
             
+        }
+
+        /// <summary>
+        /// Gets called when the dirty value is saved.
+        /// </summary>
+        public virtual void OnSaved()
+        {
+
         }
 
         /// <summary>

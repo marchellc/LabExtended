@@ -1,13 +1,12 @@
 ﻿using LabExtended.Core;
 using LabExtended.Utilities;
-using LabExtended.Attributes;
+using LabExtended.Extensions;
+
+using LabExtended.API.Images.Conversion;
 
 using NorthwoodLib.Pools;
 
 using System.Drawing;
-
-using LabExtended.API.Images.Conversion;
-using LabExtended.Extensions;
 
 namespace LabExtended.API.Images;
 
@@ -92,8 +91,55 @@ public static class ImageLoader
     /// <returns>true if the image was found</returns>
     public static bool TryGet(string name, out ImageFile file)
         => LoadedImages.TryGetValue(name, out file);
+
+    /// <summary>
+    /// Attempts to load an image file from the specified file path.
+    /// </summary>
+    /// <remarks>This method does not throw an exception if the file does not exist or if the file cannot be
+    /// parsed. Instead, it returns <see langword="false"/> and sets <paramref name="file"/> to <see
+    /// langword="null"/>.</remarks>
+    /// <param name="filePath">The full path to the file to be loaded. The path must point to an existing file.</param>
+    /// <param name="file">When this method returns, contains the loaded <see cref="ImageFile"/> object if the operation succeeds;
+    /// otherwise, <see langword="null"/>. This parameter is passed uninitialized.</param>
+    /// <returns><see langword="true"/> if the file was successfully loaded and parsed into an <see cref="ImageFile"/> object;
+    /// otherwise, <see langword="false"/>.</returns>
+    public static bool TryLoad(string filePath, out ImageFile file)
+    {
+        file = null!;
+
+        if (!File.Exists(filePath))
+            return false;
+
+        var data = File.ReadAllBytes(filePath);
+
+        file = ReadFile(data);
+
+        if (file != null)
+        {
+            file.Path = filePath;
+            file.Name = Path.GetFileNameWithoutExtension(filePath);
+
+            return true;
+        }
+
+        return false;
+    }
     
-    internal static ImageFile ReadFile(byte[] data)
+    /// <summary>
+    /// Reads image data from a byte array and constructs an <see cref="ImageFile"/> object.
+    /// </summary>
+    /// <remarks>This method reads the image data, including its dimensions, frames, and pixel information,
+    /// from the provided byte array. If <paramref name="readAdditionalData"/> is <see langword="true"/>, additional
+    /// metadata is read using the <see cref="ToyStringImageConvertor.ReadImage"/> method. If <paramref
+    /// name="convertFormats"/> is <see langword="true"/>, the image formats are converted using the <see
+    /// cref="ImageFile.ConvertFormats"/> method.</remarks>
+    /// <param name="data">The byte array containing the image data to be read. This cannot be null or empty.</param>
+    /// <param name="readAdditionalData">A boolean value indicating whether additional metadata should be read from the image data. Defaults to <see
+    /// langword="true"/>.</param>
+    /// <param name="convertFormats">A boolean value indicating whether the image formats should be converted after reading. Defaults to <see
+    /// langword="true"/>.</param>
+    /// <returns>An <see cref="ImageFile"/> object representing the image data, including its frames, pixels, and metadata.</returns>
+    public static ImageFile ReadFile(byte[] data, bool readAdditionalData = true, bool convertFormats = true)
     {
         var image = new ImageFile();
         
@@ -160,10 +206,13 @@ public static class ImageLoader
                 image.Frames.Add(frame);
             }
             
-            ToyStringImageConvertor.ReadImage(image, reader);
+            if (readAdditionalData)
+                ToyStringImageConvertor.ReadImage(image, reader);
         }
         
-        image.ConvertFormats();
+        if (convertFormats)
+            image.ConvertFormats();
+
         return image;
     }
 
@@ -200,8 +249,6 @@ public static class ImageLoader
 #endif
 
                 LoadedImages.Add(name, image);
-
-                ApiLog.Debug("Image Loader", $"Loaded image &6{image.Name}&r");
                 return image;
             }
             catch (Exception ex)
@@ -232,8 +279,6 @@ public static class ImageLoader
                     image.Value.Dispose();
                     
                     removedImages.Add(image.Key);
-                    
-                    ApiLog.Debug("Image Loader", $"Removed image &6{image.Value.Name}&r");
                 }
             }
 

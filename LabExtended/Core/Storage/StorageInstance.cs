@@ -242,7 +242,6 @@ namespace LabExtended.Core.Storage
             values.Add(value);
             lookup.Add(value.Name, value);
 
-            // ApiLog.Debug("StorageManager", $"Added value &3{value.ValuePath}&r to storage &3{Name}&r! (Path: &6{value.Path}&r)");
             return true;
         }
 
@@ -309,8 +308,6 @@ namespace LabExtended.Core.Storage
             updateComponent.OnFixedUpdate += Internal_Update;
 
             updateGuard.Restart();
-
-            // ApiLog.Debug("StorageManager", $"Initialized storage instance &3{Name}&r (&6{Path}&r)");
         }
 
         /// <summary>
@@ -377,14 +374,10 @@ namespace LabExtended.Core.Storage
                     reader.SetBuffer(segment);
 
                     value.IsDirty = false;
-                    value.dirtyRetries = 0;
-
                     value.ReadValue(reader);
 
                     if (isRemote)
                         value.OnChanged();
-
-                    // ApiLog.Debug("StorageManager", $"Read value of &3{value.ValuePath}&r (IsRemote: &6{isRemote}&r): {value}");
                 }
                 catch (Exception ex)
                 {
@@ -394,8 +387,6 @@ namespace LabExtended.Core.Storage
             else
             {
                 value.ApplyDefault();
-
-                // ApiLog.Debug("StorageManager", $"Applied default value of &3{value.ValuePath}&r (IsDirty: &6{value.IsDirty}&r): {value}");
             }
         }
 
@@ -419,7 +410,6 @@ namespace LabExtended.Core.Storage
                     if (value.dirtyRetries > MaxRetries)
                     {
                         value.IsDirty = false;
-                        value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Dirty value of &3{value.ValuePath}&r will be discarded due to exceeding maximum retry count!");
                         return;
@@ -440,9 +430,7 @@ namespace LabExtended.Core.Storage
                             fileStream.Write(writer.buffer, 0, writer.Position);
 
                             value.IsDirty = false;
-                            value.dirtyRetries = 0;
-
-                            // ApiLog.Debug("StorageManager", $"Saved dirty value of &3{value.ValuePath}&r");
+                            value.OnSaved();
                         }
                         catch (Exception ex)
                         {
@@ -454,7 +442,6 @@ namespace LabExtended.Core.Storage
                     else
                     {
                         value.IsDirty = false;
-                        value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Value &3{value.ValuePath}&r did not write any data into the buffer!");
                     }
@@ -469,8 +456,6 @@ namespace LabExtended.Core.Storage
         {
             var fullPath = System.IO.Path.GetFullPath(args.FullPath);
             var targetValue = values.FirstOrDefault(x => x.Path == fullPath);
-
-            // ApiLog.Debug("StorageManager", $"Received value change at &6{fullPath}&r! (Value: &3{targetValue?.ValuePath ?? "(null)"}&r)");
 
             if (targetValue is null)
                 return;
