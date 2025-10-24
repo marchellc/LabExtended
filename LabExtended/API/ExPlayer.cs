@@ -1542,10 +1542,11 @@ public class ExPlayer : Player, IDisposable
 
     private void RefreshCustomInfo()
     {
-        if (infoBuilder == null)
-            return;
-
-        if ((InfoArea & PlayerInfoArea.CustomInfo) != PlayerInfoArea.CustomInfo)
+        if (infoBuilder == null 
+            || !ExPlayerEvents.anyRefreshingCustomInfoSubscribers
+            || !HasEnabledCustomInfo 
+            || !IsVerified 
+            || ReferenceHub == null)
             return;
 
         infoBuilder.Clear();

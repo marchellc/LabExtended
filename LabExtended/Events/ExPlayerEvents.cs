@@ -17,6 +17,8 @@ namespace LabExtended.Events;
 /// </summary>
 public static class ExPlayerEvents
 {
+    internal static bool anyRefreshingCustomInfoSubscribers => RefreshingCustomInfo != null;
+
     #region Join & Leave
     /// <summary>
     /// Gets called when a new player joins the server.
