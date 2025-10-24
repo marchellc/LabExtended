@@ -19,6 +19,8 @@ using InventorySystem.Items.ToggleableLights.Flashlight;
 using InventorySystem.Items.ToggleableLights.Lantern;
 
 using LabExtended.API.Custom.Items;
+using LabExtended.Extensions;
+using LabExtended.Core;
 
 namespace LabExtended.Patches.Functions.Items;
 
@@ -27,11 +29,7 @@ namespace LabExtended.Patches.Functions.Items;
 /// </summary>
 public static class ItemWeightPatches
 {
-    /// <summary>
-    /// Gets the highest item ID.
-    /// </summary>
-    public const int HighestItemId = 66;
-
+    private static int loggedOutOfRange = 0;
     private static float[] customWeightArray;
 
     /// <summary>
@@ -46,9 +44,16 @@ public static class ItemWeightPatches
         {
             if (customWeightArray is null)
             {
-                customWeightArray = new float[HighestItemId];
+                var highestItemId = typeof(ItemType).GetHighestEnumValue();
 
-                for (var x = 0; x < HighestItemId; x++)
+                if (highestItemId is null)
+                    throw new InvalidOperationException("Unable to determine the highest item ID from ItemType enum.");
+
+                var castItemId = (int)highestItemId;
+
+                customWeightArray = new float[castItemId + 1];
+
+                for (var x = 0; x < castItemId; x++)
                     customWeightArray[x] = -1f;
             }
 
@@ -67,12 +72,17 @@ public static class ItemWeightPatches
     /// <param name="type">The item type for which to set the custom weight. Must be a valid, non-negative value.</param>
     /// <param name="weight">The weight value to assign to the specified item type.</param>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="type"/> is less than zero.</exception>
-    public static void SetWeight(ItemType type, float weight)
+    public static void SetWeight(this ItemType type, float weight)
     {
         if (type < 0)
             throw new ArgumentOutOfRangeException(nameof(type));
 
-        GlobalCustomWeight[(int)type] = weight;
+        var index = (int)type;
+
+        if (index < 0 || index >= GlobalCustomWeight.Length)
+            return;
+
+        GlobalCustomWeight[index] = weight;
     }
 
     /// <summary>
@@ -100,7 +110,26 @@ public static class ItemWeightPatches
     /// customizations are found.</returns>
     public static float GetWeight(ItemType type, ushort serial, float baseWeight)
     {
-        var globalWeight = GlobalCustomWeight[(int)type];
+        if (type is ItemType.None)
+            return baseWeight;
+
+        var index = (int)type;
+
+        if (index < 0 || index >= GlobalCustomWeight.Length)
+        {
+            var logBit = index << 1;
+
+            if ((loggedOutOfRange & logBit) == 0)
+            {
+                ApiLog.Error("LabExtended", $"ItemType &3{type}&r (&6{(int)type}&r) is out of range for custom weight array!");
+
+                loggedOutOfRange |= logBit;
+            }
+
+            return baseWeight;
+        }
+
+        var globalWeight = GlobalCustomWeight[index];
 
         if (type > 0 && globalWeight != -1f)
             baseWeight = globalWeight;

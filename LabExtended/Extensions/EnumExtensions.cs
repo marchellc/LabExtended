@@ -29,6 +29,31 @@ public static class EnumExtensions
     private static readonly Dictionary<Type, Enum[]> _enumValuesCache = new();
 
     /// <summary>
+    /// Retrieves the highest value from the specified enumeration type.
+    /// </summary>
+    /// <remarks>This method uses the default comparer to determine the highest value in the
+    /// enumeration.</remarks>
+    /// <param name="enumType">The enumeration type to evaluate. Must be a valid enumeration type.</param>
+    /// <returns>The highest value in the enumeration as an object, or <see langword="null"/> if the enumeration has no values.</returns>
+    public static object? GetHighestEnumValue(this Type enumType)
+    {
+        var values = enumType.GetEnumValues();
+        var highest = default(object);
+        var type = Enum.GetUnderlyingType(enumType);
+
+        foreach (var value in values)
+        {
+            var underlyingValue = Convert.ChangeType(value, type);
+
+            if (highest is null
+                || Comparer<object>.Default.Compare(underlyingValue, highest) > 0)
+                highest = underlyingValue;
+        }
+
+        return highest;
+    }
+
+    /// <summary>
     /// Gets all (cached) enum members.
     /// </summary>
     public static Enum[] GetEnumValues(this Type type)

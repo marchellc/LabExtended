@@ -19,6 +19,7 @@ using System.Reflection;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using UnityEngine;
+using InventorySystem.Items.MarshmallowMan;
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
@@ -275,7 +276,12 @@ public class EffectContainer : IDisposable
     /// Gets the player's SCP-1576 effect.
     /// </summary>
     public Scp1576 Scp1576 { get; private set; }
-    
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.Scp1509Resurrected"/> effect.
+    /// </summary>
+    public Scp1509Resurrected Scp1509Resurrected { get; private set; }
+
     /// <summary>
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
@@ -340,6 +346,73 @@ public class EffectContainer : IDisposable
     /// Gets the player's AmnesiaVision effect.
     /// </summary>
     public Vitality Vitality { get; private set; }
+    #endregion
+
+    #region Halloween Effects
+    /// <summary>
+    /// Gets the player's <see cref="MarshmallowEffect"/> effect.
+    /// </summary>
+    public MarshmallowEffect Marshmallow { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.Metal"/> effect.
+    /// </summary>
+    public Metal Metal { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.Prismatic"/> effect.
+    /// </summary>
+    public Prismatic Prismatic { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.Spicy"/> effect.
+    /// </summary>
+    public Spicy Spicy { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.SugarRush"/> effect.
+    /// </summary>
+    public SugarRush SugarRush { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.SugarHigh"/> effect.
+    /// </summary>
+    public SugarHigh SugarHigh { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.SugarCrave"/> effect.
+    /// </summary>
+    public SugarCrave SugarCrave { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.OrangeCandy"/> effect.
+    /// </summary>
+    public OrangeCandy OrangeCandy { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.OrangeWitness"/> effect.
+    /// </summary>
+    public OrangeWitness OrangeWitness { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.WhiteCandy"/> effect.
+    /// </summary>
+    public WhiteCandy WhiteCandy { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.SlowMetabolism"/> effect.
+    /// </summary>
+    public SlowMetabolism SlowMetabolism { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.TemporaryBypass"/> effect.
+    /// </summary>
+    public TemporaryBypass TemporaryBypass { get; private set; }
+
+    /// <summary>
+    /// Gets the player's <see cref="CustomPlayerEffects.TraumatizedByEvil"/> effect.
+    /// </summary>
+    public TraumatizedByEvil TraumatizedByEvil { get; private set; }
     #endregion
 
     /// <summary>
@@ -464,7 +537,7 @@ public class EffectContainer : IDisposable
                 }
                 else
                 {
-                    ApiLog.Warn("Effect API", $"No properties are defined for effect: {type.FullName}");
+                    ApiLog.Error("LabExtended", $"Effect &3{type.Name}&r does not have any properties!");
                 }
             }
 
@@ -478,15 +551,14 @@ public class EffectContainer : IDisposable
 
             if (props.Count != _properties.Count())
             {
-                ApiLog.Warn("Effect API",
-                    $"Failed to set some effect properties (total={_properties.Count()} / set={props.Count})");
+                ApiLog.Error("LabExtended", $"Some effects are missing! (set &6{props.Count}&r / &3{_properties.Count()}&r)");
 
                 foreach (var prop in _properties)
                 {
                     if (props.Contains(prop))
                         continue;
 
-                    ApiLog.Warn("Effect API", $"Missing effect for property: {prop.GetMemberName()}");
+                    ApiLog.Error("LabExtended", $"- &3{prop.Name}&r (&1{prop.PropertyType.Name}&r)");
                 }
             }
 
@@ -494,8 +566,7 @@ public class EffectContainer : IDisposable
         }
         catch (Exception ex)
         {
-            ApiLog.Error("Effect API",
-                $"An error occurred while setting up the effect container!\n{ex.ToColoredString()}");
+            ApiLog.Error("LabExtended", $"An error occurred while setting up the effect container!\n{ex.ToColoredString()}");
         }
     }
 
