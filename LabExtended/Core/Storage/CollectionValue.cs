@@ -1,4 +1,5 @@
 ﻿using LabExtended.Core.Storage.Interfaces;
+using LabExtended.Extensions;
 
 using Mirror;
 
@@ -24,6 +25,8 @@ namespace LabExtended.Core.Storage
         ICollection<T>,
         IReadOnlyList<T>
     {
+        private static bool implementsStorage = typeof(T).InheritsType<IStorageValue>();
+
         private List<T> collection;
 
         /// <summary>
@@ -56,14 +59,17 @@ namespace LabExtended.Core.Storage
             }
             set
             {
-                var curValue = collection[index];
+                if (implementsStorage)
+                {
+                    var curValue = collection[index];
 
-                if (curValue != null && curValue is IStorageValue collectionStorageValue)
-                    collectionStorageValue.OnRemoved(this);
+                    if (curValue != null && curValue is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnRemoved(this);
+                }
 
                 collection[index] = value;
 
-                if (value != null && value is IStorageValue newCollectionStorageValue)
+                if (implementsStorage && value != null && value is IStorageValue newCollectionStorageValue)
                     newCollectionStorageValue.OnAdded(this);
 
                 IsDirty = true;
@@ -99,12 +105,15 @@ namespace LabExtended.Core.Storage
                 this.collection = new(collection);
             }
 
-            for (var i = 0; i < this.collection.Count; i++)
+            if (implementsStorage)
             {
-                var item = this.collection[i];
+                for (var i = 0; i < this.collection.Count; i++)
+                {
+                    var item = this.collection[i];
 
-                if (item is IStorageValue collectionStorageValue)
-                    collectionStorageValue.OnAdded(this);
+                    if (item is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnAdded(this);
+                }
             }
 
             Collection = this.collection.AsReadOnly();
@@ -177,7 +186,7 @@ namespace LabExtended.Core.Storage
         {
             collection.Add(item);
 
-            if (item is IStorageValue collectionStorageValue)
+            if (implementsStorage && item is IStorageValue collectionStorageValue)
                 collectionStorageValue.OnAdded(this);
 
             IsDirty = true;
@@ -195,7 +204,7 @@ namespace LabExtended.Core.Storage
         {
             if (collection.Remove(item))
             {
-                if (item is IStorageValue collectionStorageValue)
+                if (implementsStorage && item is IStorageValue collectionStorageValue)
                     collectionStorageValue.OnRemoved(this);
 
                 IsDirty = true;
@@ -213,13 +222,22 @@ namespace LabExtended.Core.Storage
         /// <param name="index">The zero-based index of the element to remove.</param>
         public void RemoveAt(int index)
         {
-            if (index >= 0 && index < collection.Count)
+            if (implementsStorage)
             {
-                var item = collection[index];
+                if (index >= 0 && index < collection.Count)
+                {
+                    var item = collection[index];
 
-                if (item is IStorageValue collectionStorageValue)
-                    collectionStorageValue.OnRemoved(this);
+                    if (item is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnRemoved(this);
 
+                    collection.RemoveAt(index);
+
+                    IsDirty = true;
+                }
+            }
+            else
+            {
                 collection.RemoveAt(index);
 
                 IsDirty = true;
@@ -235,12 +253,15 @@ namespace LabExtended.Core.Storage
         {
             if (collection.Count > 0)
             {
-                for (var i = 0; i < collection.Count; i++)
+                if (implementsStorage)
                 {
-                    var item = collection[i];
+                    for (var i = 0; i < collection.Count; i++)
+                    {
+                        var item = collection[i];
 
-                    if (item is IStorageValue collectionStorageValue)
-                        collectionStorageValue.OnRemoved(this);
+                        if (item is IStorageValue collectionStorageValue)
+                            collectionStorageValue.OnRemoved(this);
+                    }
                 }
 
                 collection.Clear();
@@ -256,12 +277,15 @@ namespace LabExtended.Core.Storage
             {
                 if (collection.Count > 0)
                 {
-                    for (var i = 0; i < collection.Count; i++)
+                    if (implementsStorage)
                     {
-                        var item = collection[i];
+                        for (var i = 0; i < collection.Count; i++)
+                        {
+                            var item = collection[i];
 
-                        if (item is IStorageValue collectionStorageValue)
-                            collectionStorageValue.OnRemoved(this);
+                            if (item is IStorageValue collectionStorageValue)
+                                collectionStorageValue.OnRemoved(this);
+                        }
                     }
 
                     collection.Clear();

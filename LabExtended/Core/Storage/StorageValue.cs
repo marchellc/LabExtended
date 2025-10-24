@@ -109,6 +109,35 @@ namespace LabExtended.Core.Storage
         }
 
         /// <summary>
+        /// Sets the specified field to a new value and marks the object as modified if the value changes.
+        /// </summary>
+        /// <remarks>The method updates the field only if the new value is different from the current
+        /// value, considering both null and non-null comparisons. If the field is updated, the object is marked as
+        /// modified by setting the <c>IsDirty</c> property to <see langword="true"/>.</remarks>
+        /// <typeparam name="T">The type of the field and value.</typeparam>
+        /// <param name="field">A reference to the field to be updated.</param>
+        /// <param name="value">The new value to assign to the field.</param>
+        /// <returns><see langword="true"/> if the field was updated and the object was marked as modified; otherwise, <see
+        /// langword="false"/> if the field value remains unchanged.</returns>
+        public bool SetField<T>(ref T field, T value)
+        {
+            if (field == null && value == null)
+                return false;
+
+            if ((field is null && value != null)
+                || (field != null && value == null)
+                || (field != null && value != null && !field.Equals(value)))
+            {
+                field = value;
+
+                IsDirty = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Applies the default value to this instance.
         /// </summary>
         public virtual void ApplyDefault()

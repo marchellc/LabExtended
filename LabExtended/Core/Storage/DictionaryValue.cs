@@ -18,6 +18,8 @@ namespace LabExtended.Core.Storage
         IDictionary<TKey, TValue>,
         IReadOnlyDictionary<TKey, TValue>
     {
+        private static bool implementsStorage = typeof(TValue).InheritsType<IStorageValue>();
+
         private Dictionary<TKey, TValue> dictionary;
 
         private bool canWrite;
@@ -86,11 +88,14 @@ namespace LabExtended.Core.Storage
             canWrite = Writer<TKey>.write is not null && Writer<TValue>.write is not null;
             canRead = Reader<TKey>.read is not null && Reader<TValue>.read is not null;
 
-            foreach (var pair in this.dictionary)
+            if (implementsStorage)
             {
-                if (pair.Value is IStorageValue collectionStorageValue)
+                foreach (var pair in this.dictionary)
                 {
-                    collectionStorageValue.OnAdded(this);
+                    if (pair.Value is IStorageValue collectionStorageValue)
+                    {
+                        collectionStorageValue.OnAdded(this);
+                    }
                 }
             }
 
@@ -138,7 +143,8 @@ namespace LabExtended.Core.Storage
             }
             set
             {
-                if (dictionary.TryGetValue(key, out var existingValue)
+                if (implementsStorage 
+                    && dictionary.TryGetValue(key, out var existingValue)
                     && existingValue is IStorageValue existingCollectionStorageValue)
                         existingCollectionStorageValue.OnRemoved(this);              
 
@@ -226,7 +232,7 @@ namespace LabExtended.Core.Storage
         {
             dictionary.Add(key, value);
 
-            if (value is IStorageValue collectionStorageValue)
+            if (implementsStorage && value is IStorageValue collectionStorageValue)
                 collectionStorageValue.OnAdded(this);
 
             IsDirty = true;
@@ -242,14 +248,25 @@ namespace LabExtended.Core.Storage
         /// method also returns <see langword="false"/> if the key was not found in the collection.</returns>
         public bool Remove(TKey key)
         {
-            if (dictionary.TryGetValue(key, out var value)
-                && dictionary.Remove(key))
+            if (implementsStorage)
             {
-                if (value is IStorageValue collectionStorageValue)
-                    collectionStorageValue.OnRemoved(this);
+                if (dictionary.TryGetValue(key, out var value)
+                    && dictionary.Remove(key))
+                {
+                    if (value is IStorageValue collectionStorageValue)
+                        collectionStorageValue.OnRemoved(this);
 
-                IsDirty = true;
-                return true;
+                    IsDirty = true;
+                    return true;
+                }
+            }
+            else
+            {
+                if (dictionary.Remove(key))
+                {
+                    IsDirty = true;
+                    return true;
+                }
             }
 
             return false;
@@ -265,7 +282,7 @@ namespace LabExtended.Core.Storage
         {
             dictionary.Add(item.Key, item.Value);
 
-            if (item.Value is IStorageValue collectionStorageValue)
+            if (implementsStorage && item.Value is IStorageValue collectionStorageValue)
                 collectionStorageValue.OnAdded(this);
 
             IsDirty = true;
@@ -283,7 +300,7 @@ namespace LabExtended.Core.Storage
         {
             if (dictionary.Remove(item.Key))
             {
-                if (item.Value is IStorageValue collectionStorageValue)
+                if (implementsStorage && item.Value is IStorageValue collectionStorageValue)
                     collectionStorageValue.OnRemoved(this);
 
                 IsDirty = true;
@@ -300,11 +317,14 @@ namespace LabExtended.Core.Storage
         {
             if (dictionary.Count > 0)
             {
-                foreach (var pair in dictionary)
+                if (implementsStorage)
                 {
-                    if (pair.Value is IStorageValue collectionStorageValue)
+                    foreach (var pair in dictionary)
                     {
-                        collectionStorageValue.OnRemoved(this);
+                        if (pair.Value is IStorageValue collectionStorageValue)
+                        {
+                            collectionStorageValue.OnRemoved(this);
+                        }
                     }
                 }
 
@@ -336,11 +356,14 @@ namespace LabExtended.Core.Storage
             {
                 if (dictionary.Count > 0)
                 {
-                    foreach (var pair in dictionary)
+                    if (implementsStorage)
                     {
-                        if (pair.Value is IStorageValue collectionStorageValue)
+                        foreach (var pair in dictionary)
                         {
-                            collectionStorageValue.OnRemoved(this);
+                            if (pair.Value is IStorageValue collectionStorageValue)
+                            {
+                                collectionStorageValue.OnRemoved(this);
+                            }
                         }
                     }
 
