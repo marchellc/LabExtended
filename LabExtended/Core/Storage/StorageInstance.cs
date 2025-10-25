@@ -1,4 +1,5 @@
-﻿using LabExtended.Utilities;
+﻿using LabExtended.Extensions;
+using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
 
 using Mirror;
@@ -60,6 +61,31 @@ namespace LabExtended.Core.Storage
         /// Gets a read-only dictionary that maps keys to their corresponding storage values.
         /// </summary>
         public IReadOnlyDictionary<string, StorageValue> Lookup => lookup;
+
+        /// <summary>
+        /// Gets called when an existing value is saved.
+        /// </summary>
+        public event Action<StorageValue>? Saved;
+
+        /// <summary>
+        /// Gets called when a new value is added.
+        /// </summary>
+        public event Action<StorageValue>? Added;
+
+        /// <summary>
+        /// Gets called when an existing value is removed.
+        /// </summary>
+        public event Action<StorageValue>? Removed;
+
+        /// <summary>
+        /// Gets called when an existing value is changed.
+        /// </summary>
+        public event Action<StorageValue>? Changed;
+
+        /// <summary>
+        /// Gets called when the value of a new value is loaded from disk.
+        /// </summary>
+        public event Action<StorageValue>? Loaded;
 
         /// <summary>
         /// Retrieves an existing value of the specified type by name, or adds a new value created by the provided
@@ -242,6 +268,7 @@ namespace LabExtended.Core.Storage
             values.Add(value);
             lookup.Add(value.Name, value);
 
+            Added?.InvokeSafe(value);
             return true;
         }
 
@@ -267,6 +294,8 @@ namespace LabExtended.Core.Storage
             if (!lookup.Remove(value.Name))
                 return false;
 
+            values.Remove(value);
+
             if (deleteFile && File.Exists(value.Path))
                 File.Delete(value.Path);
 
@@ -276,7 +305,67 @@ namespace LabExtended.Core.Storage
             value.IsDirty = false;
             value.Path = string.Empty;
 
+            Removed?.InvokeSafe(value);
             return true;
+        }
+
+        /// <summary>
+        /// Removes all items from the collection and optionally deletes associated files and directories.
+        /// </summary>
+        /// <remarks>This method clears the internal collection and lookup structures. If <paramref
+        /// name="deleteFiles"/> is <see langword="true"/>, it also attempts to delete all files and directories in the
+        /// associated path. Any errors encountered during file or directory deletion are ignored.</remarks>
+        /// <param name="deleteFiles">A value indicating whether to delete files and directories associated with the items. If <see
+        /// langword="true"/>, all files and directories in the specified path are deleted. Defaults to <see
+        /// langword="true"/>.</param>
+        /// <returns>The total number of items, files, and directories that were successfully removed or deleted.</returns>
+        public int RemoveAll(bool deleteFiles = true)
+        {
+            var count = 0;
+
+            foreach (var value in values.ToList())
+            {
+                if (!Remove(value, deleteFiles))
+                    continue;
+
+                count++;
+            }
+
+            values.Clear();
+            lookup.Clear();
+
+            if (!deleteFiles)
+                return count;
+
+            foreach (var directory in Directory.GetDirectories(Path))
+            {
+                try
+                {
+                    Directory.Delete(directory, true);
+
+                    count++;
+                }
+                catch
+                {
+                    // Ignore
+                }
+            }
+
+            foreach (var file in Directory.GetFiles(Path))
+            {
+                try
+                {
+                    File.Delete(file);
+
+                    count++;
+                }
+                catch
+                {
+                    // Ignore
+                }
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -303,6 +392,7 @@ namespace LabExtended.Core.Storage
             };
 
             watcher.Changed += Internal_FileChanged;
+            watcher.Deleted += Internal_FileRemoved;
 
             updateComponent = PlayerUpdateComponent.Create();
             updateComponent.OnFixedUpdate += Internal_Update;
@@ -374,10 +464,18 @@ namespace LabExtended.Core.Storage
                     reader.SetBuffer(segment);
 
                     value.IsDirty = false;
+                    value.dirtyRetries = 0;
+
                     value.ReadValue(reader);
 
+                    Loaded?.InvokeSafe(value);
+
                     if (isRemote)
+                    {
                         value.OnChanged();
+
+                        Changed?.InvokeSafe(value);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -410,6 +508,7 @@ namespace LabExtended.Core.Storage
                     if (value.dirtyRetries > MaxRetries)
                     {
                         value.IsDirty = false;
+                        value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Dirty value of &3{value.ValuePath}&r will be discarded due to exceeding maximum retry count!");
                         return;
@@ -430,7 +529,12 @@ namespace LabExtended.Core.Storage
                             fileStream.Write(writer.buffer, 0, writer.Position);
 
                             value.IsDirty = false;
+                            value.dirtyRetries = 0;
+                            value.LastSaveTime = UnityEngine.Time.realtimeSinceStartup;
+
                             value.OnSaved();
+
+                            Saved?.InvokeSafe(value);
                         }
                         catch (Exception ex)
                         {
@@ -442,6 +546,7 @@ namespace LabExtended.Core.Storage
                     else
                     {
                         value.IsDirty = false;
+                        value.dirtyRetries = 0;
 
                         ApiLog.Warn("StorageManager", $"Value &3{value.ValuePath}&r did not write any data into the buffer!");
                     }
@@ -461,6 +566,17 @@ namespace LabExtended.Core.Storage
                 return;
 
             Internal_ReadFile(targetValue, true);
+        }
+
+        private void Internal_FileRemoved(object _, FileSystemEventArgs args)
+        {
+            var fullPath = System.IO.Path.GetFullPath(args.FullPath);
+            var targetValue = values.FirstOrDefault(x => x.Path == fullPath);
+
+            if (targetValue is null)
+                return;
+
+            Remove(targetValue, true);
         }
 
         private bool Internal_CheckGuard(FileSystemEventArgs args)

@@ -41,26 +41,7 @@ namespace LabExtended.Core.Storage
         /// <summary>
         /// Gets or sets whether this value is dirty and needs to be saved.
         /// </summary>
-        public bool IsDirty
-        {
-            get => field;
-            set
-            {
-                if (value != field)
-                {
-                    if (value)
-                    {
-                        LastChangeTime = UnityEngine.Time.realtimeSinceStartup;
-                    }
-                    else
-                    {
-                        dirtyRetries = 0;
-
-                        LastSaveTime = UnityEngine.Time.realtimeSinceStartup;
-                    }
-                }
-            }
-        }
+        public bool IsDirty { get; set; }
 
         /// <summary>
         /// Gets the time, in seconds, of the most recent change (from <see cref="UnityEngine.Time.realtimeSinceStartup"/>).
@@ -124,17 +105,12 @@ namespace LabExtended.Core.Storage
             if (field == null && value == null)
                 return false;
 
-            if ((field is null && value != null)
-                || (field != null && value == null)
-                || (field != null && value != null && !field.Equals(value)))
-            {
-                field = value;
+            field = value;
 
-                IsDirty = true;
-                return true;
-            }
+            IsDirty = true;
 
-            return false;
+            LastChangeTime = UnityEngine.Time.realtimeSinceStartup;
+            return true;
         }
 
         /// <summary>
