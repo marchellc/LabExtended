@@ -20,13 +20,7 @@ namespace LabExtended.Patches.Fixes
 
         private static bool Prefix(Plugin plugin, ref bool __result)
         {
-            if (plugin.RequiredApiVersion is null
-                || plugin.Properties is null)
-            {
-                __result = true;
-                return false;
-            }
-
+            __result = true;
             return false;
         }
 
