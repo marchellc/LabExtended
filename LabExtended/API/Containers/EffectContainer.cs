@@ -32,6 +32,7 @@ namespace LabExtended.API.Containers;
 public class EffectContainer : IDisposable
 {
     private static readonly IEnumerable<PropertyInfo> _properties;
+    private static readonly HashSet<Type> warnedMissing = new();
 
     static EffectContainer()
         => _properties = typeof(EffectContainer).FindProperties(x => (x.GetSetMethod(true)?.IsPrivate ?? false));
@@ -551,14 +552,15 @@ public class EffectContainer : IDisposable
 
             if (props.Count != _properties.Count())
             {
-                ApiLog.Error("LabExtended", $"Some effects are missing! (set &6{props.Count}&r / &3{_properties.Count()}&r)");
-
                 foreach (var prop in _properties)
                 {
                     if (props.Contains(prop))
                         continue;
 
-                    ApiLog.Error("LabExtended", $"- &3{prop.Name}&r (&1{prop.PropertyType.Name}&r)");
+                    if (!warnedMissing.Add(prop.PropertyType))
+                        continue;
+
+                    ApiLog.Error("LabExtended", $"Missing effect for property &3{prop.Name}&r (&1{prop.PropertyType.FullName}&r)");
                 }
             }
 
