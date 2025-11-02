@@ -6,7 +6,11 @@ using LabExtended.API.Images.Conversion;
 
 using NorthwoodLib.Pools;
 
-using System.Drawing;
+using UnityEngine;
+
+using System.Reflection;
+
+using HarmonyLib;
 
 namespace LabExtended.API.Images;
 
@@ -16,6 +20,11 @@ namespace LabExtended.API.Images;
 public static class ImageLoader
 {
     private static FileSystemWatcher watcher;
+
+    private static MethodInfo loadImage = AccessTools.Method(
+        typeof(ImageConversion), 
+            nameof(ImageConversion.LoadImage), 
+                [typeof(Texture2D), typeof(byte[]), typeof(bool)]);
 
     /// <summary>
     /// Gets called when an image is loaded.
@@ -124,6 +133,38 @@ public static class ImageLoader
 
         return false;
     }
+
+    /// <summary>
+    /// Attempts to load a texture from the specified file path.
+    /// </summary>
+    /// <param name="filePath">The path to the image file.</param>
+    /// <param name="texture">The texture that was loaded.</param>
+    /// <returns>true if the texture was loaded</returns>
+    public static bool TryLoadTexture2D(string filePath, out Texture2D texture)
+    {
+        texture = null!;   
+
+        if (!File.Exists(filePath))
+            return false;
+
+        var data = File.ReadAllBytes(filePath);
+
+        texture = new Texture2D(2, 2);
+
+        var result = loadImage.Invoke(null, [texture, data, false]);
+
+        if (result is not bool boolResult)
+        {
+            ApiLog.Warn("LabExtended", $"LoadImage() returned unknown type: {result?.GetType().FullName ?? "(null)"}");
+            return false;
+        }
+
+        if (boolResult)
+            return true;
+
+        texture = null!;
+        return false;
+    }
     
     /// <summary>
     /// Reads image data from a byte array and constructs an <see cref="ImageFile"/> object.
@@ -164,6 +205,10 @@ public static class ImageLoader
                     File = image
                 };
 
+                var texture = new Texture2D(image.Width, image.Height, TextureFormat.RGBA32, false);
+
+                frame.Texture = texture;
+
                 if (i - 1 >= 0)
                 {
                     frame.PreviousFrame = image.Frames[i - 1];
@@ -195,9 +240,10 @@ public static class ImageLoader
                         var blue = reader.ReadByte();
                         var alpha = reader.ReadByte();
                         
-                        pixel.Color = Color.FromArgb(alpha, red, green, blue);
-                        
+                        pixel.Color = System.Drawing.Color.FromArgb(alpha, red, green, blue);           
                         pixels.Add(pixel);
+
+                        texture.SetPixel(x, y, new Color32(red, green, blue, alpha));
                     }
                     
                     frame.Pixels.Add(pixels);

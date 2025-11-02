@@ -1,4 +1,5 @@
 ﻿using NorthwoodLib.Pools;
+using UnityEngine;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -29,7 +30,12 @@ public class ImageFrame : IDisposable
     /// Gets the next image frame.
     /// </summary>
     public ImageFrame? NextFrame { get; internal set; }
-    
+
+    /// <summary>
+    /// Gets the image texture of this frame.
+    /// </summary>
+    public Texture2D Texture { get; internal set; }
+
     /// <summary>
     /// Gets the frame's pixels.
     /// </summary>

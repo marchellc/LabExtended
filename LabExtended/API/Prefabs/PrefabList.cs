@@ -1,6 +1,6 @@
 ﻿using LabExtended.Core;
 using LabExtended.Extensions;
-
+using MapGeneration.Holidays;
 using Mirror;
 
 namespace LabExtended.API.Prefabs;
@@ -208,6 +208,11 @@ public static class PrefabList
     public static PrefabDefinition Scp1853 { get; } = new("SCP1853Pickup");
 
     /// <summary>
+    /// Gets the prefab of an SCP-1509 pickup.
+    /// </summary>
+    public static PrefabDefinition Scp1509 { get; } = new("Scp1509Pickup");
+
+    /// <summary>
     /// Gets the prefab of an anti-SCP-207 bottle.
     /// </summary>
     public static PrefabDefinition AntiScp207 { get; } = new("AntiSCP207Pickup");
@@ -215,7 +220,6 @@ public static class PrefabList
     #endregion
 
     #region Scp Item Pedestals
-
     /// <summary>
     /// Gets the prefab of an SCP-2176 pedestal.
     /// </summary>
@@ -262,6 +266,11 @@ public static class PrefabList
     public static PrefabDefinition Scp018Pedestal { get; } = new("Scp018PedestalStructure Variant");
 
     /// <summary>
+    /// Gets the prefab of a SCP-1509 pedestal.
+    /// </summary>
+    public static PrefabDefinition Scp1509Pedestal { get; } = new("Scp1509PedestalStructure Variant");
+
+    /// <summary>
     /// Gets the prefab of an anti-SCP-207 pedestal.
     /// </summary>
     public static PrefabDefinition AntiScp207Pedestal { get; } = new("AntiScp207PedestalStructure Variant");
@@ -292,7 +301,9 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of a Jailbird.
     /// </summary>
-    public static PrefabDefinition Jailbird { get; } = new("JailbirdPickup");
+    public static PrefabDefinition Jailbird { get; } = new(!HolidayUtils.IsHolidayActive(HolidayType.Halloween)
+        ? "JailbirdPickup"
+        : "JailbirdPickup Halloween");
 
     /// <summary>
     /// Gets the prefab of a Micro-HID.
@@ -332,7 +343,9 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of an SCP-018 projectile.
     /// </summary>
-    public static PrefabDefinition Scp018Projectile { get; } = new("Scp018Projectile");
+    public static PrefabDefinition Scp018Projectile { get; } = new(!HolidayUtils.IsHolidayActive(HolidayType.Halloween) 
+        ? "Scp018Projectile"
+        : "Scp018Projectile Halloween");
 
     #endregion
 
@@ -469,6 +482,11 @@ public static class PrefabList
     public static PrefabDefinition Locker { get; } = new("MiscLocker");
 
     /// <summary>
+    /// Gets the prefab of Hubert Moon.
+    /// </summary>
+    public static PrefabDefinition HubertMoon { get; } = new("Hubert Moon");
+
+    /// <summary>
     /// Gets the prefab of an elevator's gate.
     /// </summary>
     public static PrefabDefinition ElevatorGate { get; } = new("ElevatorChamber Gates");
@@ -553,5 +571,17 @@ public static class PrefabList
     /// </summary>
     public static PrefabDefinition GateDoor { get; } = new("Spawnable Unsecured Pryable GateDoor");
 
+    #endregion
+
+    #region Halloween Prefabs
+    /// <summary>
+    /// Gets the prefab of a prismatic cloud.
+    /// </summary>
+    public static PrefabDefinition PrismaticCloud { get; } = new("PrismaticCloud");
+
+    /// <summary>
+    /// Gets the prefab of brown candy tantrum.
+    /// </summary>
+    public static PrefabDefinition BrownCandyTantrum { get; } = new("TantrumObj (Brown Candy)");
     #endregion
 }
