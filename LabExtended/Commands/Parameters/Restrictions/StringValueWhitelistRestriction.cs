@@ -1,4 +1,5 @@
 ﻿using LabExtended.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Parameters.Restrictions;
 
@@ -18,6 +19,13 @@ public class StringValueWhitelistRestriction : ICommandParameterRestriction
     public List<string> Values { get; }
 
     /// <summary>
+    /// Initializes a new instance of the StringValueWhitelistRestriction class with an empty set of allowed string
+    /// values.
+    /// </summary>
+    public StringValueWhitelistRestriction()
+        => Values = new();
+
+    /// <summary>
     /// Creates a new <see cref="StringValueWhitelistRestriction"/>
     /// </summary>
     /// <param name="isCaseSensitive">Whether or not the values are case sensitive</param>
@@ -30,6 +38,16 @@ public class StringValueWhitelistRestriction : ICommandParameterRestriction
         
         IsCaseSensitive = isCaseSensitive;
         Values = values as List<string> ?? values.ToList();
+    }
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, null, out var parts))
+            return false;
+
+        Values.AddRange(parts);
+        return true;
     }
 
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>

@@ -63,22 +63,22 @@ public class EnumParameterParser : CommandParameterParser
             && propertyToken.TryGet<object>(context, null, out var result))
         {
             if (result.GetType() != Type)
-                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter, this);
 
-            return new(true, result, null, parameter);
+            return new(true, result, null, parameter, this);
         }
         
         var stringToken = (StringToken)token;
 
         try
         {
-            return new(true, Enum.Parse(Type, stringToken.Value, true), null, parameter);
+            return new(true, Enum.Parse(Type, stringToken.Value, true), null, parameter, this);
         }
         catch (Exception ex)
         {
             return new(false, null,
                 $"String \"{stringToken.Value}\" could not be converted to enum \"{Type.Name}\": {ex.Message}.",
-                parameter);
+                parameter, this);
         }
     }
 }

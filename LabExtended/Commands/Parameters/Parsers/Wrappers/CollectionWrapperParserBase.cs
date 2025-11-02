@@ -64,9 +64,9 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
             && propertyToken.TryGet<object>(context, null, out var result))
         {
             if (result.GetType() != parameter.Type.Type)
-                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter, this);
             
-            return new(true, result, null, parameter);
+            return new(true, result, null, parameter, this);
         }
         
         CollectionToken? collectionToken = null;
@@ -84,12 +84,12 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
             }
             else
             {
-                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter, this);
             }
         }
 
         if (IsStringList)
-            return new(true, collectionToken.Values, null, parameter);
+            return new(true, collectionToken.Values, null, parameter, this);
         
         var collectionState = default(object);
         var collection = CreateCollection(collectionToken.Values.Count);
@@ -105,12 +105,12 @@ public abstract class CollectionWrapperParserBase : CommandParameterParser
 
             if (!elementResult.Success)
                 return new(false, null, $"Could not parse element at position {index}: {elementResult.Error}", 
-                    parameter);
+                    parameter, this);
             
             AddToCollection(collection, elementResult.Value, ref collectionState);
         }
         
         newStringToken.ReturnToken();
-        return new(true, collection, null, parameter);
+        return new(true, collection, null, parameter, this);
     }
 }

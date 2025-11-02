@@ -8,6 +8,13 @@ namespace LabExtended.Commands.Interfaces;
 public interface ICommandParameterRestriction
 {
     /// <summary>
+    /// Attempts to load the data of the restriction from a string value.
+    /// </summary>
+    /// <param name="value">The string value to load.</param>
+    /// <returns>true if the restriction was loaded.</returns>
+    bool TryLoad(string value);
+
+    /// <summary>
     /// Validates the value of a parsed argument.
     /// </summary>
     /// <param name="argument">The parsed argument value.</param>

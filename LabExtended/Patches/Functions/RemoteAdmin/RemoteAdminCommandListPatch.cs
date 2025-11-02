@@ -90,7 +90,7 @@ public static class RemoteAdminCommandListPatch
             commands.Add(Parse(command, command.DefaultOverload, commandRoot));
         
         foreach (var overload in command.Overloads)
-            commands.Add(Parse(command, overload.Value, commandRoot));
+            commands.Add(Parse(command, overload, commandRoot));
     }
 
     private static QueryProcessor.CommandData Parse(CommandData command, CommandOverload overload, string commandRoot)

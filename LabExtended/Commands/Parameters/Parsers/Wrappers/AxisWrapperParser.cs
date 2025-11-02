@@ -51,12 +51,12 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             && propertyToken.TryGet<object>(context, null, out var result))
         {
             if (result.GetType() == parameter.Type.Type)
-                return new(true, result, null, parameter);
+                return new(true, result, null, parameter, this);
 
             if (result.GetType() == typeof(string))
                 sourceString = result as string;
             else
-                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter, this);
         }
 
         if (sourceString == string.Empty)
@@ -64,13 +64,13 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             if (token is StringToken stringToken)
                 sourceString = stringToken.Value;
             else
-                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+                return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter, this);
         }
 
         sourceString = sourceString.Trim();
         
         if (ToAxis(sourceString, out var preResult))
-            return new(true, preResult, null, parameter);
+            return new(true, preResult, null, parameter, this);
 
         var axis = DictionaryPool<char, float>.Shared.Rent();
         var parts = sourceString.Split(CommandManager.spaceSeparator, StringSplitOptions.RemoveEmptyEntries);
@@ -90,7 +90,7 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             if (!float.TryParse(part, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
             {
                 DictionaryPool<char, float>.Shared.Return(axis);
-                return new(false, null, $"Could not parse axis value", parameter);
+                return new(false, null, $"Could not parse axis value", parameter, this);
             }
 
             for (var i = 0; i < AxisNames.Length; i++)
@@ -99,11 +99,11 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             if (!ToAxis(axis, out var convError, out var convResult))
             {
                 DictionaryPool<char, float>.Shared.Return(axis);
-                return new(false, null, convError, parameter);
+                return new(false, null, convError, parameter, this);
             }
 
             DictionaryPool<char, float>.Shared.Return(axis);
-            return new(true, convResult, null, parameter);
+            return new(true, convResult, null, parameter, this);
         }
         else
         {
@@ -126,13 +126,13 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
                 if (!axisName.HasValue)
                 {
                     DictionaryPool<char, float>.Shared.Return(axis);
-                    return new(false, null, $"Undefined axis name at position {i} (part: {part})", parameter);
+                    return new(false, null, $"Undefined axis name at position {i} (part: {part})", parameter, this);
                 }
 
                 if (!axis.ContainsKey(axisName.Value))
                 {
                     DictionaryPool<char, float>.Shared.Return(axis);
-                    return new(false, null, $"Invalid axis name at position {i} (part: {part})", parameter);
+                    return new(false, null, $"Invalid axis name at position {i} (part: {part})", parameter, this);
                 }
 
                 var numbers = part.Where(x => x != axisName.Value);
@@ -141,7 +141,7 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
                 if (!float.TryParse(numbersStr, NumberStyles.Any, NumberFormatInfo.InvariantInfo, out var axisValue))
                 {
                     DictionaryPool<char, float>.Shared.Return(axis);
-                    return new(false, null, $"Could not parse axis value at position {i} (part: {part})", parameter);
+                    return new(false, null, $"Could not parse axis value at position {i} (part: {part})", parameter, this);
                 }
 
                 axis[axisName.Value] = axisValue;
@@ -150,11 +150,11 @@ public abstract class AxisWrapperParser<T> : CommandParameterParser
             if (!ToAxis(axis, out var convError, out var convResult))
             {
                 DictionaryPool<char, float>.Shared.Return(axis);
-                return new(false, null, convError, parameter);
+                return new(false, null, convError, parameter, this);
             }
             
             DictionaryPool<char, float>.Shared.Return(axis);
-            return new(true, convResult, null, parameter);
+            return new(true, convResult, null, parameter, this);
         }
     }
 }

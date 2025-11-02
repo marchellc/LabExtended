@@ -1,4 +1,5 @@
 using LabApi.Features.Enums;
+
 using NorthwoodLib.Pools;
 
 namespace LabExtended.Commands;
@@ -8,6 +9,55 @@ namespace LabExtended.Commands;
 /// </summary>
 public static class CommandSearch
 {
+    /// <summary>
+    /// Attempts to find a matching command overload based on the provided argument list.
+    /// </summary>
+    /// <remarks>The method performs a case-insensitive comparison of the argument list against each
+    /// overload's path. If a match is found, the corresponding path elements are removed from the argument list, and
+    /// the matching overload is returned in the out parameter.</remarks>
+    /// <param name="args">The list of input arguments to match against the command's overload paths. The method removes the matched path
+    /// elements from this list if a matching overload is found.</param>
+    /// <param name="command">The command data containing the available overloads to search.</param>
+    /// <param name="foundOverload">When this method returns, contains the matching command overload if a match is found; otherwise, null. This
+    /// parameter is passed uninitialized.</param>
+    /// <returns>true if a matching overload is found; otherwise, false.</returns>
+    public static bool TryGetOverload(List<string> args, CommandData command, out CommandOverload? foundOverload)
+    {
+        foundOverload = null;
+
+        if (args.Count < 1)
+            return false;
+
+        for (var i = 0; i < command.Overloads.Count; i++)
+        {
+            var overload = command.Overloads[i];
+
+            if (args.Count >= overload.Path.Count)
+            {
+                var matched = true;
+
+                for (var x = 0; x < overload.Path.Count; x++)
+                {
+                    if (string.Equals(overload.Path[x], args[x], StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    matched = false;
+                    break;
+                }
+
+                if (matched)
+                {
+                    args.RemoveRange(0, overload.Path.Count);
+
+                    foundOverload = overload;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Attempts to find a command for a list of arguments.
     /// </summary>

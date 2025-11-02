@@ -74,16 +74,16 @@ public class DictionaryWrapperParser : CommandParameterParser
             && propertyToken.TryGet<object>(context, null, out var result))
         {
             if (result.GetType() != parameter.Type.Type)
-                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter, this);
             
-            return new(true, result, null, parameter);
+            return new(true, result, null, parameter, this);
         }
         
         if (token is not DictionaryToken dictionaryToken)
-            return new(false, null, $"Unsupported token type: {token.GetType().FullName}", parameter);
+            return new(false, null, $"Unsupported token type: {token.GetType().FullName}", parameter, this);
 
         if (IsStringDictionary)
-            return new(true, dictionaryToken.Values, null, parameter);
+            return new(true, dictionaryToken.Values, null, parameter, this);
         
         var dictionaryIndex = 0;
         var dictionary = (IDictionary)(DictionaryConstructor([dictionaryToken.Values.Count]));
@@ -98,7 +98,7 @@ public class DictionaryWrapperParser : CommandParameterParser
 
             if (!keyResult.Success)
                 return new(false, null,
-                    $"Could not convert key of pair at position {dictionaryIndex}: {keyResult.Error}", parameter);
+                    $"Could not convert key of pair at position {dictionaryIndex}: {keyResult.Error}", parameter, this);
 
             stringToken.Value = pair.Value;
             
@@ -106,13 +106,13 @@ public class DictionaryWrapperParser : CommandParameterParser
 
             if (!valueResult.Success)
                 return new(false, null,
-                    $"Could not convert value of pair at position {dictionaryIndex}: {valueResult.Error}", parameter);
+                    $"Could not convert value of pair at position {dictionaryIndex}: {valueResult.Error}", parameter, this);
             
             dictionary.Add(pair.Key, valueResult.Value);
             dictionaryIndex++;
         }
 
         stringToken.ReturnToken();
-        return new(true, dictionary, null, parameter);
+        return new(true, dictionary, null, parameter, this);
     }
 }

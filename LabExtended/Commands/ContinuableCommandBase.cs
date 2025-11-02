@@ -1,13 +1,8 @@
 ﻿using System.Text;
 
-using LabExtended.API;
-using LabExtended.Events;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
-using LabExtended.Utilities.Update;
-using NorthwoodLib.Pools;
 
-using UnityEngine;
+using NorthwoodLib.Pools;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
@@ -48,7 +43,7 @@ public abstract class ContinuableCommandBase : CommandBase
     /// </summary>
     /// <param name="content">The content of the reply.</param>
     public void Continue(object content)
-        => Response = new(true, true, false, null, content?.ToString() ?? string.Empty);
+        => Response = new(true, true, false, null!, content?.ToString() ?? string.Empty);
 
     /// <summary>
     /// Responds to the player with a continuation.
@@ -59,6 +54,6 @@ public abstract class ContinuableCommandBase : CommandBase
         if (contentBuilder is null)
             throw new ArgumentNullException(nameof(contentBuilder));
 
-        Response = new(true, true, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
+        Response = new(true, true, false, null!, StringBuilderPool.Shared.BuildString(contentBuilder));
     }
 }

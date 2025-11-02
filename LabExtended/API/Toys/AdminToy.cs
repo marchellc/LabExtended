@@ -201,7 +201,7 @@ public class AdminToy : NetworkWrapper<AdminToyBase>
     }
 
     /// <summary>
-    /// Disables / enables position & rotation synchronization.
+    /// Disables / enables position and rotation synchronization.
     /// </summary>
     public bool IsStatic
     {

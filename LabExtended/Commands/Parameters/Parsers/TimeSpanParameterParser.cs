@@ -22,12 +22,12 @@ public class TimeSpanParameterParser : CommandParameterParser
 
         if (token is PropertyToken propertyToken
             && propertyToken.TryGet<TimeSpan>(context, null, out var result))
-            return new(true, result, null, parameter);
+            return new(true, result, null, parameter, this);
         
         if (token is StringToken stringToken)
             sourceString = stringToken.Value;
         else
-            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter, this);
         
         sourceString = sourceString.Replace(".", ",");
 
@@ -39,13 +39,13 @@ public class TimeSpanParameterParser : CommandParameterParser
             var arg = args[i].Trim();
 
             if (arg.Length < 2 || !char.IsLetter(arg.Last()))
-                return new(false, null, $"Could not parse argument \"{arg}\" at position {i}", parameter);
+                return new(false, null, $"Could not parse argument \"{arg}\" at position {i}", parameter, this);
 
             var numString = new string(arg.Where(a => !char.IsLetter(a)).ToArray());
 
             if (!long.TryParse(numString, NumberStyles.Any, CultureInfo.InvariantCulture, out var number))
                 return new(false, null, $"Could not parse \"{numString}\" into a valid number (position: {i})",
-                    parameter);
+                    parameter, this);
 
             var unit = arg.Last();
 
@@ -62,11 +62,11 @@ public class TimeSpanParameterParser : CommandParameterParser
             else if (unit is 'y' or 'Y')
                 number = TimeSpan.FromDays(number * 365).Ticks;
             else
-                return new(false, null, $"Argument \"{unit}\" is not a valid time unit (position: {i})", parameter);
+                return new(false, null, $"Argument \"{unit}\" is not a valid time unit (position: {i})", parameter, this);
 
             time += number;
         }
 
-        return new(true, TimeSpan.FromTicks(time), null, parameter);
+        return new(true, TimeSpan.FromTicks(time), null, parameter, this);
     }
 }

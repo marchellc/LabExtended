@@ -27,7 +27,7 @@ public class CommandAttribute : Attribute
     public bool IsStatic { get; set; } = true;
 
     /// <summary>
-    /// Whether or not this command should be hidden from the help command & Remote Admin's suggestions.
+    /// Whether or not this command should be hidden from the help command and Remote Admin's suggestions.
     /// </summary>
     public bool IsHidden { get; set; } = false;
 

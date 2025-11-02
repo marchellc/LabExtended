@@ -11,14 +11,32 @@ public class PlayerPrecisionRestriction : ICommandParameterRestriction
     /// <summary>
     /// Gets the set precision.
     /// </summary>
-    public double Precision { get; }
-    
+    public double Precision { get; private set; }
+
+    /// <summary>
+    /// Initializes a new instance of the PlayerPrecisionRestriction class.
+    /// </summary>
+    public PlayerPrecisionRestriction()
+    {
+
+    }
+
     /// <summary>
     /// Creates a new <see cref="PlayerPrecisionRestriction"/> instance.
     /// </summary>
     /// <param name="precision">The required precision.</param>
     public PlayerPrecisionRestriction(double precision)
         => Precision = precision;
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!double.TryParse(value, out var precision))
+            return false;
+
+        Precision = precision;
+        return true;
+    }
 
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>
     public bool IsValid(object argument, CommandContext context, CommandParameter parameter, out string? error)

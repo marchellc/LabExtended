@@ -21,6 +21,11 @@ public class CommandOverload
     /// Gets the targeted method.
     /// </summary>
     public MethodInfo Target { get; }
+
+    /// <summary>
+    /// Gets the command path leading to this overload.
+    /// </summary>
+    public List<string> Path { get; } = new();
     
     /// <summary>
     /// Gets all parameters from this overload.

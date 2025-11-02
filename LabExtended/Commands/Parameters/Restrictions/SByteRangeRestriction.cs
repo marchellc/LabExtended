@@ -1,4 +1,5 @@
 ﻿using LabExtended.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Parameters.Restrictions;
 
@@ -10,12 +11,20 @@ public class SByteRangeRestriction : ICommandParameterRestriction
     /// <summary>
     /// Gets the minimum value.
     /// </summary>
-    public sbyte? MinimumValue { get; }
+    public sbyte? MinimumValue { get; private set; }
     
     /// <summary>
     /// Gets the maximum value.
     /// </summary>
-    public sbyte? MaximumValue { get; }
+    public sbyte? MaximumValue { get; private set; }
+
+    /// <summary>
+    /// Initializes a new instance of the SByteRangeRestriction class.
+    /// </summary>
+    public SByteRangeRestriction()
+    {
+
+    }
 
     /// <summary>
     /// Creates a new <see cref="SByteRangeRestriction"/> instance.
@@ -27,7 +36,25 @@ public class SByteRangeRestriction : ICommandParameterRestriction
         MinimumValue = minimumValue;
         MaximumValue = maximumValue;
     }
-    
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, 2, out var parts))
+            return false;
+
+        if (!sbyte.TryParse(parts[0], out var minValue))
+            return false;
+
+        if (!sbyte.TryParse(parts[1], out var maxValue))
+            return false;
+
+        MinimumValue = minValue;
+        MaximumValue = maxValue;
+
+        return true;
+    }
+
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>
     public bool IsValid(object argument, CommandContext context, CommandParameter parameter, out string? error)
     {

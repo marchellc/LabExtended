@@ -379,8 +379,6 @@ public class ApiLoader : Plugin
 
             FirearmModuleCache.Internal_Init();
 
-            HttpUtils.Internal_Init();
-
             PositionSync.Internal_Init();
             RoleSync.Internal_Init();
 

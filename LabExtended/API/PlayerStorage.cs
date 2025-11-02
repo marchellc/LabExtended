@@ -108,8 +108,8 @@ namespace LabExtended.API
         /// <param name="name">The name the value was saved under.</param>
         /// <param name="defaultValue">The value to return if the specified name was not found.</param>
         /// <returns>The saved value if found, otherwise <paramref name="defaultValue"/>.</returns>
-        public object Get(string name, object defaultValue = null)
-            => _storage.TryGetValue(name, out var value) ? value : defaultValue;
+        public object Get(string name, object? defaultValue = null)
+            => _storage!.TryGetValue(name, out var value) ? value : defaultValue!;
 
         /// <summary>
         /// Gets the value saved under the <paramref name="name"/>.
@@ -118,12 +118,12 @@ namespace LabExtended.API
         /// <param name="name">The name the value was saved under.</param>
         /// <param name="defaultValue">The value to return if the specified name was not found.</param>
         /// <returns>The saved value if found, otherwise <paramref name="defaultValue"/>.</returns>
-        public T Get<T>(string name, T defaultValue = default)
+        public T Get<T>(string name, T? defaultValue = default)
         {
-            if (_storage.TryGetValue(name, out var cachedValue) && cachedValue != null && cachedValue is T castValue)
+            if (_storage!.TryGetValue(name, out var cachedValue) && cachedValue != null && cachedValue is T castValue)
                 return castValue;
 
-            return defaultValue;
+            return defaultValue!;
         }
 
         /// <summary>

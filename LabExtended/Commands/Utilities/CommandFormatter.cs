@@ -38,7 +38,7 @@ public static class CommandFormatter
                 }
 
                 foreach (var overload in command.Overloads)
-                    x.AppendLine($"{command.Name} {overload.Key} ({overload.Value.Description})");
+                    x.AppendLine($"{command.Name} {overload.Name} ({overload.Description})");
             }
         });
     }
@@ -130,21 +130,21 @@ public static class CommandFormatter
                     AppendOverload("Default", commandData.DefaultOverload);
 
                 foreach (var overload in commandData.Overloads)
-                    AppendOverload($"\"{overload.Key}\"", overload.Value);
+                    AppendOverload($"\"{overload.Name}\"", overload);
             }
             else
             {
                 foreach (var overload in commandData.Overloads)
                 {
-                    if (string.IsNullOrWhiteSpace(overload.Key) ||
-                        (commandData.DefaultOverload != null && overload.Value == commandData.DefaultOverload))
+                    if (string.IsNullOrWhiteSpace(overload.Name) ||
+                        (commandData.DefaultOverload != null && overload == commandData.DefaultOverload))
                         x.Append($"\"{commandData.Name}");
                     else
-                        x.Append($"\"{commandData.Name} {overload.Value.Name}");
+                        x.Append($"\"{commandData.Name} {overload.Name}");
                     
-                    if (overload.Value.Parameters.Count > 0)
+                    if (overload.Parameters.Count > 0)
                     {
-                        foreach (var parameter in overload.Value.Parameters)
+                        foreach (var parameter in overload.Parameters)
                         {
                             if (parameter.HasDefault)
                             {
@@ -157,9 +157,9 @@ public static class CommandFormatter
                         }
                     }
 
-                    x.AppendLine($"\" ({(commandData.DefaultOverload != null && commandData.DefaultOverload == overload.Value
+                    x.AppendLine($"\" ({(commandData.DefaultOverload != null && commandData.DefaultOverload == overload
                         ? commandData.Description
-                        : overload.Value.Description)})");
+                        : overload.Description)})");
                 }
             }
         });

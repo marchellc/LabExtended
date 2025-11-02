@@ -1,4 +1,5 @@
 ﻿using LabExtended.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Parameters.Restrictions;
 
@@ -18,6 +19,14 @@ public class StringValueBlacklistRestriction : ICommandParameterRestriction
     public List<string> Values { get; }
 
     /// <summary>
+    /// Initializes a new instance of the StringValueBlacklistRestriction class with an empty blacklist.
+    /// </summary>
+    /// <remarks>Use this constructor to create a restriction that starts with no blacklisted string values.
+    /// Add values to the blacklist by modifying the Values collection after instantiation.</remarks>
+    public StringValueBlacklistRestriction() 
+        => Values = new List<string>();
+
+    /// <summary>
     /// Creates a new <see cref="StringValueBlacklistRestriction"/>
     /// </summary>
     /// <param name="isCaseSensitive">Whether or not the values are case sensitive</param>
@@ -30,6 +39,16 @@ public class StringValueBlacklistRestriction : ICommandParameterRestriction
         
         IsCaseSensitive = isCaseSensitive;
         Values = values as List<string> ?? values.ToList();
+    }
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, null, out var parts))
+            return false;
+
+        Values.AddRange(parts);
+        return true;
     }
 
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>

@@ -1,6 +1,6 @@
-﻿using LabExtended.Attributes;
-using LabExtended.Commands.Interfaces;
+﻿using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Tokens;
+
 using NorthwoodLib.Pools;
 
 using UnityEngine;
@@ -17,6 +17,7 @@ using Extensions;
 
 using Parsers;
 using Parsers.Wrappers;
+
 using LabExtended.Utilities;
 
 /// <summary>
@@ -225,12 +226,12 @@ public static class CommandParameterParserUtils
             throw new ArgumentNullException(nameof(parserResults));
 
         if (context.Tokens.Count < context.Overload.RequiredParameters)
-            return new(false, null, "MISSING_ARGS", null);
+            return new(false, null, "MISSING_ARGS", null, null!);
 
         if (context.Tokens.Count < 1)
         {
-            context.Overload.Parameters.ForEach(p => parserResults.Add(new(true, p.DefaultValue, null, p)));
-            return new(true, null, null, null);
+            context.Overload.Parameters.ForEach(p => parserResults.Add(new(true, p.DefaultValue, null, p, null!)));
+            return new(true, null, null, null, null!);
         }
 
         var index = 0;
@@ -243,53 +244,79 @@ public static class CommandParameterParserUtils
                 {
                     var parameterToken = context.Tokens[index];
 
-                    if (!parameter.Type.Parser.AcceptsToken(parameterToken))
-                    {
-                        parserResults.Add(new(false, null,
-                            $"Token {parameterToken.GetType().Name} is not acceptable.", parameter));
+                    var parserFound = false;
+                    var parserResult = default(CommandParameterParserResult);
 
-                        index++;
-                        return;
+                    var defaultParserResult = default(CommandParameterParserResult);
+
+                    foreach (var pair in parameter.Parsers)
+                    {
+                        if (!pair.Key.AcceptsToken(parameterToken))
+                            continue;
+
+                        var parameterResult = pair.Key.Parse(context.Tokens, parameterToken, index, context, parameter);
+
+                        if (!parameterResult.Success)
+                        {
+                            if (pair.Key == parameter.Type.Parser)
+                                defaultParserResult = parameterResult;
+
+                            parserResult = parameterResult;
+                            continue;
+                        }
+                        else
+                        {
+                            parserFound = true;
+                            parserResult = parameterResult;
+
+                            break;
+                        }
                     }
 
-                    var parameterResult =
-                        parameter.Type.Parser.Parse(context.Tokens, parameterToken, index, context, parameter);
-
-                    if (parameterResult.Success)
+                    if (parserFound)
                     {
-                        string? argumentError = null;
-
-                        foreach (var restriction in parameter.Restrictions)
+                        if (parserResult.Success)
                         {
-                            if (!restriction.IsValid(parameterResult.Value, context, parameter, out var error))
+                            string? argumentError = null;
+
+                            foreach (var restriction in parameter.Restrictions)
                             {
-                                argumentError = error;
-                                break;
+                                if (!restriction.IsValid(parserResult.Value!, context, parameter, out var error))
+                                {
+                                    argumentError = error;
+                                    break;
+                                }
+                            }
+
+                            if (argumentError != null)
+                            {
+                                parserResults.Add(new(false, null, argumentError, parameter, null!));
+
+                                index++;
+                                return;
                             }
                         }
 
-                        if (argumentError != null)
-                        {
-                            parserResults.Add(new(false, null, argumentError, parameter));
-
-                            index++;
-                            return;
-                        }
+                        parserResults.Add(parserResult);
+                        index++;
                     }
-
-                    parserResults.Add(parameterResult);
+                    else
+                    {
+                        parserResults.Add(defaultParserResult);
+                        index++;
+                    }
                 }
                 else
                 {
                     if (!parameter.HasDefault)
                     {
-                        parserResults.Add(new(false, null, "MISSING_ARGS", parameter));
+                        parserResults.Add(new(false, null, "MISSING_ARGS", parameter, null!));
 
                         index++;
                         return;
                     }
 
-                    parserResults.Add(new(true, parameter.DefaultValue, null, parameter));
+                    parserResults.Add(new(true, parameter.DefaultValue, null, parameter, null!));
                 }
             }
             catch (Exception ex)
@@ -298,13 +325,13 @@ public static class CommandParameterParserUtils
                     $"Caught an exception while parsing parameter &1{parameter.Name}&r " +
                     $"in command &1{context.Command.Name}&r!\n{ex.ToColoredString()}");
 
-                parserResults.Add(new(false, null, ex.Message, parameter));
+                parserResults.Add(new(false, null, ex.Message, parameter, null!));
             }
 
             index++;
         });
 
-        return new(true, null, null, null);
+        return new(true, null, null, null, null!);
     }
 
     private static void Internal_Discovered(Type type)

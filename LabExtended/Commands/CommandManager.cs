@@ -120,8 +120,10 @@ public static class CommandManager
 
                     var overload = new CommandOverload(method);
 
-                    overload.Name = commandOverloadAttribute.Name;
-                    overload.Permission = commandOverloadAttribute.Permission;
+                    overload.Name = commandOverloadAttribute.Name ?? string.Empty;
+                    overload.Permission = commandOverloadAttribute.Permission ?? string.Empty;
+
+                    overload.Path.AddRange(overload.Name.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLowerInvariant()));
 
                     if (overloadDescription == string.Empty && commandOverloadAttribute.Description?.Length > 0)
                         overloadDescription = commandOverloadAttribute.Description;
@@ -145,7 +147,7 @@ public static class CommandManager
                     }
                     else
                     {
-                        if (instance.Overloads.ContainsKey(commandOverloadAttribute.Name))
+                        if (instance.Overloads.Any(x => x.Path.SequenceEqual(overload.Path)))
                         {
                             ApiLog.Error("Command Manager", $"Method &1{method.GetMemberName()}&r in command &1{instance.Name}&r" +
                                                             $"cannot be added as an overload because an overload with the same name already exists.");
@@ -153,7 +155,7 @@ public static class CommandManager
                             continue;
                         }
 
-                        instance.Overloads.Add(commandOverloadAttribute.Name, overload);
+                        instance.Overloads.Add(overload);
                     }
                 }
             }
@@ -164,32 +166,8 @@ public static class CommandManager
                 continue;
             }
 
-            var commandInstance = instance.GetInstance();
-
-            if (commandInstance != null)
-            {
-                if (instance.DefaultOverload != null)
-                {
-                    commandInstance.OnInitializeOverload(null, instance.DefaultOverload.ParameterBuilders);
-                    instance.DefaultOverload.IsInitialized = true;
-                }
-                
-                foreach (var overload in instance.Overloads)
-                {
-                    commandInstance.OnInitializeOverload(overload.Key, overload.Value.ParameterBuilders);
-                    overload.Value.IsInitialized = true;
-                }
-                
-                if (ApiLoader.ApiConfig.CommandSection.AllowInstancePooling && !instance.IsStatic && instance.Pool != null)
-                    instance.Pool.Return(commandInstance);
-            }
-            else
-            {
-                ApiLog.Warn("Command Manager", $"Overloads of command &3{instance.Name}&r could not be initialized due to not being able to construct " +
-                                               $"a command instance, this command may behave unexpectedly when first used.");
-            }
-
             Commands.Add(instance);
+
             registered.Add(instance);
             
             ApiLog.Debug("Command Manager", $"Registered command &3{instance.Name}&r (&6{type.FullName}&r)");
@@ -201,17 +179,20 @@ public static class CommandManager
     // Handles custom command execution.
     private static void OnCommand(CommandExecutingEventArgs ev)
     {
+        if (!ExPlayer.TryGet(ev.Sender, out var player))
+            return;
+
+        if (player.activeRunner != null && player.activeRunner.ShouldContinue(ev, player))
+        {
+            ev.IsAllowed = false;
+            return;
+        }
+
         if (ev.CommandFound && !ApiLoader.ApiConfig.CommandSection.AllowOverride)
             return;
         
         try
         {       
-            if (!ExPlayer.TryGet(ev.Sender, out var player))
-                return;
-
-            if (player.activeRunner != null && player.activeRunner.ShouldContinue(ev, player))
-                return;
-
             var line = string.Join(" ", ev.Arguments.Array);
             var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
 
@@ -250,12 +231,8 @@ public static class CommandManager
                 ListPool<string>.Shared.Return(args);
                 return;
             }
-
-            if (args.Count > 0 && command.Overloads.TryGetValue(args[0].ToLowerInvariant(), out var overload))
-            {
-                args.RemoveAt(0);
-            }
-            else
+           
+            if (args.Count < 1 || !CommandSearch.TryGetOverload(args, command, out var overload))
             {
                 if (command.DefaultOverload is null)
                 {
@@ -360,13 +337,6 @@ public static class CommandManager
             instance.Context = context;
             context.Instance = instance;
 
-            if (!context.Overload.IsInitialized)
-            {
-                instance.OnInitializeOverload(context.Overload.Name, context.Overload.ParameterBuilders);
-                
-                context.Overload.IsInitialized = true;
-            }
-
             var buffer = context.CopyBuffer(parserResults);
 
             context.Runner = context.Overload.Runner.Create(context);
@@ -432,7 +402,14 @@ public static class CommandManager
         var buffer = ctx.Overload.Buffer.Rent();
 
         for (var i = 0; i < ctx.Overload.ParameterCount; i++)
-            buffer[i] = results[i].Value;
+        {
+            var result = results[i];
+
+            if (result.Parser != null)
+                buffer[i] = result.Parameter.ResolveValue(result.Value, result.Parser);
+            else
+                buffer[i] = result.Value;
+        }
 
         return buffer;
     }

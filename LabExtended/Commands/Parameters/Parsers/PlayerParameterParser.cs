@@ -29,16 +29,16 @@ public class PlayerParameterParser : CommandParameterParser
             var tokenValue = propertyToken.Name;
 
             if (CommandPropertyUtils.TryGetPlayer(ref tokenValue, context, out var tokenPlayer))
-                return new(true, tokenPlayer, null, parameter);
+                return new(true, tokenPlayer, null, parameter, this);
             
             if (propertyToken.TryGet(context, null, out tokenPlayer))
-                return new(true, tokenPlayer, null, parameter);
+                return new(true, tokenPlayer, null, parameter, this);
         }
 
         if (token is StringToken stringToken)
             sourceString = stringToken.Value;
         else
-            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter, this);
 
         var precision = 0.85;
         
@@ -46,8 +46,8 @@ public class PlayerParameterParser : CommandParameterParser
             precision = precisionRestriction.Precision;
         
         if (ExPlayer.TryGet(sourceString, precision, out var player))
-            return new(true, player, null, parameter);
+            return new(true, player, null, parameter, this);
         
-        return new(false, null, $"Could not find player \"{sourceString}\"", parameter);
+        return new(false, null, $"Could not find player \"{sourceString}\"", parameter, this);
     }
 }

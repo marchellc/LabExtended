@@ -50,7 +50,7 @@ public class CommandData
     /// <summary>
     /// Gets the command's overloads.
     /// </summary>
-    public Dictionary<string, CommandOverload> Overloads { get; } = new();
+    public List<CommandOverload> Overloads { get; } = new();
     
     /// <summary>
     /// Gets the constructor of the command's type.

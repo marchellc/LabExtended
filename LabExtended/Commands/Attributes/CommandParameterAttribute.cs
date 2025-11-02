@@ -75,6 +75,49 @@ namespace LabExtended.Commands.Attributes
         /// <param name="description">A description of the command parameter. If not specified, defaults to "No description".</param>
         public CommandParameterAttribute(string name, string description = "No description")
         {
+            Name = name;
+            Description = description;
+
+            InitRestriction();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the CommandParameterAttribute class with the specified restriction types. This
+        /// constructor is obsolete.
+        /// </summary>
+        /// <remarks>This constructor is deprecated. Use the parameterless constructor and set the
+        /// RestrictionType property separately to specify restrictions. Using this constructor will result in a
+        /// compile-time error.</remarks>
+        /// <param name="restrictionTypes">An array of types used to restrict the allowed values for the parameter. Only the first type in the array is
+        /// used.</param>
+        [Obsolete("This constructor is deprecated. Use the constructor without restrictionTypes and set RestrictionType property separately.", true)]
+        public CommandParameterAttribute(params Type[] restrictionTypes)
+        {
+            if (restrictionTypes.Length > 0)
+                RestrictionType = restrictionTypes[0];
+
+            InitRestriction();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the CommandParameterAttribute class with the specified name, description, and
+        /// restriction types.
+        /// </summary>
+        /// <remarks>This constructor is obsolete. Use the constructor without restrictionTypes and set
+        /// the RestrictionType property separately.</remarks>
+        /// <param name="name">The name of the command parameter. Cannot be null.</param>
+        /// <param name="description">A description of the command parameter. Cannot be null.</param>
+        /// <param name="restrictionTypes">An array of types that restrict the allowed values for the parameter. If multiple types are provided, only
+        /// the first is used.</param>
+        [Obsolete("This constructor is deprecated. Use the constructor without restrictionTypes and set RestrictionType property separately.", true)]
+        public CommandParameterAttribute(string name, string description, params Type[] restrictionTypes)
+        {
+            Name = name;
+            Description = description;
+
+            if (restrictionTypes.Length > 0)
+                RestrictionType = restrictionTypes[0];
+
             InitRestriction();
         }
 

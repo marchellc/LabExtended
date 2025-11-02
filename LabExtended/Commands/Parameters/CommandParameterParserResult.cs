@@ -26,17 +26,23 @@ public struct CommandParameterParserResult
     public CommandParameter Parameter { get; }
 
     /// <summary>
+    /// The parser used to parse the value.
+    /// </summary>
+    public CommandParameterParser Parser { get; }
+
+    /// <summary>
     /// Creates a new <see cref="CommandParameterParserResult"/> instance.
     /// </summary>
     /// <param name="success">Whether or not the value was parsed.</param>
     /// <param name="value">The parsed value.</param>
     /// <param name="error">The parsing error.</param>
     /// <param name="parameter">The failed parameter.</param>
-    public CommandParameterParserResult(bool success, object? value, string? error, CommandParameter parameter)
+    public CommandParameterParserResult(bool success, object? value, string? error, CommandParameter parameter, CommandParameterParser parser)
     {
         Success = success;
         Value = value;
         Error = error;
         Parameter = parameter;
+        Parser = parser;
     }
 }

@@ -1,6 +1,8 @@
 ﻿using CameraShaking;
+
 using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
+
 using InventorySystem.Items.Firearms.Modules;
 using InventorySystem.Items.Firearms.Modules.Misc;
 
@@ -9,7 +11,7 @@ using InventorySystem.Items.Firearms.Modules.Misc;
 namespace LabExtended.Utilities.Firearms;
 
 /// <summary>
-/// Extensions to retrieve firearm properties from modules & submodules.
+/// Extensions to retrieve firearm properties from modules and submodules.
 /// </summary>
 public static class FirearmPropertyExtensions
 {

@@ -1,16 +1,25 @@
 ﻿using LabExtended.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Parameters.Restrictions;
 
 /// <summary>
 /// Restricts certain values from being used.
 /// </summary>
-public class EnumValueBlacklistRestriction<T> : ICommandParameterRestriction where T : Enum
+public class EnumValueBlacklistRestriction<T> : ICommandParameterRestriction where T : struct, Enum
 {
     /// <summary>
     /// List of blacklisted values.
     /// </summary>
     public List<T> Values { get; }
+
+    /// <summary>
+    /// Initializes a new instance of the EnumValueBlacklistRestriction class.
+    /// </summary>
+    public EnumValueBlacklistRestriction()
+    {
+        Values = new();
+    }
 
     /// <summary>
     /// Creates a new <see cref="EnumValueBlacklistRestriction{T}"/>
@@ -23,6 +32,23 @@ public class EnumValueBlacklistRestriction<T> : ICommandParameterRestriction whe
             throw new ArgumentNullException(nameof(values));
         
         Values = values as List<T> ?? values.ToList();
+    }
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, null, out var parts))
+            return false;
+
+        for (var i = 0; i < parts.Length; i++)
+        {
+            if (!Enum.TryParse<T>(parts[i], true, out var enumValue))
+                return false;
+
+            Values.Add(enumValue);
+        }
+
+        return true;
     }
 
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>

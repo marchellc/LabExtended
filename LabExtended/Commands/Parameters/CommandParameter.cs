@@ -3,6 +3,9 @@
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 
+using LabExtended.Core;
+using LabExtended.Extensions;
+
 #pragma warning disable CS8618, CS9264
 #pragma warning disable CS8601 // Possible null reference assignment.
 
@@ -13,6 +16,8 @@ namespace LabExtended.Commands.Parameters;
 /// </summary>
 public class CommandParameter
 {
+    private Dictionary<CommandParameterParser, List<PropertyInfo>> cachedProperties = new();
+
     /// <summary>
     /// Gets the parameter's type.
     /// </summary>
@@ -22,6 +27,11 @@ public class CommandParameter
     /// Gets the list of parameter arguments.
     /// </summary>
     public List<ICommandParameterRestriction> Restrictions { get; } = new();
+
+    /// <summary>
+    /// Gets a dictionary of parsers associated with this parameter.
+    /// </summary>
+    public Dictionary<CommandParameterParser, string> Parsers { get; } = new();
     
     /// <summary>
     /// Gets the name of the parameter.
@@ -36,12 +46,12 @@ public class CommandParameter
     /// <summary>
     /// Gets the <see cref="CommandSystem.IUsageProvider.Usage"/> alias of this parameter.
     /// </summary>
-    public string? UsageAlias => Type?.Parser?.UsageAlias;
+    public string? UsageAlias { get; }
 
     /// <summary>
     /// Gets the type's friendly alias.
     /// </summary>
-    public string? FriendlyAlias => Type?.Parser?.FriendlyAlias;
+    public string? FriendlyAlias { get; }
 
     /// <summary>
     /// Whether or not this parameter is optional.
@@ -65,23 +75,47 @@ public class CommandParameter
 
         Type = new(parameterInfo);
 
+        if (Type.Parser != null)
+        {
+            Parsers[Type.Parser] = string.Empty;
+
+            UsageAlias = Type.Parser.UsageAlias;
+            FriendlyAlias = Type.Parser.FriendlyAlias;
+        }
+
         Name = parameterInfo.Name;
         HasDefault = parameterInfo.HasDefaultValue;
         DefaultValue = parameterInfo.DefaultValue;
         Description = "None";
 
-        var parameterAttribute = parameterInfo.GetCustomAttribute<CommandParameterAttribute>(true);
+        foreach (var optionsAttribute in parameterInfo.GetCustomAttributes<CommandParameterAttribute>())
+        {
+            if (optionsAttribute.Restriction != null)
+                Restrictions.Add(optionsAttribute.Restriction);
 
-        if (parameterAttribute == null) 
-            return;
-        
-        Restrictions.AddRange(parameterAttribute.Restrictions);
-            
-        if (!string.IsNullOrWhiteSpace(parameterAttribute.Name))
-            Name = parameterAttribute.Name;
-            
-        if (!string.IsNullOrWhiteSpace(parameterAttribute.Description))
-            Description = parameterAttribute.Description;
+            if (optionsAttribute.Name != null)
+                Name = optionsAttribute.Name;
+
+            if (optionsAttribute.Description != null)
+                Description = optionsAttribute.Description;
+
+            if (optionsAttribute.UsageAlias != null)
+            {
+                UsageAlias = optionsAttribute.UsageAlias;
+                FriendlyAlias = optionsAttribute.UsageAlias;
+            }
+
+            if (optionsAttribute.ParserType != null)
+            {
+                if (!CommandParameterParserUtils.Parsers.TryGetFirst(p => p.GetType() == optionsAttribute.ParserType, out var parserInstance))
+                {
+                    ApiLog.Error("LabExtended", $"Parser &3{optionsAttribute.ParserType.FullName}&r has not been registered!");
+                    continue;
+                }
+
+                Parsers[parserInstance.Value] = optionsAttribute.ParserProperty ?? string.Empty;
+            }
+        }
     }
 
     /// <summary>
@@ -117,6 +151,51 @@ public class CommandParameter
         HasDefault = false;
 
         DefaultValue = null;
+    }
+
+    /// <summary>
+    /// Resolves and returns the value of a property or nested property from the specified parser result, based on the
+    /// configuration provided by the given parser.
+    /// </summary>
+    /// <remarks>This method supports resolving nested properties by interpreting dot-separated property paths
+    /// defined by the parser. Property resolution is cached for each parser instance to improve performance on
+    /// subsequent calls.</remarks>
+    /// <param name="parserResult">The object representing the result from which to resolve the property value. This is typically the output of a
+    /// parsing operation.</param>
+    /// <param name="parser">The parser that defines which property or nested property to resolve from the parser result.</param>
+    /// <returns>The value of the resolved property or nested property from the parser result. If the property cannot be
+    /// resolved, returns the original parser result object.</returns>
+    public object ResolveValue(object parserResult, CommandParameterParser parser)
+    {
+        if (this.cachedProperties.TryGetValue(parser, out var cachedProperties))
+        {
+            foreach (var cachedProperty in cachedProperties)
+                parserResult = cachedProperty.GetValue(parserResult);
+
+            return parserResult;
+        }
+
+        if (!Parsers.TryGetValue(parser, out var property) || property == string.Empty)
+            return parserResult;
+
+        cachedProperties = new();
+
+        var propertyParts = property.Split('.');
+
+        for (var i = 0; i < propertyParts.Length; i++)
+        {
+            var propertyInfo = parserResult.GetType().GetProperty(propertyParts[i]);
+
+            if (propertyInfo == null)
+                break;
+
+            cachedProperties.Add(propertyInfo);
+
+            parserResult = propertyInfo.GetValue(parserResult);
+        }
+
+        this.cachedProperties[parser] = cachedProperties;
+        return parserResult;
     }
 
     /// <summary>

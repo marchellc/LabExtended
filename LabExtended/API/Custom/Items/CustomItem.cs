@@ -62,7 +62,6 @@ namespace LabExtended.API.Custom.Items
         /// item-specific data.
         /// </summary>
         /// <param name="item">The item being processed. Represents the current item held by the player.</param>
-        /// <param name="owner">The player who owns the item.</param>
         /// <param name="itemData">A reference to an object containing additional data associated with the item. Can be modified within the
         /// delegate to update item-specific information.</param>
         public delegate void ForEachPickupDelegate(ItemPickupBase item, ref object? itemData);
@@ -1119,7 +1118,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data associated with the player's flashlight toggle action, including information about the player
         /// and the flashlight state.</param>
-        /// <param name="itemData">A reference to the item-specific data./param>
+        /// <param name="itemData">A reference to the item-specific data.</param>
         public virtual void OnToggledLight(PlayerToggledFlashlightEventArgs args, ref object? itemData)
         {
 
@@ -1194,7 +1193,7 @@ namespace LabExtended.API.Custom.Items
         /// </summary>
         /// <param name="args">The event data containing information about the player being disarmed and the context of the disarming
         /// action.</param>
-        /// <param name="itemData">A reference to the item's data./param>
+        /// <param name="itemData">A reference to the item's data.</param>
         public virtual void OnDisarming(PlayerCuffingEventArgs args, ref object? itemData)
         {
 

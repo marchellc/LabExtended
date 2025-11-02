@@ -1,5 +1,7 @@
 ﻿using LabExtended.Commands.Interfaces;
 
+using LabExtended.Extensions;
+
 namespace LabExtended.Commands.Parameters.Restrictions;
 
 /// <summary>
@@ -10,12 +12,20 @@ public class ByteRangeRestriction : ICommandParameterRestriction
     /// <summary>
     /// Gets the minimum value.
     /// </summary>
-    public byte? MinimumValue { get; }
+    public byte? MinimumValue { get; private set; }
     
     /// <summary>
     /// Gets the maximum value.
     /// </summary>
-    public byte? MaximumValue { get; }
+    public byte? MaximumValue { get; private set; }
+
+    /// <summary>
+    /// Initializes a new instance of the ByteRangeRestriction class.
+    /// </summary>
+    public ByteRangeRestriction()
+    {
+
+    }
 
     /// <summary>
     /// Creates a new <see cref="ByteRangeRestriction"/> instance.
@@ -27,7 +37,25 @@ public class ByteRangeRestriction : ICommandParameterRestriction
         MinimumValue = minimumValue;
         MaximumValue = maximumValue;
     }
-    
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, 2, out var parts))
+            return false;
+
+        if (!byte.TryParse(parts[0], out var minValue))
+            return false;
+
+        if (!byte.TryParse(parts[1], out var maxValue))
+            return false;
+
+        MinimumValue = minValue;
+        MaximumValue = maxValue;
+
+        return true;
+    }
+
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>
     public bool IsValid(object argument, CommandContext context, CommandParameter parameter, out string? error)
     {

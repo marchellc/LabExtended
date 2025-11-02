@@ -1,4 +1,5 @@
 ﻿using LabExtended.Commands.Interfaces;
+using LabExtended.Extensions;
 
 namespace LabExtended.Commands.Parameters.Restrictions;
 
@@ -10,12 +11,20 @@ public class StringLengthRangeRestriction : ICommandParameterRestriction
     /// <summary>
     /// Gets the minimum length of a string.
     /// </summary>
-    public int? MinimumLength { get; }
+    public int? MinimumLength { get; private set; }
     
     /// <summary>
     /// Gets the maximum length of a string.
     /// </summary>
-    public int? MaximumLength { get; }
+    public int? MaximumLength { get; private set; }
+
+    /// <summary>
+    /// Initializes a new instance of the StringLengthRangeRestriction class.
+    /// </summary>
+    public StringLengthRangeRestriction()
+    {
+
+    }
 
     /// <summary>
     /// Creates a new <see cref="StringLengthRangeRestriction"/> instance.
@@ -26,6 +35,24 @@ public class StringLengthRangeRestriction : ICommandParameterRestriction
     {
         MinimumLength = minimumLength;
         MaximumLength = maximumLength;
+    }
+
+    /// <inheritdoc/>
+    public bool TryLoad(string value)
+    {
+        if (!value.TrySplit(',', true, 2, out var parts))
+            return false;
+
+        if (!int.TryParse(parts[0], out var minValue))
+            return false;
+
+        if (!int.TryParse(parts[1], out var maxValue))
+            return false;
+
+        MinimumLength = minValue;
+        MaximumLength = maxValue;
+
+        return true;
     }
 
     /// <inheritdoc cref="ICommandParameterRestriction.IsValid"/>

@@ -45,12 +45,12 @@ public class DelegateParameterParser<T> : CommandParameterParser
             && propertyToken.TryGet<object>(context, null, out var result))
         {
             if (result.GetType() == parameter.Type.Type)
-                return new(true, result, null, parameter);
+                return new(true, result, null, parameter, this);
 
             if (result is string str)
                 sourceString = str;
             else
-                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter);
+                return new(false, null, $"Unsupported property type: {result.GetType().FullName}", parameter, this);
         }
         else if (token is StringToken stringToken)
         {
@@ -58,12 +58,12 @@ public class DelegateParameterParser<T> : CommandParameterParser
         }
         else
         {
-            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter);
+            return new(false, null, $"Unsupported token: {token.GetType().Name}", parameter, this);
         }
 
         if (!ParserDelegate(sourceString, out var error, out var value))
-            return new(false, null, error, parameter);
+            return new(false, null, error, parameter, this);
 
-        return new(true, value, null, parameter);
+        return new(true, value, null, parameter, this);
     }
 }

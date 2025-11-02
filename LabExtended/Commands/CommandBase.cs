@@ -2,18 +2,16 @@
 
 using LabApi.Features.Enums;
 
+using LabExtended.Commands.Tokens;
+using LabExtended.Commands.Utilities;
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Parameters;
 
 using LabExtended.API;
-using LabExtended.Commands.Tokens;
-using LabExtended.Commands.Utilities;
-using LabExtended.Extensions;
 using LabExtended.Utilities;
+using LabExtended.Extensions;
 
 using NorthwoodLib.Pools;
-
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 
 namespace LabExtended.Commands;
 
@@ -63,21 +61,18 @@ public class CommandBase
     public string Line => Context.Line;
 
     /// <summary>
+    /// Gets the dictionary of the overload that is currently being initialized.
+    /// </summary>
+    public Dictionary<string, CommandParameterBuilder> Parameters { get; } = new();
+
+    /// <summary>
     /// Gets or sets the context's response.
     /// </summary>
     public CommandResponse? Response
     {
         get => Context.Response;
-        set => Context.Response = value;
+        set => Context.Response = value!;
     }
-
-    /// <summary>
-    /// Called when an overload is called for the first time.
-    /// <remarks><b><paramref name="overloadName"/> will be null if the default overload is being initialized!</b></remarks>
-    /// </summary>
-    /// <param name="overloadName">Name of the overload that is being initialized.</param>
-    /// <param name="parameters">The overload's parameters.</param>
-    public virtual void OnInitializeOverload(string? overloadName, Dictionary<string, CommandParameterBuilder> parameters) { }
 
     /// <summary>
     /// Responds to the command.
@@ -85,7 +80,7 @@ public class CommandBase
     /// <param name="content">The message to respond with.</param>
     /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
     public void Respond(object content, bool isSuccess = true)
-        => Response = new(isSuccess, false, false, null, content.ToString());
+        => Response = new(isSuccess, false, false, null!, content.ToString());
 
     /// <summary>
     /// Responds to the command.
@@ -93,35 +88,35 @@ public class CommandBase
     /// <param name="contentBuilder">Delegate used to build the command's response.</param>
     /// <param name="isSuccess">Whether or not the command was successfully executed.</param>
     public void Respond(Action<StringBuilder> contentBuilder, bool isSuccess = true)
-        => Response = new(isSuccess, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(isSuccess, false, false, null!, StringBuilderPool.Shared.BuildString(contentBuilder));
     
     /// <summary>
     /// Responds to the command with a success.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
     public void Ok(object content)
-        => Response = new(true, false, false, null, content.ToString());
+        => Response = new(true, false, false, null!, content.ToString());
     
     /// <summary>
     /// Responds to the command with a success.
     /// </summary>
     /// <param name="contentBuilder">The delegate used to build the command's response.</param>
     public void Ok(Action<StringBuilder> contentBuilder)
-        => Response = new(true, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(true, false, false, null!, StringBuilderPool.Shared.BuildString(contentBuilder));
     
     /// <summary>
     /// Responds to the command with a failure.
     /// </summary>
     /// <param name="content">The message to respond with.</param>
     public void Fail(object content)
-        => Response = new(false, false, false, null, content.ToString());
+        => Response = new(false, false, false, null!, content.ToString());
     
     /// <summary>
     /// Responds to the command with a failure.
     /// </summary>
     /// <param name="contentBuilder">The delegate used to build the command's response.</param>
     public void Fail(Action<StringBuilder> contentBuilder)
-        => Response = new(false, false, false, null, StringBuilderPool.Shared.BuildString(contentBuilder));
+        => Response = new(false, false, false, null!, StringBuilderPool.Shared.BuildString(contentBuilder));
 
     /// <summary>
     /// Responds to the command with an input request.
@@ -155,7 +150,7 @@ public class CommandBase
             var argList = ListPool<string>.Shared.Rent();
             
             var ctx = new CommandContext();
-            var parameter = new CommandParameter(typeof(T), string.Empty, string.Empty, null, false);
+            var parameter = new CommandParameter(typeof(T), string.Empty, string.Empty, null!, false);
 
             ctx.Args = argList;
             ctx.Line = result;
@@ -181,7 +176,7 @@ public class CommandBase
                 return;
             }
             
-            onInput?.InvokeSafe((T)parsed.Value);
+            onInput?.InvokeSafe((T)parsed.Value!);
             
             ListPool<string>.Shared.Return(argList);
             ListPool<ICommandToken>.Shared.Return(list);
@@ -219,9 +214,8 @@ public class CommandBase
     /// <param name="content">The content of the message.</param>
     /// <param name="success">Whether or not to show the message as successful.</param>
     public void WriteThread(object content, bool success = true)
-    {
-        ThreadUtils.RunOnMainThread(() => Write(content, success));
-    }
+        => ThreadUtils.RunOnMainThread(() => Write(content, success));
+
     
     /// <summary>
     /// Writes a message into the sender's console (you should use this method if you want to respond from another thread).
@@ -229,7 +223,5 @@ public class CommandBase
     /// <param name="contentBuilder">The delegate used to build the message.</param>
     /// <param name="success">Whether or not to show the message as successful.</param>
     public void WriteThread(Action<StringBuilder> contentBuilder, bool success = true)
-    {
-        ThreadUtils.RunOnMainThread(() => Write(contentBuilder, success));
-    }
+        => ThreadUtils.RunOnMainThread(() => Write(contentBuilder, success));
 }

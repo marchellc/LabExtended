@@ -69,7 +69,7 @@ public class PlayerListParameterParser : CommandParameterParser
                 var players = new List<ExPlayer>();
 
                 tokenHandle(context, players);
-                return new(true, players, null, parameter);
+                return new(true, players, null, parameter, this);
             }
 
             list = stringToken.ToListNonAlloc();
@@ -81,7 +81,7 @@ public class PlayerListParameterParser : CommandParameterParser
         }
         else
         {
-            return new(false, null, $"Unsupported token type: {token.GetType().Name}", parameter);
+            return new(false, null, $"Unsupported token type: {token.GetType().Name}", parameter, this);
         }
 
         var found = new List<ExPlayer>(list.Count);
@@ -99,12 +99,12 @@ public class PlayerListParameterParser : CommandParameterParser
             else if (ExPlayer.TryGet(query, precision, out player) && player != null)
                 found.Add(player);
             else
-                return new(false, null, $"Could not find player \"{query}\" (at: {i})", parameter);
+                return new(false, null, $"Could not find player \"{query}\" (at: {i})", parameter, this);
         }
 
         if (listReturn)
             ListPool<string>.Shared.Return(list);
         
-        return new(true, found, null, parameter);
+        return new(true, found, null, parameter, this);
     }
 }
