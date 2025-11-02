@@ -1,6 +1,4 @@
-﻿using LabExtended.Utilities;
-
-namespace LabExtended.Core.Profiling
+﻿namespace LabExtended.Core.Profiling
 {
     /// <summary>
     /// Represents a frame recorded by the <see cref="ProfilerMarker"/>.

@@ -5,9 +5,21 @@ using LabExtended.Commands.Interfaces;
 
 namespace LabExtended.Commands.Custom.CustomEffects;
 
+/// <summary>
+/// Provides server-side commands for listing, enabling, disabling, and clearing custom effects on players.
+/// </summary>
+/// <remarks>This command group allows administrators or authorized users to manage custom effects for themselves
+/// or other players. Use the available subcommands to view all registered effects, enable or disable specific effects
+/// for a player, or clear all active custom effects. All operations are performed server-side and require appropriate
+/// permissions to execute.</remarks>
 [Command("customeffect", "Manages Custom Effects", "ceffect")]
 public class CustomEffectsCommand : CommandBase, IServerSideCommand
 {
+    /// <summary>
+    /// Lists all available custom effects, or the custom effects registered on a specified player.
+    /// </summary>
+    /// <param name="target">The target player whose registered custom effects will be listed. If null, lists all available custom effects
+    /// instead.</param>
     [CommandOverload("list", "Lists all available Custom Effects.", null)]
     public void ListCommand(
         [CommandParameter("Target", "The target player. Specifying a " +
@@ -45,6 +57,14 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         }
     }
     
+    /// <summary>
+    /// Enables a previously registered but inactive Custom Effect for a player.
+    /// </summary>
+    /// <remarks>If the specified effect is already active or not registered for the target player, the
+    /// command will not enable it and will report an error. Use the "customeffect list" command to view available
+    /// effects.</remarks>
+    /// <param name="effectName">The name of the Custom Effect to enable. Must correspond to a registered effect.</param>
+    /// <param name="target">The player on whom to enable the effect. If not specified, the effect is enabled on the command sender.</param>
     [CommandOverload("enable", "Enables an inactive Custom Effect.", null)]
     public void EnableCommand(
         [CommandParameter("Name", "Name of the Custom Effect.")] string effectName, 
@@ -75,6 +95,13 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         Ok($"Enabled effect \"{effect.GetType().Name}\" on \"{player.Nickname}\" ({player.ClearUserId}).");
     }
 
+    /// <summary>
+    /// Disables an active Custom Effect for the specified player.
+    /// </summary>
+    /// <remarks>If the specified effect is not active or not registered for the target player, the command
+    /// will fail with an appropriate message. Use the "customeffect list" command to view available effects.</remarks>
+    /// <param name="effectName">The name of the Custom Effect to disable. This must match the name of an existing effect.</param>
+    /// <param name="target">The player on whom to disable the effect. If not specified, the effect is disabled on the command sender.</param>
     [CommandOverload("disable", "Disables an active Custom Effect.", null)]
     public void DisableCommand(
         [CommandParameter("Name", "Name of the Custom Effect")] string effectName, 
@@ -105,6 +132,10 @@ public class CustomEffectsCommand : CommandBase, IServerSideCommand
         Ok($"Disabled effect \"{effect.GetType().Name}\" on \"{player.Nickname}\" ({player.ClearUserId}).");
     }
 
+    /// <summary>
+    /// Disables all active custom effects for the specified player.
+    /// </summary>
+    /// <param name="target">The player whose custom effects will be cleared. If null, the command sender is used.</param>
     [CommandOverload("clear", "Clears all Custom Effects.", null)]
     public void ClearCommand(ExPlayer? target = null)
     {

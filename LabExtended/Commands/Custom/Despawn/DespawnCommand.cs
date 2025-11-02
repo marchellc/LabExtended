@@ -20,6 +20,15 @@ namespace LabExtended.Commands.Custom.Despawn;
 [Attributes.Command("despawn", "Despawns an object.")]
 public class DespawnCommand : CommandBase, IRemoteAdminCommand
 {
+    /// <summary>
+    /// Despawns the object that the specified player is currently looking at by performing a raycast from their camera
+    /// position.
+    /// </summary>
+    /// <remarks>This command can only be executed from the Remote Admin panel and cannot be used by the
+    /// server. If the raycast hits a player, that player is killed. If it hits a networked object, the object is
+    /// destroyed. If the raycast does not hit a valid target, an error message is returned.</remarks>
+    /// <param name="originPlayer">The player whose camera is used as the origin for the raycast. If null, the command sender is used.</param>
+    /// <param name="distance">The maximum distance, in units, for the raycast to detect objects. Must be positive.</param>
     [CommandOverload("Despawns an object that you're currently looking at.", null)]
     public void RaycastOverload(
         [CommandParameter("Player", "The player of which camera will be used")] ExPlayer? originPlayer = null, 
@@ -70,6 +79,10 @@ public class DespawnCommand : CommandBase, IRemoteAdminCommand
         }
     }
 
+    /// <summary>
+    /// Despawns a network object with the specified network ID.
+    /// </summary>
+    /// <param name="id">The unique identifier of the network object to despawn.</param>
     [CommandOverload("id", "Despawns a network object by it's ID.", null)]
     public void NetworkIdOverload(
         [CommandParameter("ID", "ID of the network object.")] uint id)

@@ -6,6 +6,12 @@ namespace LabExtended.Commands.Custom.Reload;
 
 public partial class ReloadCommand
 {
+    /// <summary>
+    /// Reloads the game's gameplay and Remote Admin configuration files.
+    /// </summary>
+    /// <remarks>This method refreshes the in-memory configuration for gameplay and Remote Admin features. Use
+    /// this command after making changes to configuration files to apply updates without restarting the
+    /// server.</remarks>
     [CommandOverload("gameconfig", "Reloads the game's gameplay and Remote Admin configuration.", null)]
     public void GameConfigOverload()
     {

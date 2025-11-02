@@ -8,6 +8,14 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
+    /// <summary>
+    /// Displays detailed information about a network object with the specified ID.
+    /// </summary>
+    /// <remarks>This command provides a comprehensive description of the network object's properties,
+    /// including its network and asset IDs, scene information, visibility, transform details, connection status,
+    /// serialization data, associated behaviours, and various state flags. If the specified object ID does not
+    /// correspond to an active network object, an error message is returned.</remarks>
+    /// <param name="objectId">The unique identifier of the target network object. Must correspond to an active object on the server.</param>
     [CommandOverload("object", "Shows the description of a network object.", null)]
     public void ObjectOverload(
         [CommandParameter("ID", "ID of the target object.")] uint objectId)

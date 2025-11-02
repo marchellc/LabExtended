@@ -9,6 +9,13 @@ namespace LabExtended.Commands.Custom.Spawn;
 
 public partial class SpawnCommand
 {
+    /// <summary>
+    /// Spawns the specified number of items of a given type at the target player's position.
+    /// </summary>
+    /// <param name="target">The player at whose position the items will be spawned. Cannot be null.</param>
+    /// <param name="amount">The number of items to spawn. Must be greater than zero.</param>
+    /// <param name="type">The type of item to spawn.</param>
+    /// <param name="scale">The scale to apply to each spawned item. If null, a scale of one is used.</param>
     [CommandOverload("item", "Spawns an item.", null)]
     public void ItemOverload(
         [CommandParameter("Target", "The target player.")] ExPlayer target,

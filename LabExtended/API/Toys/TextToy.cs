@@ -1,9 +1,9 @@
 ﻿using System.Text;
-using LabExtended.API.Images;
+
 using LabExtended.API.Prefabs;
 using LabExtended.API.Interfaces;
+
 using LabExtended.Extensions;
-using LabExtended.Images.Playback;
 
 using Mirror;
 
@@ -19,7 +19,7 @@ namespace LabExtended.API.Toys;
 /// <summary>
 /// <see cref="AdminToys.TextToy"/> wrapper.
 /// </summary>
-public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
+public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>
 {
     /// <summary>
     /// Gets the format for a singular string.
@@ -44,8 +44,6 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
 
         if (Base == null)
             throw new Exception("Could not spawn TextToy");
-
-        PlaybackDisplay = new(this);
         
         Base.NetworkPosition = position ?? Vector3.zero;
         Base.NetworkRotation = rotation ?? Quaternion.identity;
@@ -58,14 +56,10 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
     internal TextToy(AdminToys.TextToy textToy) : base(textToy)
     {
         Base = textToy;
-        PlaybackDisplay = new(this);
     }
     
     /// <inheritdoc cref="IWrapper{T}.Base"/>
     public new AdminToys.TextToy Base { get; }
-
-    /// <inheritdoc cref="IPlaybackDisplay.PlaybackDisplay"/>
-    public PlaybackBase PlaybackDisplay { get; private set; }
 
     /// <summary>
     /// Gets the list of arguments.
@@ -199,43 +193,5 @@ public class TextToy : AdminToy, IWrapper<AdminToys.TextToy>, IPlaybackDisplay
         
         for (var i = 0; i < values.Length; i++)
             Arguments.Add(values[i].ToString());
-    }
-
-    /// <inheritdoc cref="IPlaybackDisplay.SetFrame"/>
-    public void SetFrame(ImageFrame? frame)
-    {
-        if (frame is null)
-        {
-            Clear(true);
-            
-            Size = DefaultSize;
-
-            if (Scale != Vector3.one)
-                Scale = Vector3.one;
-            
-            return;
-        }
-
-        if (Size != frame.File.toyStringImageData.Display)
-            Size = frame.File.toyStringImageData.Display;
-
-        if (Scale != frame.File.toyStringImageData.Scale)
-            Scale = frame.File.toyStringImageData.Scale;
-
-        if (Format is null || Format != frame.toyFrameFormat)
-            Format = frame.toyFrameFormat;
-
-        Arguments.Clear();
-        Arguments.AddRange(frame.toyFrameData);
-    }
-
-    /// <inheritdoc cref="IDisposable.Dispose"/>
-    public void Dispose()
-    {
-        if (PlaybackDisplay != null)
-        {
-            PlaybackDisplay.Dispose();
-            PlaybackDisplay = null;
-        }
     }
 }

@@ -2,11 +2,26 @@
 
 namespace LabExtended.Core.Configs.Sections
 {
+    /// <summary>
+    /// Represents configuration options for modifying the Unity player loop, including the ability to add or remove
+    /// specific loop entries.
+    /// </summary>
     public class LoopSection
     {
+        /// <summary>
+        /// Gets or sets a value indicating whether player loops are modified by adding a custom loop and removing those
+        /// specified in the configuration.
+        /// </summary>
         [Description("Whether or not to modify Player loops (adding a custom one and removing ones specified in the config below).")]
         public bool ModifyLoops { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets the list of player loop system names to be removed from the Unity execution order.
+        /// </summary>
+        /// <remarks>Each entry in the list represents the fully qualified name of a Unity player loop
+        /// subsystem. Modifying this list allows customization of the Unity player loop by excluding specific update
+        /// steps. Changes to this property affect which systems are excluded during player loop
+        /// configuration.</remarks>
         [Description("A list of player loops that will be removed.")]
         public List<string> RemovedLoops { get; set; } = new()
         {
@@ -108,6 +123,9 @@ namespace LabExtended.Core.Configs.Sections
             "UnityEngine.PlayerLoop.Initialization+AsyncUploadTimeSlicedUpdate"
         };
 
+        /// <summary>
+        /// Gets or sets the collection of all loop names currently present.
+        /// </summary>
         [Description("A list of all present loops.")]
         public List<string> AllLoops { get; set; } = new();
     }

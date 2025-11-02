@@ -357,9 +357,6 @@ public class ApiLoader : Plugin
 
             HintController.Internal_Init();
 
-            ImageLoader.Internal_Init();
-            ImageSpawner.Internal_Init();
-
             RemoteAdminActionProvider.Internal_Init();
             RemoteAdminController.Internal_Init();
 

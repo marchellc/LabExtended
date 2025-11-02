@@ -12,6 +12,14 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
+    /// <summary>
+    /// Lists all currently spawned network objects, optionally filtered by object type.
+    /// </summary>
+    /// <remarks>If no objects of the specified type are found, a message is displayed indicating that no such
+    /// objects are spawned. When listing all objects, the results are grouped by type and include the count and network
+    /// IDs of each group.</remarks>
+    /// <param name="objectType">The name of the object's type to filter the results by. Specify "all" to list all spawned objects. The
+    /// comparison is case-insensitive.</param>
     [CommandOverload("objects", "Lists all spawned network objects.", null)]
     public void ListObjects(
         [CommandParameter("Type", "Name of the object's type (use \"all\" to show all objects).")] string objectType = "all")

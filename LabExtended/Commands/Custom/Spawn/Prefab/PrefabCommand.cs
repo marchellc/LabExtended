@@ -9,6 +9,15 @@ namespace LabExtended.Commands.Custom.Spawn;
 
 public partial class SpawnCommand
 {
+    /// <summary>
+    /// Spawns a prefab with the specified name, size, position, and rotation.
+    /// </summary>
+    /// <remarks>If a prefab with the specified name cannot be found, the operation fails and no object is
+    /// spawned. The spawned object's name and network ID are reported upon success.</remarks>
+    /// <param name="prefabName">The name of the prefab to spawn. The search is case-insensitive.</param>
+    /// <param name="size">The size to apply to the spawned prefab. If not specified, the default size of one is used.</param>
+    /// <param name="position">The world position at which to spawn the prefab. If not specified, the sender's current position is used.</param>
+    /// <param name="rotation">The rotation to apply to the spawned prefab. If not specified, the sender's current rotation is used.</param>
     [CommandOverload("prefab", "Spawns a prefab", null)]
     public void PrefabOverload(
         [CommandParameter("Name", "Name of the prefab")] string prefabName, 

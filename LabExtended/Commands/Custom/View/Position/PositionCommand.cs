@@ -1,5 +1,4 @@
 using LabExtended.Commands.Attributes;
-using LabExtended.Extensions;
 
 using MapGeneration;
 
@@ -12,6 +11,13 @@ namespace LabExtended.Commands.Custom.View;
 
 public partial class ViewCommand
 {
+    /// <summary>
+    /// Displays detailed information about the sender's current position, rotation, camera state, and room context.
+    /// </summary>
+    /// <remarks>This command provides a comprehensive overview of the sender's spatial data, including
+    /// transform and camera positions, rotation values, grounded state, and room information. It also includes relative
+    /// position details if the sender's role supports first-person controls, and camera controller data if available.
+    /// Use this command to diagnose or inspect the sender's current in-game location and orientation.</remarks>
     [CommandOverload("position", "Shows information about your current position.", null)]
     public void Position()
     {

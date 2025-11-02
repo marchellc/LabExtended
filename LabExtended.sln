@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11012.119 d18.0
+VisualStudioVersion = 18.0.11012.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabExtended", "LabExtended\LabExtended.csproj", "{2B2B3DCB-2B69-488F-8D9F-ACC001F4E9E2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LabExtended.ImageConvertor", "LabExtended.ImageConvertor\LabExtended.ImageConvertor.csproj", "{01637DCD-155C-4458-BEE8-1B3C1BF8149F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +15,6 @@ Global
 		{2B2B3DCB-2B69-488F-8D9F-ACC001F4E9E2}.Debug|Any CPU.Build.0 = Release|Any CPU
 		{2B2B3DCB-2B69-488F-8D9F-ACC001F4E9E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B2B3DCB-2B69-488F-8D9F-ACC001F4E9E2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{01637DCD-155C-4458-BEE8-1B3C1BF8149F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{01637DCD-155C-4458-BEE8-1B3C1BF8149F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{01637DCD-155C-4458-BEE8-1B3C1BF8149F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{01637DCD-155C-4458-BEE8-1B3C1BF8149F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
