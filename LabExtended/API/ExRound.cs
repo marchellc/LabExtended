@@ -24,7 +24,6 @@ namespace LabExtended.API
     /// <summary>
     /// A class used for managing the round.
     /// </summary>
-    [CommandPropertyAlias("round")]
     public static class ExRound
     {
         /// <summary>
@@ -131,49 +130,41 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the round's number.
         /// </summary>
-        [CommandPropertyAlias("number")]
         public static short RoundNumber { get; internal set; }
 
         /// <summary>
         /// Gets the round's current state.
         /// </summary>
-        [CommandPropertyAlias("state")]
         public static RoundState State { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether the round has ended.
         /// </summary>
-        [CommandPropertyAlias("isEnded")]
         public static bool IsEnded => State is RoundState.Ended;
         
         /// <summary>
         /// Gets a value indicating whether or not the round is currently ending.
         /// </summary>
-        [CommandPropertyAlias("isEnding")]
         public static bool IsEnding => State is RoundState.Ending;
 
         /// <summary>
         /// Gets a value indicating whether the round is in progress.
         /// </summary>
-        [CommandPropertyAlias("isRunning")]
         public static bool IsRunning => State is RoundState.InProgress;
 
         /// <summary>
         /// Gets a value indicating whether the round is waiting for players.
         /// </summary>
-        [CommandPropertyAlias("isWaitingForPlayers")]
         public static bool IsWaitingForPlayers => State is RoundState.WaitingForPlayers;
 
         /// <summary>
         /// Gets a value indicating whether or not SCP-079 was recontained.
         /// </summary>
-        [CommandPropertyAlias("isScp079Recontained")]
         public static bool IsScp079Recontained { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether or not Light Containment Zone has started decontaminating.
         /// </summary>
-        [CommandPropertyAlias("isLczDecontaminated")]
         public static bool IsLczDecontaminated => DecontaminationController.Singleton?.IsDecontaminating ?? false;
 
         /// <summary>
@@ -194,19 +185,16 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the date of this round's start.
         /// </summary>
-        [CommandPropertyAlias("startTime")]
         public static DateTime StartedAt { get; internal set; }
         
         /// <summary>
         /// Gets the amount of time that has passed since the round started or <see cref="TimeSpan.Zero"/> if the round isn't running.
         /// </summary>
-        [CommandPropertyAlias("duration")]
         public static TimeSpan Duration => IsRunning ? DateTime.Now - StartedAt : TimeSpan.Zero;
 
         /// <summary>
         /// Gets or sets the forced decontamination status.
         /// </summary>
-        [CommandPropertyAlias("decontaminationStatus")]
         public static DecontaminationController.DecontaminationStatus DecontaminationStatus
         {
             get => DecontaminationController.Singleton?.DecontaminationOverride ?? DecontaminationController.DecontaminationStatus.None;
@@ -216,7 +204,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the decontamination phase.
         /// </summary>
-        [CommandPropertyAlias("decontaminationPhase")]
         public static DecontaminationController.DecontaminationPhase.PhaseFunction DecontaminationPhase
         {
             get
@@ -244,7 +231,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets a value indicating whether or not the round can end.
         /// </summary>
-        [CommandPropertyAlias("isLocked")]
         public static bool IsRoundLocked
         {
             get => RoundLock.IsActive;
@@ -263,7 +249,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets a value indicating whether or not the round can start.
         /// </summary>
-        [CommandPropertyAlias("isLobbyLocked")]
         public static bool IsLobbyLocked
         {
             get => LobbyLock.IsActive;
@@ -308,7 +293,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the current extra target count for SCPs.
         /// </summary>
-        [CommandPropertyAlias("extraTargets")]
         public static int ExtraTargetCount
         {
             get => RoundSummary.singleton?.Network_extraTargets ?? 0;
@@ -318,7 +302,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the amount of escaped Class-Ds.
         /// </summary>
-        [CommandPropertyAlias("escapedClassD")]
         public static int EscapedClassDs
         {
             get => RoundSummary.EscapedClassD;
@@ -328,7 +311,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the amount of escaped scientists.
         /// </summary>
-        [CommandPropertyAlias("escapedScientists")]
         public static int EscapedScientists
         {
             get => RoundSummary.EscapedScientists;
@@ -338,7 +320,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the amount of total kills.
         /// </summary>
-        [CommandPropertyAlias("kills")]
         public static int Kills
         {
             get => RoundSummary.Kills;
@@ -348,7 +329,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the amount of SCPs that have survived the round.
         /// </summary>
-        [CommandPropertyAlias("scps")]
         public static int SurvivingSCPs
         {
             get => RoundSummary.SurvivingSCPs;
@@ -358,7 +338,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets or sets the amount of kills that the SCPs did.
         /// </summary>
-        [CommandPropertyAlias("scpKills")]
         public static int KillsByScp
         {
             get => RoundSummary.KilledBySCPs;
@@ -368,7 +347,6 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the amount of players that have been changed into zombies.
         /// </summary>
-        [CommandPropertyAlias("zombies")]
         public static int ChangedIntoZombies
         {
             get => RoundSummary.ChangedIntoZombies;

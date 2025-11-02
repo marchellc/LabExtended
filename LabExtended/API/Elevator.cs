@@ -186,7 +186,7 @@ namespace LabExtended.API
         /// <summary>
         /// Gets the elevator chamber bounds.
         /// </summary>
-        public Bounds Bounds => Base.WorldspaceBounds;
+        public Utils.RelativeBounds Bounds => Base.WorldspaceBounds;
 
         /// <summary>
         /// Gets or sets the elevator's current sequence.

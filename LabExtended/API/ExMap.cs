@@ -9,16 +9,15 @@ using InventorySystem.Items.ThrowableProjectiles;
 using LabApi.Events.Arguments.ServerEvents;
 
 using LabExtended.API.Prefabs;
-using LabExtended.Attributes;
-using LabExtended.Commands.Attributes;
+
+using LabExtended.Events;
+using LabExtended.Events.Mirror;
 
 using LabExtended.Core;
-using LabExtended.Events;
 using LabExtended.Extensions;
 
-using LightContainmentZoneDecontamination;
-
 using MapGeneration;
+using MapGeneration.Holidays;
 using MapGeneration.Distributors;
 
 using Mirror;
@@ -35,40 +34,32 @@ using UnityEngine;
 
 using Utils;
 using Utils.Networking;
-using LabExtended.Events.Mirror;
-
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
 
 namespace LabExtended.API;
 
 /// <summary>
 /// Map management functions.
 /// </summary>
-[CommandPropertyAlias("map")]
 public static class ExMap
 {
     /// <summary>
     /// List of spawned pickups.
     /// </summary>
-    [CommandPropertyAlias("pickups")]
     public static List<ItemPickupBase> Pickups { get; } = new();
 
     /// <summary>
     /// List of spawned ragdolls.
     /// </summary>
-    [CommandPropertyAlias("ragdolls")]
     public static List<BasicRagdoll> Ragdolls { get; } = new();
 
     /// <summary>
     /// List of spawned lockers.
     /// </summary>
-    [CommandPropertyAlias("lockers")]
     public static List<Locker> Lockers { get; } = new();
 
     /// <summary>
     /// List of locker chambers.
     /// </summary>
-    [CommandPropertyAlias("chambers")]
     public static List<LockerChamber> Chambers { get; } = new();
 
     /// <summary>
@@ -99,13 +90,11 @@ public static class ExMap
     /// <summary>
     /// Gets the default color of a room's light.
     /// </summary>
-    [CommandPropertyAlias("defaultLightColor")]
     public static Color DefaultLightColor { get; } = Color.clear;
 
     /// <summary>
     /// Gets or sets the map's seed.
     /// </summary>
-    [CommandPropertyAlias("seed")]
     public static int Seed
     {
         get => SeedSynchronizer.Seed;
@@ -117,6 +106,30 @@ public static class ExMap
             SeedSynchronizer.Seed = value;
         }
     }
+
+    #region Holidays - Halloween
+    /// <summary>
+    /// Gets or sets whether or not the Hubert Moon skybox variation is active.
+    /// </summary>
+    public static bool IsHubertSkyboxActive
+    {
+        get => SkyboxHubert._singleton != null && SkyboxHubert._singleton.NetworkHubert;
+        set
+        {
+            if (SkyboxHubert._singleton == null)
+                return;
+
+            SkyboxHubert._singleton.NetworkHubert = value;
+        }
+    }
+
+    /// <summary>
+    /// Spawns a Hubert Moon instance.
+    /// </summary>
+    /// <returns>The spawned Hubert Moon instance.</returns>
+    public static HubertMoon SpawnHubertMoon()
+        => PrefabList.HubertMoon.Spawn<HubertMoon>();
+    #endregion
 
     /// <summary>
     /// Broadcasts a message to all players.
@@ -255,7 +268,7 @@ public static class ExMap
     /// <param name="damageHandler">The ragdoll's cause of death.</param>
     /// <returns>The spawned ragdoll instance.</returns>
     public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale,
-        Quaternion rotation, bool spawn = true, ExPlayer owner = null, DamageHandlerBase damageHandler = null)
+        Quaternion rotation, bool spawn = true, ExPlayer? owner = null, DamageHandlerBase? damageHandler = null)
         => SpawnRagdoll(ragdollRoleType, position, scale, Vector3.zero, rotation, spawn, owner, damageHandler);
 
     /// <summary>
@@ -271,8 +284,8 @@ public static class ExMap
     /// <param name="damageHandler">The ragdoll's cause of death.</param>
     /// <returns>The spawned ragdoll instance.</returns>
     public static BasicRagdoll SpawnRagdoll(RoleTypeId ragdollRoleType, Vector3 position, Vector3 scale,
-        Vector3 velocity, Quaternion rotation, bool spawn = true, ExPlayer owner = null,
-        DamageHandlerBase damageHandler = null)
+        Vector3 velocity, Quaternion rotation, bool spawn = true, ExPlayer? owner = null,
+        DamageHandlerBase? damageHandler = null)
     {
         if (!ragdollRoleType.TryGetPrefab(out var role))
             throw new Exception($"Failed to find role prefab for role {ragdollRoleType}");
@@ -405,7 +418,7 @@ public static class ExMap
         {
             var item = SpawnItem<T>(type, position, scale, rotation, null, spawn);
 
-            if (item is null)
+            if (item == null)
                 continue;
 
             list.Add(item);
@@ -427,7 +440,7 @@ public static class ExMap
     /// <param name="spawn">Whether or not to spawn.</param>
     /// <param name="activate">Whether or not to activate.</param>
     /// <returns>The spawned projectile.</returns>
-    public static ThrownProjectile SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity,
+    public static ThrownProjectile? SpawnProjectile(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity,
         Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
         => SpawnProjectile<ThrownProjectile>(item, position, scale, velocity, rotation, force, fuseTime, spawn,
             activate);
@@ -446,7 +459,7 @@ public static class ExMap
     /// <param name="activate">Whether or not to activate.</param>
     /// <typeparam name="T">Generic projectile type.</typeparam>
     /// <returns>The spawned projectile.</returns>
-    public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity,
+    public static T? SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 velocity,
         Quaternion rotation, float force, float fuseTime = 2f, bool spawn = true, bool activate = true)
         where T : ThrownProjectile
         => SpawnProjectile<T>(item, position, scale, Vector3.forward, Vector3.up, rotation, velocity, force, fuseTime,
@@ -469,14 +482,14 @@ public static class ExMap
     /// <param name="serial">Optional item serial number.</param>
     /// <typeparam name="T">Generic projectile type.</typeparam>
     /// <returns></returns>
-    public static T SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up,
+    public static T? SpawnProjectile<T>(ItemType item, Vector3 position, Vector3 scale, Vector3 forward, Vector3 up,
         Quaternion rotation, Vector3 velocity, float force, float fuseTime = 2f, bool spawn = true,
         bool activate = true, ushort? serial = null) where T : ThrownProjectile
     {
         if (!item.TryGetItemPrefab<ThrowableItem>(out var throwableItem))
             return null;
 
-        var projectile = UnityEngine.Object.Instantiate((T)throwableItem.Projectile, position, rotation);
+        var projectile = UnityEngine.Object.Instantiate((T)throwableItem!.Projectile, position, rotation);
         var settings = throwableItem.FullThrowSettings;
 
         projectile.transform.localScale = scale;
@@ -496,7 +509,7 @@ public static class ExMap
 
         if (spawn && activate)
         {
-            if (projectile.TryGetRigidbody(out var rigidbody))
+            if (projectile.TryGetRigidbody(out var rigidbody) && rigidbody != null)
             {
                 var num = 1f - Mathf.Abs(Vector3.Dot(forward, Vector3.up));
                 var vector = up * throwableItem.FullThrowSettings.UpwardsFactor;
@@ -537,9 +550,7 @@ public static class ExMap
     {
         try
         {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            AmbientSoundPlayer = ExPlayer.Host.GameObject.GetComponent<AmbientSoundPlayer>();
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            AmbientSoundPlayer = ExPlayer.Host.GameObject!.GetComponent<AmbientSoundPlayer>();
 
             Ragdolls.Clear();
             Pickups.Clear();
@@ -555,7 +566,8 @@ public static class ExMap
     {
         try
         {
-            if (args.Identity == null || args.Mode is not NetworkServer.DestroyMode.Destroy)
+            if (args.Identity == null 
+                || args.Mode is not NetworkServer.DestroyMode.Destroy)
                 return;
 
             Lockers.ForEach(l =>
@@ -579,7 +591,7 @@ public static class ExMap
         }
         catch (Exception ex)
         {
-            ApiLog.Error("Map API", ex);
+            ApiLog.Error("LabExtended", ex);
         }
     }
 
@@ -603,7 +615,7 @@ public static class ExMap
     {
         Pickups.Remove(pickup);
 
-        ExPlayer.AllPlayers.ForEach(p => p.Inventory.droppedItems.Remove(pickup));
+        ExPlayer.AllPlayers.ForEach(p => p?.Inventory?.droppedItems?.Remove(pickup));
     }
 
     private static void OnPickupCreated(ItemPickupBase pickup)

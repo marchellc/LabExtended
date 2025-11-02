@@ -1,11 +1,7 @@
 ﻿using LabExtended.API;
 
-using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Tokens;
 
-using LabExtended.Core;
-using LabExtended.Utilities;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
@@ -243,54 +239,8 @@ public static class CommandPropertyUtils
         return false;
     }
 
-    private static void Internal_Discovered(Type type)
-    {
-        if (!type.IsPublic)
-            return;
-
-        if (!type.HasAttribute<CommandPropertyAliasAttribute>(out var aliasAttribute))
-            return;
-
-        var properties = new Dictionary<string, Func<object, object[], object>>();
-
-        foreach (var property in type.GetAllProperties())
-        {
-            if (!property.HasAttribute<CommandPropertyAliasAttribute>(out var propertyAliasAttribute))
-                continue;
-
-            if (property.GetMethod is null || (type != typeof(ExPlayer) && !property.GetMethod.IsStatic))
-                continue;
-
-            properties.Add(propertyAliasAttribute.Alias, FastReflection.ForMethod(property.GetMethod));
-        }
-
-        if (properties.Count > 0)
-        {
-            if (type == typeof(ExPlayer))
-            {
-                Properties.Add(aliasAttribute.Alias, (key, ply, _) =>
-                {
-                    if (!properties.TryGetValue(key!, out var propertyGetter))
-                        return null!;
-
-                    return propertyGetter(ply!, Array.Empty<object>());
-                });
-            }
-            else
-            {
-                Properties.Add(aliasAttribute.Alias, (key, _, _) =>
-                {
-                    if (!properties.TryGetValue(key!, out var propertyGetter))
-                        return null!;
-
-                    return propertyGetter(null!, Array.Empty<object>());
-                });
-            }
-        }
-    }
-
     internal static void Internal_Init()
     {
-        ReflectionUtils.Discovered += Internal_Discovered;
+
     }
 }
