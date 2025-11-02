@@ -121,7 +121,7 @@ public static class CommandManager
                     var overload = new CommandOverload(method);
 
                     overload.Name = commandOverloadAttribute.Name ?? string.Empty;
-                    overload.Permission = commandOverloadAttribute.Permission ?? string.Empty;
+                    overload.Permission = commandOverloadAttribute.Permission;
 
                     overload.Path.AddRange(overload.Name.Split(spaceSeparator, StringSplitOptions.RemoveEmptyEntries).Select(x => x.ToLowerInvariant()));
 

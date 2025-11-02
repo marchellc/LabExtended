@@ -107,7 +107,7 @@ public class CommandParameter
 
             if (optionsAttribute.ParserType != null)
             {
-                if (!CommandParameterParserUtils.Parsers.TryGetFirst(p => p.GetType() == optionsAttribute.ParserType, out var parserInstance))
+                if (!CommandParameterParserUtils.Parsers.TryGetFirst(p => p.Value.GetType() == optionsAttribute.ParserType, out var parserInstance))
                 {
                     ApiLog.Error("LabExtended", $"Parser &3{optionsAttribute.ParserType.FullName}&r has not been registered!");
                     continue;
