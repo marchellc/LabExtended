@@ -9,8 +9,6 @@ using LabExtended.Commands.Utilities;
 using LabExtended.Core;
 using LabExtended.Utilities.Update;
 
-using MEC;
-
 using NorthwoodLib.Pools;
 
 using UnityEngine;
@@ -73,9 +71,9 @@ public class ContinuableCommandRunner : ICommandRunner
         }
         catch (Exception ex)
         {
-            ApiLog.Error("Command API", ex);
+            ApiLog.Error("CommandManager", ex);
 
-            newContext.Response = new(false, false, false, null, newContext.FormatExceptionResponse(ex));
+            newContext.Response = new(false, false, false, null!, newContext.FormatExceptionResponse(ex));
         }
 
         HandleResponse(newContext);
@@ -135,7 +133,9 @@ public class ContinuableCommandRunner : ICommandRunner
         }
         catch (Exception ex)
         {
-            ctx.Response = new(false, false, false, null, ctx.FormatExceptionResponse(ex));
+            ctx.Response = new(false, false, false, null!, ctx.FormatExceptionResponse(ex));
+
+            ApiLog.Error("CommandManager", ex);
         }
         
         FinishCommand();
@@ -175,7 +175,7 @@ public class ContinuableCommandRunner : ICommandRunner
 
     private void Start()
     {
-        command.RemainingTime = command.CommandData.TimeOut ?? 0f;
+        command!.RemainingTime = command.CommandData.TimeOut ?? 0f;
 
         if (command.RemainingTime > 0f && !eventStatus)
         {

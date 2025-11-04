@@ -56,7 +56,7 @@ public class InputCommandRunner : ICommandRunner
         var args = ListPool<string>.Shared.Rent(ev.Arguments.Array);
         var response = inputCommandRunner.context.Response;
         
-        inputCommandRunner.context.Response = null;
+        inputCommandRunner.context.Response = null!;
         
         inputCommandRunner.context.Args = args;
         inputCommandRunner.context.Line = line;

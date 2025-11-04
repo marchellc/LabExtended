@@ -51,7 +51,7 @@ public class AsyncCommandRunner : ICommandRunner
         }).ContinueWithOnMain(x =>
         {
             if (x.Exception != null)
-                ApiLog.Error("Command API", x.Exception);
+                ApiLog.Error("CommandManager", x.Exception);
             
             isFinished = true;
             isInProgress = false;

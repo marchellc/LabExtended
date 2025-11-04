@@ -192,27 +192,35 @@ public static class CommandParameterParserUtils
     /// <param name="parserResult">The parsing result of the parser.</param>
     /// <typeparam name="T">The type to parse.</typeparam>
     /// <returns>true if the parser was found, otherwise false</returns>
-    public static bool TryParse<T>(CommandContext context, string value, out CommandParameterParserResult parserResult)
+    public static bool TryParse<T>(this CommandContext context, string value, out CommandParameterParserResult parserResult)
     {
+        if (context is null)
+            throw new ArgumentNullException(nameof(context));
+
+        if (string.IsNullOrEmpty(value))
+            throw new ArgumentNullException(nameof(value));
+
         if (!TryGetParser(typeof(T), out var parser))
         {
-            parserResult = default;
-            return false;
+            parserResult = new(false, null, $"Missing parser for type '{typeof(T).Name}'", null, null);
+        }
+        else
+        {
+            var token = StringToken.Instance.NewToken<StringToken>();
+            var tokens = ListPool<ICommandToken>.Shared.Rent();
+
+            tokens.Add(token);
+
+            token.Value = value;
+
+            parserResult = parser.Parse(tokens, token, 0, context, NullParameter);
+
+            token.ReturnToken();
+
+            ListPool<ICommandToken>.Shared.Return(tokens);
         }
 
-        var token = StringToken.Instance.NewToken<StringToken>();
-        var tokens = ListPool<ICommandToken>.Shared.Rent();
-        
-        tokens.Add(token);
-
-        token.Value = value;
-
-        parserResult = parser.Parse(tokens, token, 0, context, NullParameter);
-        
-        token.ReturnToken();
-        
-        ListPool<ICommandToken>.Shared.Return(tokens);
-        return true;
+        return parserResult.Success;
     }
     
     /// <summary>
@@ -243,68 +251,42 @@ public static class CommandParameterParserUtils
                 if (index < context.Tokens.Count)
                 {
                     var parameterToken = context.Tokens[index];
-
-                    var parserFound = false;
-                    var parserResult = default(CommandParameterParserResult);
-
-                    var defaultParserResult = default(CommandParameterParserResult);
+                    var parserResult = new CommandParameterParserResult(false, null, null, null, null!);
 
                     foreach (var pair in parameter.Parsers)
                     {
                         if (!pair.Key.AcceptsToken(parameterToken))
                             continue;
 
-                        var parameterResult = pair.Key.Parse(context.Tokens, parameterToken, index, context, parameter);
+                        parserResult = pair.Key.Parse(context.Tokens, parameterToken, index, context, parameter);
 
-                        if (!parameterResult.Success)
-                        {
-                            if (pair.Key == parameter.Type.Parser)
-                                defaultParserResult = parameterResult;
-
-                            parserResult = parameterResult;
-                            continue;
-                        }
-                        else
-                        {
-                            parserFound = true;
-                            parserResult = parameterResult;
-
-                            break;
-                        }
-                    }
-
-                    if (parserFound)
-                    {
                         if (parserResult.Success)
+                            break;
+                    }
+
+                    if (parserResult.Success)
+                    {
+                        string? argumentError = null;
+
+                        foreach (var restriction in parameter.Restrictions)
                         {
-                            string? argumentError = null;
-
-                            foreach (var restriction in parameter.Restrictions)
+                            if (!restriction.IsValid(parserResult.Value!, context, parameter, out var error))
                             {
-                                if (!restriction.IsValid(parserResult.Value!, context, parameter, out var error))
-                                {
-                                    argumentError = error;
-                                    break;
-                                }
-                            }
-
-                            if (argumentError != null)
-                            {
-                                parserResults.Add(new(false, null, argumentError, parameter, null!));
-
-                                index++;
-                                return;
+                                argumentError = error;
+                                break;
                             }
                         }
 
-                        parserResults.Add(parserResult);
-                        index++;
+                        if (argumentError != null)
+                        {
+                            parserResults.Add(new(false, null, argumentError, parameter, null!));
+
+                            index++;
+                            return;
+                        }
                     }
-                    else
-                    {
-                        parserResults.Add(defaultParserResult);
-                        index++;
-                    }
+
+                    parserResults.Add(parserResult);
                 }
                 else
                 {

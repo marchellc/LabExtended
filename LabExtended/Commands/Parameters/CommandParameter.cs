@@ -107,13 +107,19 @@ public class CommandParameter
 
             if (optionsAttribute.ParserType != null)
             {
-                if (!CommandParameterParserUtils.Parsers.TryGetFirst(p => p.Value.GetType() == optionsAttribute.ParserType, out var parserInstance))
+                if (CommandParameterParserUtils.TryGetParser(optionsAttribute.ParserType, out var parserInstance))
                 {
-                    ApiLog.Error("LabExtended", $"Parser &3{optionsAttribute.ParserType.FullName}&r has not been registered!");
+                    Parsers[parserInstance] = optionsAttribute.ParserProperty ?? string.Empty;
                     continue;
                 }
 
-                Parsers[parserInstance.Value] = optionsAttribute.ParserProperty ?? string.Empty;
+                if (CommandParameterParserUtils.Parsers.TryGetFirst(p => p.Value.GetType() == optionsAttribute.ParserType, out var parserPair))
+                {
+                    Parsers[parserPair.Value] = optionsAttribute.ParserProperty ?? string.Empty;
+                    continue;
+                }
+
+                ApiLog.Error("LabExtended", $"Parser &3{optionsAttribute.ParserType.FullName}&r has not been registered!");
             }
         }
     }

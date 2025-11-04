@@ -4,6 +4,7 @@ using LabExtended.API;
 
 using LabExtended.Commands.Interfaces;
 using LabExtended.Commands.Utilities;
+using LabExtended.Core;
 
 namespace LabExtended.Commands.Runners;
 
@@ -81,7 +82,9 @@ public class RegularCommandRunner : ICommandRunner
         }
         catch (Exception ex)
         {
-            ctx.Response = new(false, false, false, null, ctx.FormatExceptionResponse(ex));
+            ctx.Response = new(false, false, false, null!, ctx.FormatExceptionResponse(ex));
+
+            ApiLog.Error("CommandManager", ex);
         }
         
         FinishCommand();

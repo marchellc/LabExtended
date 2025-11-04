@@ -20,7 +20,7 @@ namespace LabExtended.Commands.Custom.Holidays
         /// Sets the active status of the Hubert skybox.
         /// </summary>
         /// <param name="status">true to activate the Hubert skybox; otherwise, false.</param>
-        [CommandOverload("hubertskybox", "Sets the Hubert skybox status.")]
+        [CommandOverload("hubert skybox", "Sets the Hubert skybox status.", null)]
         public void HubertSkybox(
             [CommandParameter("Status", "The status of the skybox to set.")] bool status)
         {
@@ -34,7 +34,7 @@ namespace LabExtended.Commands.Custom.Holidays
         /// </summary>
         /// <remarks>Use this method to create and register a Hubert Moon entity. The method outputs a
         /// confirmation message including the unique network identifier of the spawned instance.</remarks>
-        [CommandOverload("hubertmoon", "Spawns a Hubert Moon instance.")]
+        [CommandOverload("hubert moon", "Spawns a Hubert Moon instance.", null)]
         public void HubertMoon()
         {
             var instance = ExMap.SpawnHubertMoon();

@@ -37,7 +37,7 @@ internal static class CommandResponseFormatter
         {
             if (ctx.Type is CommandType.Console or CommandType.RemoteAdmin)
             {
-                ctx.Sender.SendRemoteAdminMessage(ctx.FormatCommandResponse(), ctx.Response is { IsSuccess: true }, true, ctx.Command.Name);
+                ctx.Sender.SendRemoteAdminMessage(ctx.FormatCommandResponse(), ctx.Response is { IsSuccess: true }, true, ctx.Command.Name.ToUpperInvariant());
             }
             else
             {
@@ -51,7 +51,7 @@ internal static class CommandResponseFormatter
             }
         }
 
-        continuableCommand = null;
+        continuableCommand = null!;
         return false;
     }
 
@@ -74,7 +74,7 @@ internal static class CommandResponseFormatter
             if (ctx.Type is CommandType.Client)
             {
                 x.Append("[");
-                x.Append(ctx.Command.Name);
+                x.Append(ctx.Command.Name.ToUpperInvariant());
                 x.Append("] ");
             }
 
@@ -89,7 +89,7 @@ internal static class CommandResponseFormatter
             if (ctx.Type is CommandType.Client)
             {
                 x.Append("[");
-                x.Append(ctx.Command.Name);
+                x.Append(ctx.Command.Name.ToUpperInvariant());
                 x.Append("] ");
             }
 
@@ -105,7 +105,7 @@ internal static class CommandResponseFormatter
             if (type is CommandType.Console)
             {
                 x.Append("[");
-                x.Append(commandName);
+                x.Append(commandName.ToUpperInvariant());
                 x.Append("] ");
             }
 
@@ -131,7 +131,7 @@ internal static class CommandResponseFormatter
             if (ctx.Type is CommandType.Client)
             {
                 x.Append("[");
-                x.Append(ctx.Command.Name);
+                x.Append(ctx.Command.Name.ToUpperInvariant());
                 x.Append("] ");
             }
 
@@ -174,7 +174,7 @@ internal static class CommandResponseFormatter
             if (ctx.Type is CommandType.Client)
             {
                 x.Append("[");
-                x.Append(ctx.Command.Name);
+                x.Append(ctx.Command.Name.ToUpperInvariant());
                 x.Append("] ");
             }
 
@@ -225,7 +225,7 @@ internal static class CommandResponseFormatter
             if (ctx.Type is CommandType.Client)
             {
                 x.Append("[");
-                x.Append(ctx.Command.Name);
+                x.Append(ctx.Command.Name.ToUpperInvariant());
                 x.Append("] ");
             }
 
