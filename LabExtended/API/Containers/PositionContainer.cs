@@ -295,9 +295,7 @@ public class PositionContainer
     /// </summary>
     /// <param name="position">The position to set.</param>
     public void Set(Vector3 position)
-    {
-        Player.ReferenceHub.TryOverridePosition(position);
-    }
+        => Player.ReferenceHub.TryOverridePosition(position);
 
     /// <summary>
     /// Gets a list of players in a specified range.
@@ -322,23 +320,31 @@ public class PositionContainer
     /// <param name="player">The player.</param>
     /// <returns>The distance.</returns>
     public float DistanceTo(ExPlayer player)
-        => player is null ? 0f : Vector3.Distance(player.Position.Position, Position);
+        => player?.ReferenceHub == null ? 0f : Vector3.Distance(player.Position.Position, Position);
 
     /// <summary>
     /// Gets the distance to a specified transform.
     /// </summary>
-    /// <param name="transform">The transform.</param>
+    /// <param name="transform">The Transform.</param>
     /// <returns>The distance.</returns>
     public float DistanceTo(Transform transform)
-        => transform is null ? 0f : Vector3.Distance(transform.position, Position);
+        => transform == null ? 0f : Vector3.Distance(transform.position, Position);
 
     /// <summary>
     /// Gets the distance to a specified gameObject.
     /// </summary>
-    /// <param name="gameObject">The gameObject.</param>
+    /// <param name="gameObject">The GameObject.</param>
     /// <returns>The distance.</returns>
     public float DistanceTo(GameObject gameObject)
-        => gameObject is null ? 0f : Vector3.Distance(gameObject.transform.position, Position);
+        => gameObject == null ? 0f : Vector3.Distance(gameObject.transform.position, Position);
+
+    /// <summary>
+    /// Gets the distance to a specified MonoBehaviour.
+    /// </summary>
+    /// <param name="monoBehaviour">The MonoBehaviour.</param>
+    /// <returns>The distance.</returns>
+    public float DistanceTo(MonoBehaviour monoBehaviour)
+        => monoBehaviour == null ? 0f : Vector3.Distance(monoBehaviour.transform.position, Position);
 
     /// <summary>
     /// Resets gravity to it's default for all players.

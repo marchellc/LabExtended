@@ -527,7 +527,7 @@ public class ExPlayer : Player, IDisposable
 
         infoBuilder = StringBuilderPool.Shared.Rent();
 
-        Role = new(referenceHub.roleManager);
+        Role = new(this, referenceHub.roleManager);
         Ammo = new(referenceHub.inventory);
         Stats = new(referenceHub.playerStats);
         Effects = new(referenceHub.playerEffectsController, this);
@@ -1491,7 +1491,7 @@ public class ExPlayer : Player, IDisposable
     private void RefreshCustomInfo()
     {
         if (infoBuilder == null 
-            || !ExPlayerEvents.anyRefreshingCustomInfoSubscribers
+            || (!ExPlayerEvents.anyRefreshingCustomInfoSubscribers && Role?.CustomRole == null)
             || !HasEnabledCustomInfo 
             || !IsVerified 
             || ReferenceHub == null)
@@ -1501,6 +1501,9 @@ public class ExPlayer : Player, IDisposable
 
         if (infoProperty?.Length > 0)
             infoBuilder.AppendLine(infoProperty);
+
+        if (Role.CustomRole != null)
+            Role.CustomRole.OnBuildingInfo(this, ref Role.customRoleData);
 
         ExPlayerEvents.OnRefreshingCustomInfo(this, infoBuilder);
 

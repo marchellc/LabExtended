@@ -1,7 +1,9 @@
-﻿using LabExtended.API.CustomRoles;
+﻿using LabExtended.API.Custom.Roles;
 using LabExtended.API.CustomTeams;
 
 using LabExtended.Extensions;
+
+using LabExtended.Utilities;
 using LabExtended.Utilities.Values;
 
 using PlayerRoles;
@@ -33,8 +35,18 @@ namespace LabExtended.API.Containers;
 /// </summary>
 public class RoleContainer
 {
-    internal RoleContainer(PlayerRoleManager manager)
-        => Manager = manager;
+    internal RoleContainer(ExPlayer player, PlayerRoleManager manager)
+    {
+        Player = player;
+        Manager = manager;
+    }
+
+    internal object? customRoleData;
+
+    /// <summary>
+    /// Gets the player this wrapper belongs to.
+    /// </summary>
+    public ExPlayer Player { get; }
 
     /// <summary>
     /// Gets the player's role manager component.
@@ -271,7 +283,12 @@ public class RoleContainer
     /// <summary>
     /// Gets the player's active custom role.
     /// </summary>
-    public CustomRoleInstance? CustomRole { get; internal set; }
+    public CustomRole? CustomRole { get; internal set; }
+
+    /// <summary>
+    /// Gets custom data associated with custom the role.
+    /// </summary>
+    public object? CustomRoleData => customRoleData;
 
     /// <summary>
     /// Gets the player's current role cast to <see cref="IFpcRole"/>.
@@ -410,6 +427,29 @@ public class RoleContainer
     #endregion
 
     /// <summary>
+    /// Gets the role type that the current player appears to have from the perspective of the specified target player.
+    /// </summary>
+    /// <param name="target">The player whose perspective is used to determine the appearance. Cannot be null.</param>
+    /// <param name="allowOverwatchSpoof">Indicates whether Overwatch role spoofing should be considered when determining the appearance. If <see
+    /// langword="true"/>, the returned role may be spoofed for Overwatch purposes; otherwise, the actual role is used.</param>
+    /// <returns>The role type identifier representing how the current player appears to the target player.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="target"/> is null or does not have a valid reference hub.</exception>
+    public RoleTypeId GetAppearance(ExPlayer target, bool allowOverwatchSpoof = true)
+    {
+        if (target?.ReferenceHub == null)
+            throw new ArgumentNullException(nameof(target));
+
+        var appearance = allowOverwatchSpoof
+            ? RoleSync.GetSpoofedRoleToSend(Player, target)
+            : RoleSync.GetRoleToSend(Player, target);
+
+        if (CustomRole != null)
+            appearance = CustomRole.GetAppearance(target, appearance);
+
+        return appearance;
+    }
+
+    /// <summary>
     /// Sets the player's current role.
     /// </summary>
     /// <param name="newRole">The new role to set.</param>
@@ -426,6 +466,66 @@ public class RoleContainer
     /// <returns>true if the player's current role is <paramref name="type"/></returns>
     public bool Is(RoleTypeId type)
         => Type == type;
+
+    /// <summary>
+    /// Determines whether the specified identifier matches the custom role identifier.
+    /// </summary>
+    /// <param name="id">The identifier to compare with the custom role. Cannot be null.</param>
+    /// <returns>true if the custom role exists and its identifier equals the specified id; otherwise, false.</returns>
+    public bool IsCustom(string id)
+        => id != null && CustomRole != null && CustomRole.Id == id;
+
+    /// <summary>
+    /// Determines whether the current custom role is of the specified type.
+    /// </summary>
+    /// <param name="type">The type to compare with the current custom role. Cannot be null.</param>
+    /// <returns>true if the current custom role is not null and its type matches the specified type; otherwise, false.</returns>
+    public bool IsCustom(Type type)
+        => type != null && CustomRole != null && CustomRole.GetType() == type;
+
+    /// <summary>
+    /// Determines whether the current custom role is of the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to compare with the current custom role.</typeparam>
+    /// <returns>true if the custom role is of type T; otherwise, false.</returns>
+    public bool IsCustom<T>()
+        => CustomRole is T;
+
+    /// <summary>
+    /// Retrieves the custom role data as the specified type, or returns the provided default value if the data is not
+    /// available or cannot be cast.
+    /// </summary>
+    /// <typeparam name="T">The type to which the custom role data should be cast.</typeparam>
+    /// <param name="defaultValue">The value to return if the custom role data is not present or cannot be cast to type <typeparamref name="T"/>.
+    /// The default is <c>default</c> for the type.</param>
+    /// <returns>The custom role data cast to type <typeparamref name="T"/>, or <paramref name="defaultValue"/> if the data is
+    /// not available or cannot be cast.</returns>
+    public T GetDataOrDefault<T>(T? defaultValue = default)
+    {
+        if (customRoleData is not T castData)
+            return defaultValue!;
+
+        return castData;
+    }
+
+    /// <summary>
+    /// Attempts to retrieve the stored custom role data as the specified type.
+    /// </summary>
+    /// <typeparam name="T">The type to which the custom role data should be cast.</typeparam>
+    /// <param name="data">When this method returns, contains the custom role data cast to type <typeparamref name="T"/> if the cast
+    /// succeeds; otherwise, the default value for type <typeparamref name="T"/>.</param>
+    /// <returns>true if the custom role data can be cast to type <typeparamref name="T"/>; otherwise, false.</returns>
+    public bool TryGetData<T>(out T data)
+    {
+        if (customRoleData is not T castData)
+        {
+            data = default!;
+            return false;
+        }
+
+        data = castData;
+        return true;
+    }
 
     /// <summary>
     /// Checks if the player's current role inherits a type.

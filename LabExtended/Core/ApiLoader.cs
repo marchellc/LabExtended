@@ -25,7 +25,6 @@ using LabExtended.API.Custom.Items;
 using LabExtended.API.Custom.Effects;
 using LabExtended.API.Custom.Gamemodes;
 
-using LabExtended.API.CustomRoles;
 using LabExtended.API.CustomTeams;
 
 using LabExtended.API.RemoteAdmin;
@@ -33,7 +32,6 @@ using LabExtended.API.RemoteAdmin.Actions;
 
 using LabExtended.API.Toys;
 using LabExtended.API.Hints;
-using LabExtended.API.Images;
 using LabExtended.API.Settings;
 using LabExtended.API.Containers;
 
@@ -342,7 +340,6 @@ public class ApiLoader : Plugin
 
             CustomGamemode._Init();
 
-            CustomRoleManager.Internal_Init();
             CustomTeamHandler.Internal_Init();
             CustomPlayerEffect.Internal_Init();
             CustomTeamRegistry.Internal_Init();

@@ -119,7 +119,7 @@ public static class RoleSync
                 if (receiver.ReferenceHub != null
                     && receiver.IsOnlineAndVerified)
                 {
-                    var role = GetRoleToSend(player, receiver);
+                    var role = player.Role.GetAppearance(receiver, false);
                     var fakeRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(player.ReferenceHub, receiver.ReferenceHub, role, writer);
 
                     if (fakeRole.HasValue)
@@ -150,7 +150,7 @@ public static class RoleSync
     {
         using (var writer = NetworkWriterPool.Get())
         {
-            var role = GetRoleToSend(player, receiver);
+            var role = player.Role.GetAppearance(receiver, true);
             var fakedRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(player.ReferenceHub, receiver.ReferenceHub, role, writer);
 
             if (fakedRole.HasValue)
@@ -166,9 +166,6 @@ public static class RoleSync
                 role = synchronizingArgs.Role;
 
                 player.SentRoles[receiver.NetworkId] = role;
-
-                if (IsOverwatchSpoofEnabled && FpcServerPositionDistributor.IsDistributionActive(role))
-                    role = RoleTypeId.Overwatch;
 
                 receiver.Send(new RoleSyncInfo(player.ReferenceHub, role, receiver.ReferenceHub, writer));
 
@@ -206,7 +203,7 @@ public static class RoleSync
                     {
                         spoofWriter.Reset();
 
-                        var role = GetRoleToSend(p, player);
+                        var role = p.Role.GetAppearance(player, true);
                         var fakeRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(p.ReferenceHub, player.ReferenceHub, role, spoofWriter);
 
                         if (fakeRole.HasValue)

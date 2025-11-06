@@ -1,12 +1,7 @@
 using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
-using LabExtended.Attributes;
 using LabExtended.Events;
-
-using LabExtended.API.CustomRoles;
-
-using UnityEngine;
 
 using PlayerRoles;
 
