@@ -1,5 +1,5 @@
 ﻿using System.Reflection;
-
+using HarmonyLib;
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 
@@ -190,10 +190,16 @@ public class CommandParameter
 
         for (var i = 0; i < propertyParts.Length; i++)
         {
-            var propertyInfo = parserResult.GetType().GetProperty(propertyParts[i]);
+            if (parserResult == null)
+                throw new Exception($"Cannot resolve property '{propertyParts[i]}' because the parent object is null.");
+
+            var propertyInfo = AccessTools.DeclaredProperty(parserResult.GetType(), propertyParts[i]);
 
             if (propertyInfo == null)
-                break;
+                propertyInfo = AccessTools.Property(parserResult.GetType(), propertyParts[i]);
+
+            if (propertyInfo == null)
+                throw new Exception($"Property '{propertyParts[i]}' not found on type '{parserResult.GetType()}'.");
 
             cachedProperties.Add(propertyInfo);
 
