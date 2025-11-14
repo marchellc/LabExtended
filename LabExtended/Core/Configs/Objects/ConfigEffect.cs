@@ -119,6 +119,7 @@ namespace LabExtended.Core.Configs.Objects
         /// <summary>
         /// Gets the type of the base-game effect.
         /// </summary>
+        [YamlIgnore]
         public Type BaseType
         {
             get
@@ -131,6 +132,7 @@ namespace LabExtended.Core.Configs.Objects
         /// <summary>
         /// Gets the type of the custom effect.
         /// </summary>
+        [YamlIgnore]
         public Type? CustomType
         {
             get
