@@ -444,7 +444,7 @@ public class RoleContainer
             : RoleSync.GetRoleToSend(Player, target);
 
         if (CustomRole != null)
-            appearance = CustomRole.GetAppearance(target, appearance);
+            appearance = CustomRole.GetAppearance(Player, target, appearance, ref customRoleData);
 
         return appearance;
     }

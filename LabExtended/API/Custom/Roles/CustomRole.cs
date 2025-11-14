@@ -16,6 +16,8 @@ using LabExtended.API.Custom.Items;
 
 using LabExtended.Core.Configs.Objects;
 
+using YamlDotNet.Serialization;
+
 namespace LabExtended.API.Custom.Roles
 {
     /// <summary>
@@ -158,17 +160,20 @@ namespace LabExtended.API.Custom.Roles
         /// <summary>
         /// Gets the read-only list of players currently assigned to this custom role.
         /// </summary>
+        [YamlIgnore]
         public ReadOnlyDictionary<ExPlayer, object> Players => field ??= new ReadOnlyDictionary<ExPlayer, object>(players);
 
         /// <summary>
-        /// Determines the role appearance to present to the specified receiver, based on the current appearance
-        /// settings.
+        /// Determines the role appearance that should be presented for a player from the perspective of a specific
+        /// receiver.
         /// </summary>
-        /// <param name="receiver">The player for whom the role appearance is being determined.</param>
-        /// <param name="appearance">The default role appearance to use if no specific appearance is set.</param>
-        /// <returns>A RoleTypeId value representing the role appearance that should be shown to the receiver. Returns the
-        /// specified appearance if no custom appearance is set; otherwise, returns the current appearance.</returns>
-        public virtual RoleTypeId GetAppearance(ExPlayer receiver, RoleTypeId appearance)
+        /// <param name="player">The player whose appearance is being evaluated.</param>
+        /// <param name="receiver">The player who will perceive the appearance of the specified player.</param>
+        /// <param name="appearance">The default role appearance to use if no override is specified.</param>
+        /// <param name="data">An optional data object that can be used to provide additional context or receive extra information. This
+        /// parameter is passed by reference and may be modified by the method.</param>
+        /// <returns>A value indicating the role appearance that should be shown to the receiver for the specified player.</returns>
+        public virtual RoleTypeId GetAppearance(ExPlayer player, ExPlayer receiver, RoleTypeId appearance, ref object? data)
         {
             if (Appearance == RoleTypeId.None)
                 return appearance;
@@ -291,7 +296,7 @@ namespace LabExtended.API.Custom.Roles
                 return false;
 
             var validSpawnPoints = useSpawnpoint ? null : SpawnLocations.Where(x => MapUtilities.TryGet(x, null, out _, out _));
-            var useDefaultSpawn = useSpawnpoint && validSpawnPoints.Count() < 1;
+            var useDefaultSpawn = useSpawnpoint || validSpawnPoints?.Count() < 1;
 
             player.Role.Set(Type, RoleChangeReason.RemoteAdmin, 
                 useDefaultSpawn ? (ClearInventory 
