@@ -1,7 +1,6 @@
 using LabExtended.API;
 
 using LabExtended.Events;
-using LabExtended.Attributes;
 using LabExtended.Extensions;
 
 using LabExtended.Events.Player;
@@ -43,7 +42,7 @@ public static class RoleSync
     /// Whether or not the Overwatch spoof should be enabled.
     /// <remarks>When enabled, players currently playing as Spectator have a chance of being reported as Overwatch to non-staff players.</remarks>
     /// </summary>
-    public static bool IsOverwatchSpoofEnabled { get; set; } = true;
+    public static bool IsOverwatchSpoofEnabled { get; set; }
 
     /// <summary>
     /// Gets the role which should be sent to a specific player (with a chance of applying the Overwatch spoof).
@@ -150,7 +149,7 @@ public static class RoleSync
     {
         using (var writer = NetworkWriterPool.Get())
         {
-            var role = player.Role.GetAppearance(receiver, true);
+            var role = player.Role.GetAppearance(receiver, false);
             var fakedRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(player.ReferenceHub, receiver.ReferenceHub, role, writer);
 
             if (fakedRole.HasValue)
@@ -203,7 +202,7 @@ public static class RoleSync
                     {
                         spoofWriter.Reset();
 
-                        var role = p.Role.GetAppearance(player, true);
+                        var role = p.Role.GetAppearance(player, false);
                         var fakeRole = FpcServerPositionDistributor.InvokeRoleSyncEvent(p.ReferenceHub, player.ReferenceHub, role, spoofWriter);
 
                         if (fakeRole.HasValue)
