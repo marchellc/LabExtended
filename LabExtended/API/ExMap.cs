@@ -124,11 +124,14 @@ public static class ExMap
     }
 
     /// <summary>
-    /// Spawns a Hubert Moon instance.
+    /// Spawns an instance of Hubert Moon if available.
     /// </summary>
-    /// <returns>The spawned Hubert Moon instance.</returns>
-    public static HubertMoon SpawnHubertMoon()
-        => PrefabList.HubertMoon.Spawn<HubertMoon>();
+    /// <remarks>This method is obsolete. Hubert Moon is no longer available in the game and this method will
+    /// always return <see langword="null"/>.</remarks>
+    /// <returns>A <see cref="HubertMoon"/> instance if Hubert Moon is available; otherwise, <see langword="null"/>.</returns>
+    [Obsolete("Hubert Moon is no longer available in the game.")]
+    public static HubertMoon? SpawnHubertMoon()
+        => null;
     #endregion
 
     /// <summary>

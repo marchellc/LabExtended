@@ -1,6 +1,8 @@
 ﻿using LabExtended.Core;
 using LabExtended.Extensions;
+
 using MapGeneration.Holidays;
+
 using Mirror;
 
 namespace LabExtended.API.Prefabs;
@@ -484,7 +486,8 @@ public static class PrefabList
     /// <summary>
     /// Gets the prefab of Hubert Moon.
     /// </summary>
-    public static PrefabDefinition HubertMoon { get; } = new("Hubert Moon");
+    [Obsolete("Hubert Moon has been removed from the game due to the end of Halloween.", true)]
+    public static PrefabDefinition? HubertMoon { get; }
 
     /// <summary>
     /// Gets the prefab of an elevator's gate.

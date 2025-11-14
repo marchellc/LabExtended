@@ -19,6 +19,7 @@ using System.Reflection;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using UnityEngine;
+
 using InventorySystem.Items.MarshmallowMan;
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 
@@ -558,6 +559,9 @@ public class EffectContainer : IDisposable
                         continue;
 
                     if (!warnedMissing.Add(prop.PropertyType))
+                        continue;
+
+                    if (typeof(IHolidayEffect).IsAssignableFrom(prop.PropertyType))
                         continue;
 
                     ApiLog.Error("LabExtended", $"Missing effect for property &3{prop.Name}&r (&1{prop.PropertyType.FullName}&r)");
