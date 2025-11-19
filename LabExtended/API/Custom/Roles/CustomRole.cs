@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 
 using UnityEngine;
 
+using LabApi.Events.Handlers;
 using LabApi.Events.Arguments.PlayerEvents;
 
 using LabExtended.Core;
@@ -288,9 +289,10 @@ namespace LabExtended.API.Custom.Roles
         /// null.</remarks>
         /// <param name="player">The player to spawn with the custom role. Must not be null and must have a valid ReferenceHub.</param>
         /// <param name="useSpawnpoint">Whether or not to assign a spawn position.</param>
+        /// <param name="addInventory">Whether or not to add vanilla inventory items to the player. Will be overriden by ClearInventory if both are true.</param>
         /// <param name="data">A reference to an optional data object that can be used to pass or receive custom spawn-related information.</param>
         /// <returns>true if the player was successfully spawned with the custom role; otherwise, false.</returns>
-        public virtual bool Spawn(ExPlayer player, bool useSpawnpoint, ref object? data)
+        public virtual bool Spawn(ExPlayer player, bool useSpawnpoint, bool addInventory, ref object? data)
         {
             if (player?.ReferenceHub == null)
                 return false;
@@ -299,10 +301,10 @@ namespace LabExtended.API.Custom.Roles
             var useDefaultSpawn = useSpawnpoint || validSpawnPoints?.Count() < 1;
 
             player.Role.Set(Type, RoleChangeReason.RemoteAdmin, 
-                useDefaultSpawn ? (ClearInventory 
+                useDefaultSpawn ? (ClearInventory || !addInventory
                                     ? RoleSpawnFlags.UseSpawnpoint
                                     : RoleSpawnFlags.All)
-                                : (ClearInventory
+                                : (ClearInventory || !addInventory
                                     ? RoleSpawnFlags.None
                                     : RoleSpawnFlags.AssignInventory));
 
@@ -398,7 +400,7 @@ namespace LabExtended.API.Custom.Roles
         /// <remarks>Make sure to call the base method (<c>base.OnAdded(player, ref data)</c>) in order to spawn the player and apply the config 
         /// properties of the role!</remarks>
         public virtual void OnAdded(ExPlayer player, ref object? data) 
-            => Spawn(player, true, ref data);
+            => Spawn(player, true, true, ref data);
 
         /// <summary>
         /// Gets called when the role is removed from a player.
@@ -433,6 +435,16 @@ namespace LabExtended.API.Custom.Roles
         }
 
         /// <summary>
+        /// Gets called before this player deals damage to another player.
+        /// </summary>
+        public virtual void OnAttacking(PlayerHurtingEventArgs args, ref object? data) { }
+
+        /// <summary>
+        /// Gets called after this player has dealt damage to another player.
+        /// </summary>
+        public virtual void OnAttacked(PlayerHurtEventArgs args, ref object? data) { }
+
+        /// <summary>
         /// Gets called before this player receives damage.
         /// </summary>
         public virtual void OnHurting(PlayerHurtingEventArgs args, ref object? data) { }
@@ -443,6 +455,16 @@ namespace LabExtended.API.Custom.Roles
         public virtual void OnHurt(PlayerHurtEventArgs args, ref object? data) { }
 
         /// <summary>
+        /// Gets called before this player kills another player.
+        /// </summary>
+        public virtual void OnKilling(PlayerDyingEventArgs args, ref object? data) { }
+
+        /// <summary>
+        /// Gets called after this player has killed another player.
+        /// </summary>
+        public virtual void OnKilled(PlayerDeathEventArgs args, ref object? data) { }
+
+        /// <summary>
         /// Gets called before this player dies.
         /// </summary>
         public virtual void OnDying(PlayerDyingEventArgs args, ref object? data) { }
@@ -451,5 +473,58 @@ namespace LabExtended.API.Custom.Roles
         /// Gets called after this player has died.
         /// </summary>
         public virtual void OnDied(PlayerDeathEventArgs args, ref object? data) { }
+        
+        private static void _OnChangingRole(PlayerChangingRoleEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnChangingRole(args, ref player.Role.customRoleData);
+        }
+
+        private static void _OnHurting(PlayerHurtingEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnHurting(args, ref player.Role.customRoleData);
+
+            if (args.Attacker is ExPlayer attacker && attacker.Role.CustomRole is not null)
+                attacker.Role.CustomRole.OnAttacking(args, ref attacker.Role.customRoleData);
+        }
+
+        private static void _OnHurt(PlayerHurtEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnHurt(args, ref player.Role.customRoleData);
+
+            if (args.Attacker is ExPlayer attacker && attacker.Role.CustomRole is not null)
+                attacker.Role.CustomRole.OnAttacked(args, ref attacker.Role.customRoleData);
+        }
+
+        private static void _OnDying(PlayerDyingEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnDying(args, ref player.Role.customRoleData);
+
+            if (args.Attacker is ExPlayer attacker && attacker.Role.CustomRole is not null)
+                attacker.Role.CustomRole.OnKilling(args, ref attacker.Role.customRoleData);
+        }
+
+        private static void _OnDied(PlayerDeathEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnDied(args, ref player.Role.customRoleData);
+
+            if (args.Attacker is ExPlayer attacker && attacker.Role.CustomRole is not null)
+                attacker.Role.CustomRole.OnKilled(args, ref attacker.Role.customRoleData);
+        }
+        
+        internal static void Initialize()
+        {
+            PlayerEvents.ChangingRole += _OnChangingRole;
+
+            PlayerEvents.Hurting += _OnHurting;
+            PlayerEvents.Hurt += _OnHurt;
+
+            PlayerEvents.Dying += _OnDying;
+            PlayerEvents.Death += _OnDied;
+        }
     }
 }
