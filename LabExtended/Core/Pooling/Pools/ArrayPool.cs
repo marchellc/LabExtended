@@ -6,7 +6,7 @@ namespace LabExtended.Core.Pooling.Pools;
 /// Provides a resource pool for arrays of a specified type, enabling efficient reuse of array instances to minimize
 /// memory allocations.
 /// </summary>
-/// <remarks>ArrayPool<T> is useful for scenarios where arrays are frequently allocated and released, such as in
+/// <remarks>ArrayPool{T} is useful for scenarios where arrays are frequently allocated and released, such as in
 /// high-performance or memory-sensitive applications. By reusing arrays, it helps reduce garbage collection pressure
 /// and improve application performance. Arrays obtained from the pool should be returned after use to avoid memory
 /// leaks. This class is not thread-safe; external synchronization is required if used concurrently from multiple

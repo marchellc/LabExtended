@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+
 using LabExtended.Extensions;
 using LabExtended.Utilities.Update;
 

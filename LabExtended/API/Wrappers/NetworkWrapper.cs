@@ -23,6 +23,10 @@ namespace LabExtended.API.Wrappers
 
         where T : NetworkBehaviour
     {
+        /// <summary>
+        /// Initializes a new instance of the NetworkWrapper class using the specified base value.
+        /// </summary>
+        /// <param name="baseValue">The underlying value to be wrapped by the NetworkWrapper. Cannot be null.</param>
         public NetworkWrapper(T baseValue) : base(baseValue) 
         { }
 
@@ -97,8 +101,10 @@ namespace LabExtended.API.Wrappers
         }
 
         /// <summary>
-        /// Gets or sets the NetIdWaypoint associated with this networked object.
+        /// Gets or sets the waypoint associated with the current network identity.
         /// </summary>
+        /// <remarks>Setting this property updates the target network identity of the specified waypoint
+        /// to match the current identity. If no matching waypoint exists, getting this property returns null.</remarks>
         public NetIdWaypoint? Waypoint
         {
             get => NetIdWaypoint.AllNetWaypoints.FirstOrDefault(x => x != null && x._targetNetId != null && x._targetNetId == Identity);
@@ -106,11 +112,13 @@ namespace LabExtended.API.Wrappers
         }
 
         /// <summary>
-        /// 
+        /// Sets the position, rotation, and optionally the scale of the underlying object in world space.
         /// </summary>
-        /// <param name="position"></param>
-        /// <param name="rotation"></param>
-        /// <param name="scale"></param>
+        /// <remarks>This method will despawn and respawn the object to apply the transformation. If a
+        /// scale is provided, it overrides the object's current local scale.</remarks>
+        /// <param name="position">The new position to assign to the object, specified as a world-space coordinate.</param>
+        /// <param name="rotation">The new rotation to assign to the object, specified as a world-space orientation.</param>
+        /// <param name="scale">An optional scale to apply to the object. If not specified, the object's scale remains unchanged.</param>
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation, Vector3? scale = null)
         {
             Despawn();
@@ -130,7 +138,9 @@ namespace LabExtended.API.Wrappers
         public void Despawn()
         {
             if (Identity != null && Identity.gameObject != null)
+            {
                 NetworkServer.UnSpawn(Identity.gameObject);
+            }
         }
 
         /// <summary>
@@ -153,7 +163,9 @@ namespace LabExtended.API.Wrappers
         public void Spawn()
         {
             if (Identity != null && Identity.gameObject != null)
+            {
                 NetworkServer.Spawn(Identity.gameObject);
+            }
         }
 
         /// <summary>
@@ -203,7 +215,9 @@ namespace LabExtended.API.Wrappers
         public void Delete()
         {
             if (Identity != null && Identity.gameObject != null)
+            {
                 NetworkServer.Destroy(Identity.gameObject);
+            }
         }
 
         /// <summary>

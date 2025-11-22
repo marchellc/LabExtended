@@ -2,7 +2,6 @@ using LabApi.Events.Arguments.PlayerEvents;
 using LabApi.Events.Handlers;
 
 using LabExtended.API;
-using LabExtended.Attributes;
 using LabExtended.Utilities.Update;
 
 using Mirror;

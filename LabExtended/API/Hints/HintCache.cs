@@ -4,8 +4,6 @@ using LabExtended.Core.Pooling;
 using LabExtended.Extensions;
 using LabExtended.Utilities;
 
-using HintMessage = LabExtended.API.Messages.HintMessage;
-
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -52,7 +50,7 @@ public class HintCache : PoolObject
     /// <summary>
     /// Gets a list of hint messages used as a queue.
     /// </summary>
-    public List<HintMessage> Queue { get; } = new(byte.MaxValue);
+    public List<(string Content, ushort Duration)> Queue { get; } = new(byte.MaxValue);
     
     /// <summary>
     /// Gets a list of temporary parsed hints.
@@ -67,14 +65,13 @@ public class HintCache : PoolObject
     /// <summary>
     /// Gets or sets the currently displayed message.
     /// </summary>
-    public HintMessage? CurrentMessage { get; set; }
+    public (string Content, ushort Duration)? CurrentMessage { get; set; }
 
     /// <summary>
     /// Removes the currently displayed hint.
     /// </summary>
     public void RemoveCurrent()
     {
-        CurrentMessage?.Dispose();
         CurrentMessage = null;
 
         IsParsed = false;
@@ -109,7 +106,7 @@ public class HintCache : PoolObject
         if (CurrentMessage is null)
             return false;
 
-        if (Stopwatch.Elapsed.Seconds >= CurrentMessage.Duration)
+        if (Stopwatch.Elapsed.Seconds >= CurrentMessage.Value.Duration)
         {
             RemoveCurrent();
             return true;
@@ -143,7 +140,10 @@ public class HintCache : PoolObject
         if (IsParsed)
             return;
 
-        var msg = CurrentMessage.Content;
+        if (CurrentMessage is null)
+            return;
+
+        var msg = CurrentMessage.Value.Content;
 
         TempData.Clear();
 

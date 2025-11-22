@@ -1,7 +1,7 @@
 ﻿using InventorySystem.Items.Firearms;
 using InventorySystem.Items.Firearms.Attachments;
 using InventorySystem.Items.Firearms.Attachments.Components;
-using LabExtended.Core;
+
 using LabExtended.Extensions;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.

@@ -46,6 +46,6 @@ public class InstancePool<T> : IDisposable
         if (Pool != null)
             ListPool<T>.Shared.Return(Pool);
 
-        Pool = null;
+        Pool = null!;
     }
 }

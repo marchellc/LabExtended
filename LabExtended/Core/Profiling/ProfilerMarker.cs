@@ -109,7 +109,7 @@ namespace LabExtended.Core.Profiling
         /// Marks the method's start.
         /// </summary>
         /// <param name="comment">An optional comment used in <see cref="ProfilerFrame.Info"/>.</param>
-        public void MarkStart(string comment = null)
+        public void MarkStart(string? comment = null)
         {
             if (_isFull)
                 return;
@@ -118,7 +118,7 @@ namespace LabExtended.Core.Profiling
                 _isFull = _frames.Count >= _samples;
 
             _isInvoking = true;
-            _invComm = comment;
+            _invComm = comment!;
 
             _stopwatch.Start();
         }
@@ -136,7 +136,7 @@ namespace LabExtended.Core.Profiling
             _stopwatch.Stop();
             _frames.Add(new ProfilerFrame(_stopwatch.ElapsedTicks, _frames.Count, _invComm));
 
-            _invComm = null;
+            _invComm = null!;
         }
 
         /// <summary>
@@ -159,13 +159,13 @@ namespace LabExtended.Core.Profiling
             _samples = 0;
 
             _frames.Clear();
-            _frames = null;
+            _frames = null!;
 
             _stopwatch.Reset();
-            _stopwatch = null;
+            _stopwatch = null!;
 
-            _invComm = null;
-            _name = null;
+            _invComm = null!;
+            _name = null!;
         }
 
         /// <inheritdoc/>

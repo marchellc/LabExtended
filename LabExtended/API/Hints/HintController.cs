@@ -1,11 +1,8 @@
-﻿using LabExtended.API.Hints.Elements.Personal;
-
-using LabExtended.API.Enums;
-
-using LabExtended.Attributes;
-using LabExtended.Extensions;
+﻿using LabExtended.API.Enums;
+using LabExtended.API.Hints.Elements.Personal;
 
 using LabExtended.Core;
+using LabExtended.Extensions;
 
 using LabExtended.Utilities;
 using LabExtended.Utilities.Update;
@@ -17,8 +14,6 @@ using MEC;
 using Mirror;
 
 using UnityEngine;
-
-using HintMessage = LabExtended.API.Messages.HintMessage;
 
 #pragma warning disable CS8604 // Possible null reference argument.
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
@@ -160,7 +155,7 @@ public static class HintController
         
         if (hint is TextHint textHint)
         {
-            player.ShowHint(textHint.Text, (ushort)Mathf.CeilToInt(textHint.DurationScalar), true, textHint.Parameters);
+            player.ShowHint(textHint.Text, (ushort)Mathf.CeilToInt(textHint.DurationScalar), true);
             return;
         }
         
@@ -181,7 +176,7 @@ public static class HintController
     /// <param name="duration">Duration of the hint (in seconds).</param>
     /// <param name="isPriority">Whether to show the hint immediately.</param>
     /// <param name="parameters">A list of hint parameters to display.</param>
-    public static void ShowHint(this ExPlayer player, string content, ushort duration, bool isPriority = false, HintParameter[]? parameters = null)
+    public static void ShowHint(this ExPlayer player, string content, ushort duration, bool isPriority = false)
     {
         if (!player)
             throw new ArgumentNullException(nameof(player));
@@ -191,7 +186,7 @@ public static class HintController
 
         if (player.Hints.Queue.Count < 1)
         {
-            player.Hints.Queue.Add(new HintMessage(content, duration, isPriority, parameters));
+            player.Hints.Queue.Add((content, duration));
         }
         else
         {
@@ -201,12 +196,12 @@ public static class HintController
 
                 player.Hints.RemoveCurrent();
 
-                player.Hints.Queue.Insert(0, new HintMessage(content, duration, isPriority, parameters));
+                player.Hints.Queue.Insert(0, (content, duration));
                 player.Hints.Queue.Add(curHint);
             }
             else
             {
-                player.Hints.Queue.Add(new HintMessage(content, duration, isPriority, parameters));
+                player.Hints.Queue.Add((content, duration));
             }
         }
     }

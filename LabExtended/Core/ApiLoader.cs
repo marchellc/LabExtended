@@ -21,6 +21,7 @@ using NorthwoodLib.Pools;
 
 using LabExtended.API;
 
+using LabExtended.API.Custom.Roles;
 using LabExtended.API.Custom.Items;
 using LabExtended.API.Custom.Effects;
 using LabExtended.API.Custom.Gamemodes;
@@ -47,9 +48,9 @@ using LabExtended.Patches.Events.Mirror;
 using LabExtended.Utilities.Unity;
 using LabExtended.Utilities.Firearms;
 
-using Version = System.Version;
 using LabExtended.Core.Storage;
-using LabExtended.API.Custom.Roles;
+
+using Version = System.Version;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
 #pragma warning disable CS8764 // Nullability of return type doesn't match overridden member (possibly because of nullability attributes).

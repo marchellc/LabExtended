@@ -33,12 +33,10 @@ public static class HintProcessor
         {
             player.Hints.ParseTemp();
 
-            if (player.Hints.CurrentMessage.Parameters?.Count > 0)
-                state.Parameters.AddRange(player.Hints.CurrentMessage.Parameters);
-
             if (player.Hints.TempData.Count > 0)
             {
                 HintUtils.AppendMessages(player.Hints.TempData, HintController.TemporaryHintAlign, state.Builder, player.Hints.LeftOffset);
+
                 state.AnyAppended = true;
             }
         }
