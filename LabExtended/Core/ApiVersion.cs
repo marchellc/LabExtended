@@ -20,7 +20,7 @@ public static class ApiVersion
     /// <summary>
     /// The build version part.
     /// </summary>
-    public const int Build = 1;
+    public const int Build = 2;
 
     /// <summary>
     /// The patch version part.
