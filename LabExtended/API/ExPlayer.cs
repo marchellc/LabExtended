@@ -596,6 +596,7 @@ public class ExPlayer : Player, IDisposable
 
         playerUpdate.OnUpdate += RefreshModifiers;
         playerUpdate.OnUpdate += RefreshCustomInfo;
+        playerUpdate.OnUpdate += UpdateCustomRole;
         
         InternalEvents.HandlePlayerJoin(this);
     }
@@ -907,6 +908,21 @@ public class ExPlayer : Player, IDisposable
         get => Voice?.Thread?.InstancePitch ?? 1f;
         set => Voice!.Thread!.InstancePitch = value;
     }
+
+    /// <summary>
+    /// Gets or sets the player's forced speed limiter.
+    /// </summary>
+    public float? FakeSpeedLimiter { get; set; }
+
+    /// <summary>
+    /// Gets or sets the player's forced speed multiplier.
+    /// </summary>
+    public float? FakeSpeedMultiplier { get; set; }
+
+    /// <summary>
+    /// Gets or sets the player's forced stamina usage multiplier.
+    /// </summary>
+    public float? FakeStaminaUsageMultiplier { get; set; }
 
     /// <summary>
     /// Gets the player's screen's aspect ratio.
@@ -1304,7 +1320,7 @@ public class ExPlayer : Player, IDisposable
     /// Gets a component from the player's game object.
     /// </summary>
     /// <typeparam name="T">Type of the component to get.</typeparam>
-    /// <returns>An instance of <see cref="T"/> if found, otherwise null.</returns>
+    /// <returns>An instance of <typeparamref name="T"/> if found, otherwise null.</returns>
     public T? GetComponent<T>()
         => GameObject.TryFindComponent<T>(out var component) ? component : default;
 
@@ -1312,7 +1328,7 @@ public class ExPlayer : Player, IDisposable
     /// Adds a new instance of a component to a player's game object or retrieves an existing one.
     /// </summary>
     /// <typeparam name="T">Type of the component to get / add.</typeparam>
-    /// <returns>The instance of <see cref="T"/>.</returns>
+    /// <returns>The instance of <typeparamref name="T"/>.</returns>
     public T GetOrAddComponent<T>()
         => GameObject.TryFindComponent<T>(out var component)
             ? component
@@ -1377,6 +1393,7 @@ public class ExPlayer : Player, IDisposable
     {
         playerUpdate.OnUpdate -= RefreshModifiers;
         playerUpdate.OnUpdate -= RefreshCustomInfo;
+        playerUpdate.OnUpdate -= UpdateCustomRole;
 
         if (host != null && host == this)
             host = null;
@@ -1510,9 +1527,10 @@ public class ExPlayer : Player, IDisposable
         if (infoBuilder.Length == 0)
             return;
 
-        var customInfo = infoBuilder
-            .ToString()
-            .TrimEnd('\n');
+        while (infoBuilder[infoBuilder.Length - 1] == '\n')
+            infoBuilder.Remove(infoBuilder.Length - 1, 1);
+
+        var customInfo = infoBuilder.ToString();
 
         if (NetworkBehaviour.SyncVarEqual(customInfo, ref ReferenceHub.nicknameSync._customPlayerInfoString))
             return;
@@ -1557,14 +1575,24 @@ public class ExPlayer : Player, IDisposable
             }
         }
 
-        var refreshingEventArgs = new PlayerRefreshingModifiersEventArgs(this, inventory._staminaModifier, inventory._movementMultiplier,
-            inventory._movementLimiter);
+        var refreshingEventArgs = new PlayerRefreshingModifiersEventArgs(this, 
+            FakeStaminaUsageMultiplier ?? inventory._staminaModifier,
+            FakeSpeedMultiplier ?? inventory._movementMultiplier,
+            FakeSpeedLimiter ?? inventory._movementLimiter);
 
         ExPlayerEvents.OnRefreshingModifiers(refreshingEventArgs);
 
         inventory.Network_syncStaminaModifier = refreshingEventArgs.StaminaUsageMultiplier;
         inventory.Network_syncMovementMultiplier = refreshingEventArgs.MovementSpeedMultiplier;
         inventory.Network_syncMovementLimiter = refreshingEventArgs.MovementSpeedLimiter;
+    }
+
+    private void UpdateCustomRole()
+    {
+        if (Role?.CustomRole == null)
+            return;
+
+        Role.CustomRole.Update(this, ref Role.customRoleData);
     }
 
     private static ReferenceHub SpawnHiddenDummy(string nick)

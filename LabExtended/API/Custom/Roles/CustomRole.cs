@@ -1,7 +1,6 @@
 ﻿using PlayerRoles;
 
 using System.ComponentModel;
-using System.Collections.ObjectModel;
 
 using UnityEngine;
 
@@ -156,13 +155,11 @@ namespace LabExtended.API.Custom.Roles
         public virtual Dictionary<string, int> CustomAmmo { get; set; } = new();
         #endregion
 
-        private Dictionary<ExPlayer, object> players = new();
-
         /// <summary>
         /// Gets the read-only list of players currently assigned to this custom role.
         /// </summary>
         [YamlIgnore]
-        public ReadOnlyDictionary<ExPlayer, object> Players => field ??= new ReadOnlyDictionary<ExPlayer, object>(players);
+        public Dictionary<ExPlayer, object> Players { get; } = new();
 
         /// <summary>
         /// Determines the role appearance that should be presented for a player from the perspective of a specific
@@ -247,7 +244,7 @@ namespace LabExtended.API.Custom.Roles
             player.Role.CustomRole = this;
             player.Role.customRoleData = data;
 
-            players.Add(player, data!);
+            Players.Add(player, data!);
 
             OnAdded(player, ref player.Role.customRoleData);
             return true;
@@ -269,7 +266,7 @@ namespace LabExtended.API.Custom.Roles
             if (player.Role.CustomRole == null || player.Role.CustomRole != this)
                 return false;
 
-            players.Remove(player);
+            Players.Remove(player);
 
             OnRemoved(player, ref player.Role.customRoleData);
 
@@ -395,6 +392,11 @@ namespace LabExtended.API.Custom.Roles
         }
 
         /// <summary>
+        /// Gets called every frame for each player that has this role.
+        /// </summary>
+        public virtual void Update(ExPlayer player, ref object? data) { }
+
+        /// <summary>
         /// Gets called when the role is added to a player.
         /// </summary>
         /// <remarks>Make sure to call the base method (<c>base.OnAdded(player, ref data)</c>) in order to spawn the player and apply the config 
@@ -480,6 +482,12 @@ namespace LabExtended.API.Custom.Roles
                 player.Role.CustomRole.OnChangingRole(args, ref player.Role.customRoleData);
         }
 
+        private static void _OnChangedRole(PlayerChangedRoleEventArgs args)
+        {
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnChangedRole(args, ref player.Role.customRoleData);
+        }
+
         private static void _OnHurting(PlayerHurtingEventArgs args)
         {
             if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
@@ -509,16 +517,17 @@ namespace LabExtended.API.Custom.Roles
 
         private static void _OnDied(PlayerDeathEventArgs args)
         {
-            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
-                player.Role.CustomRole.OnDied(args, ref player.Role.customRoleData);
-
             if (args.Attacker is ExPlayer attacker && attacker.Role.CustomRole is not null)
                 attacker.Role.CustomRole.OnKilled(args, ref attacker.Role.customRoleData);
+
+            if (args.Player is ExPlayer player && player.Role.CustomRole is not null)
+                player.Role.CustomRole.OnDied(args, ref player.Role.customRoleData);
         }
         
         internal static void Initialize()
         {
             PlayerEvents.ChangingRole += _OnChangingRole;
+            PlayerEvents.ChangedRole += _OnChangedRole;
 
             PlayerEvents.Hurting += _OnHurting;
             PlayerEvents.Hurt += _OnHurt;
