@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
+
 using HarmonyLib;
+
 using LabExtended.Commands.Attributes;
 using LabExtended.Commands.Interfaces;
 
@@ -122,6 +124,9 @@ public class CommandParameter
                 ApiLog.Error("LabExtended", $"Parser &3{optionsAttribute.ParserType.FullName}&r has not been registered!");
             }
         }
+
+        if (Type.Parser is null && Parsers.Count < 1)
+            throw new Exception($"No parsers are defined for type '{Type.Type?.ToString() ?? "(null)"}'");
     }
 
     /// <summary>

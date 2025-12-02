@@ -13,3 +13,5 @@ global.json
 /LabExtended.ImageConvertor/bin/Release/net9.0
 /LabExtended.ImageConvertor/Properties/PublishProfiles
 /LabExtended.ImageConvertor/LabExtended.ImageConvertor.csproj.user
+
+.fake

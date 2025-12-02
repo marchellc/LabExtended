@@ -66,8 +66,11 @@ using UserSettings.ServerSpecific;
 using VoiceChat;
 
 using System.Text;
-
+using InventorySystem.Items.Firearms;
+using InventorySystem.Items.Firearms.Modules;
+using InventorySystem.Items.Firearms.ShotEvents;
 using LabExtended.Core;
+using PlayerStatsSystem;
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
 #pragma warning disable CS8604 // Possible null reference argument.
@@ -1143,6 +1146,38 @@ public class ExPlayer : Player, IDisposable
     /// Gets the player's user ID type (<i>steam, discord, northwood etc.</i>)
     /// </summary>
     public string UserIdType => UserIdHelper.GetIdType(UserId);
+
+    /// <summary>
+    /// Disintegrates the player, applying a particle disrupter effect and dealing instant lethal damage.
+    /// </summary>
+    /// <param name="flyDirection">The direction in which the player should be disintegrated. If null, defaults to upward.</param>
+    /// <param name="overrideGodMode">If set to <see langword="true"/>, disables god mode for the player before disintegration.</param>
+    /// <returns><see langword="true"/> if the disintegration was successful; otherwise, <see langword="false"/>.</returns>
+    public bool Disintegrate(Vector3? flyDirection, bool overrideGodMode = false)
+    {
+        if (!ItemType.ParticleDisruptor.TryGetItemPrefab<ParticleDisruptor>(out var particleDisruptor))
+            return false;
+        
+        if (ReferenceHub == null)
+            return false;
+
+        if (!IsAlive)
+            return false;
+
+        if (IsGodModeEnabled)
+        {
+            if (!overrideGodMode)
+                return false;
+
+            IsGodModeEnabled = false;
+        }
+
+        var shotEvent = new DisruptorShotEvent(particleDisruptor, DisruptorActionModule.FiringState.FiringSingle);
+        var damageHandler = new DisruptorDamageHandler(shotEvent, flyDirection ?? Vector3.up, -1f);
+        
+        ReferenceHub.playerStats.KillPlayer(damageHandler);
+        return true;
+    }
 
     /// <summary>
     /// Opens the player's Remote Admin panel.
